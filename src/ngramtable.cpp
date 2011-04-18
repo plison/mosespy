@@ -1162,7 +1162,7 @@ int ngramtable::get(ngram& ng,int n,int lev){
   char *found;
   NODETYPE ndt;
   
-  assert(lev <= n && n <= maxlev && ng.size >= n);
+  assert(lev <= n && lev <= maxlev && ng.size >= n);
 
   if ((I_FREQ_NUM==0) && (lev < maxlev)){
     cerr << "get: for this type of table ngram cannot be smaller than table size\n";

@@ -258,7 +258,7 @@ double mdiadaptlm::zeta(ngram ng,int size){
   
   assert(size>=1);
   
-  double z; // compute normalization term
+  double z=0; // compute normalization term
 
   ng.size=size;
   
@@ -266,7 +266,7 @@ double mdiadaptlm::zeta(ngram ng,int size){
   else{ //size>1
     
     //check in the 2gr and 3gr cache
-    if (cache->get(ng,size,z)) return z;     
+    if (size <=3 && cache->get(ng,size,z)) return z;     
     
     double fstar,lambda;
     ngram histo=ng;    
@@ -293,8 +293,7 @@ double mdiadaptlm::zeta(ngram ng,int size){
     
     z+=lambda*zeta(ng,size-1);
     
-    if ((size==2) || (succ>1))
-      cache->put(ng,size,z);
+    if (size<=3 && succ>1) cache->put(ng,size,z);
     
     return z;
   }
@@ -310,11 +309,7 @@ int mdiadaptlm::discount(ngram ng_,int size,double& fstar,double& lambda,int /* 
 	bool lambda_cached=0;
 	int size_lambda=size-1;
 	
-	ngram histo=ng;
-	for (int j=1;j<=size_lambda;j++){
-		*histo.wordp(j)=*ng.wordp(j+1);
-	}
-	histo.size=size_lambda;
+	ngram histo=ng;histo.shift();
 
   if (size_lambda>0 && histo.size>=size_lambda){
 #ifdef MDIADAPTLM_CACHE_ENABLE
@@ -333,7 +328,6 @@ int mdiadaptlm::discount(ngram ng_,int size,double& fstar,double& lambda,int /* 
 		if (size>1){
 			double numlambda, numfstar, den;
 			numfstar=scalefact(ng);
-			numlambda=zeta(ng,size-1);
 			den=zeta(ng,size);
 			__fstar=__fstar * numfstar/den;
 			if (!lambda_cached){
