@@ -1162,18 +1162,14 @@ int ngramtable::get(ngram& ng,int n,int lev){
   char *found;
   NODETYPE ndt;
   
-  //  cout << "cerco:" << ng << "\n";
-  
-  if ((I_FREQ_NUM==0) && (n < maxlev)){
-    cerr << "get: ngram cannot be smaller than table size\n";
+  assert(lev <= n && n <= maxlev && ng.size >= n);
+
+  if ((I_FREQ_NUM==0) && (lev < maxlev)){
+    cerr << "get: for this type of table ngram cannot be smaller than table size\n";
     exit(1);
   }
 	
-  if (n<lev){
-    cerr << "time shift must be >= ngram-size";
-    exit(1);
-  }
-	
+ 	
   if (ng.wordp(n)){
 		
 		nd=tree;
