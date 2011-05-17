@@ -1,8 +1,8 @@
 #! /bin/sh
 
-PACKAGE_NAME=irstlm
-PACKAGE_VERSION=`cat RELEASE`
 prefixdir=$1
+PACKAGE_NAME=irstlm
+PACKAGE_VERSION=`cat ${prefixdir}/RELEASE`
 
 bininstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-bin
 libinstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-lib
@@ -13,26 +13,27 @@ echo $cwd
 echo $bininstallname
 echo $libinstallname
 
-mkdir -p tmp$$
-pushd tmp$$
-svn export https://hermessvn.fbk.eu/svn/hermes/software/irstlm/trunk
-pushd trunk
-tar czf ../$srcinstallname.tgz *
-zip -r ../$srcinstallname.zip *
+tmpdir=${PACKAGE_NAME}-${PACKAGE_VERSION}
+
+if [ -d $tmpdir ] ; then
+echo "directory $tmdir already exists. Please check!"
+exit 1;
+fi
+
+svn export https://hermessvn.fbk.eu/svn/hermes/software/irstlm/trunk $tmpdir
+
+tar czf ${cwd}/${srcinstallname}.tgz $tmpdir
+zip -r ${cwd}/${srcinstallname}.zip $tmpdir
+
+pushd $tmpdir
+cp -r ${prefixdir}/bin ${prefixdir}/lib ${prefixdir}/include .
 popd
-popd
-mv tmp$$/$srcinstallname.tgz tmp$$/$srcinstallname.zip .
-\rm -r tmp$$
 
-pushd ${prefixdir}
+tar czf ${cwd}/${bininstallname}.tgz $tmpdir/bin
+zip -r -y ${cwd}/${bininstallname}.zip $tmpdir/bin
 
-tar czf ${bininstallname}.tgz bin
-zip -r -y ${bininstallname}.zip bin
-mv ${bininstallname}.tgz ${bininstallname}.zip $cwd/
+tar czf ${cwd}/${libinstallname}.tgz $tmpdir/lib $tmpdir/include
+zip -r -y ${cwd}/${libinstallname}.zip $tmpdir/lib $tmpdir/include
 
-tar czf ${libinstallname}.tgz lib include
-zip -r -y ${libinstallname}.zip lib include
-mv ${libinstallname}.tgz ${libinstallname}.zip $cwd/
-
-popd
+#\rm -r $tmpdir
 
