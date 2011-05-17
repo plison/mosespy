@@ -35,5 +35,5 @@ zip -r -y ${cwd}/${bininstallname}.zip $tmpdir/bin
 tar czf ${cwd}/${libinstallname}.tgz $tmpdir/lib $tmpdir/include
 zip -r -y ${cwd}/${libinstallname}.zip $tmpdir/lib $tmpdir/include
 
-#\rm -r $tmpdir
+\rm -r $tmpdir
 
