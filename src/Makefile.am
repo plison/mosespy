@@ -54,19 +54,29 @@ CLEANFILES = $(BUILT_SOURCES)
 
 libirstlm_la_LIBADD = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 
+LDADD = -lirstlm 
+DEPENDENCIES = libirstlm.la
+
 bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa
 
 dict_SOURCES = dict.cpp
+dict_DEPENDENCIES = $(DEPENDENCIES)
 ngt_SOURCES = ngt.cpp
+ngt_DEPENDENCIES = $(DEPENDENCIES)
 compile_lm_SOURCES = compile-lm.cpp
+compile_lm_DEPENDENCIES = $(DEPENDENCIES)
 interpolate_lm_SOURCES = interpolate-lm.cpp
+interpolate_lm_DEPENDENCIES = $(DEPENDENCIES)
 prune_lm_SOURCES = prune-lm.cpp
+prune_lm_DEPENDENCIES = $(DEPENDENCIES)
 quantize_lm_SOURCES = quantize-lm.cpp
+quantize_lm_DEPENDENCIES = $(DEPENDENCIES)
 score_lm_SOURCES = score-lm.cpp
+score_lm_DEPENDENCIES = $(DEPENDENCIES)
 tlm_SOURCES = tlm.cpp
+tlm_DEPENDENCIES = $(DEPENDENCIES)
 plsa_SOURCES = plsa.cpp
+plsa_DEPENDENCIES = $(DEPENDENCIES)
 
 
-LDADD = -lirstlm 
-DEPENDENCIES = libirstlm.la
 
