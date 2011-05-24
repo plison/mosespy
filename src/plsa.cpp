@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 	char *adafile=NULL;
 	char *featurefile=NULL;
 	char *basefile=NULL;
-	char *hfile="hfff"; //default filename
+	char *hfile=NULL;
 	char *tfile=NULL;
 	char *wfile=NULL;
 	char *ctfile=NULL;
@@ -170,6 +170,11 @@ int main(int argc, char **argv)
 		exit(1);
     }
 	
+	if (!hfile){
+		//set default value
+		 strcpy(hfile,"hfff");
+	}
+
 	dictionary dict(dictfile);
 	
 	cout << dict.size() << "\n";
