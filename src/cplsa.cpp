@@ -298,7 +298,7 @@ int plsa::train(char *trainfile,int maxiter,float noiseH,int flagW,float noiseW,
 			while(trset.read()){ //read next doc
 				
 				int m=trset.m;
-				int n=trset.n;
+				/* unused parameter       int n=trset.n;   */
 				int j=trset.cd; //current document	      
 				int N=0; // doc lenght
 				
