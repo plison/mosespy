@@ -1997,7 +1997,7 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
     ngram ing=ong; //inverted ngram
 		
     ing.invert(ong);
-    get(ing,ing.size,ing.size); // dig in the trie
+    get(ing,ing.size,ing.size); // dig in the trie   
     if (ing.lev >0){ //found something?
       iprob=ing.prob;
       lpr = (double)(isQtable?Pcenters[ing.lev][(qfloat_t)iprob]:iprob);
@@ -2023,8 +2023,10 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 	  ibow=this->bow(ing.path[l],tbltype[l]);
 	  rbow+= (double) (isQtable?Bcenters[l][(qfloat_t)ibow]:ibow);
 	  //avoids bad quantization of bow of <unk>
-	  if (isQtable && (*ing.wordp(1)==dict->oovcode())) 
+    //    if (isQtable && (*ing.wordp(1)==dict->oovcode())) {
+	  if (isQtable && (*ing.wordp(ing.size)==dict->oovcode())) {
 	    rbow-=(double)Bcenters[l][(qfloat_t)ibow];
+	  }
 	}
       }
     }
@@ -2033,11 +2035,9 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
     return rbow + lpr;
   }
   else{
-		
     for (ngram ng=ong;ng.size>0;ng.size--){
-			
       if (get(ng,ng.size,ng.size)){
-	iprob=ng.prob;
+	iprob=ng.prob; 
 	lpr = (double)(isQtable?Pcenters[ng.size][(qfloat_t)iprob]:iprob);
 	if (*ng.wordp(1)==dict->oovcode()) lpr-=logOOVpenalty; //add OOV penalty
 	if (maxsuffptr || statesize){ //one extra step is needed if ng.size=ong.size
@@ -2058,12 +2058,13 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 	else{ //compute backoff
 	  if (bol) (*bol)++; //increase backoff level
 	  if (ng.lev==(ng.size-1)){ //if search stopped at previous level
-	    ibow=ng.bow;
+	    ibow=ng.bow; 
 	    rbow+= (double) (isQtable?Bcenters[ng.lev][(qfloat_t)ibow]:ibow);
 	    //avoids bad quantization of bow of <unk>
-	    if (isQtable && (*ng.wordp(2)==dict->oovcode())) 
+	    if (isQtable && (*ng.wordp(2)==dict->oovcode())) {
 	      rbow-=(double)Bcenters[ng.lev][(qfloat_t)ibow];
-	  }
+	    }
+	  }  
 	  if (bow) (*bow)=rbow;
 	}
 				
