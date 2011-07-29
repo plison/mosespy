@@ -26,7 +26,7 @@ EOF
 
 if [ ! $IRSTLM ]; then
    echo "Set IRSTLM environment variable with path to irstlm"
-   exit;
+   exit 2;
 fi
 
 #paths to scripts and commands in irstlm
@@ -38,7 +38,7 @@ gunzip=`which gunzip 2> /dev/null`;
 #check irstlm installation
 if [ ! -e $bin/dict -o  ! -e $scr/split-dict.pl ]; then
    echo "$IRSTLM does not contain a proper installation of IRSTLM"
-   exit;
+   exit 3;
 fi
 
 #default parameters
@@ -102,7 +102,7 @@ do
 		     ;;
 	     *) 
 		 echo "wrong smoothing setting";
-		 exit;
+		 exit 4;
 	     esac
              ;;
   
@@ -129,17 +129,17 @@ fi
 
 if [ ! "$inpfile" -o ! "$outfile" ]; then
     usage
-    exit 
+    exit 5
 fi
  
 if [ -e $outfile ]; then
    echo "Output file $outfile already exists! either remove or rename it."
-   exit;
+   exit 6;
 fi
 
-if [ -e $logfile -a $logfile != "/dev/null" ]; then
+if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
    echo "Logfile $logfile already exists! either remove or rename it."
-   exit;
+   exit 7;
 fi
 
 #check tmpdir
@@ -193,5 +193,3 @@ echo "Removing temporary directory $tmpdir";
 rmdir $tmpdir 2> /dev/null
 
 exit
-
-
