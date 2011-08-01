@@ -923,6 +923,7 @@ void lmtable::checkbounds(int level){
 				
 	out.close();
 	removefile(filePath);
+	exit(2);
       }
     }
 		
@@ -933,12 +934,10 @@ void lmtable::checkbounds(int level){
   out.close();
 	
   fstream inp(filePath.c_str(),ios::in|ios::binary);
-	
   inp.read(succtbl,(table_pos_t) cursize[level+1]*succndsz);
-  //  inp.read(succtbl,cursize[level+1]*succndsz);
   inp.close();
-	
-	
+
+  removefile(filePath);
 }
 
 //Add method inserts n-grams in the table structure. It is ONLY used during

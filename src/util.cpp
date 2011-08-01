@@ -78,9 +78,8 @@ void removefile(const std::string &filePath)
 #ifdef _WIN32
 	::DeleteFileA(filePath.c_str());
 #else
-  char cmd[filePath.size() + 100];
-  sprintf(cmd,"rm %s",filePath.c_str());
-  system(cmd);
+	if (remove(filePath.c_str()) != 0)
+		perror("Error deleting file" );
 #endif
 }
 
