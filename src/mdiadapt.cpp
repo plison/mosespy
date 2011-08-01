@@ -1084,8 +1084,6 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
   dictionary* subdict; double oovprob=0; 
   if (subdictfile){
     subdict=new dictionary(subdictfile);
-    //check that oov word is the last word
-    assert(dict->oovcode()==(dict->size()-1));
   }  
   else{
     subdict=dict; // default is subdict=dict
@@ -1288,8 +1286,6 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
   dictionary* subdict; double oovprob=0; 
   if (subdictfile){
     subdict=new dictionary(subdictfile);
-    //check that oov word is the last word
-    assert(dict->oovcode()==(dict->size()-1));
   }  
   else
     subdict=dict; // default is subdict=dict
