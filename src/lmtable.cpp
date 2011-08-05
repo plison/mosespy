@@ -1045,7 +1045,7 @@ void *lmtable::search(int lev,
   if (lev==1) return *found=(*ngp < (float) n ? table[1] + (table_pos_t)*ngp * sz:NULL);
 	
 	
-  //prepare table to be searched with mybserach
+  //prepare table to be searched with mybsearch
   char* tb;
   tb=table[lev] + (table_pos_t) offs * sz;
   //prepare search pattern
@@ -1076,49 +1076,52 @@ void *lmtable::search(int lev,
 //int lmtable::mybsearch(char *ar, table_pos_t n, int size, unsigned char *key, table_pos_t *idx)
 int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table_entry_pos_t *idx)
 {
-  register table_entry_pos_t low, high;
-  register char *p;
-  register int result=0;
-  /*
-    register unsigned char *p;
-    register table_pos_t result=0;
-    register int i;
-  */
+	register table_entry_pos_t low, high;
+	register char *p; 
+	char *lp;
+	char *hp;
+	int result=0;
+
+	//avoid accessing not allocated memory in the fast check (see below)
+	if (n==0) return 0; 
 	
-  /* return idx with the first position equal or greater than key */
+	low = 0;high = n; *idx=0;
 	
-  /*   Warning("start bsearch \n"); */
+	lp=(char *) (ar + ((table_pos_t) low * size));
+	hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
 	
-  low = 0;high = n; *idx=0;
-  while (low < high)
-    {
+	//fast check if key cannot occur inside ar
+	if (word(key)< word(lp) || word(key) > word(hp)) return 0;	
+	
+	
+	while (low < high)
+    {										
+		//use interpolation search only for intervals with at least 4096 entries	
+		if ((high-low)< 4096)
+			*idx = (low + high) / 2;
+		else		
+			*idx= low + ((word(key)-word(lp)) * ((high-1)-low))/(word(hp)-word(lp));		
 		
-      *idx = (low + high) / 2;
+		p = (char *) (ar + ((table_pos_t)*idx * size));		
 		
-      p = (char *) (ar + ((table_pos_t)*idx * size));
-      //      p = (unsigned char *) (ar + (*idx * size));
+		result=word(key)-word(p);
 		
-      //comparison
-      /*
-	for (i=(LMTCODESIZE-1);i>=0;i--){
-	result=key[i]-p[i];
-	if (result) break;
-	}
-      */
-		
-      result=word(key)-word(p);
-		
-      if (result < 0)
-	high = *idx;
-      else if (result > 0)
-	low = *idx + 1;
-      else
-	return 1;
+		if (result < 0){
+			high = *idx;
+			assert(high>0);
+			hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
+		}
+		else if (result > 0){
+			low = *idx + 1;
+			lp=(char *) (ar + ((table_pos_t) low * size));
+		}
+		else
+			return 1;
     }
 	
-  *idx=low;
+	*idx=low;
 	
-  return 0;
+	return 0;
 	
 }
 
