@@ -735,17 +735,28 @@ void ngramtable::show(){
 int ngramtable::mybsearch(char *ar, int n, int size, unsigned char *key, int *idx)
 {
   
-  unsigned char *p=NULL;
+ unsigned char *p=NULL;
+ unsigned  char *lp;
+ unsigned  char  *hp;
   int result=0;
   int i=0;
 	
+  if (n==0) return 0;	
+		
   /* return idx with the first 
 		position equal or greater than key */
 	
   /*   Warning("start bsearch \n"); */
 	
   int low = 0;int high = n; *idx=0;
-  while (low < high)
+
+  lp=(unsigned char *) (ar + (low * size));
+  hp=(unsigned char *) (ar + ((high-1) * size));	
+
+  //fast check if key cannot occur inside 
+  //if (word((node)key)< word((node) lp) || word((node) key) > word((node)hp)) return 0;	
+	
+	while (low < high)
 	{
 		*idx = (low + high) / 2;
 		p = (unsigned char *) (ar + (*idx * size));
