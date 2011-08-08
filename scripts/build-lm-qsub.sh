@@ -17,7 +17,7 @@ OPTIONS:
    -p      Prune singleton n-grams (default false)
    -u      Use uniform word frequency for dictionary splitting (default false)
    -q      parameters for qsub ("-q <queue>", and any other)
-   -s      Smoothing methods: witten-bell (default), kneser-ney (approximated kneser-ney)
+   -s      Smoothing methods: witten-bell (default), kneser-ney (approximated kneser-ney), improved-kneser-ney
    -b      Include sentence boundary n-grams (optional)
    -d      Define subdictionary for n-grams (optional)
    -v      Verbose
@@ -104,6 +104,9 @@ do
 	     kneser-ney)
 		     smoothing="--kneser-ney"
 		     ;;
+             improved-kneser-ney)
+                     smoothing="--improved-kneser-ney"
+                     ;;
 	     *) 
 		 echo "wrong smoothing setting";
 		 exiti 4;
