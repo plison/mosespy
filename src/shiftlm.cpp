@@ -366,9 +366,13 @@ int mshiftbeta::train(){
       if (l==1 && ng.freq >=3) unover3++;
 
     }
-
-    cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << "\n";
-
+		
+    if (l==1){
+      cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << " unover3: " << unover3 << "\n";
+    }else{
+      cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << "\n";
+    }
+		
     if (n1 == 0 || n2 == 0 || n1 <= n2) {
       cerr << "Error: lower order count-of-counts cannot be estimated properly\n";
       cerr << "Hint: use another smoothing method with this corpus.\n";
