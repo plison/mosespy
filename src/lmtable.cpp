@@ -953,8 +953,8 @@ int lmtable::add(ngram& ng, TA iprob,TB ibow){
   int ndsz=nodesize(ndt); //default initialization
   static int no_more_msg = 0;
 	
-	
-  //	cerr << "add(): ng.size: " << ng.size << " ng: |" << ng << "| cursize[ng.size]: " << cursize[ng.size] << " maxsize[ng.size]: " << maxsize[ng.size];
+  //cerr << "add(): ng.size: " << ng.size << " ng: |" << ng << "| cursize[ng.size]: " << cursize[ng.size] << " maxsize[ng.size]: " << maxsize[ng.size];
+
   if (ng.size>1){
 		
     // find the prefix starting from the first level
@@ -1050,7 +1050,7 @@ void *lmtable::search(int lev,
   tb=table[lev] + (table_pos_t) offs * sz;
   //prepare search pattern
   char w[LMTCODESIZE];putmem(w,ngp[0],0,LMTCODESIZE);
-	
+
   table_entry_pos_t idx=0; // index returned by mybsearch
   *found=NULL;	//initialize output variable
 	
@@ -1081,43 +1081,47 @@ int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table
 	char *lp;
 	char *hp;
 	int result=0;
+	int wlp, whp, wkey;
 
 	//avoid accessing not allocated memory in the fast check (see below)
 	if (n==0) return 0; 
 	
-	low = 0;high = n; *idx=0;
-	
+	low = 0; high = n; *idx=0;
+
 	lp=(char *) (ar + ((table_pos_t) low * size));
 	hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
-	
-	//fast check if key cannot occur inside ar
-	if (word(key)< word(lp) || word(key) > word(hp)) return 0;	
-	
-	
-	while (low < high)
-    {										
-		//use interpolation search only for intervals with at least 4096 entries	
-		if ((high-low)< 4096)
-			*idx = (low + high) / 2;
-		else		
-			*idx= low + ((word(key)-word(lp)) * ((high-1)-low))/(word(hp)-word(lp));		
-		
-		p = (char *) (ar + ((table_pos_t)*idx * size));		
-		
-		result=word(key)-word(p);
-		
-		if (result < 0){
-			high = *idx;
-			assert(high>0);
-			hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
-		}
-		else if (result > 0){
-			low = *idx + 1;
-			lp=(char *) (ar + ((table_pos_t) low * size));
-		}
-		else
-			return 1;
-    }
+
+	while (low < high){					
+	  //fast check if key cannot occur inside ar
+	  
+	  wlp = word(lp);
+	  whp = word(hp);
+	  wkey = word(key);
+
+	  if ((wkey < wlp) || (wkey > whp)) return 0;		    
+	    
+	  //use interpolation search only for intervals with at least 4096 entries	
+	  if ((high-low) < 4096)
+	    *idx = (low + high) / 2;
+	  else		
+	    *idx= low + ((high-1)-low) * (wkey-wlp)/(whp-wlp);		
+	  
+	  p = (char *) (ar + ((table_pos_t)*idx * size));		
+	  
+	  result=wkey-word(p);
+	  
+	  if (result < 0){
+	    high = *idx;
+	    //	    assert(high>0);
+	    hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
+	  }
+	  else if (result > 0){
+	    low = *idx + 1;
+	    lp=(char *) (ar + ((table_pos_t) low * size));
+	  }
+	  else
+	    return 1;
+	}
 	
 	*idx=low;
 	
@@ -1686,7 +1690,6 @@ int lmtable::get(ngram& ng,int n,int lev){
   //if (debug) std::cout << "lmtable::get ng:|" << ng << "|" << std::endl;
   /***
       std::cout << "lmtable::get ng:|" << ng << "|" << std::endl;
-      cout << "cerco:" << ng << "\n";
   ***/
   totget[lev]++;
 	
