@@ -732,52 +732,79 @@ void ngramtable::show(){
 }
 
 
+
 int ngramtable::mybsearch(char *ar, int n, int size, unsigned char *key, int *idx)
 {
-  
- unsigned char *p=NULL;
- unsigned  char *lp;
- unsigned  char  *hp;
-  int result=0;
-  int i=0;
 	
-  if (n==0) return 0;	
+	unsigned char *p=NULL;
+	char *lp;
+	char  *hp;
+	int result, wlp, whp, wkey;
+	
+	if (n==0) return 0;	
+	
+	/* return idx with the first 
+	 position equal or greater than key */
+	
+	/*   Warning("start bsearch \n"); */
+	
+	int low = 0;int high = n; *idx=0;
+	
+	lp=(char *) (ar + (low * size));
+	hp=(char *) (ar + ((high-1) * size));	
+	
+	wkey=word((char *)key);
 		
-  /* return idx with the first 
-		position equal or greater than key */
+	//fast check if key cannot occur inside ar
 	
-  /*   Warning("start bsearch \n"); */
+	wlp=word(lp);
+	whp=word(hp);	
 	
-  int low = 0;int high = n; *idx=0;
+	if (wkey<wlp) { *idx=low; return 0;}
+	if (wkey>whp) { *idx=high; return 0;} 
+	
+	//in progress
+	//if (codecmp((char *)key,lp)<0){ *idx=low; return 0;}
+	//if (codecmp((char *)key,hp)>0){ *idx=high; return 0;} 	
+	
+	//cerr << "key="<< wkey <<  "intial a["<<low<<"]="<< wlp << " <= a[" << high-1 << "]=" <<whp << "\n";
 
-  lp=(unsigned char *) (ar + (low * size));
-  hp=(unsigned char *) (ar + ((high-1) * size));	
-
-  //fast check if key cannot occur inside 
-  //if (word((node)key)< word((node) lp) || word((node) key) > word((node)hp)) return 0;	
-	
 	while (low < high)
 	{
-		*idx = (low + high) / 2;
-		p = (unsigned char *) (ar + (*idx * size));
 		
-		//comparison
-		for (i=(CODESIZE-1);i>=0;i--){
-			result=key[i]-p[i];
-			if (result) break;
-		}
+		//use interpolation search only for intervals with at least 4096 entries
 		
-		if (result < 0)
+		if ((high-low)<4096)			
+			*idx = (low + high) / 2;
+		else
+			*idx= low + ((high-1)-low) * (wkey-wlp)/(whp-wlp);
+
+		//after redefining the interval there is no guarantee
+		//that wlp <= wkey <= whigh
+		
+		p = (unsigned char *) (ar + (*idx * size));		
+		result=wkey-word((char*)p);
+		
+		if (result < 0){
 			high = *idx;
-		else if (result > 0)
-			low = *idx + 1;
+			hp=(char *)(ar + ((high-1) * size));
+			whp=word(hp);
+			if (wkey > whp) return 0; 
+			
+		}
+		else if (result > 0){
+			low = ++(*idx);
+			lp=(char *) (ar + (low * size));
+			wlp=word(lp);
+			if (wkey < wlp) return 0;
+		}
 		else
 			return 1;
 	}
 	
-  *idx=low;
+	*idx=low;
 	
-  return 0;
+	return 0;
 	
 }
 
@@ -787,6 +814,7 @@ void *ngramtable::search(table *tb,NODETYPE ndt,int lev,int n,int sz,int *ngp,
   char w[CODESIZE];
   putmem(w,ngp[0],0,CODESIZE);
   int wint=ngp[0];
+	
 	
   // index returned by mybsearch 
 	
@@ -822,6 +850,7 @@ void *ngramtable::search(table *tb,NODETYPE ndt,int lev,int n,int sz,int *ngp,
 			
 			break;
 			
+		  
 		case FIND:
 			
 			if (!*tb || 

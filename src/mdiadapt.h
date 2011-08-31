@@ -76,7 +76,9 @@ protected:
   int adapt(char* ngtfile,int alev=1,double gis_step=0.4);
   
   int scalefact(char* ngtfile);
-  
+
+  int savescalefactor(char* filename);
+	
   double scalefact(ngram ng);
   
   double prob(ngram ng,int size);

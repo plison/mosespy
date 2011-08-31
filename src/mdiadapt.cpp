@@ -141,36 +141,58 @@ inline NGRAMCACHE_t* mdiadaptlm::get_backoffcache(int level){
 }
 
 int mdiadaptlm::scalefact(char *ngtfile){
-  if (forelm!=NULL) delete forelm;
-  if (cache!=NULL) delete cache;
-  cache=new normcache(dict);
-
-  forelm=new shiftbeta(ngtfile,1); 
-  forelm->train();
-
-  //compute oov scalefact term
-  ngram fng(forelm->dict,1); 
-  ngram ng(dict,1);
-  int* w=fng.wordp(1);
-
-  oovscaling=1.0;
-  for ((*w)=0;(*w)<forelm->dict->size();(*w)++)
-    if ((*w) != forelm->dict->oovcode()){
-      ng.trans(fng);
-      if (*ng.wordp(1)==dict->oovcode())
-	{
-	  cerr << "fg lm contains new words: use -ao=yes option\n";
-	  exit(1);
-	}
-      //forbidden situation
-      oovscaling-=backunig(ng);
-    }
-  *w=forelm->dict->oovcode();
-  oovscaling=foreunig(fng)/oovscaling;
-
-  return 1;
+	if (forelm!=NULL) delete forelm;
+	if (cache!=NULL) delete cache;
+	cache=new normcache(dict);
+	
+	forelm=new shiftbeta(ngtfile,1); 
+	forelm->train();
+	
+	//compute oov scalefact term
+	ngram fng(forelm->dict,1); 
+	ngram ng(dict,1);
+	int* w=fng.wordp(1);
+	
+	oovscaling=1.0;
+	for ((*w)=0;(*w)<forelm->dict->size();(*w)++)
+		if ((*w) != forelm->dict->oovcode()){
+			ng.trans(fng);
+			if (*ng.wordp(1)==dict->oovcode())
+			{
+				cerr << "adaptation file contains new words: use -ao=yes option\n";
+				exit(1);
+			}
+			//forbidden situation
+			oovscaling-=backunig(ng);
+		}
+	*w=forelm->dict->oovcode();
+	oovscaling=foreunig(fng)/oovscaling;
+	
+	return 1;
 };
 
+int mdiadaptlm::savescalefactor(char* filename){
+	
+	ngram ng(dict,1);
+	int* w=ng.wordp(1);
+		
+	mfstream out(filename,ios::out);
+
+	out << "\n\\data\\" << "\nngram 1=" << dict->size() << "\n\n1grams:\n"; 
+	
+	for ((*w)=0;(*w)<dict->size();(*w)++){
+		double ratio=scalefact(ng);
+		out << (float)  (ratio?log10(ratio):-99);
+		if (*w==dict->oovcode())
+			out << "\t" << "<unk>\n";
+		else
+			out << "\t" << (char *)dict->decode(*w) << "\n";
+
+	}
+	out << "\\end\\\n";	
+	
+	return 1;	
+}
 
 double mdiadaptlm::scalefact(ngram ng){
   ngram fng(forelm->dict,1);

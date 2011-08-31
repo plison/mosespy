@@ -23,9 +23,9 @@ class plsa{
   int maxdocs;     //max number of docs
   
   dictionary* dict;
-  float **T;
-  float **W;
-  float *H;
+  double **T;
+  double **W;
+  double *H;
   
   char *tfname;
   char *wfname;
@@ -54,10 +54,10 @@ public:
   int saveWtxt(char* fname);
   int loadW(char* fname);
   
-  int initW(float noise,int spectopic);
-  int initH(float noise,int maxdoc);
+  int initW(double noise,int spectopic);
+  int initH(double noise,int maxdoc);
   
-  int train(char *trainfile,int maxiter,float noiseH,int flagW=0,float noiseW=0,int spectopic=0);
+  int train(char *trainfile,int maxiter,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
   
   int saveFeat(char* fname);
 

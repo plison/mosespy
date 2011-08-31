@@ -1074,6 +1074,9 @@ void *lmtable::search(int lev,
 
 
 //int lmtable::mybsearch(char *ar, table_pos_t n, int size, unsigned char *key, table_pos_t *idx)
+
+
+
 int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table_entry_pos_t *idx)
 {
 	register table_entry_pos_t low, high;
@@ -1091,12 +1094,13 @@ int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table
 	lp=(char *) (ar + ((table_pos_t) low * size));
 	hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
 
+	wkey = word(key);
+	
 	while (low < high){					
 	  //fast check if key cannot occur inside ar
 	  
 	  wlp = word(lp);
 	  whp = word(hp);
-	  wkey = word(key);
 
 	  if ((wkey < wlp) || (wkey > whp)) return 0;		    
 	    

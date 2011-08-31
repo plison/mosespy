@@ -105,11 +105,13 @@ int main(int argc, char **argv){
 	char *ARPAfile=NULL;
 	char *ASRfile=NULL;
 	
+	char* scalefactorfile=NULL;
+	
 	int backoff=0; //back-off or interpolation
 	int lmtype=0;
 	int dub=0; //dictionary upper bound
 	int size=0;   //lm size
-
+	
 	int interactive=0;
 	int statistics=0;
 	
@@ -145,7 +147,7 @@ int main(int argc, char **argv){
 				  
 				  "NgramSize", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
 				  "n", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
-				  				  
+				  
 				  "Ngram", CMDSTRINGTYPE, &trainfile,
 				  "TrainOn", CMDSTRINGTYPE, &trainfile,
 				  "tr", CMDSTRINGTYPE, &trainfile,
@@ -156,14 +158,14 @@ int main(int argc, char **argv){
 				  "o", CMDSTRINGTYPE, &ARPAfile,
 				  "oARPA", CMDSTRINGTYPE, &ARPAfile,
 				  "oarpa", CMDSTRINGTYPE, &ARPAfile,
-								
-					"oBIN", CMDSTRINGTYPE, &BINfile,
-					"obin", CMDSTRINGTYPE, &BINfile,
-								
+				  
+				  "oBIN", CMDSTRINGTYPE, &BINfile,
+				  "obin", CMDSTRINGTYPE, &BINfile,
+				  
 				  "TestOn", CMDSTRINGTYPE, &testfile, 
 				  "te", CMDSTRINGTYPE, &testfile, 
-				  
-				  "AdaptOn", CMDSTRINGTYPE, &adaptfile, 
+				 
+ 				  "AdaptOn", CMDSTRINGTYPE, &adaptfile, 
 				  "ad", CMDSTRINGTYPE, &adaptfile, 
 				  
 				  "AdaptRate",CMDDOUBLETYPE , &adaptrate, 
@@ -174,6 +176,9 @@ int main(int argc, char **argv){
 				  
 				  "AdaptOOV", CMDENUMTYPE, &adaptoov, BooleanEnum,
 				  "ao", CMDENUMTYPE, &adaptoov, BooleanEnum,
+
+				  "SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile, 
+				  "ssf", CMDSTRINGTYPE, &scalefactorfile, 
 				  
 				  "LanguageModelType",CMDENUMTYPE, &lmtype, LmTypeEnum,
 				  "lm",CMDENUMTYPE, &lmtype, LmTypeEnum,
@@ -195,13 +200,13 @@ int main(int argc, char **argv){
 				  
 				  "ComputeLMSize",CMDENUMTYPE, &compsize, BooleanEnum,
 				  "sz",CMDENUMTYPE, &compsize, BooleanEnum,
-								
-					"MaximumCachingLevel", CMDINTTYPE , &max_caching_level, 
-					"mcl", CMDINTTYPE, &max_caching_level, 
-								
-					"MemoryMap", CMDENUMTYPE, &memmap, BooleanEnum,
-					"memmap", CMDENUMTYPE, &memmap, BooleanEnum,
-					"mm", CMDENUMTYPE, &memmap, BooleanEnum,
+				  
+				  "MaximumCachingLevel", CMDINTTYPE , &max_caching_level, 
+				  "mcl", CMDINTTYPE, &max_caching_level, 
+				  
+				  "MemoryMap", CMDENUMTYPE, &memmap, BooleanEnum,
+				  "memmap", CMDENUMTYPE, &memmap, BooleanEnum,
+				  "mm", CMDENUMTYPE, &memmap, BooleanEnum,
 				  
 				  "CheckProb",CMDENUMTYPE, &checkpr, BooleanEnum,
 				  "cp",CMDENUMTYPE, &checkpr, BooleanEnum,
@@ -217,7 +222,7 @@ int main(int argc, char **argv){
 				  
 				  "LoadMixParam", CMDSTRINGTYPE, &imixpar, 
 				  "lmp", CMDSTRINGTYPE, &imixpar, 
-				  						
+				  
 				  "SetOovRate", CMDDOUBLETYPE, &oovrate,
 				  "or", CMDDOUBLETYPE, &oovrate,
 				  
@@ -306,6 +311,8 @@ int main(int argc, char **argv){
 	
 	if (adaptoov) lm->dict->incflag(0);    
 	
+	if (scalefactorfile) lm->savescalefactor(scalefactorfile);
+	
 	if (backoff) lm->compute_backoff();
 	
 	if (size>lm->maxlevel()){
@@ -321,7 +328,7 @@ int main(int argc, char **argv){
 		
 		if (adaptfile)
 			((mdiadaptlm *)lm)->get_zetacache()->stat();
-//		((mdiadaptlm *)lm)->cache->stat();
+		//		((mdiadaptlm *)lm)->cache->stat();
 		
 		//for (int s=1;s<=size;s++){
 		//lm->test(*lm,s);
@@ -459,6 +466,7 @@ int main(int argc, char **argv){
 					if (adaptoov) lm->dict->incflag(1);
 					lm->adapt(afile,adaptlevel,adaptrate);
 					if (adaptoov) lm->dict->incflag(0);
+					if (scalefactorfile) lm->savescalefactor(scalefactorfile);
 					if (ASRfile) lm->saveASR(ASRfile,backoff,dictfile);
 					if (ARPAfile) lm->saveARPA(ARPAfile,backoff,dictfile);
 					if (BINfile) lm->saveBIN(BINfile,backoff,dictfile,memmap);
@@ -484,7 +492,7 @@ int main(int argc, char **argv){
 		lm->saveARPA(ARPAfile,backoff,dictfile);
 		cerr << "\n";
 	}
-
+	
 	if (BINfile){
 		cerr << "TLM: save lm (binary)...";
 		lm->saveBIN(BINfile,backoff,dictfile,memmap);
@@ -496,8 +504,8 @@ int main(int argc, char **argv){
 		lm->lmstat(statistics);
 		cerr << "\n";
 	}
-
-//	lm->cache_stat();
+	
+	//	lm->cache_stat();
 	
 	cerr << "TLM: deleting lm ...";
 	//delete lm;
