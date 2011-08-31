@@ -90,8 +90,9 @@ ngramtable(ngtfile,depth,NULL,NULL,NULL,0,0,NULL,0,tabtype){
   unitbl=NULL;
   epsilon=1.0;
   unismooth=1;
-  prune_singletons=1;
-  
+  prune_singletons=0;
+  prune_top_singletons=0;
+	
   //doing something nasty: change counter of <s>
   
   int BoS=dict->encode(dict->BoS());

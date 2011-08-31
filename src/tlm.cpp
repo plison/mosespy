@@ -279,6 +279,8 @@ int main(int argc, char **argv){
 			break;
 			
 		case MIXTURE:
+			//temporary check: so far unable to proper handle this flag in sub LMs
+			assert(prunetopsingletons==NO && prunesingletons==NO);
 			lm=new mixture(trainfile,slminfo,size,prunefreq,imixpar,omixpar);
 			break;
 			
