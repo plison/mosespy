@@ -338,6 +338,21 @@ class lmtable{
     return value;
   };
   
+	
+  int codecmp(node a,node b){
+		register int i,result;
+		for (i=(LMTCODESIZE-1);i>=0;i--){
+			result=(unsigned char)a[i]-(unsigned char)b[i];
+			if(result) return result;
+		}
+		return 0;
+	};
+	
+	int codediff(node a,node b){
+		return word(a)-word(b);
+	};
+
+	
   inline float prob(node nd,LMT_TYPE ndt)
   {
     int offs=LMTCODESIZE;

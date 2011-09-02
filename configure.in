@@ -37,6 +37,9 @@ AC_ARG_ENABLE(profiling,
 AC_ARG_ENABLE(caching,
             [AC_HELP_STRING([--enable-caching], [irstlm will use prob caches to store probs and other info])])
 
+AC_ARG_ENABLE(interpsearch,
+            [AC_HELP_STRING([--enable-interpsearch], [irstlm will use interpolated search to retrieve n-grams])])
+
 AC_ARG_ENABLE(optimization,
             [AC_HELP_STRING([--enable-optimization], [compile with -O3 flag])])
 
@@ -54,7 +57,7 @@ then
     AC_MSG_NOTICE([trace enabled (default)])
     CPPFLAGS="$CPPFLAGS -DTRACE_ENABLE=1" 
 else
-    AC_MSG_NOTICE([trace disabled, most regression test will fail])
+    AC_MSG_NOTICE([trace disabled, most regression tests will fail])
 fi
 
 if test "x$enable_debugging" != 'xno'
@@ -81,6 +84,15 @@ then
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([caching disabled (default)])
+fi
+
+if test "x$enable_interpsearch" = 'xyes'
+then
+    AC_MSG_NOTICE([interpolated search enabled])
+    CPPFLAGS="$CPPFLAGS -DINTERP_SEARCH=1";
+    LDFLAGS="$LDFLAGS"
+else
+    AC_MSG_NOTICE([interpolated search disabled (default)])
 fi
 
 if test "x$enable_optimization" = 'xyes'

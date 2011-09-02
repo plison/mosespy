@@ -56,11 +56,3 @@ $AUTOCONF || die "autoconf failed"
 
 echo "Calling $AUTOMAKE --add-missing..."
 $AUTOMAKE --add-missing || die "automake failed"
-
-echo
-echo "You should now be able to configure and build:"
-echo "   ./configure [--prefix=/path/to/install]"
-echo "   make"
-echo "   make install"
-echo
-

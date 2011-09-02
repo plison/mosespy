@@ -477,11 +477,10 @@ public:
 	}
 	
 	int codecmp(char * a,char *b){
-		register int i;
-		register int result;
+		register int i,result;
 		for (i=(CODESIZE-1);i>=0;i--){
-			result=a[i]-b[i];
-			if (result) return result;
+			result=(unsigned char)a[i]-(unsigned char)b[i];
+			if(result) return result;
 		}
 		return 0;
 	};

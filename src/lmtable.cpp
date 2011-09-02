@@ -19,6 +19,7 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
+
 #include <stdio.h>
 #include <cstdlib>
 #include <stdlib.h>
@@ -1073,58 +1074,66 @@ void *lmtable::search(int lev,
 }
 
 
-//int lmtable::mybsearch(char *ar, table_pos_t n, int size, unsigned char *key, table_pos_t *idx)
-
-
+/* returns idx with the first position in ar with entry >= key */
 
 int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table_entry_pos_t *idx)
 {
-	register table_entry_pos_t low, high;
-	register char *p; 
-	char *lp;
-	char *hp;
-	int result=0;
-	int wlp, whp, wkey;
-
-	//avoid accessing not allocated memory in the fast check (see below)
 	if (n==0) return 0; 
 	
-	low = 0; high = n; *idx=0;
-
-	lp=(char *) (ar + ((table_pos_t) low * size));
-	hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
-
-	wkey = word(key);
+	*idx=0;
+	register table_entry_pos_t low=0, high=n; 
+	register unsigned char *p; 
+	int result;
 	
-	while (low < high){					
-	  //fast check if key cannot occur inside ar
-	  
-	  wlp = word(lp);
-	  whp = word(hp);
+#ifdef INTERP_SEARCH
 
-	  if ((wkey < wlp) || (wkey > whp)) return 0;		    
-	    
-	  //use interpolation search only for intervals with at least 4096 entries	
-	  if ((high-low) < 4096)
-	    *idx = (low + high) / 2;
-	  else		
-	    *idx= low + ((high-1)-low) * (wkey-wlp)/(whp-wlp);		
-	  
-	  p = (char *) (ar + ((table_pos_t)*idx * size));		
-	  
-	  result=wkey-word(p);
-	  
-	  if (result < 0){
-	    high = *idx;
-	    //	    assert(high>0);
-	    hp=(char *) (ar + ((table_pos_t) (high-1) * size));	
-	  }
-	  else if (result > 0){
-	    low = *idx + 1;
-	    lp=(char *) (ar + ((table_pos_t) low * size));
-	  }
-	  else
-	    return 1;
+	char *lp;char  *hp;
+	
+	//fast check if key cannot occur inside ar
+	
+	lp=(char *) (ar + (low * size));
+	hp=(char *) (ar + ((high-1) * size));			
+	
+	if (codecmp((char *)key,lp)<0){ *idx=low; return 0;}
+	if (codecmp((char *)key,hp)>0){ *idx=high; return 0;} 	
+	
+#endif	
+	
+	
+	while (low < high)
+	{
+		
+		//use interpolation search only for intervals with at least 4096 entries
+		
+#ifdef INTERP_SEARCH		
+		if ((high-low)>=4096)			
+			*idx= low + ((high-1)-low) * codediff((char *)key,lp)/codediff(hp,(char *)lp);
+		else
+#endif
+			*idx = (low + high) / 2;
+		
+		//after redefining the interval there is no guarantee
+		//that wlp <= wkey <= whigh
+		
+		p = (unsigned char *) (ar + (*idx * size));		
+		result=codecmp((char *)key,(char *)p);
+		
+		if (result < 0){
+			high = *idx;
+#ifdef INTERP_SEARCH
+			hp=(char *)(ar + ((high-1) * size));
+			if (codecmp((char *)key,hp)>0) return 0;
+#endif			
+		}
+		else if (result > 0){
+			low = ++(*idx);
+#ifdef INTERP_SEARCH
+			lp=(char *) (ar + (low * size));
+			if (codecmp((char *)key,lp)<0) return 0;
+#endif
+		}
+		else
+			return 1;
 	}
 	
 	*idx=low;

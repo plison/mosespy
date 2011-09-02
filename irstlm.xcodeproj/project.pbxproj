@@ -22,6 +22,7 @@
 		3D4F4DD0135C5C2500E85480 /* quantize-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D77D1C420B2F1FCA00D79D16 /* quantize-lm.cpp */; };
 		3D4F4DDD135C5C6300E85480 /* interpolate-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD9567B0FB42D07001B8680 /* interpolate-lm.cpp */; };
 		3D4F4DFC135C5DCB00E85480 /* ngt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* ngt.cpp */; };
+		AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0BD17113EC529000230F82 /* ngramtable.cpp */; };
 		AD2CE6AA112E80D900E05137 /* timer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD2CE6A8112E80D900E05137 /* timer.cpp */; };
 		AD2CE6AB112E80D900E05137 /* timer.h in Headers */ = {isa = PBXBuildFile; fileRef = AD2CE6A9112E80D900E05137 /* timer.h */; };
 		AD57B1CC0FB3103C00064698 /* lmmacro.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD57B1CA0FB3103C00064698 /* lmmacro.cpp */; };
@@ -120,6 +121,7 @@
 		3D4F4DC5135C5B8800E85480 /* tlm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tlm; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4DDB135C5C4C00E85480 /* interpolate-lm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "interpolate-lm"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4DF6135C5D7300E85480 /* plsa */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = plsa; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD0BD17113EC529000230F82 /* ngramtable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngramtable.cpp; path = src/ngramtable.cpp; sourceTree = "<group>"; };
 		AD2CE53B1125B0D100E05137 /* sort-lm.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = "sort-lm.pl"; sourceTree = "<group>"; };
 		AD2CE6A8112E80D900E05137 /* timer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = timer.cpp; path = src/timer.cpp; sourceTree = "<group>"; };
 		AD2CE6A9112E80D900E05137 /* timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = timer.h; path = src/timer.h; sourceTree = "<group>"; };
@@ -267,6 +269,7 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				AD0BD17113EC529000230F82 /* ngramtable.cpp */,
 				AD8104AD1132B93300B0363D /* mdiadapt.cpp */,
 				AD70DBD3115C1D4900F05491 /* linearlm.cpp */,
 				AD70DBD4115C1D4900F05491 /* linearlm.h */,
@@ -637,6 +640,7 @@
 				D701C79A0B2EB37D007D2774 /* util.cpp in Sources */,
 				3D4565391164C9EF00119984 /* interplm.cpp in Sources */,
 				3D4565611164CC3F00119984 /* mixture.cpp in Sources */,
+				AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
