@@ -4,6 +4,7 @@ CFLAGS=""
 CPPFLAGS=""
 CXXFLAGS=""
 
+AC_PREFIX_DEFAULT(/usr/local/irstlm)
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(irstlm, 5.50.02)
 WEBSITE="http://hlt.fbk.eu/en/irstlm"
@@ -119,10 +120,6 @@ fi
 LIBS="$LIBS -lz"
 
 
-AC_SUBST(wrapperbindir,$prefix/bin)
-AC_SUBST(transform,'s/_lm/-lm/')
-
-
 AM_CONDITIONAL([DOC_COMPILATION],false)
 if test "x$enable_doc" = 'xyes'
 then
@@ -141,5 +138,8 @@ else
 fi
 
 AC_CONFIG_FILES(Makefile src/Makefile scripts/Makefile doc/Makefile)
+
+
+AC_SUBST(transform,'s/_lm/-lm/')
 
 AC_OUTPUT()
