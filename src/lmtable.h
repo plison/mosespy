@@ -263,7 +263,7 @@ class lmtable{
   void filter(const char* /* unused parameter: lmfile */){};
    
 	
-  virtual double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL);
+  virtual double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
   virtual double clprob(ngram ng,            double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL); 
   virtual double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL); 
   
@@ -426,6 +426,7 @@ class lmtable{
 
   inline table_entry_pos_t bound(node nd,LMT_TYPE ndt)
   {
+	  
     int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
 	 
     table_entry_pos_t v;
@@ -439,6 +440,7 @@ class lmtable{
   template<typename T>
     inline T bound(node nd,LMT_TYPE ndt, T value)
     {
+	  
       int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
 	
       putmem(nd,value,offs);
@@ -446,7 +448,26 @@ class lmtable{
       return value;
     };
 
-  
+  //returns the indexes of the successors of a node
+	inline int succrange(node ndp,int level,table_entry_pos_t* isucc=NULL,table_entry_pos_t* esucc=NULL){
+
+		table_entry_pos_t first,last;
+		LMT_TYPE ndt=tbltype[level];
+		
+	    //get table boundaries for next level
+		if (level<maxlev){
+			first = ndp>table[level]? bound(ndp-nodesize(ndt), ndt) : 0;
+			last  = bound(ndp, ndt);
+		}
+		else
+			first=last=0;
+		
+		if (isucc) *isucc=first;
+		if (esucc)	*esucc=last;
+		
+		return last-first;	
+	}
+	
   void stat(int lev=0);
   void printTable(int level);
 	
