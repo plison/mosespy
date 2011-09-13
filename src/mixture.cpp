@@ -39,6 +39,20 @@ using namespace std;
 //Mixture interpolated language model
 //
 
+#define YES   1
+#define NO    0
+
+
+static Enum_T BooleanEnum [] = {
+  {    "Yes",    YES }, 
+  {    "No",     NO},
+  {    "yes",    YES }, 
+  {    "no",     NO},
+  {    "y",     YES }, 
+  {    "n",     NO},
+  END_ENUM
+};
+
 static Enum_T SLmTypeEnum [] = {
   {    "ModifiedShiftBeta",  MOD_SHIFT_BETA }, 
   {    "msb",                MOD_SHIFT_BETA }, 
@@ -73,15 +87,24 @@ mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ip
 	
 	sublm=new interplm* [numslm];
 	int slmtype;
-	char *trainfile;
+	int subprunesingletons;
+        int subprunetopsingletons;
+	int subprunefreq;
+
+	char *subtrainfile;
 	
 	DeclareParams(
 				  "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
-				  "str",CMDSTRINGTYPE, &trainfile,
-				  "sp",CMDSUBRANGETYPE, &prunefreq, 0 , 1000,
-				  (char *)NULL);
+				  "str",CMDSTRINGTYPE, &subtrainfile,
+				  "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
+                                  "sps",CMDENUMTYPE, &subprunesingletons, BooleanEnum,
+                                  "spts",CMDENUMTYPE, &subprunetopsingletons, BooleanEnum,
+                                  
+                                  (char *)NULL
+                                  );
 	
-	
+        cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
+
 	for (int i=0;i<numslm;i++)
     {
 		int npar=4;
@@ -93,42 +116,52 @@ mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ip
 		par[0][0]='\0';
 		inp >> par[1] >> par[2] >> par[3];
 		
-		trainfile=NULL;slmtype=0;prunefreq=-1;
+		subtrainfile=NULL;
+		slmtype=0;
+		subprunefreq=-1;
+	        subprunesingletons=YES;
+        	subprunetopsingletons=NO;
 		GetParams(&npar, &par, (char*) NULL);
 		
-		if (!slmtype || !trainfile || !prunefreq==-1){
+		if (!slmtype || !subtrainfile || !subprunefreq==-1){
 			cerr << "slm incomplete parameters\n";
 			exit(1);
 		}
 		
 		switch (slmtype){
 				
-				
 			case LINEAR_WB:
-				sublm[i]=new linearwb(trainfile,depth,prunefreq,MSHIFTBETA_I);
+				sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
 				break;
 				
 			case SHIFT_BETA:
-				sublm[i]=new shiftbeta(trainfile,depth,prunefreq,-1,SHIFTBETA_I);
+				sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
 				break;
 				
 			case SHIFT_ONE:
-				sublm[i]=new shiftbeta(trainfile,depth,prunefreq,SIMPLE_I);
+				sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
 				break;
 				
 			case MOD_SHIFT_BETA:
-				sublm[i]=new mshiftbeta(trainfile,depth,prunefreq,MSHIFTBETA_I);
+				sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
 				break;
 				
 			case MIXTURE:
-				sublm[i]=new mixture((char *)NULL,trainfile,depth,prunefreq);
+				sublm[i]=new mixture((char *)NULL,subtrainfile,depth,subprunefreq);
 				break;
 				
 			default:
 				cerr << "not implemented yet\n";
 				exit(1);
 		};
-		
+
+                sublm[i]->prunesingletons(subprunesingletons==YES);
+                sublm[i]->prunetopsingletons(subprunetopsingletons==YES);
+        
+	        if (subprunetopsingletons==YES) //keep most specific 
+        	        sublm[i]->prunesingletons(NO);
+
+	
 		cerr << "eventually generate OOV code ";
 		cerr << sublm[i]->dict->encode(dict->OOV()) << "\n";      
 		

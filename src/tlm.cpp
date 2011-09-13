@@ -280,7 +280,6 @@ int main(int argc, char **argv){
 			
 		case MIXTURE:
 			//temporary check: so far unable to proper handle this flag in sub LMs
-			assert(prunetopsingletons==NO && prunesingletons==NO);
 			lm=new mixture(trainfile,slminfo,size,prunefreq,imixpar,omixpar);
 			break;
 			
@@ -299,13 +298,16 @@ int main(int argc, char **argv){
 	
 	
 	lm->train();
-	
-	lm->prunesingletons(prunesingletons==YES);	
-	lm->prunetopsingletons(prunetopsingletons==YES);
-	
-	if (prunetopsingletons==YES) //keep most specific 
+
+//it never occurs that both prunetopsingletons and prunesingletons  are YES	
+	if (prunetopsingletons==YES){ //keep most specific 
+		lm->prunetopsingletons(YES);
 		lm->prunesingletons(NO);
-	
+	}else{
+		lm->prunetopsingletons(NO);
+		lm->prunesingletons(prunesingletons==YES);	
+	}
+
 	if (adaptoov) lm->dict->incflag(1);
 	
 	if (adaptfile)
