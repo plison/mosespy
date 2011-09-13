@@ -110,7 +110,7 @@ mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ip
 		int npar=4;
 		char **par=new char*[npar];  
 		for (int j=0;j<4;j++){
-			par[j]=new char[100];
+			par[j]=new char[BUFSIZ];
 		}    
 		
 		par[0][0]='\0';

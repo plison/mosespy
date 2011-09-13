@@ -54,10 +54,10 @@ plsa::plsa(dictionary* dictfile,int top,
 	
 	tfname=tFile;
 	wfname=wFile;
-	hinfname=new char[100];
+	hinfname=new char[BUFSIZ];
 	sprintf(hinfname,"%s",hFile);	
 	
-	houtfname=new char[100];
+	houtfname=new char[BUFSIZ];
 	sprintf(houtfname,"%s.out",hinfname);	
 	cerr << "Hfile in:" << hinfname << " out:" << houtfname << "\n";
 }
