@@ -1121,25 +1121,22 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 	
 	if (mmap){
 		cerr << "savebin with memory map: " << filename << "\n";
-//		cerr << "...... savebin with memory map not yet implemented; use stndard savebin\n";
-//		mmap=0;
 	}else{
 		cerr << "savebin: " << filename << "\n";		
 	}
-  streampos pos[lmsize()+1];
-  int num[lmsize()+1];
+	streampos pos[lmsize()+1];
 	
 	int maxlev=lmsize();
-  char buff[100];
+	char buff[100];
 	int isQuant=0; //savebin for quantized LM is not yet implemented
 	
   // print header
-  fstream out(filename,ios::out);
-  out << "blmt " << maxlev;
+	fstream out(filename,ios::out);
+	out << "blmt " << maxlev;
 
 	for (int i=1;i<=maxlev;i++){ //reserve space for ngram statistics (which are not yet avalable)
 		pos[i]=out.tellp();		
-    sprintf(buff," %10d",0);
+		sprintf(buff," %10d",0);
 		out << buff;
 	}
 	out << "\n";	
@@ -1147,7 +1144,7 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 	
 	lmt->configure(maxlev,isQuant);
 
-  cerr << "saving the dictionary ...\n";
+	cerr << "saving the dictionary ...\n";
 	lmt->setDict(subdict);
 	lmt->savebin_dict(out);
 	
@@ -1170,7 +1167,6 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 		ngram ng2(dict);
 		ngram sng(subdict,1);
 		
-		num[i]=0; //reset counts
 		if (i==1){ //unigram case
 			
 			//scan the dictionary
@@ -1193,8 +1189,6 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 				//cerr << ng << " freq " << dict->freq(w) << " -  Pr " << pr << "\n";
 				pr=(pr?log10(pr):-99);
 								
-				num[i]++;
-				
 				if (w==dict->oovcode())
 					*ng.wordp(1)=lmt->getDict()->oovcode();
 				else{} //do nothing
@@ -1247,16 +1241,13 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 					
 					if (fstar>=0.0000000001 || lambda <= 0.9999999999){
 						ibow=log10(lambda/bo);
-						lmt->add(ng,(float)log10(pr),(float)ibow); //stampato soltanto se 			if (lambda < 0.9999999999)
-						num[i]++;
+						lmt->add(ng,(float)log10(pr),(float)ibow);
 					}
 				}
 				else{
 					if (fstar > 0.0000000001){
 						ibow=0.0; //value for backoff weight at the highest level
 						lmt->add(ng,(float)log10(pr),(float)ibow);
-						
-						num[i]++;
 					}
 				}
 			}
@@ -1266,7 +1257,7 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 		// now we can save table at level i-1
 		// now we can remove table at level i-1
 		if (maxlev>1 && i>1){
-			cerr << "checkbounds level " << i-1 << "...\n";
+			cerr << "\ncheckbounds level " << i-1 << "...\n";
 			lmt->checkbounds(i-1);
 			cerr << "saving level " << i-1 << "...\n";
 			lmt->savebin_level(i-1, filename, mmap);
@@ -1282,11 +1273,11 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 	lmt->savebin_level(maxlev, filename, mmap);
 	
 	//update headers
-  for (int i=1;i<=lmsize();i++){
-    sprintf(buff," %10d",num[i]);
-    out.seekp(pos[i]);
-    out << buff;
-  }
+  	for (int i=1;i<=lmsize();i++){
+	  sprintf(buff," %10d",lmt->getCurrenitSize(i));
+	  out.seekp(pos[i]);
+	  out << buff;
+	}
 	out.close();
 	 	 
 	 //concatenate files for each single level
@@ -1294,8 +1285,6 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 		 lmt->compact_level(i,filename);
 	 }
 	 
-  system("date");
-	
 	return 1;			
 }
 
