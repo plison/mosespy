@@ -2028,11 +2028,18 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 			if (*ong.wordp(1)==dict->oovcode()) lpr-=logOOVpenalty; //add OOV penalty
 			if (statesize)  *statesize=MIN(ing.lev,(ing.size-1)); //find largest n-1 gram suffix 
 			if (maxsuffptr) *maxsuffptr=ing.path[MIN(ing.lev,(ing.size-1))];
-			if (extendible) *extendible=succrange(ing.path[ing.lev],ing.lev)>0; 	
+			if (extendible){
+				if (succrange(ing.path[ing.lev],ing.lev)>0){
+					*extendible=true;
+				}else{
+					*extendible=false;
+				}
+			} 	
 		}else{ // means a real unknown word!	
 			lpr=-log(UNIGRAM_RESOLUTION)/M_LN10;
 			if (statesize)  *statesize=0;     //default statesize for zero-gram! 
 			if (maxsuffptr) *maxsuffptr=NULL; //default stateptr for zero-gram! 
+			if (extendible) *extendible=false; //default extendibility for zero-gram!
 		}
 		
 		if (ing.lev < ing.size){ //compute backoff weight
@@ -2104,7 +2111,7 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 
 
 //return log10 probsL use cache memory
-double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned int* statesize){
+double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
 #ifdef TRACE_CACHELM
   if (probcache && ong.size==maxlev && sentence_id>0){
     *cacheout << sentence_id << " " << ong << "\n";
@@ -2114,6 +2121,7 @@ double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned in
   if (ong.size==0){
     if (statesize!=NULL) *statesize=0;
     if (state!=NULL) *state=NULL;
+    if (extendible!=NULL) *extendible=false;
     return 0.0;
   }
         
@@ -2130,6 +2138,7 @@ double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned in
     if (bol) *bol = pst_get.bol;
     if (state) *state = pst_get.state;
     if (statesize) *statesize = pst_get.statesize;
+    if (extendible) *extendible = pst_get.extendible;
 
     return logpr;
   }
@@ -2137,13 +2146,14 @@ double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned in
   //cache miss
 
   prob_and_state_t pst_add;
-  logpr = pst_add.logpr = lmtable::lprob(ong, &(pst_add.bow), &(pst_add.bol), &(pst_add.state), &(pst_add.statesize));
+  logpr = pst_add.logpr = lmtable::lprob(ong, &(pst_add.bow), &(pst_add.bol), &(pst_add.state), &(pst_add.statesize), &(pst_add.extendible));
 
 
   if (bow) *bow = pst_add.bow;
   if (bol) *bol = pst_add.bol;
   if (state) *state = pst_add.state;
   if (statesize) *statesize = pst_add.statesize;
+  if (extendible) *extendible = pst_add.extendible;
 
 
   if (prob_and_state_cache && ong.size==maxlev){
@@ -2151,14 +2161,14 @@ double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned in
   }
   return logpr;
 #else
-  return lmtable::lprob(ong, bow, bol, state, statesize);
+  return lmtable::lprob(ong, bow, bol, state, statesize, extendible);
 #endif
 };
 
 
 //return log10 probsL use cache memory
 //this functions simulates the clprob(ngram, ...) but it takes as input an array of codes instead of the ngram
-double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,unsigned int* statesize){
+double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
 #ifdef TRACE_CACHELM
   if (probcache && sz==maxlev && sentence_id>0){
     *cacheout << sentence_id << "\n";
@@ -2169,6 +2179,7 @@ double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,u
   if (sz==0){
     if (statesize!=NULL) *statesize=0;
     if (state!=NULL) *state=NULL;
+    if (extendible!=NULL) *extendible=false;
     return 0.0;
   }
 
@@ -2186,6 +2197,7 @@ double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,u
     if (bol) *bol = pst_get.bol;
     if (state) *state = pst_get.state;
     if (statesize) *statesize = pst_get.statesize;
+    if (extendible) *extendible = pst_get.extendible;
 
     return logpr;
   }
@@ -2198,13 +2210,14 @@ double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,u
 
   //cache miss
   prob_and_state_t pst_add;
-  logpr = pst_add.logpr = lmtable::lprob(ong, &(pst_add.bow), &(pst_add.bol), &(pst_add.state), &(pst_add.statesize));
+  logpr = pst_add.logpr = lmtable::lprob(ong, &(pst_add.bow), &(pst_add.bol), &(pst_add.state), &(pst_add.statesize), &(pst_add.extendible));
 
 
   if (bow) *bow = pst_add.bow;
   if (bol) *bol = pst_add.bol;
   if (state) *state = pst_add.state;
   if (statesize) *statesize = pst_add.statesize;
+  if (extendible) *extendible = pst_add.extendible;
 
 
   if (prob_and_state_cache && ong.size==maxlev){
@@ -2218,11 +2231,28 @@ double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,u
   ong.pushc(codes,sz);
   assert (ong.size == sz);
 
-  logpr = lmtable::lprob(ong, bow, bol, state, statesize);
+  logpr = lmtable::lprob(ong, bow, bol, state, statesize, extendible);
   return logpr;
 #endif
 };
 
+
+int lmtable::succrange(node ndp,int level,table_entry_pos_t* isucc,table_entry_pos_t* esucc){
+  table_entry_pos_t first,last;
+  LMT_TYPE ndt=tbltype[level];
+
+  //get table boundaries for next level
+  if (level<maxlev){
+     first = ndp>table[level]? bound(ndp-nodesize(ndt), ndt) : 0;
+     last  = bound(ndp, ndt);
+  }else{
+    first=last=0;
+  }
+  if (isucc) *isucc=first;
+  if (esucc) *esucc=last;
+
+  return last-first;
+}
 
 
 void lmtable::stat(int level){
@@ -2384,8 +2414,8 @@ table_entry_pos_t lmtable::wdprune(float *thr, int aflag, ngram ng, int ilev, in
       bo = ibo;
 
       //get table boundaries for next level
-	  table_entry_pos_t isucc,esucc;
-	  succrange(ndp,ilev,&isucc,&esucc);	
+      table_entry_pos_t isucc,esucc;
+      succrange(ndp,ilev,&isucc,&esucc);	
 
       //table_entry_pos_t isucc = i>0 ? bound(ndp-ndsz, ndt) : 0;
       //table_entry_pos_t  esucc = bound(ndp, ndt);
@@ -2480,7 +2510,7 @@ table_entry_pos_t lmtable::ngcnt(table_entry_pos_t *cnt, ngram	ng, int	l, table_
     if(ipr==NOPROB) continue;
     ++cnt[l];
     if(l==maxlev) continue;
-	succrange(ndp,l,&isucc,&esucc);  
+    succrange(ndp,l,&isucc,&esucc);  
     //isucc = (i>0)?bound(ndp-ndsz, ndt):0;
     //esucc = bound(ndp, ndt);
     if(isucc < esucc) ngcnt(cnt, ng, l+1, isucc, esucc);

@@ -37,7 +37,8 @@ typedef struct PROB_AND_STATE_ENTRY{
         unsigned int statesize; //!< LM statesize of an ngram
         double bow;     //!< backoff weight
         int bol;        //!< backoff level
-        PROB_AND_STATE_ENTRY(double lp=0.0, char* st=NULL, unsigned int stsz=0, double bw=0.0, int bl=0): logpr(lp), state(st), statesize(stsz), bow(bw), bol(bl) {}; //initializer
+        bool expandible;  //!< flag for extendibility of the ngram
+        PROB_AND_STATE_ENTRY(double lp=0.0, char* st=NULL, unsigned int stsz=0, double bw=0.0, int bl=0, bool exp=false): logpr(lp), state(st), statesize(stsz), bow(bw), bol(bl), expandible(exp) {}; //initializer
 } prob_and_state_t;
 
 void print(prob_and_state_t* pst,  std::ostream& out=std::cout);

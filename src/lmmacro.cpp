@@ -325,13 +325,13 @@ double lmmacro::lprob(ngram micro_ng) {
   return prob; 
 }; 
 
-double lmmacro::clprob(int* codes, int sz,  double* bow, int* bol, char** state,unsigned int* statesize){
+double lmmacro::clprob(int* codes, int sz,  double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
   ngram micro_ng(getDict());
   micro_ng.pushc(codes,sz);
-  return clprob(micro_ng,bow,bol,state,statesize);
+  return clprob(micro_ng,bow,bol,state,statesize,extendible);
 }
 
-double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsigned int* statesize){
+double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
 
 #ifdef DEBUG
   cout << " lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n";
@@ -354,7 +354,7 @@ double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsig
     cout << "  QUERY MACRO LM on (after transformation and size reduction) " << transformed_ng << "\n";
 #endif
     
-    logpr = lmtable::clprob(transformed_ng, bow, bol, state, statesize);
+    logpr = lmtable::clprob(transformed_ng, bow, bol, state, statesize, extendible);
   }
 #ifdef DEBUG
   cout << "  GET logpr: " << logpr << "\n";
@@ -538,7 +538,7 @@ void lmmacro::mapping(ngram &in, ngram &out) {
 }
 
 
-//double lmmacro::clprob(ngram micro_ng, double* /* unused parameter: bow*/, int* /* unused parameter: bol*/, char** /* unused parameter: state*/,unsigned int* /* unused parameter: statesize*/){
+//double lmmacro::clprob(ngram micro_ng, double* /* unused parameter: bow*/, int* /* unused parameter: bol*/, char** /* unused parameter: state*/,unsigned int* /* unused parameter: statesize*/,bool* /* unused parameter: extendible*/){
 /*
   #ifdef DEBUG
   cout << " lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n";
