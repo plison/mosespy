@@ -137,8 +137,8 @@ else
     AC_MSG_NOTICE([documentation will not be created (default); get it through the website $WEBSITE])
 fi
 
-AC_CONFIG_FILES(Makefile src/Makefile scripts/Makefile doc/Makefile)
-
+##AC_CONFIG_FILES(Makefile src/Makefile scripts/Makefile doc/Makefile)
+AC_CONFIG_FILES(Makefile src/Makefile scripts/Makefile doc/Makefile example/Makefile)
 
 AC_SUBST(transform,'s/_lm/-lm/')
 

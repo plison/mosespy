@@ -3,9 +3,9 @@
 AUTOMAKE_OPTIONS = foreign
 
 if DOC_COMPILATION
-SUBDIRS = src scripts doc
+SUBDIRS = src scripts example doc
 else
-SUBDIRS = src scripts
+SUBDIRS = src scripts example
 endif
 
 
