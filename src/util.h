@@ -8,6 +8,12 @@
 #include "gzfilebuf.h"
 
 
+#ifdef TRACE_ENABLE
+#define TRACE_ERR(str) { std::cerr << str; }
+#else
+#define TRACE_ERR(str) { }
+#endif
+
 std::string gettempfolder();
 void createtempfile(std::ofstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
 void removefile(const std::string &filePath);
