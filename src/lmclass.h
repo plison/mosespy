@@ -1,0 +1,70 @@
+// $Id: lmclass.h 3461 2010-08-27 10:17:34Z bertoldi $
+
+/******************************************************************************
+IrstLM: IRST Language Model Toolkit
+Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+
+******************************************************************************/
+
+
+#ifndef MF_LMCLASS_H
+#define MF_LMCLASS_H
+
+#ifndef WIN32
+#include <sys/types.h>
+#include <sys/mman.h>
+#endif
+
+#include "util.h"
+#include "ngramcache.h"
+#include "dictionary.h"
+#include "n_gram.h"
+#include "lmtable.h"
+
+#define MAX_TOKEN 2
+
+class lmclass: public lmtable {
+  dictionary     *dict; // dictionary (words - macro tags)
+  dictionary     *dictW2C; // word to class dictionary
+  double   *W2Clprb;
+
+public:
+  lmclass(float nlf=0.0, float dlfi=0.0);
+  
+  ~lmclass();
+
+
+  void load(const std::string filename,int mmap=0);
+  void loadW2Cdict(std::istream& inp);
+
+  double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
+  inline double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL){
+    return lprob(ng,bow,bol,maxsuffptr,statesize,extendible);
+  };
+  inline double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL){
+    ngram ong(getDict());
+    ong.pushc(ng,ngsize);
+    return lprob(ong,bow,bol,maxsuffptr,statesize,extendible);
+  };
+
+  inline dictionary* getDict() const { return dict; }
+};
+
+
+
+#endif
+
