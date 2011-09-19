@@ -36,6 +36,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "lmclass.h"
 #include "util.h"
 
+
+
+#ifndef DEBUG
+#define DEBUG
+#endif
+
 using namespace std;
 
 // local utilities: start
@@ -52,13 +58,15 @@ inline void error(const char* message){
 
 
 lmclass::lmclass(float nlf, float dlfi):lmtable(nlf,dlfi){
-  dict = new dictionary((char *)NULL,1000000); //word to cluster dictionary
-  W2Clprb= (double *)malloc(1000000*sizeof(double));// //array of probabilities
-  memset(W2Clprb,0,1000000*sizeof(double));
+  MaxMapSize=1000000;
+  MapScore= (double *)malloc(MaxMapSize*sizeof(double));// //array of probabilities
+  memset(MapScore,0,MaxMapSize*sizeof(double));
+  dict = new dictionary((char *)NULL,MaxMapSize); //word to cluster dictionary
 };
 
 lmclass::~lmclass(){
-  free (W2Clprb);
+  free (MapScore);
+  delete dict;
 }
 
 void lmclass::load(const std::string filename,int memmap){
@@ -114,36 +122,32 @@ void lmclass::load(const std::string filename,int memmap){
     std::cerr << "Failed to open " << lmfilename << "!" << std::endl;
     exit(1);
   }
-  loadW2Cdict(inW2C);
+  loadMap(inW2C);
+  dict->genoovcode();
 
-  cerr << "OOV code of lmclass is " << getDict()->oovcode() << "\n";
-  cerr << "OOV code of lmtable is " << lmtable::getDict()->oovcode() << "\n";
-
+  TRACE_ERR("OOV code of lmclass is " << getDict()->oovcode() << " mapped into " << getMap(getDict()->oovcode())<< "\n");
 }
 
-void lmclass::loadW2Cdict(istream& inW2C){
+void lmclass::loadMap(istream& inW2C){
   
   double lprob=0.0;
-  int howmany=0,wcode=0;
+  int howmany=0;
+
   const char* words[1 + LMTMAXLEV + 1 + 1];
+
   //open input stream and prepare an input string
   char line[MAX_LINE];
-  //dictionary(NULL,1000000); //??????which dictionary??
+
   dict->incflag(1); //can add to the map dictionary
-  dict->incflag(1); //can add to the dictionary of lmclass
 
   cerr<<"loadW2Cdict()...\n";
   //save freq of EOS and BOS
-  wcode=dict->encode(dictW2C->BoS());
-  dict->freq(wcode,lmtable::dict->encode(dict->BoS()));
-  W2Clprb[wcode]=0.0;
-  wcode=dict->encode(dictW2C->EoS());
-  dict->freq(wcode,lmtable::dict->encode(dict->EoS()));
-  W2Clprb[wcode]=0.0;
+
+  loadMapElement(dict->BoS(),lmtable::dict->BoS(),0.0);
+  loadMapElement(dict->EoS(),lmtable::dict->EoS(),0.0);
+    
   //should i add <unk> to the dict or just let the trans_freq handle <unk>
-  wcode=dict->encode(dictW2C->OOV());
-  dict->freq(wcode,lmtable::dict->encode(dict->OOV()));
-  W2Clprb[wcode]=0.0;
+  loadMapElement(dict->OOV(),lmtable::dict->OOV(),0.0);
 
   while (inW2C.getline(line,MAX_LINE)){
     if (strlen(line)==MAX_LINE-1){
@@ -157,33 +161,81 @@ void lmclass::loadW2Cdict(istream& inW2C){
     if(howmany == 3){
       assert(sscanf(words[2], "%lf", &lprob));
       lprob=(double)log10(lprob);
+    }else if(howmany==2){
+
+      TRACE_ERR("No score for the pair (" << words[0] << "," << words[1] << "); set to default 1.0\n");
+
+      lprob=0.0;
+    }else{
+      cerr << "parseline: not enough entries" << line << "\n";
+      exit(1);
     }
-    else{
-      if(howmany==2)
-	lprob=0.0;
-      else{
-	cerr << "parseline: not enough entries" << line << "\n";
-	exit(1);
-      }
-    }
-    //freq of word(words[0]) will be encoding of clusterID (words[1])
-    wcode=dict->encode(words[0]);
-    dict->freq(wcode,lmtable::dict->encode(words[1]));
-    //save the probability associated with the words -> index by word encoding
-    W2Clprb[wcode]=lprob;  
+    loadMapElement(words[0],words[1],lprob);
+
+    //check if the are available position in MapScore
+    checkMap();
   }
+  
+#ifdef DEBUG
+  cout << "There are " << MapScoreN << " entries in the map\n";
+#endif
 
   dict->incflag(0); //can NOT add to the dictionary of lmclass
-  dict->genoovcode();
+}
+
+void lmclass::checkMap(){
+  if (MapScoreN > MaxMapSize){
+    MaxMapSize=2*MapScoreN;
+    MapScore = (double*) realloc(MapScore, sizeof(double)*(MaxMapSize));
+    TRACE_ERR("In lmclass::checkMap(...) MaxMapSize=" <<  MaxMapSize  << " MapScoreN=" <<  MapScoreN  << "\n");
+  }
+}
+
+void lmclass::loadMapElement(const char* in, const char* out, double sc){
+  //freq of word (in) encodes the ID of the class (out) 
+  //save the probability associated with the pair (in,out)
+  int wcode=dict->encode(in);
+  dict->freq(wcode,lmtable::dict->encode(out));
+  MapScore[wcode]=sc;
+
+  MapScoreN++;
 }
 
 double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize,bool* extendible){
-  double lpr=W2Clprb[*ong.wordp(1)];
+  double lpr=getMapScore(*ong.wordp(1));
+
+  TRACE_ERR("In lmclass::lprob(...) Mapscore    = " <<  lpr  << "\n");
 
   //convert ong to it's clustered encoding
-  ngram ngt(lmtable::getDict());
-  ngt.trans_freq(ong);
+  ngram mapped_ng(lmtable::getDict());
+  //  mapped_ng.trans_freq(ong);
+  mapping(ong,mapped_ng);
 
-  lpr+=lmtable::clprob(ngt,bow,bol,maxsuffptr,statesize, extendible);
+  lpr+=lmtable::clprob(mapped_ng,bow,bol,maxsuffptr,statesize, extendible);
+
+  TRACE_ERR("In lmclass::lprob(...) global prob  = " <<  lpr  << "\n");
   return lpr;
+}
+
+void lmclass::mapping(ngram &in, ngram &out) {
+  int insize = in.size;
+  
+#ifdef DEBUG
+  cout << "In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n";
+#endif
+
+  // map the input sequence (in) into the corresponding output sequence (out), by applying the provided map
+
+  int out_code, in_code;
+  for (int i=insize; i>0; i--) {
+    in_code = *in.wordp(i);
+    if (in_code < MapScoreN)
+      out_code = getMap(in_code);
+    else 
+      out_code = lmtable::getDict()->oovcode();
+
+    out.pushc(out_code);
+  }
+  TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
+  return;
 }

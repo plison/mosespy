@@ -39,17 +39,24 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 class lmclass: public lmtable {
   dictionary     *dict; // dictionary (words - macro tags)
-  dictionary     *dictW2C; // word to class dictionary
-  double   *W2Clprb;
+  double *MapScore;
+  size_t MapScoreN;
+  size_t MaxMapSize;
 
-public:
+ protected:
+  void loadMap(std::istream& inp);
+  void loadMapElement(const char* in, const char* out, double sc);
+  void mapping(ngram &in, ngram &out);
+  inline double getMapScore(int wcode){ return MapScore[wcode]; };
+  inline size_t getMap(int wcode){ return dict->freq(wcode); };
+  void checkMap();
+
+ public:
   lmclass(float nlf=0.0, float dlfi=0.0);
   
   ~lmclass();
 
-
   void load(const std::string filename,int mmap=0);
-  void loadW2Cdict(std::istream& inp);
 
   double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
   inline double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL){

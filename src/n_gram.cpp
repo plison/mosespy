@@ -79,6 +79,7 @@ void ngram::trans (const ngram& ng){
   }
 }
 
+/*
 void ngram::trans_freq (const ngram& ng){
   size=ng.size;
   freq=ng.freq;
@@ -97,7 +98,7 @@ void ngram::trans_freq (const ngram& ng){
     }
   }
 }
-
+*/
 void ngram::invert (const ngram& ng){
 	size=ng.size;
 	for (int i=1;i<=size;i++){
