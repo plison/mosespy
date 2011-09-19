@@ -124,6 +124,15 @@ class dictionary{
     oovcode(c);
   }
   
+  inline void genBoScode(){
+    int c=encode(BoS());
+    std::cerr << "BoS code is "<< c << std::endl;
+  }
+
+  inline void genEoScode(){
+    int c=encode(EoS());
+    std::cerr << "EoS code is "<< c << std::endl;
+  }
 
   inline int setoovrate(double oovrate){ 
     encode(OOV()); //be sure OOV code exists

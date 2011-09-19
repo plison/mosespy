@@ -10,6 +10,7 @@ libirstlm_la_HEADERS = \
         gzfilebuf.h \
         htable.h \
         index.h \
+        lmclass.h \
         lmmacro.h \
         lmtable.h \
         mempool.h \
@@ -25,13 +26,14 @@ libirstlm_la_HEADERS = \
         mixture.h \
         normcache.h \
         shiftlm.h \
-		cplsa.h \
-		doc.h
+	cplsa.h \
+	doc.h
 
 libirstlm_la_SOURCES = \
         cmd.c \
         dictionary.cpp \
         htable.cpp \
+        lmclass.cpp \
         lmmacro.cpp \
         lmtable.cpp \
         mempool.cpp \
@@ -47,8 +49,8 @@ libirstlm_la_SOURCES = \
         mixture.cpp \
         normcache.cpp \
         shiftlm.cpp \
-		cplsa.cpp \
-		doc.cpp
+	cplsa.cpp \
+	doc.cpp
 
 CLEANFILES = $(BUILT_SOURCES)
 

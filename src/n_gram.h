@@ -87,6 +87,7 @@ public:
     
 	
 	void trans(const ngram& ng);
+	void trans_freq(const ngram& ng);
 	void invert (const ngram& ng);
 	void shift ();
 	

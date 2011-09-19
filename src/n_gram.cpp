@@ -79,6 +79,24 @@ void ngram::trans (const ngram& ng){
   }
 }
 
+void ngram::trans_freq (const ngram& ng){
+  size=ng.size;
+  freq=ng.freq;
+  if (dict == ng.dict){
+    info=ng.info;
+    isym=ng.isym;
+    memcpy(word,ng.word,sizeof(int)*MAX_NGRAM);
+    memcpy(midx,ng.midx,sizeof(int)*MAX_NGRAM);
+  }
+  else{
+    info=0;
+    memset(midx,0,sizeof(int)*MAX_NGRAM);
+    isym=-1;
+    for (int i=1;i<=size;i++){
+      word[MAX_NGRAM-i]=(int)ng.dict->freq(*ng.wordp(i));
+    }
+  }
+}
 
 void ngram::invert (const ngram& ng){
 	size=ng.size;

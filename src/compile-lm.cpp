@@ -31,6 +31,7 @@ using namespace std;
 #include "math.h"
 #include "lmtable.h"
 #include "lmmacro.h"
+#include "lmclass.h"
 
 
 /* GLOBAL OPTIONS ***************/
@@ -56,7 +57,7 @@ void usage(const char *msg = 0) {
   if (msg) { std::cerr << msg << std::endl; }
   std::cerr << "Usage: compile-lm [options] input-file.lm [output-file.blm]" << std::endl;
   if (!msg) std::cerr << std::endl
-		      << "  compile-lm reads a standard LM file in ARPA format and produces" << std::endl
+		      << "  compile-lm reads a standard  file in ARPA format and produces" << std::endl
 		      << "  a compiled representation that the IRST LM toolkit can quickly" << std::endl
 		      << "  read and process. LM file can be compressed with gzip." << std::endl << std::endl;
   std::cerr << "Options:\n"
@@ -224,6 +225,19 @@ int main(int argc, const char **argv)
 		
 		((lmmacro*) lmt)->load(infile);
 		
+	}else if (lmtype == _IRSTLM_LMCLASS){
+		if (sfilter != ""){
+			std::cerr << "This functionality has not yet been implement for this kind of language model\n";
+			exit(1);
+		}
+		
+		lmt = new lmclass(ngramcache_load_factor,dictionary_load_factor);
+		
+		//let know that table has inverted n-grams
+		if (invert) lmt->is_inverted(invert);
+		
+		((lmclass*) lmt)->load(infile);
+		
 	}else if (lmtype == _IRSTLM_LMTABLE){
 		lmt = new lmtable(ngramcache_load_factor,dictionary_load_factor); 
 		
@@ -334,6 +348,7 @@ int main(int argc, const char **argv)
 			
 			double bow; int bol=0; char *msp; unsigned int statesize;
 			if (lmtype == _IRSTLM_LMMACRO) { ng.dict->incflag(1); }
+			if (lmtype == _IRSTLM_LMCLASS) { ng.dict->incflag(1); }
 			while(inptxt >> ng){      
 				
 				if (ng.size>lmt->maxlevel()) ng.size=lmt->maxlevel();
@@ -443,6 +458,7 @@ int main(int argc, const char **argv)
 		std::cout << "> ";
 		
 		if (lmtype == _IRSTLM_LMMACRO) { ng.dict->incflag(1); }
+		if (lmtype == _IRSTLM_LMCLASS) { ng.dict->incflag(1); }
 		
 		while(std::cin >> ng){
 			

@@ -44,7 +44,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define LMTMAXLEV  20
 #define MAX_LINE  1024
-
 #ifndef  LMTCODESIZE
 #define  LMTCODESIZE  (int)3
 #endif
@@ -470,6 +469,7 @@ class lmtable{
 #define _IRSTLM_LMUNKNOWN 0
 #define _IRSTLM_LMTABLE 1
 #define _IRSTLM_LMMACRO 2
+#define _IRSTLM_LMCLASS 3
 
 inline int getLanguageModelType(std::string filename){
   fstream inp(filename.c_str(),ios::in|ios::binary);
@@ -484,6 +484,7 @@ inline int getLanguageModelType(std::string filename){
   inp.close();
 
   if (header == "lmmacro" || header == "LMMACRO")        return _IRSTLM_LMMACRO;
+  else if (header == "lmclass" || header == "LMCLASS")        return _IRSTLM_LMCLASS;
   else		                return _IRSTLM_LMTABLE;
 
   return _IRSTLM_LMUNKNOWN;
