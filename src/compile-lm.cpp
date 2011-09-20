@@ -50,6 +50,8 @@ std::string ssent_PP_flag = "no";
 std::string sdictionary_load_factor = "0.0";
 std::string sngramcache_load_factor = "0.0";
 
+std::string slevel = "1000";
+
 /********************************/
 
 void usage(const char *msg = 0) {
@@ -57,7 +59,7 @@ void usage(const char *msg = 0) {
   if (msg) { std::cerr << msg << std::endl; }
   std::cerr << "Usage: compile-lm [options] input-file.lm [output-file.blm]" << std::endl;
   if (!msg) std::cerr << std::endl
-		      << "  compile-lm reads a standard  file in ARPA format and produces" << std::endl
+		      << "  compile-lm reads a standard LM file in ARPA format and produces" << std::endl
 		      << "  a compiled representation that the IRST LM toolkit can quickly" << std::endl
 		      << "  read and process. LM file can be compressed with gzip." << std::endl << std::endl;
   std::cerr << "Options:\n"
@@ -74,8 +76,8 @@ void usage(const char *msg = 0) {
 	    << "--memmap|-mm 1 (uses memory map to read a binary LM)"<< std::endl
 	    << "--ngram_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
 	    << "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-	    << "--tmpdir directory (directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")"
-	    << std::endl;
+	    << "--level|l <value> (set the maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken)" << std::endl
+	    << "--tmpdir <directory> (directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")" << std::endl;
 }
 
 bool starts_with(const std::string &s, const std::string &pre) {
@@ -121,6 +123,8 @@ void handle_option(const std::string& opt, int argc, const char **argv, int& arg
     sscore = get_param(opt, argc, argv, argi);  
   else if (starts_with(opt, "--debug") || starts_with(opt, "-d"))
     sdebug = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--level") || starts_with(opt, "-l"))
+    slevel = get_param(opt, argc, argv, argi);
   else if (starts_with(opt, "--memmap") || starts_with(opt, "-mm"))
     smemmap = get_param(opt, argc, argv, argi);     
   else if (starts_with(opt, "--dub") || starts_with(opt, "-dub"))
@@ -128,11 +132,11 @@ void handle_option(const std::string& opt, int argc, const char **argv, int& arg
   else if (starts_with(opt, "--tmpdir") || starts_with(opt, "-tmpdir"))
     tmpdir = get_param(opt, argc, argv, argi);
   else if (starts_with(opt, "--invert") || starts_with(opt, "-i"))
-      sinvert = get_param(opt, argc, argv, argi);
+    sinvert = get_param(opt, argc, argv, argi);
   else if (starts_with(opt, "--sentence"))
-	ssent_PP_flag = get_param(opt, argc, argv, argi);
+    ssent_PP_flag = get_param(opt, argc, argv, argi);
   else if (starts_with(opt, "--dict_load_factor"))
-	  sdictionary_load_factor = get_param(opt, argc, argv, argi);
+    sdictionary_load_factor = get_param(opt, argc, argv, argi);
   else if (starts_with(opt, "--ngram_load_factor"))
     sngramcache_load_factor = get_param(opt, argc, argv, argi);
   else {
@@ -170,6 +174,7 @@ int main(int argc, const char **argv)
 	
 	int debug = atoi(sdebug.c_str()); 
 	int memmap = atoi(smemmap.c_str());
+	int lastlevel = atoi(slevel.c_str());
 	int dub = atoi(sdub.c_str());
 	int randcalls = atoi(srandcalls.c_str());
 	float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
@@ -199,6 +204,7 @@ int main(int argc, const char **argv)
 	if (sscore=="" && seval=="") std::cerr << "outfile: " << outfile << std::endl;
 	if (sscore=="") std::cerr << "interactive: " << sscore << std::endl;
 	if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
+	std::cerr << "loading up to the LM level " << lastlevel << " (if any)" << std::endl;
 	std::cerr << "dub: " << dub<< std::endl;
 	if (tmpdir != ""){
 		if (setenv("TMP",tmpdir.c_str(),1))
@@ -223,7 +229,7 @@ int main(int argc, const char **argv)
 		//let know that table has inverted n-grams
 		if (invert) lmt->is_inverted(invert);
 		
-		((lmmacro*) lmt)->load(infile);
+		((lmmacro*) lmt)->load(infile,lastlevel);
 		
 	}else if (lmtype == _IRSTLM_LMCLASS){
 		if (sfilter != ""){
@@ -236,7 +242,7 @@ int main(int argc, const char **argv)
 		//let know that table has inverted n-grams
 		if (invert) lmt->is_inverted(invert);
 		
-		((lmclass*) lmt)->load(infile);
+		((lmclass*) lmt)->load(infile,lastlevel);
 		
 	}else if (lmtype == _IRSTLM_LMTABLE){
 		lmt = new lmtable(ngramcache_load_factor,dictionary_load_factor); 
@@ -251,7 +257,7 @@ int main(int argc, const char **argv)
 			std::cerr << "Failed to open " << infile << "!" << std::endl;
 			exit(1);
 		}  
-		lmt->load(inp,infile.c_str(),outfile.c_str(),memmap,outtype);
+		lmt->load(inp,lastlevel,infile.c_str(),outfile.c_str(),memmap,outtype);
 		if (sfilter != ""){
 			std::cerr << "filtering... \n";
 			dictionary *dict=new dictionary((char *)sfilter.c_str());

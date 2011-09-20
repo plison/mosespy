@@ -35,7 +35,7 @@ using namespace std;
 
 std::string slearn = "";
 std::string seval = "";
-std::string sorder = "";
+std::string sorder = "0";
 std::string sscore = "no";
 std::string sdebug = "0";
 std::string smemmap = "0";
@@ -44,10 +44,11 @@ std::string ssent_PP_flag = "no";
 std::string sdictionary_load_factor = "0.0";
 std::string sngramcache_load_factor = "0.0";
 
+std::string slevel = "1000";
+
 /********************************/
 
-lmtable *load_lm(std::string file,int dub,int memmap, float nlf, float dlf);
-//lmtable *load_lm(std::string file,std::string map,int dub,int memmap, float nlf, float dlf);
+lmtable *load_lm(std::string file,int lastlevel,int dub,int memmap, float nlf, float dlf);
 int parseWords(char *sentence, const char **words, int max);
 
 void usage(const char *msg = 0) {
@@ -71,8 +72,8 @@ void usage(const char *msg = 0) {
             << "--sentence [yes|no] (compute pperplexity at sentence level (identified through the end symbol)"<< std::endl
             << "--memmap| -mm 1      use memory map to read a binary LM" << std::endl
             << "--ngram_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-            << "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl;
-  
+            << "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
+            << "--level|lev <value> (set the maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken)" << std::endl; 
 }
 
 
@@ -107,38 +108,30 @@ void handle_option(const std::string& opt, int argc, const char **argv, int& arg
   
   if (starts_with(opt, "--learn") || starts_with(opt, "-l"))
     slearn = get_param(opt, argc, argv, argi);
-  else
-    if (starts_with(opt, "--order") || starts_with(opt, "-o"))
-      sorder = get_param(opt, argc, argv, argi);
-    else
-      if (starts_with(opt, "--eval") || starts_with(opt, "-e"))
-	seval = get_param(opt, argc, argv, argi);
-      else
-	if (starts_with(opt, "--score") || starts_with(opt, "-s"))
-	  sscore = get_param(opt, argc, argv, argi);  
-	else
-	  if (starts_with(opt, "--debug") || starts_with(opt, "-d"))
-	    sdebug = get_param(opt, argc, argv, argi);
-	  else
-	    if (starts_with(opt, "--memmap") || starts_with(opt, "-mm") || starts_with(opt, "-m") )
-	      smemmap = get_param(opt, argc, argv, argi);      
-	    else
-	      if (starts_with(opt, "--dub") || starts_with(opt, "-dub"))
-		sdub = get_param(opt, argc, argv, argi);     
-	      else
-		if (starts_with(opt, "--sentence"))
-		  ssent_PP_flag = get_param(opt, argc, argv, argi);
-		else
-		  if (starts_with(opt, "--dict_load_factor"))
-		    sdictionary_load_factor = get_param(opt, argc, argv, argi);
-		  else
-		    if (starts_with(opt, "--ngram_load_factor"))
-		      sngramcache_load_factor = get_param(opt, argc, argv, argi);
- 
-		    else {
-		      usage(("Don't understand option " + opt).c_str());
-		      exit(1);
-		    }
+  else if (starts_with(opt, "--order") || starts_with(opt, "-o"))
+    sorder = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--eval") || starts_with(opt, "-e"))
+    seval = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--score") || starts_with(opt, "-s"))
+    sscore = get_param(opt, argc, argv, argi);  
+  else if (starts_with(opt, "--debug") || starts_with(opt, "-d"))
+    sdebug = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--memmap") || starts_with(opt, "-mm") || starts_with(opt, "-m") )
+    smemmap = get_param(opt, argc, argv, argi);      
+  else if (starts_with(opt, "--level") || starts_with(opt, "-lev"))
+    slevel = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--dub") || starts_with(opt, "-dub"))
+    sdub = get_param(opt, argc, argv, argi);     
+  else if (starts_with(opt, "--sentence"))
+    ssent_PP_flag = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--dict_load_factor"))
+    sdictionary_load_factor = get_param(opt, argc, argv, argi);
+  else if (starts_with(opt, "--ngram_load_factor"))
+    sngramcache_load_factor = get_param(opt, argc, argv, argi);
+  else {
+    usage(("Don't understand option " + opt).c_str());
+    exit(1);
+  }
 }
 
 int main(int argc, const char **argv)
@@ -152,22 +145,24 @@ int main(int argc, const char **argv)
     else files.push_back(opt);
   }
 	
-  bool learn = (slearn != ""? true : false);
-  bool score = (sscore != ""? true : false);
-  int order=(sorder!=""?atoi(sorder.c_str()):0);
+  bool learn = ((slearn != "")? true : false);
+  bool score = ((sscore != "")? true : false);
+  int order=atoi(sorder.c_str());
   int debug = atoi(sdebug.c_str()); 
   int memmap = atoi(smemmap.c_str());
+  int lastlevel = atoi(slevel.c_str());
   int dub = atoi(sdub.c_str()); //dictionary upper bound
 
   float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
   float dictionary_load_factor = (float) atof(sdictionary_load_factor.c_str());
 
-  if (sorder != "" && order < 1) {usage("Order must be a positive integer"); exit(1);} 
-
   if (files.size() > 2) { usage("Too many arguments"); exit(1); }
   if (files.size() < 1) { usage("Please specify a LM list file to read from"); exit(1); }
-			
-  bool sent_PP_flag = (ssent_PP_flag == "yes"? true : false);
+	
+  bool sent_PP_flag = false;
+  if ((ssent_PP_flag == "yes") || (ssent_PP_flag == "y") | (ssent_PP_flag == "YES") || (ssent_PP_flag == "Y")){
+   sent_PP_flag = true;
+  }
 
   std::string infile = files[0];
   std::string outfile="";
@@ -187,8 +182,9 @@ int main(int argc, const char **argv)
 
   if (learn) std::cerr << "outfile: " << outfile << std::endl;
   if (score) std::cerr << "interactive: " << sscore << std::endl;
-  std::cerr << "order: " << order << std::endl;
   if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
+  std::cerr << "order: " << order << std::endl;
+  std::cerr << "loading up to the LM level " << lastlevel << " (if any)" << std::endl;
 
   std::cerr << "dub: " << dub<< std::endl;
 	
@@ -233,7 +229,7 @@ int main(int argc, const char **argv)
     lmf[i] = words[1];
 
     std::cerr << "i:" << i << " w[i]:" << w[i] << " lmf[i]:" << lmf[i] << std::endl;
-    start_lmt[i] = lmt[i] = load_lm(lmf[i],dub,memmap,ngramcache_load_factor,dictionary_load_factor);
+    start_lmt[i] = lmt[i] = load_lm(lmf[i],lastlevel,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
   }
 
   inptxt.close();
@@ -243,9 +239,9 @@ int main(int argc, const char **argv)
     maxorder = (maxorder > lmt[i]->maxlevel())?maxorder:lmt[i]->maxlevel();
   }
 
-  if (order == 0){
+  if (order <= 0){
     order = maxorder;
-    std::cerr << "order is not set; reset to the maximum order of LMs: " << order << std::endl;
+    std::cerr << "order is not set or wrongly set to a non positive value; reset to the maximum order of LMs: " << order << std::endl;
   }else if (order > maxorder){
     order = maxorder;
     std::cerr << "order is too high; reset to the maximum order of LMs" << order << std::endl;
@@ -263,6 +259,9 @@ int main(int argc, const char **argv)
     ngram ng(dict); 
     int bos=ng.dict->encode(ng.dict->BoS());
     std::ifstream dev(slearn.c_str(),std::ios::in);
+
+    std::cerr << "slearn.c_str" << slearn.c_str() << std::endl;
+
 
     for(;;) {
       std::string line;
@@ -285,7 +284,7 @@ int main(int argc, const char **argv)
 	id--; // count from 0 now
 	if(lmt[id] != start_lmt[id])
 	  delete lmt[id];
-	lmt[id] = load_lm(newlm,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
+	lmt[id] = load_lm(newlm,lastlevel,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
 	continue;
       }
       while(lstream >> ng){     
@@ -405,7 +404,7 @@ int main(int argc, const char **argv)
 	}
 	id--; // count from 0 now
 	delete lmt[id];
-	lmt[id] = load_lm(newlm,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
+	lmt[id] = load_lm(newlm,lastlevel,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
 	continue;
       }
 
@@ -551,7 +550,7 @@ int main(int argc, const char **argv)
   return 0;
 }
 
-lmtable *load_lm(std::string file,int dub,int memmap, float nlf, float dlf) {
+lmtable *load_lm(std::string file,int lastlevel,int dub,int memmap, float nlf, float dlf) {
 
   //checking the language model type
   int lmtype = getLanguageModelType(file);
@@ -561,7 +560,7 @@ lmtable *load_lm(std::string file,int dub,int memmap, float nlf, float dlf) {
   if (lmtype == _IRSTLM_LMMACRO){
     lmt = new lmmacro(nlf,dlf);
 
-    ((lmmacro*) lmt)->load(file,memmap);
+    ((lmmacro*) lmt)->load(file,lastlevel,memmap);
 
   }else if (lmtype == _IRSTLM_LMTABLE){
     lmt=new lmtable(nlf,dlf);
@@ -570,9 +569,9 @@ lmtable *load_lm(std::string file,int dub,int memmap, float nlf, float dlf) {
     std::cerr << "Reading " << file << "..." << std::endl;
 
     if (file.compare(file.size()-3,3,".mm")==0)
-      lmt->load(inplm,file.c_str(),NULL,1,NONE);   		
+      lmt->load(inplm,lastlevel,file.c_str(),NULL,1,NONE);   		
     else 
-      lmt->load(inplm,file.c_str(),NULL,memmap,NONE);   		
+      lmt->load(inplm,lastlevel,file.c_str(),NULL,memmap,NONE);   		
   }else{
     std::cerr << "This language model type is unknown!" << std::endl;
     exit(1);

@@ -61,7 +61,7 @@ lmmacro::~lmmacro(){
 }
 
 
-void lmmacro::load(const std::string filename,int memmap){
+void lmmacro::load(const std::string filename,int lastlevel,int memmap){
 
   //get info from the configuration file
   fstream inp(filename.c_str(),ios::in|ios::binary);
@@ -146,7 +146,7 @@ void lmmacro::load(const std::string filename,int memmap){
   inputfilestream inpLM(lmfilename.c_str());
 
   // Load the (possibly binary) LM 
-  lmtable::load(inpLM,lmfilename.c_str(),NULL,memmap);
+  lmtable::load(inpLM,lastlevel,lmfilename.c_str(),NULL,memmap);
 
   
   if (mapFlag)

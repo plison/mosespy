@@ -28,11 +28,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <lmtable.h>
 #include <n_gram.h>
 
+
+int lastlevel=1000;
+
 void usage() {
 	std::cerr <<	"Usage: score-lm -lm <model> [-dub <dub>] [-mm 1]\n"
 			"       score sentences with a language model\n"
 			"       -lm      language model to use (must be specified)\n"
 			"       -dub     dictionary upper bound (default: 10000000)\n"
+			"       -level   max level to load from the language models (default: 1000, meaning the actual LM order)\n"
 			"       -mm 1    memory-mapped access to lm\n";
 	exit(1);
 }
@@ -51,10 +55,14 @@ int main(int argc, char **argv) {
 			if(++i == argc)
 				usage();
 			dub = atoi(argv[i]);
-		} else if(!strcmp(argv[i], "-lm")) {
+                } else if(!strcmp(argv[i], "-lm")) {
+                        if(++i == argc)
+                                usage();
+                        lm = argv[i];
+		} else if(!strcmp(argv[i], "-level")) {
 			if(++i == argc)
 				usage();
-			lm = argv[i];
+			lastlevel = atoi(argv[i]);
 		} else
 			usage();
 	}
@@ -65,7 +73,7 @@ int main(int argc, char **argv) {
 	std::ifstream lmstr(lm);
 	lmtable lmt;
 
-	lmt.load(lmstr, lm, NULL, mmap);
+	lmt.load(lmstr, lastlevel, lm, NULL, mmap);
 	lmt.setlogOOVpenalty(dub);
 
 	for(;;) {

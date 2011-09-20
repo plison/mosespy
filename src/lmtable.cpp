@@ -270,17 +270,24 @@ bool lmtable::are_caches_active(){
 
 void lmtable::configure(int n,bool quantized){
   maxlev=n;
+
+  //The value for index 0 is never used 
+  for (int i=0;i<n;i++) tbltype[i]=(quantized?QINTERNAL:INTERNAL);
+  tbltype[n]=(quantized?QLEAF:LEAF);
+
+  /*  
   if (n==1)
     tbltype[1]=(quantized?QLEAF:LEAF);
   else{
     for (int i=1;i<n;i++) tbltype[i]=(quantized?QINTERNAL:INTERNAL);
     tbltype[n]=(quantized?QLEAF:LEAF);
   }
+  */
 }
 
 
 
-void lmtable::load(istream& inp,const char* filename,const char* outfilename,int keep_on_disk, OUTFILE_TYPE /* unused parameter: outtype */){
+void lmtable::load(istream& inp,int lastlevel,const char* filename,const char* outfilename,int keep_on_disk, OUTFILE_TYPE /* unused parameter: outtype */){
 
 #ifdef WIN32
   if (keep_on_disk>0){
@@ -294,7 +301,7 @@ void lmtable::load(istream& inp,const char* filename,const char* outfilename,int
   inp >> header; std::cerr << header << "\n";
 	
   if (strncmp(header,"Qblmt",5)==0 || strncmp(header,"blmt",4)==0){
-    loadbin(inp,header,filename,keep_on_disk);
+    loadbin(inp,header,lastlevel,filename,keep_on_disk);
   }
   else{ //input is in textual form
     
@@ -303,7 +310,7 @@ void lmtable::load(istream& inp,const char* filename,const char* outfilename,int
       exit(0);
     }
 		
-    loadtxt(inp,header,outfilename,keep_on_disk);
+    loadtxt(inp,header,lastlevel,outfilename,keep_on_disk);
   }
 	
   cerr << "OOV code is " << lmtable::getDict()->oovcode() << "\n";
@@ -313,8 +320,6 @@ void lmtable::load(istream& inp,const char* filename,const char* outfilename,int
 //load language model on demand through a word-list file
 
 int lmtable::reload(std::set<string> words){
-	
-	
   //build dictionary
   dictionary dict(NULL,(int)words.size()); dict.incflag(1);
 	
@@ -396,7 +401,7 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow){
 }
 
 
-void lmtable::loadcenters(istream& inp,int Order){
+void lmtable::load_centers(istream& inp,int Order){
   char line[MAX_LINE];
 	
   //first read the coodebook
@@ -413,16 +418,16 @@ void lmtable::loadcenters(istream& inp,int Order){
   inp.getline((char*)line,MAX_LINE);
 }
 
-void lmtable::loadtxt(istream& inp,const char* header,const char* outfilename,int mmap){
+void lmtable::loadtxt(istream& inp,const char* header,int lastlevel,const char* outfilename,int mmap){
   if (mmap>0)
-    loadtxtmmap(inp,header,outfilename);
+    loadtxt_mmap(inp,header,lastlevel,outfilename);
   else {
-    loadtxt(inp,header);
+    loadtxt_ram(inp,header,lastlevel);
     lmtable::getDict()->genoovcode();
   }
 }
 
-void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilename){
+void lmtable::loadtxt_mmap(istream& inp,const char* header,int lastlevel,const char* outfilename){
 	
   char nameNgrams[BUFSIZ];
   char nameHeader[BUFSIZ];
@@ -441,12 +446,6 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
   //prepare word dictionary
   //dict=(dictionary*) new dictionary(NULL,1000000,NULL,NULL);
   lmtable::getDict()->incflag(1);
-	
-  //put here ngrams, log10 probabilities or their codes
-  ngram ng(lmtable::getDict());
-  ngram ing(lmtable::getDict());
-	
-  float pb,bow;
 	
   //check the header to decide if the LM is quantized or not
   isQtable=(strncmp(header,"qARPA",5)==0?true:false);
@@ -481,7 +480,7 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
   while (inp.getline(line,MAX_LINE)){
 		
     if (strlen(line)==MAX_LINE-1){
-      cerr << "lmtable::loadtxtmmap: input line exceed MAXLINE ("
+      cerr << "lmtable::loadtxt_mmap: input line exceed MAXLINE ("
 	   << MAX_LINE << ") chars " << line << "\n";
       exit(1);
     }
@@ -493,6 +492,8 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
       cerr << "size[" << Order << "]=" << maxsize[Order] << "\n";
     }
 		
+    if (maxlev>lastlevel) maxlev=lastlevel;
+
     if (backslash && sscanf(line, "\\%d-grams", &Order) == 1) {
 			
       //at this point we are sure about the size of the LM
@@ -522,29 +523,29 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
 	table[0]=(char *)(MMap(fileno(fd),PROT_READ|PROT_WRITE,0,filesize,&tableGaps[0]));
 				
 	//allocate space for tables into the file through mmap:
-				
+	/*				
 	if (maxlev>1)
 	  table[1]=table[0] + (table_pos_t) (2 * NumCenters[1] * sizeof(float));
 	else
 	  table[1]=table[0] + (table_pos_t) (NumCenters[1] * sizeof(float));
-				
-	for (int l=2;l<=maxlev;l++)
+	*/
+			
+	for (int l=1;l<=maxlev;l++){
 	  if (l<maxlev)
 	    table[l]=(char *)(table[l-1] + (table_pos_t) maxsize[l-1]*nodesize(tbltype[l-1]) +
 			      2 * NumCenters[l] * sizeof(float));
 	  else
 	    table[l]=(char *)(table[l-1] + (table_pos_t) maxsize[l-1]*nodesize(tbltype[l-1]) +
 			      NumCenters[l] * sizeof(float));
-				
-	for (int l=2;l<=maxlev;l++){
+	  
 	  cerr << "table[" << l << "]-table[" << l-1 << "]="
 	       << (table_pos_t) table[l]-(table_pos_t) table[l-1] << " (nodesize=" << nodesize(tbltype[l-1]) << ")\n";
 	}
       }
-			
-      cerr << Order << "-grams: reading ";
+      
+      loadtxt_level(inp,Order);
+
       if (isQtable) {
-	loadcenters(inp,Order);
 	// writing centroids on disk
 	if (Order<maxlev){
 	  memcpy(table[Order] - 2 * NumCenters[Order] * sizeof(float),
@@ -553,51 +554,10 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
 	  memcpy(table[Order] - NumCenters[Order] * sizeof(float),
 		 Bcenters[Order],
 		 NumCenters[Order] * sizeof(float));
-	} else
+	} else{
 	  memcpy(table[Order] - NumCenters[Order] * sizeof(float),
 		 Pcenters[Order],
 		 NumCenters[Order] * sizeof(float));
-      }
-			
-      //allocate support vector to manage badly ordered n-grams
-      if (maxlev>1 && Order<maxlev) {
-	startpos[Order]=new table_entry_pos_t[maxsize[Order]];
-	for (table_entry_pos_t c=0;c<maxsize[Order];c++) startpos[Order][c]=BOUND_EMPTY1;
-      }
-      //prepare to read the n-grams entries
-      cerr << maxsize[Order] << " entries\n";
-			
-      //WE ASSUME A WELL STRUCTURED FILE!!!
-      for (table_entry_pos_t c=0;c<maxsize[Order];c++){
-				
-	if (parseline(inp,Order,ng,pb,bow)){
-	  //if table is in incomplete ARPA format pb is just the
-	  //discounted frequency, so we need to add bow * Pr(n-1 gram)
-					
-	  // if table is inverted then revert n-gram
-	  if (isInverted & Order>1){
-	    ing.invert(ng);
-	    ng=ing;
-	  }
-					
-	  if (isItable && Order>1){
-	    //get bow of lower of context
-	    get(ng,ng.size,ng.size-1);
-	    float rbow=0.0;
-	    if (ng.lev==ng.size-1){ //found context
-	      rbow=ng.bow;
-	      //  int ibow=ng.bow; rbow=*((float *)&ibow);
-	    }
-						
-	    int tmp=maxlev;
-	    maxlev=Order-1;
-	    pb= log(exp((double)pb * M_LN10) +  exp(((double)rbow + lprob(ng)) * M_LN10))/M_LN10;
-	    maxlev=tmp;
-	  }
-					
-	  if (isQtable) add(ng, (qfloat_t)pb, (qfloat_t)bow);
-	  else add(ng, pb, bow);
-					
 	}
       }
       // To avoid huge memory write concentrated at the end of the program
@@ -611,32 +571,33 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
       }
     }
   }
-	
+
   cerr << "closing output file: " << nameNgrams << "\n";
-  for (int i=1;i<=maxlev;i++)
+  for (int i=1;i<=maxlev;i++){
     if (maxsize[i] != cursize[i]) {
       for (int l=1;l<=maxlev;l++)
 	cerr << "Level " << l << ": starting ngrams=" << maxsize[l] << " - actual stored ngrams=" << cursize[l] << "\n";
       break;
     }
-			
+  }
+  
   Munmap(table[0],filesize,MS_SYNC);
   for (int l=1;l<=maxlev;l++)
     table[l]=0; // to avoid wrong free in ~lmtable()
   cerr << "running fclose...\n";
   fclose(fd);
   cerr << "done\n";
-	
+  
   lmtable::getDict()->incflag(0);
   lmtable::getDict()->genoovcode();
-	
+  
   // saving header + dictionary
-	
+  
   strcpy(nameHeader,outfilename);
   strcat(nameHeader, "-header");
   cerr << "saving header+dictionary in " << nameHeader << "\n";
   fstream out(nameHeader,ios::out);
-	
+  
   // print header
   if (isQtable){
     out << "Qblmt" << (isInverted?"I ":" ") << maxlev;
@@ -650,48 +611,39 @@ void lmtable::loadtxtmmap(istream& inp,const char* header,const char* outfilenam
     for (int i=1;i<=maxlev;i++) out << " " << maxsize[i];  // not cursize[i] because the file was already allocated
     out << "\n";
   }
-	
+  
   lmtable::getDict()->save(out);
-	
+  
   out.close();
   cerr << "done\n";
-	
+  
   // cat header+dictionary and n-grams files:
-	
+  
   char cmd[BUFSIZ];
   sprintf(cmd,"cat %s >> %s", nameNgrams, nameHeader);
   cerr << "run cmd <" << cmd << ">\n";
   system(cmd);
-	
+  
   sprintf(cmd,"mv %s %s", nameHeader, outfilename);
   cerr << "run cmd <" << cmd << ">\n";
   system(cmd);
-	
+  
   sprintf(cmd,"rm %s", nameNgrams);
   cerr << "run cmd <" << cmd << ">\n";
   system(cmd);
-	
+  
   //no more operations are available, the file must be saved!
   exit(0);
   return;
 }
 
-void lmtable::loadtxt(istream& inp,const char* header){
-	
-	
+
+void lmtable::loadtxt_ram(istream& inp,const char* header, int lastlevel){
   //open input stream and prepare an input string
   char line[MAX_LINE];
 	
   //prepare word dictionary
-  //dict=(dictionary*) new di
-  dictionary(NULL,1000000);
   lmtable::getDict()->incflag(1);
-	
-  //put here ngrams, log10 probabilities or their codes
-  ngram ng(lmtable::getDict());	
-  ngram ing(lmtable::getDict()); //support n-gram 
-	
-  float prob,bow;
 	
   //check the header to decide if the LM is quantized or not
   isQtable=(strncmp(header,"qARPA",5)==0?true:false);
@@ -699,18 +651,18 @@ void lmtable::loadtxt(istream& inp,const char* header){
   //check the header to decide if the LM table is incomplete
   isItable=(strncmp(header,"iARPA",5)==0?true:false);
 	
-  //we will configure the table later we we know the maxlev;
+  //we will configure the table later when we will know the maxlev;
   bool yetconfigured=false;
-	
-  cerr << "loadtxt()\n";
+  
+  cerr << "loadtxt_ram()\n";
 	
   // READ ARPA Header
   int Order,n;
 	
   while (inp.getline(line,MAX_LINE)){
-		
+    std::cerr << "READ line:" << line << std::endl;		
     if (strlen(line)==MAX_LINE-1){
-      cerr << "lmtable::loadtxt: input line exceed MAXLINE ("
+      cerr << "lmtable::loadtxt_ram: input line exceed MAXLINE ("
 	   << MAX_LINE << ") chars " << line << "\n";
       exit(1);
     }
@@ -718,95 +670,94 @@ void lmtable::loadtxt(istream& inp,const char* header){
     bool backslash = (line[0] == '\\');
 		
     if (sscanf(line, "ngram %d=%d", &Order, &n) == 2) {
-      maxsize[Order] = n; maxlev=Order; //upadte Order
-			
+      maxsize[Order] = n;
+      maxlev=Order; //update Order
     }
-		
+
+    if (maxlev>lastlevel) maxlev=lastlevel;
+
     if (backslash && sscanf(line, "\\%d-grams", &Order) == 1) {
-			
+
       //at this point we are sure about the size of the LM
       if (!yetconfigured){
-	configure(maxlev,isQtable);yetconfigured=true;
+	configure(maxlev,isQtable);
+	yetconfigured=true;
 	//allocate space for loading the table of this level
 	for (int i=1;i<=maxlev;i++)
 	  table[i] = new char[(table_pos_t) maxsize[i] * nodesize(tbltype[i])];
       }
-			
-      cerr << Order << "-grams: reading ";
-			
-      if (isQtable) loadcenters(inp,Order);
-			
-      //allocate support vector to manage badly ordered n-grams
-      if (maxlev>1 && Order<maxlev) {
-	startpos[Order]=new table_entry_pos_t[maxsize[Order]];
-	for (table_entry_pos_t c=0;c<maxsize[Order];c++){
-	  startpos[Order][c]=BOUND_EMPTY1;
-	}
-      }
-			
-      //prepare to read the n-grams entries
-      cerr << maxsize[Order] << " entries\n";
-			
-      //WE ASSUME A WELL STRUCTURED FILE!!!
-			
-      for (table_entry_pos_t c=0;c<maxsize[Order];c++){
-				
-	if (parseline(inp,Order,ng,prob,bow)){
-					
-	  // if table is inverted then revert n-gram
-	  if (isInverted & Order>1){
-	    ing.invert(ng);
-	    ng=ing;
-	  }
-					
-	  //if table is in incomplete ARPA format prob is just the
-	  //discounted frequency, so we need to add bow * Pr(n-1 gram)
-					
-	  //cerr << "ng: " << ng << " prob: " << prob << " bow: " << bow << "\n";
-					
-	  if (isItable && Order>1) {
-	    //get bow of lower context
-	    get(ng,ng.size,ng.size-1);
-	    float rbow=0.0;
-	    if (ng.lev==ng.size-1){ //found context
-	      rbow=ng.bow;
-	      //              int ibow=ng.bow; rbow=*((float *)&ibow);
-	    }
-						
-	    int tmp=maxlev;
-	    maxlev=Order-1;
-	    //            cerr << ng << "rbow: " << rbow << "prob: " << prob << "low-prob: " << lprob(ng) << "\n";
-	    prob= log(exp((double)prob * M_LN10) +  exp(((double)rbow + lprob(ng)) * M_LN10))/M_LN10;
-	    //            cerr << "new prob: " << prob << "\n";
-						
-	    maxlev=tmp;
-	  }
-	
-	  	 
-		
-		
-	  //insert an n-gram into the TRIE table		
-	  if (isQtable) 
-		  add(ng, (qfloat_t)prob, (qfloat_t)bow);
-	  else 
-		  add(ng, prob, bow);
-					
-	  /*
-	    add(ng,
-	    (int)(isQtable?prob:*((int *)&prob)),
-	    (int)(isQtable?bow:*((int *)&bow)));
-	  */
-	}
-      }
+
+      loadtxt_level(inp,Order);
+
       // now we can fix table at level Order -1
-      if (maxlev>1 && Order>1) checkbounds(Order-1);
+      if (maxlev>1 && Order>1){
+	checkbounds(Order-1);
+	delete startpos[Order-1];
+      }
     }
   }
-	
+  
   lmtable::getDict()->incflag(0);
-  cerr << "done\n";
-	
+  cerr << "done\n";	
 }
+
+void lmtable::loadtxt_level(istream& inp, int level){
+  cerr << level << "-grams: reading ";
+
+  if (isQtable) {	load_centers(inp,level);      }
+			
+  //allocate support vector to manage badly ordered n-grams
+  if (maxlev>1 && level<maxlev) {
+    startpos[level]=new table_entry_pos_t[maxsize[level]];
+    for (table_entry_pos_t c=0;c<maxsize[level];c++){
+      startpos[level][c]=BOUND_EMPTY1;
+    }
+  }
+  
+  //prepare to read the n-grams entries
+  cerr << maxsize[level] << " entries\n";
+			
+  float prob,bow;
+
+  //put here ngrams, log10 probabilities or their codes
+  ngram ng(lmtable::getDict());	
+  ngram ing(lmtable::getDict()); //support n-gram 
+
+  //WE ASSUME A WELL STRUCTURED FILE!!!			
+  for (table_entry_pos_t c=0;c<maxsize[level];c++){
+    
+    if (parseline(inp,level,ng,prob,bow)){
+					
+      // if table is inverted then revert n-gram
+      if (isInverted & level>1){
+	ing.invert(ng);
+	ng=ing;
+      }
+					
+      //if table is in incomplete ARPA format prob is just the
+      //discounted frequency, so we need to add bow * Pr(n-1 gram)
+      if (isItable && level>1) {
+	//get bow of lower context
+	get(ng,ng.size,ng.size-1);
+	float rbow=0.0;
+	if (ng.lev==ng.size-1){ //found context
+	  rbow=ng.bow;
+	}
+	
+	int tmp=maxlev;
+	maxlev=level-1;
+	prob= log(exp((double)prob * M_LN10) +  exp(((double)rbow + lprob(ng)) * M_LN10))/M_LN10;
+	maxlev=tmp;
+      }
+
+      //insert an n-gram into the TRIE table		
+      if (isQtable) add(ng, (qfloat_t)prob, (qfloat_t)bow);
+      else add(ng, prob, bow);
+    }
+  }
+  cerr << "done level" << level << "\n";	
+}
+
 
 void lmtable::expand_level(int level, table_entry_pos_t size, const char* outfilename, int mmap){
   cerr << "expanding level: " << level << " with " << size << " entries ...\n";
@@ -846,8 +797,6 @@ void lmtable::expand_level_mmap(int level, table_entry_pos_t size, const char* o
     exit(EXIT_FAILURE);
   }
 	
-  //	memset(table[level],0,filesize);
-		
   if (maxlev>1 && level<maxlev) {
     startpos[level]=new table_entry_pos_t[maxsize[level]];
     for (table_entry_pos_t c=0;c<maxsize[level];c++){
@@ -1503,7 +1452,7 @@ void lmtable::resize_level_nommap(int level){
 //manages the long header of a bin file
 //and allocates table for each n-gram level
 
-void lmtable::loadbinheader(istream& inp,const char* header){
+void lmtable::loadbin_header(istream& inp,const char* header){
 	
   // read rest of header
   inp >> maxlev;
@@ -1537,57 +1486,25 @@ void lmtable::loadbinheader(istream& inp,const char* header){
   inp.getline(header2, MAX_LINE);
 }
 
-void lmtable::loadbinheader(istream& inp,const char* header,int level){
-	
-	
-  cerr << "header:" << header << endl;
-  if (strncmp(header,"Qblmt",5)==0){ 
-    isQtable=1;
-  }
-  else if(strncmp(header,"blmt",4)==0){ 
-    isQtable=0;
-  }
-  else error((char*)"loadbin: LM file is not in binary format");
-	
-  // read rest of header of ONE level of a binary LM
-  int actuallevel;
-  inp >> actuallevel;
-	
-  if (actuallevel!=level) error((char*)"loadbinheader: mismatch between the level in the file and the required level.");
-
-  inp >> cursize[level];
-  maxsize[level]=cursize[level];
-	
-  char header2[MAX_LINE];
-  if (isQtable){
-    inp >> header2 >> NumCenters[level];
-    cerr << "reading  " << NumCenters[level] << " centers\n";
-  }
-	
-  inp.getline(header2, MAX_LINE);
-}
-
 //load codebook of level l
-
-void lmtable::loadbincodebook(istream& inp,int l){
-	
+void lmtable::loadbin_codebook(istream& inp,int l){
   Pcenters[l]=new float [NumCenters[l]];
   inp.read((char*)Pcenters[l],NumCenters[l] * sizeof(float));
   if (l<maxlev){
     Bcenters[l]=new float [NumCenters[l]];
     inp.read((char *)Bcenters[l],NumCenters[l]*sizeof(float));
   }
-	
 }
 
 
 //load a binary lmfile
 
-void lmtable::loadbin(istream& inp, const char* header,const char* filename,int mmap){
-	
+void lmtable::loadbin(istream& inp, const char* header,int lastlevel, const char* filename,int mmap){	
   cerr << "loadbin()\n";
-  loadbinheader(inp,header);
-  lmtable::getDict()->load(inp);
+  loadbin_header(inp,header);
+  loadbin_dict(inp);
+
+  if (maxlev>lastlevel) maxlev=lastlevel;
 
   //if MMAP is used, then open the file
   if (filename && mmap>0){
@@ -1613,76 +1530,27 @@ void lmtable::loadbin(istream& inp, const char* header,const char* filename,int 
   }
 	
   for (int l=1;l<=maxlev;l++){
-    if (isQtable) loadbincodebook(inp,l);
-    if ((memmap == 0) || (l < memmap)){
-      cerr << "loading " << cursize[l] << " " << l << "-grams\n";
-      table[l]=new char[(table_pos_t) cursize[l] * nodesize(tbltype[l])];
-      inp.read(table[l],(table_pos_t) cursize[l] * nodesize(tbltype[l]));
-			
-    }
-    else{
-			
-#ifdef WIN32
-      error((char*)"mmap not available under WIN32\n");
-#else
-      cerr << "mapping " << cursize[l] << " " << l << "-grams\n";
-      tableOffs[l]=inp.tellg();
-      table[l]=(char *)MMap(diskid,PROT_READ,
-                            tableOffs[l], (table_pos_t) cursize[l]*nodesize(tbltype[l]),
-			    &tableGaps[l]);
-      table[l]+=(table_pos_t) tableGaps[l];
-      inp.seekg((table_pos_t) cursize[l]*nodesize(tbltype[l]),ios_base::cur);
-#endif
-			
-    }
-  };
-	
+    loadbin_level(inp,l);
+  }
   cerr << "done\n";
-	
 }
 
 
 //load only the dictionary of a binary lmfile
-void lmtable::loadbin_dict(istream& inp, const char* header,const char* filename, int /* unused parameter: mmap */){
-  cerr << "lmtable::loadbin_dict(): " << filename << " (header: " << header << ")\n";
+void lmtable::loadbin_dict(istream& inp){
+  cerr << "lmtable::loadbin_dict()\n";
   lmtable::getDict()->load(inp);
   cerr << "dict->size(): " << lmtable::getDict()->size() << "\n";
 }
 
 //load ONE level of a binary lmfile
-void lmtable::loadbin_level(istream& inp, const char* header,int level,const char* filename,int mmap){
+void lmtable::loadbin_level(istream& inp, int level){
+  cerr << "loadbin_level (level " << level << ")\n";
 	
-  cerr << "loadbin_level (level " << level << "): " << filename << "\n";
-  loadbinheader(inp,header,level);
-	
-  //if MMAP is used, then open the file
-  if (filename && mmap>0){
-		
-#ifdef WIN32
-    error("lmtable::loadbin mmap facility not yet supported under WIN32\n");
-#else
-		
-    if (mmap <= maxlev) memmap=mmap;
-    else error((char*)"keep_on_disk value is out of range\n");
-		
-    if ((diskid=open(filename, O_RDONLY))<0){
-      std::cerr << "cannot open " << filename << "\n";
-      error((char*)"dying");
-    }
-		
-    //check that the LM is uncompressed
-    char miniheader[4];
-    read(diskid,miniheader,4);
-    if (strncmp(miniheader,"Qblm",4) && strncmp(miniheader,"blmt",4))
-      error((char*)"mmap functionality does not work with compressed binary LMs\n");
-#endif
-  }
-	
-  if (isQtable) loadbincodebook(inp,level);
+  if (isQtable) loadbin_codebook(inp,level);
   if ((memmap == 0) || (level < memmap)){
     cerr << "loading " << cursize[level] << " " << level << "-grams\n";
     table[level]=new char[(table_pos_t) cursize[level] * nodesize(tbltype[level])];
-			
     inp.read(table[level],(table_pos_t) cursize[level] * nodesize(tbltype[level]));		}
   else{
 			
@@ -1698,11 +1566,8 @@ void lmtable::loadbin_level(istream& inp, const char* header,int level,const cha
     cerr << "tableOffs " << tableOffs[level] << " tableGaps" << tableGaps[level] << "-grams\n";
     inp.seekg((table_pos_t) cursize[level]*nodesize(tbltype[level]),ios_base::cur);
 #endif
-			
   }
-	
-  cerr << "done\n";
-	
+  cerr << "done (level" << level <<")\n";
 }
 
 int lmtable::get(ngram& ng,int n,int lev){

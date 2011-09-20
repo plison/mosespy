@@ -44,6 +44,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define LMTMAXLEV  20
 #define MAX_LINE  1024
+
 #ifndef  LMTCODESIZE
 #define  LMTCODESIZE  (int)3
 #endif
@@ -237,19 +238,19 @@ class lmtable{
   void resize_level_nommap(int level);
   void resize_level_mmap(int level, const char* filename);
 
-  void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
-  void loadtxt(std::istream& inp,const char* header,const char* outfilename,int mmap);
-  void loadtxt(std::istream& inp,const char* header);
-  void loadtxtmmap(std::istream& inp,const char* header,const char* outfilename);
-  void loadbin(std::istream& inp,const char* header,const char* filename=NULL,int mmap=0);
-  void loadbin_level(std::istream& inp,const char* header,int level, const char* filename=NULL,int mmap=0);
-  void loadbin_dict(std::istream& inp,const char* header, const char* filename=NULL,int mmap=0);
+  void load(std::istream& inp,int lastlevel=LMTMAXLEV,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
+  void loadtxt(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
+  void loadtxt_ram(std::istream& inp,const char* header,int lastlevel);
+  void loadtxt_mmap(std::istream& inp,const char* header,int lastlevel,const char* outfilename);
+  void loadtxt_level(std::istream& inp,int l);
 
-		
-  void loadbinheader(std::istream& inp, const char* header);
-  void loadbinheader(std::istream& inp,const char* header,int level);
-  void loadbincodebook(std::istream& inp,int l);
-  void loadcenters(std::istream& inp,int Order);
+  void loadbin(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
+  void loadbin_header(std::istream& inp, const char* header);
+  void loadbin_dict(std::istream& inp);
+  void loadbin_codebook(std::istream& inp,int l);
+  void loadbin_level(std::istream& inp,int l);
+
+  void load_centers(std::istream& inp,int l);
 	
 	
   void expand_level(int level, table_entry_pos_t size, const char* outfilename, int mmap);
