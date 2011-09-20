@@ -85,6 +85,17 @@ inline int getLanguageModelType(std::string filename);
 class lmtable{
   static const bool debug=true;
 
+  void loadtxt(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
+  void loadtxt_ram(std::istream& inp,const char* header,int lastlevel);
+  void loadtxt_mmap(std::istream& inp,const char* header,int lastlevel,const char* outfilename);
+  void loadtxt_level(std::istream& inp,int l);
+
+  void loadbin(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
+  void loadbin_header(std::istream& inp, const char* header);
+  void loadbin_dict(std::istream& inp);
+  void loadbin_codebook(std::istream& inp,int l);
+  void loadbin_level(std::istream& inp,int l);
+
  protected:
   char*       table[LMTMAXLEV+1];  //storage of all levels
   LMT_TYPE    tbltype[LMTMAXLEV+1];  //table type for each levels
@@ -136,7 +147,7 @@ class lmtable{
   // is this LM queried for knowing the matching order or (standard
   // case) for score?
   bool      orderQuery;
-  
+
  public:
     
 #ifdef TRACE_CACHELM
@@ -239,16 +250,9 @@ class lmtable{
   void resize_level_mmap(int level, const char* filename);
 
   void load(std::istream& inp,int lastlevel=LMTMAXLEV,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
-  void loadtxt(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
-  void loadtxt_ram(std::istream& inp,const char* header,int lastlevel);
-  void loadtxt_mmap(std::istream& inp,const char* header,int lastlevel,const char* outfilename);
-  void loadtxt_level(std::istream& inp,int l);
-
-  void loadbin(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
-  void loadbin_header(std::istream& inp, const char* header);
-  void loadbin_dict(std::istream& inp);
-  void loadbin_codebook(std::istream& inp,int l);
-  void loadbin_level(std::istream& inp,int l);
+  inline void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE){ //taken for back compatibility
+    load(inp,LMTMAXLEV,filename,outfilename,mmap,outtype);
+  }
 
   void load_centers(std::istream& inp,int l);
 	
