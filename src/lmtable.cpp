@@ -98,7 +98,8 @@ lmtable::lmtable(float nlf, float dlf){
 #endif
  
   memmap=0;
-  
+  requiredMaxlev=1000;
+ 
   isPruned=false;
   isInverted=false;
 	
@@ -287,7 +288,7 @@ void lmtable::configure(int n,bool quantized){
 
 
 
-void lmtable::load(istream& inp,int lastlevel,const char* filename,const char* outfilename,int keep_on_disk, OUTFILE_TYPE /* unused parameter: outtype */){
+void lmtable::load(istream& inp,const char* filename,const char* outfilename,int keep_on_disk, OUTFILE_TYPE /* unused parameter: outtype */){
 
 #ifdef WIN32
   if (keep_on_disk>0){
@@ -301,7 +302,7 @@ void lmtable::load(istream& inp,int lastlevel,const char* filename,const char* o
   inp >> header; std::cerr << header << "\n";
 	
   if (strncmp(header,"Qblmt",5)==0 || strncmp(header,"blmt",4)==0){
-    loadbin(inp,header,lastlevel,filename,keep_on_disk);
+    loadbin(inp,header,filename,keep_on_disk);
   }
   else{ //input is in textual form
     
@@ -310,7 +311,7 @@ void lmtable::load(istream& inp,int lastlevel,const char* filename,const char* o
       exit(0);
     }
 		
-    loadtxt(inp,header,lastlevel,outfilename,keep_on_disk);
+    loadtxt(inp,header,outfilename,keep_on_disk);
   }
 	
   cerr << "OOV code is " << lmtable::getDict()->oovcode() << "\n";
@@ -418,16 +419,16 @@ void lmtable::load_centers(istream& inp,int Order){
   inp.getline((char*)line,MAX_LINE);
 }
 
-void lmtable::loadtxt(istream& inp,const char* header,int lastlevel,const char* outfilename,int mmap){
+void lmtable::loadtxt(istream& inp,const char* header,const char* outfilename,int mmap){
   if (mmap>0)
-    loadtxt_mmap(inp,header,lastlevel,outfilename);
+    loadtxt_mmap(inp,header,outfilename);
   else {
-    loadtxt_ram(inp,header,lastlevel);
+    loadtxt_ram(inp,header);
     lmtable::getDict()->genoovcode();
   }
 }
 
-void lmtable::loadtxt_mmap(istream& inp,const char* header,int lastlevel,const char* outfilename){
+void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilename){
 	
   char nameNgrams[BUFSIZ];
   char nameHeader[BUFSIZ];
@@ -492,7 +493,7 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,int lastlevel,const c
       cerr << "size[" << Order << "]=" << maxsize[Order] << "\n";
     }
 		
-    if (maxlev>lastlevel) maxlev=lastlevel;
+    if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
 
     if (backslash && sscanf(line, "\\%d-grams", &Order) == 1) {
 			
@@ -638,7 +639,7 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,int lastlevel,const c
 }
 
 
-void lmtable::loadtxt_ram(istream& inp,const char* header, int lastlevel){
+void lmtable::loadtxt_ram(istream& inp,const char* header){
   //open input stream and prepare an input string
   char line[MAX_LINE];
 	
@@ -674,7 +675,7 @@ void lmtable::loadtxt_ram(istream& inp,const char* header, int lastlevel){
       maxlev=Order; //update Order
     }
 
-    if (maxlev>lastlevel) maxlev=lastlevel;
+    if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
 
     if (backslash && sscanf(line, "\\%d-grams", &Order) == 1) {
 
@@ -1499,12 +1500,12 @@ void lmtable::loadbin_codebook(istream& inp,int l){
 
 //load a binary lmfile
 
-void lmtable::loadbin(istream& inp, const char* header,int lastlevel, const char* filename,int mmap){	
+void lmtable::loadbin(istream& inp, const char* header, const char* filename,int mmap){	
   cerr << "loadbin()\n";
   loadbin_header(inp,header);
   loadbin_dict(inp);
 
-  if (maxlev>lastlevel) maxlev=lastlevel;
+  if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
 
   //if MMAP is used, then open the file
   if (filename && mmap>0){

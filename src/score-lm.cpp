@@ -29,8 +29,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <n_gram.h>
 
 
-int lastlevel=1000;
-
 void usage() {
 	std::cerr <<	"Usage: score-lm -lm <model> [-dub <dub>] [-mm 1]\n"
 			"       score sentences with a language model\n"
@@ -44,6 +42,7 @@ void usage() {
 int main(int argc, char **argv) {
 	int mmap = 0;
 	int dub = 10000000;
+	int requiredMaxlev = 1000;
 	char *lm = NULL;
 
 	for(int i = 1; i < argc; i++) {
@@ -62,7 +61,7 @@ int main(int argc, char **argv) {
 		} else if(!strcmp(argv[i], "-level")) {
 			if(++i == argc)
 				usage();
-			lastlevel = atoi(argv[i]);
+			requiredMaxlev = atoi(argv[i]);
 		} else
 			usage();
 	}
@@ -72,8 +71,8 @@ int main(int argc, char **argv) {
 
 	std::ifstream lmstr(lm);
 	lmtable lmt;
-
-	lmt.load(lmstr, lastlevel, lm, NULL, mmap);
+	lmt.setMaxLoadedLevel(requiredMaxlev);
+	lmt.load(lmstr, lm, NULL, mmap);
 	lmt.setlogOOVpenalty(dub);
 
 	for(;;) {

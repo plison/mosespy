@@ -69,7 +69,7 @@ lmclass::~lmclass(){
   delete dict;
 }
 
-void lmclass::load(const std::string filename,int lastlevel,int memmap){
+void lmclass::load(const std::string filename,int memmap){
 
   //get info from the configuration file
   fstream inp(filename.c_str(),ios::in|ios::binary);
@@ -115,7 +115,7 @@ void lmclass::load(const std::string filename,int lastlevel,int memmap){
     std::cerr << "Failed to open " << lmfilename << "!" << std::endl;
     exit(1);
   }
-  lmtable::load(inpLM,lastlevel,lmfilename.c_str(),NULL,memmap);
+  lmtable::load(inpLM,lmfilename.c_str(),NULL,memmap);
 
   inputfilestream inW2C(W2Cdict);
   if (!inW2C.good()) {

@@ -44,11 +44,11 @@ std::string ssent_PP_flag = "no";
 std::string sdictionary_load_factor = "0.0";
 std::string sngramcache_load_factor = "0.0";
 
-std::string slevel = "1000";
+std::string slevel = "";
 
 /********************************/
 
-lmtable *load_lm(std::string file,int lastlevel,int dub,int memmap, float nlf, float dlf);
+lmtable *load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf);
 int parseWords(char *sentence, const char **words, int max);
 
 void usage(const char *msg = 0) {
@@ -150,7 +150,7 @@ int main(int argc, const char **argv)
   int order=atoi(sorder.c_str());
   int debug = atoi(sdebug.c_str()); 
   int memmap = atoi(smemmap.c_str());
-  int lastlevel = atoi(slevel.c_str());
+  int requiredMaxlev = ((slevel != "") ? atoi(slevel.c_str()) : 0);
   int dub = atoi(sdub.c_str()); //dictionary upper bound
 
   float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
@@ -184,7 +184,7 @@ int main(int argc, const char **argv)
   if (score) std::cerr << "interactive: " << sscore << std::endl;
   if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
   std::cerr << "order: " << order << std::endl;
-  std::cerr << "loading up to the LM level " << lastlevel << " (if any)" << std::endl;
+  if (requiredMaxlev > 0) std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
 
   std::cerr << "dub: " << dub<< std::endl;
 	
@@ -229,7 +229,7 @@ int main(int argc, const char **argv)
     lmf[i] = words[1];
 
     std::cerr << "i:" << i << " w[i]:" << w[i] << " lmf[i]:" << lmf[i] << std::endl;
-    start_lmt[i] = lmt[i] = load_lm(lmf[i],lastlevel,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
+    start_lmt[i] = lmt[i] = load_lm(lmf[i],requiredMaxlev,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
   }
 
   inptxt.close();
@@ -284,7 +284,7 @@ int main(int argc, const char **argv)
 	id--; // count from 0 now
 	if(lmt[id] != start_lmt[id])
 	  delete lmt[id];
-	lmt[id] = load_lm(newlm,lastlevel,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
+	lmt[id] = load_lm(newlm,requiredMaxlev,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
 	continue;
       }
       while(lstream >> ng){     
@@ -404,7 +404,7 @@ int main(int argc, const char **argv)
 	}
 	id--; // count from 0 now
 	delete lmt[id];
-	lmt[id] = load_lm(newlm,lastlevel,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
+	lmt[id] = load_lm(newlm,requiredMaxlev,dub,memmap,ngramcache_load_factor,dictionary_load_factor);
 	continue;
       }
 
@@ -550,7 +550,7 @@ int main(int argc, const char **argv)
   return 0;
 }
 
-lmtable *load_lm(std::string file,int lastlevel,int dub,int memmap, float nlf, float dlf) {
+lmtable *load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf) {
 
   //checking the language model type
   int lmtype = getLanguageModelType(file);
@@ -560,7 +560,8 @@ lmtable *load_lm(std::string file,int lastlevel,int dub,int memmap, float nlf, f
   if (lmtype == _IRSTLM_LMMACRO){
     lmt = new lmmacro(nlf,dlf);
 
-    ((lmmacro*) lmt)->load(file,lastlevel,memmap);
+    if (requiredMaxlev > 0) lmt->setMaxLoadedLevel(requiredMaxlev);
+    ((lmmacro*) lmt)->load(file,memmap);
 
   }else if (lmtype == _IRSTLM_LMTABLE){
     lmt=new lmtable(nlf,dlf);
@@ -568,10 +569,11 @@ lmtable *load_lm(std::string file,int lastlevel,int dub,int memmap, float nlf, f
     inputfilestream inplm(file.c_str());
     std::cerr << "Reading " << file << "..." << std::endl;
 
+    if (requiredMaxlev > 0) lmt->setMaxLoadedLevel(requiredMaxlev);
     if (file.compare(file.size()-3,3,".mm")==0)
-      lmt->load(inplm,lastlevel,file.c_str(),NULL,1,NONE);   		
+      lmt->load(inplm,file.c_str(),NULL,1,NONE);   		
     else 
-      lmt->load(inplm,lastlevel,file.c_str(),NULL,memmap,NONE);   		
+      lmt->load(inplm,file.c_str(),NULL,memmap,NONE);   		
   }else{
     std::cerr << "This language model type is unknown!" << std::endl;
     exit(1);

@@ -174,7 +174,7 @@ int main(int argc, const char **argv)
 	
 	int debug = atoi(sdebug.c_str()); 
 	int memmap = atoi(smemmap.c_str());
-	int lastlevel = atoi(slevel.c_str());
+	int requiredMaxlev = atoi(slevel.c_str());
 	int dub = atoi(sdub.c_str());
 	int randcalls = atoi(srandcalls.c_str());
 	float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
@@ -204,7 +204,7 @@ int main(int argc, const char **argv)
 	if (sscore=="" && seval=="") std::cerr << "outfile: " << outfile << std::endl;
 	if (sscore=="") std::cerr << "interactive: " << sscore << std::endl;
 	if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
-	std::cerr << "loading up to the LM level " << lastlevel << " (if any)" << std::endl;
+	std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
 	std::cerr << "dub: " << dub<< std::endl;
 	if (tmpdir != ""){
 		if (setenv("TMP",tmpdir.c_str(),1))
@@ -228,8 +228,9 @@ int main(int argc, const char **argv)
 		
 		//let know that table has inverted n-grams
 		if (invert) lmt->is_inverted(invert);
-		
-		((lmmacro*) lmt)->load(infile,lastlevel);
+	
+		lmt->setMaxLoadedLevel(requiredMaxlev);	
+		((lmmacro*) lmt)->load(infile);
 		
 	}else if (lmtype == _IRSTLM_LMCLASS){
 		if (sfilter != ""){
@@ -242,7 +243,8 @@ int main(int argc, const char **argv)
 		//let know that table has inverted n-grams
 		if (invert) lmt->is_inverted(invert);
 		
-		((lmclass*) lmt)->load(infile,lastlevel);
+		lmt->setMaxLoadedLevel(requiredMaxlev);
+		((lmclass*) lmt)->load(infile);
 		
 	}else if (lmtype == _IRSTLM_LMTABLE){
 		lmt = new lmtable(ngramcache_load_factor,dictionary_load_factor); 
@@ -257,7 +259,8 @@ int main(int argc, const char **argv)
 			std::cerr << "Failed to open " << infile << "!" << std::endl;
 			exit(1);
 		}  
-		lmt->load(inp,lastlevel,infile.c_str(),outfile.c_str(),memmap,outtype);
+		lmt->setMaxLoadedLevel(requiredMaxlev);
+		lmt->load(inp,infile.c_str(),outfile.c_str(),memmap,outtype);
 		if (sfilter != ""){
 			std::cerr << "filtering... \n";
 			dictionary *dict=new dictionary((char *)sfilter.c_str());

@@ -36,7 +36,6 @@ using namespace std;
 std::string	spthr = "0";
 int		aflag=0;
 
-int lastlevel=1000;
 
 /********************************/
 
@@ -148,7 +147,7 @@ int main(int argc, const char **argv)
     exit(1);
   }
 
-  lmt.load(inp,lastlevel,infile.c_str(),outfile.c_str(),0,NONE);
+  lmt.load(inp,infile.c_str(),outfile.c_str(),0,NONE);
   std::cerr << "pruning LM with thresholds: \n";
 
   for (int i=1;i<lmt.maxlevel();i++) std::cerr<< " " << thr[i];

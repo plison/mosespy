@@ -85,12 +85,12 @@ inline int getLanguageModelType(std::string filename);
 class lmtable{
   static const bool debug=true;
 
-  void loadtxt(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
-  void loadtxt_ram(std::istream& inp,const char* header,int lastlevel);
-  void loadtxt_mmap(std::istream& inp,const char* header,int lastlevel,const char* outfilename);
+  void loadtxt(std::istream& inp,const char* header,const char* filename,int mmap);
+  void loadtxt_ram(std::istream& inp,const char* header);
+  void loadtxt_mmap(std::istream& inp,const char* header,const char* outfilename);
   void loadtxt_level(std::istream& inp,int l);
 
-  void loadbin(std::istream& inp,const char* header,int lastlevel,const char* filename,int mmap);
+  void loadbin(std::istream& inp,const char* header,const char* filename,int mmap);
   void loadbin_header(std::istream& inp, const char* header);
   void loadbin_dict(std::istream& inp);
   void loadbin_codebook(std::istream& inp,int l);
@@ -103,8 +103,9 @@ class lmtable{
   table_entry_pos_t       maxsize[LMTMAXLEV+1];  //max size of levels
   table_entry_pos_t*     startpos[LMTMAXLEV+1];  //support vector to store start positions
 	
-  int               maxlev; //max level of table
-  char           info[100]; //information put in the header
+  int          maxlev; //max level of table
+  int  requiredMaxlev; //max loaded level, i.e. load up to requiredMaxlev levels
+  char      info[100]; //information put in the header
   
   //statistics 
   int    totget[LMTMAXLEV+1];
@@ -249,10 +250,10 @@ class lmtable{
   void resize_level_nommap(int level);
   void resize_level_mmap(int level, const char* filename);
 
-  void load(std::istream& inp,int lastlevel=LMTMAXLEV,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
-  inline void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE){ //taken for back compatibility
-    load(inp,LMTMAXLEV,filename,outfilename,mmap,outtype);
-  }
+  inline virtual void setMaxLoadedLevel(int lev){ requiredMaxlev=lev; };
+  inline virtual int getMaxLoadedLevel(){ return requiredMaxlev; };
+
+  void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
 
   void load_centers(std::istream& inp,int l);
 	
