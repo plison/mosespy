@@ -1274,7 +1274,7 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 	
 	//update headers
   	for (int i=1;i<=lmsize();i++){
-	  sprintf(buff," %10d",lmt->getCurrenitSize(i));
+	  sprintf(buff," %10d",lmt->getCurrentSize(i));
 	  out.seekp(pos[i]);
 	  out << buff;
 	}

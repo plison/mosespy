@@ -462,7 +462,7 @@ class lmtable{
   virtual inline void setDict(dictionary* d) { dict=d; };
   virtual inline dictionary* getDict() const { return dict; };
 
-  inline table_entry_pos_t getCurrenitSize(int l) const { return cursize[l]; };
+  inline table_entry_pos_t getCurrentSize(int l) const { return cursize[l]; };
 
   inline void setOrderQuery(bool v){ orderQuery = v; }	
   inline bool isOrderQuery() const { return orderQuery; }
