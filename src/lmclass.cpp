@@ -59,6 +59,7 @@ lmclass::lmclass(float nlf, float dlfi):lmtable(nlf,dlfi){
   MaxMapSize=1000000;
   MapScore= (double *)malloc(MaxMapSize*sizeof(double));// //array of probabilities
   memset(MapScore,0,MaxMapSize*sizeof(double));
+  MapScoreN=0;
   dict = new dictionary((char *)NULL,MaxMapSize); //word to cluster dictionary
 };
 
