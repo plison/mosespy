@@ -248,11 +248,11 @@ void lmmacro::loadmap(const std::string mapfilename) {
       if (!eos && !strcmp(microW,EOS_)) eos=true;
 
 #ifdef DEBUG
-      cout << "\nmicroW = " << microW << "\n";
-      cout << "macroW = " << macroW << "\n";
-      cout << "microMacroMapN = " << microMacroMapN << "\n";
-      cout << "code of micro = " <<  getDict()->getcode(microW) << "\n";
-      cout << "code of macro = " <<  lmtable::getDict()->getcode(macroW) << "\n";
+      TRACE_ERR("\nmicroW = " << microW << "\n"
+		<< "macroW = " << macroW << "\n"
+		<< "microMacroMapN = " << microMacroMapN << "\n"
+		<< "code of micro = " <<  getDict()->getcode(microW) << "\n"
+		<< "code of macro = " <<  lmtable::getDict()->getcode(macroW) << "\n");
 #endif
 
       microMacroMapN++;
@@ -281,15 +281,16 @@ void lmmacro::loadmap(const std::string mapfilename) {
   //  getDict()->incflag(0);
   
 #ifdef DEBUG
-  cout << "oovcode(micro)=" <<  getDict()->oovcode() << "\n";
-  cout << "oovcode(macro)=" <<  lmtable::getDict()->oovcode() << "\n";
-  
-  cout << "microMacroMapN = " << microMacroMapN << "\n";
-  cout << "macrodictsize  = " << getDict()->size() << "\n";
-  cout << "microdictsize  = " << lmtable::getDict()->size() << "\n";
-  
+  TRACE_ERR("oovcode(micro)=" <<  getDict()->oovcode() << "\n" 
+	    << "oovcode(macro)=" <<  lmtable::getDict()->oovcode() << "\n"
+	    << "microMacroMapN = " << microMacroMapN << "\n"
+	    << "macrodictsize  = " << getDict()->size() << "\n"
+	    << "microdictsize  = " << lmtable::getDict()->size() << "\n");
+#endif  
+
+#ifdef DEBUG
   for (int i=0; i<microMacroMapN; i++) {
-    cout << "micro[" << getDict()->decode(i) << "] -> " << lmtable::getDict()->decode(microMacroMap[i]) << "\n";
+    TRACE_ERR("micro[" << getDict()->decode(i) << "] -> " << lmtable::getDict()->decode(microMacroMap[i]) << "\n");
   }
 #endif
     
@@ -300,7 +301,7 @@ void lmmacro::loadmap(const std::string mapfilename) {
 double lmmacro::lprob(ngram micro_ng) {
   
 #ifdef DEBUG
-  cout << " lmmacro::lprob, parameter = <" <<  micro_ng << ">\n";
+  TRACE_ERR(" lmmacro::lprob, parameter = <" <<  micro_ng << ">\n");
 #endif
 
   ngram macro_ng(lmtable::getDict());
@@ -311,15 +312,15 @@ double lmmacro::lprob(ngram micro_ng) {
     map(&micro_ng, &macro_ng); // mapping required
 
 #ifdef DEBUG
-  cout <<  "lmmacro::lprob: micro_ng = " << micro_ng << "\n";
-  cout <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n";
+  TRACE_ERR("lmmacro::lprob: micro_ng = " << micro_ng << "\n"
+	    <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
 #endif
 
   // ask LM with macro 
   double prob;
   prob = lmtable::lprob(macro_ng);
 #ifdef DEBUG
-  cout << "prob = " << prob << "\n";
+  TRACE_ERR("prob = " << prob << "\n");
 #endif
 
   return prob; 
@@ -334,7 +335,7 @@ double lmmacro::clprob(int* codes, int sz,  double* bow, int* bol, char** state,
 double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
 
 #ifdef DEBUG
-  cout << " lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n";
+  TRACE_ERR(" lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n");
 #endif
 
   ngram transformed_ng(lmtable::getDict());
@@ -346,18 +347,17 @@ double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsig
     // the last token of the ngram continues an already open "chunk"
     // the probability at chunk-level is not computed because it has been already computed when the actual"chunk" opens
 #ifdef DEBUG
-    cout << "  SKIPPED call to lmtable::clprob because of collapse; logpr: 0.0\n";
+    TRACE_ERR("  SKIPPED call to lmtable::clprob because of collapse; logpr: 0.0\n");
 #endif
     logpr = 0.0;
   } else{
 #ifdef DEBUG
-    cout << "  QUERY MACRO LM on (after transformation and size reduction) " << transformed_ng << "\n";
-#endif
-    
+    TRACE_ERR("  QUERY MACRO LM on (after transformation and size reduction) " << transformed_ng << "\n");
+#endif    
     logpr = lmtable::clprob(transformed_ng, bow, bol, state, statesize, extendible);
   }
 #ifdef DEBUG
-  cout << "  GET logpr: " << logpr << "\n";
+  TRACE_ERR("  GET logpr: " << logpr << "\n");
 #endif
   
   return logpr;
@@ -366,7 +366,7 @@ double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsig
 bool lmmacro::transform(ngram &in, ngram &out){
 
 #ifdef DEBUG
-  cout << " lmmacro::transform(ngram &in, ngram &out), in = <" <<  in << ">\n";
+  TRACE_ERR(" lmmacro::transform(ngram &in, ngram &out), in = <" <<  in << ">\n");
 #endif
 
   //step 1: selection of the correct field
@@ -393,7 +393,7 @@ bool lmmacro::transform(ngram &in, ngram &out){
   if (out.size>lmtable::maxlevel()) out.size=lmtable::maxlevel();
 
 #ifdef DEBUG
-  cout << " lmmacro::transform(ngram &in, ngram &out), out = <" <<  out << ">\n";
+  TRACE_ERR(" lmmacro::transform(ngram &in, ngram &out), out = <" <<  out << ">\n");
 #endif
   return collapsed;
 }
@@ -404,7 +404,7 @@ void lmmacro::field_selection(ngram &in, ngram &out) {
   int microsize = in.size;
 
 #ifdef DEBUG
-  cout << "In lmmacro::field_selection(ngram &in, ngram &out) in    = " <<  in  << "\n";
+  TRACE_ERR("In lmmacro::field_selection(ngram &in, ngram &out) in    = " <<  in  << "\n");
 #endif
   for (int i=microsize; i>0; i--) {
 
@@ -452,7 +452,7 @@ void lmmacro::field_selection(ngram &in, ngram &out) {
     }
   }
 #ifdef DEBUG
-  cout << "In lmmacro::field_selection(ngram &in, ngram &out) out    = " <<  out  << "\n";
+  TRACE_ERR("In lmmacro::field_selection(ngram &in, ngram &out) out    = " <<  out  << "\n");
 #endif
   return;
 }
@@ -460,7 +460,7 @@ void lmmacro::field_selection(ngram &in, ngram &out) {
 bool lmmacro::collapse(ngram &in, ngram &out) {
 
 #ifdef DEBUG
-  cout << "In lmmacro::collapse(ngram &in, ngram &out) in    = " <<  in  << "\n";
+  TRACE_ERR("In lmmacro::collapse(ngram &in, ngram &out) in    = " <<  in  << "\n")
 #endif
 
   // fill the ngram out with the collapsed tokens
@@ -505,7 +505,7 @@ bool lmmacro::collapse(ngram &in, ngram &out) {
   // and insert the most recent token
   out.pushc(*in.wordp(1));
 #ifdef DEBUG
-  cout << "In lmmacro::collapse(ngram &in, ngram &out) out    = " <<  out  << "\n";
+  TRACE_ERR("In lmmacro::collapse(ngram &in, ngram &out) out    = " <<  out  << "\n");
 #endif
   return false;
 }
@@ -515,7 +515,7 @@ void lmmacro::mapping(ngram &in, ngram &out) {
   int microsize = in.size;
   
 #ifdef DEBUG
-  cout << "In lmmacro::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n";
+  TRACE_ERR("In lmmacro::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
 #endif
 
   // map microtag sequence (in) into the corresponding sequence of macrotags (possibly shorter) (out)
@@ -532,129 +532,11 @@ void lmmacro::mapping(ngram &in, ngram &out) {
     out.pushc(out_code);
   }
 #ifdef DEBUG
-  cout << "In lmmacro::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n";
+  TRACE_ERR("In lmmacro::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
 #endif
   return;
 }
 
-
-//double lmmacro::clprob(ngram micro_ng, double* /* unused parameter: bow*/, int* /* unused parameter: bol*/, char** /* unused parameter: state*/,unsigned int* /* unused parameter: statesize*/,bool* /* unused parameter: extendible*/){
-/*
-  #ifdef DEBUG
-  cout << " lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n";
-  #endif
-  double logpr;
-  ngram macro_ng(lmtable::getDict());
-  
-  //  cout << "\n\nMAP MICRO TO MACRO:\n";
-  map(&micro_ng, &macro_ng);
-
-  ngram prevMicro_ng(micro_ng);
-  ngram prevMacro_ng(lmtable::getDict());
-  prevMicro_ng.shift();
-
-  //  cout << "\n\nMAP PREVMICRO TO PREVMACRO:\n";
-  map(&prevMicro_ng, &prevMacro_ng);
-
-  // for saving time, prevMacro_ng could be extracted directly
-  // during the mapping from micro_ng to macro_ng
-  
-  #ifdef DEBUG
-  cout <<  "lmmacro::clprob: micro_ng = " << micro_ng << "\n";
-  cout <<  "lmmacro::clprob: macro_ng = " << macro_ng << "\n";
-  cout <<  "lmmacro::clprob: prevMicro_ng = " << prevMicro_ng << "\n";
-  cout <<  "lmmacro::clprob: prevMacro_ng = " << prevMacro_ng << "\n";
-  #endif
-
-  // check if we are inside a chunk: in this case, no prob is computed
-
-  //  cout << "\n\nCHECK:\n";
-  //  cout << "  prevMacro_ng " << prevMacro_ng << endl;
-  //  for (int i=prevMacro_ng.size;i>0;i--) {
-  //cout << "word[" << i << "] = " << *(prevMacro_ng.wordp(i)) << endl;
-  //}
-  //cout << "  macro_ng " << macro_ng << endl;
-  //for (int i=macro_ng.size;i>0;i--)
-  //  cout << "word[" << i << "] = " << *(macro_ng.wordp(i)) << endl;
-
-  if (selectedField<10) {
-
-  if (prevMacro_ng == macro_ng) 
-  return 0.0;
-
-  #ifdef DEBUG
-  cout << "  QUERY MACRO LM on " << macro_ng << "\n";
-  #endif
-
-  if (macro_ng.size==0) return 0.0;
-
-  if (macro_ng.size>lmtable::maxlevel()) macro_ng.size=lmtable::maxlevel();
-  #ifdef DEBUG
-  cout << "  QUERY MACRO LM on (after resetting its size) " << macro_ng << "\n";
-  #endif
-
-  #ifdef PS_CACHE_ENABLE
-  prob_and_state_t pst;
-  //cache hit
-  if (prob_and_state_cache && macro_ng.size==lmtable::maxlevel() && prob_and_state_cache->get(macro_ng.wordp(lmtable::maxlevel()),pst)){
-  return pst.logpr; 
-  }   
-  #endif
-
-  //cache miss
-  logpr=lmmacro::lprob(macro_ng);
-
-  #ifdef PS_CACHE_ENABLE
-  if (prob_and_state_cache && macro_ng.size==lmtable::maxlevel()){
-  pst.logpr=logpr;  
-  prob_and_state_cache->add(macro_ng.wordp(lmtable::maxlevel()),pst);
-  }
-  #endif
-  } else {
-		
-  cutLex(&macro_ng, &macroNoLex_ng);
-  #ifdef DEBUG
-  cout << "  macroNoLex_ng = " << macroNoLex_ng << endl;
-  #endif
-  if (prevMacro_ng == macroNoLex_ng) 
-  {
-  #ifdef DEBUG
-  cout << "  DO NOT QUERY MACRO LM " << endl;
-  #endif
-  return 0.0;
-  }
-		
-  #ifdef DEBUG
-  cout << "  QUERY MACRO LM on " << prevMacro_ng << "\n";
-  #endif
-		
-  if (prevMacro_ng.size==0) return 0.0;
-		
-  if (prevMacro_ng.size>lmtable::maxlevel()) prevMacro_ng.size=lmtable::maxlevel();
-		
-  #ifdef PS_CACHE_ENABLE
-  prob_and_state_t pst;
-  //cache hit
-  if (prob_and_state_cache && prevMacro_ng.size==lmtable::maxlevel() && prob_and_state_cache->get(prevMacro_ng.wordp(lmtable::maxlevel()),pst))
-
-  return pst.logpr;
-  #endif
-
-
-  //cache miss
-  logpr=lmmacro::lprob(prevMacro_ng);
-
-  #ifdef PS_CACHE_ENABLE           
-  if (prob_and_state_cache && prevMacro_ng.size==lmtable::maxlevel()){
-  pst.logpr=logpr;
-  prob_and_state_cache->add(prevMacro_ng.wordp(lmtable::maxlevel()),pst);
-  }
-  #endif
-  }
-
-  return logpr;
-  }; 
-*/
 
 //maxsuffptr returns the largest suffix of an n-gram that is contained 
 //in the LM table. This can be used as a compact representation of the 
@@ -662,14 +544,6 @@ void lmmacro::mapping(ngram &in, ngram &out) {
 //is trimmed to its n-1 suffix.
 
 const char *lmmacro::maxsuffptr(ngram micro_ng, unsigned int* size){  
-  //cerr << "lmmacro::maxsuffptr\n";
-  //cerr << "micro_ng: " << micro_ng	
-  //	<< " -> micro_ng.size: " << micro_ng.size << "\n";
-
-  //the LM working on the selected field = 0
-  //contributes to the LM state
-  //  if (selectedField>0)    return NULL;
-
   ngram macro_ng(lmtable::getDict());
 
   if (micro_ng.dict ==  macro_ng.dict)
@@ -678,8 +552,8 @@ const char *lmmacro::maxsuffptr(ngram micro_ng, unsigned int* size){
     map(&micro_ng, &macro_ng); // mapping required
 
 #ifdef DEBUG
-  cout <<  "lmmacro::lprob: micro_ng = " << micro_ng << "\n";
-  cout <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n";
+  TRACE_ERR("lmmacro::lprob: micro_ng = " << micro_ng << "\n"
+	    << "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
 #endif
 
   return lmtable::maxsuffptr(macro_ng,size);
@@ -702,8 +576,8 @@ const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size){
     map(&micro_ng, &macro_ng); // mapping required
 
 #ifdef DEBUG
-  cout <<  "lmmacro::lprob: micro_ng = " << micro_ng << "\n";
-  cout <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n";
+  TRACE_ERR("lmmacro::lprob: micro_ng = " << micro_ng << "\n"
+	    <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n")
 #endif
 
   return lmtable::cmaxsuffptr(macro_ng,size);
@@ -714,8 +588,8 @@ const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size){
 void lmmacro::map(ngram *in, ngram *out) {
 
 #ifdef DEBUG
-  cout << "In lmmacro::map, in = " << *in << endl;
-  cout << " (selectedField = " << selectedField << " )\n";
+  TRACE_ERR("In lmmacro::map, in = " << *in << endl
+	    << " (selectedField = " << selectedField << " )\n");
 #endif
   if (selectedField==-2) // the whole token is compatible with the LM words
     One2OneMapping(in, out);
@@ -813,13 +687,13 @@ void lmmacro::map(ngram *in, ngram *out) {
 	}
 
 #ifdef DEBUG
-	printf("(tag,lemma) = %s %s\n", tag, lemma);
+	TRACE_ERR("(tag,lemma) = " << tag << " " << lemma << "\n");
 #endif
       } else {
 	tag = curr_token;
 	lemma = curr_token;
 #ifdef DEBUG
-	printf("(tag=lemma) = %s %s\n", tag, lemma);
+	TRACE_ERR("(tag=lemma) = " << tag << " " << lemma << "\n");
 #endif
       }
       if (tag) {
@@ -828,8 +702,6 @@ void lmmacro::map(ngram *in, ngram *out) {
       } else {
 	tag_ng.pushw((char*)"_unk_");
 	lemmas[i] = strdup("_unk_");
-	//      cerr << *in << "\n";
-	//	error((char*)"ERROR: no separator # in token\n");
       }
     }
 
@@ -843,7 +715,7 @@ void lmmacro::map(ngram *in, ngram *out) {
   }
 
 #ifdef DEBUG
-  cout << "In lmmacro::map, FINAL out = " << *out << endl;
+  TRACE_ERR("In lmmacro::map, FINAL out = " << *out << endl);
 #endif
 
 }
@@ -871,7 +743,7 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out)
   int microsize = in->size;
 
 #ifdef DEBUG
-  cout << "In Micro2MacroMapping, in    = " <<  *in  << "\n";
+  TRACE_ERR("In Micro2MacroMapping, in    = " <<  *in  << "\n");
 #endif
 
   // map microtag sequence (in) into the corresponding sequence of macrotags (possibly shorter) (out)
@@ -917,19 +789,19 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 {
 
 #ifdef DEBUG
-  cout << "In Micro2MacroMapping, in    = " <<  *in  << "\n";
+  TRACE_ERR("In Micro2MacroMapping, in    = " <<  *in  << "\n")
 #endif
 
   int microsize = in->size;
 
 #ifdef DEBUG
-  cout << "In Micro2MacroMapping, lemmas:\n";
+  TRACE_ERR("In Micro2MacroMapping, lemmas:\n");
   if (lexicaltoken2classMap)
     for (int i=microsize; i>0; i--)
-      cout << "lemmas[" << i << "]=" << lemmas[i] << " -> class -> " << lexicaltoken2classMap[lmtable::getDict()->encode(lemmas[i])] << endl;
+      TRACE_ERR("lemmas[" << i << "]=" << lemmas[i] << " -> class -> " << lexicaltoken2classMap[lmtable::getDict()->encode(lemmas[i])] << endl);
   else
     for (int i=microsize; i>0; i--)
-      cout << "lemmas[" << i << "]=" << lemmas[i] << endl;
+      TRACE_ERR("lemmas[" << i << "]=" << lemmas[i] << endl);
 #endif
 
   // map microtag sequence (in) into the corresponding sequence of macrotags (possibly shorter) (out)
@@ -955,7 +827,7 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 	  sprintf(tag_lemma, "%s_%s", curr_macrotag, lemmas[microsize]);
 
 #ifdef DEBUG
-      cout << "In Micro2MacroMapping, starting tag_lemma = >" <<  tag_lemma   << "<\n";
+      TRACE_ERR("In Micro2MacroMapping, starting tag_lemma = >" <<  tag_lemma   << "<\n");
 #endif
 
       out->pushw(tag_lemma);
@@ -980,7 +852,7 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 	  sprintf(tag_lemma, "%s_%s", curr_macrotag, curr_lemma);
 
 #ifdef DEBUG
-      cout << "In Micro2MacroMapping, tag_lemma = >" <<  tag_lemma   << "<\n";
+      TRACE_ERR("In Micro2MacroMapping, tag_lemma = >" <<  tag_lemma   << "<\n");
 #endif
 
       if (strcmp(curr_macrotag,prev_macrotag) != 0 ||
@@ -990,25 +862,24 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]=='+' ) ||
 	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]==')' && curr_microtag[0]!='(' ))) {
 
-
 #ifdef DEBUG
-	cout << "In Micro2MacroMapping, before pushw, out = " <<  *out << endl;
+	TRACE_ERR("In Micro2MacroMapping, before pushw, out = " <<  *out << endl);
 #endif
 	out->pushw(tag_lemma);
 #ifdef DEBUG
-	cout << "In Micro2MacroMapping, after pushw, out = " <<  *out << endl;
+	TRACE_ERR("In Micro2MacroMapping, after pushw, out = " <<  *out << endl);
 #endif
       } else {
 #ifdef DEBUG
-	cout << "In Micro2MacroMapping, before shift, out = " <<  *out << endl;
+	TRACE_ERR("In Micro2MacroMapping, before shift, out = " <<  *out << endl);
 #endif
 	out->shift();
 #ifdef DEBUG
-	cout << "In Micro2MacroMapping, after shift, out = " <<  *out << endl;
+	TRACE_ERR("In Micro2MacroMapping, after shift, out = " <<  *out << endl);
 #endif
 	out->pushw(tag_lemma);
 #ifdef DEBUG
-	cout << "In Micro2MacroMapping, after push, out = " <<  *out << endl;
+	TRACE_ERR("In Micro2MacroMapping, after push, out = " <<  *out << endl);
 #endif
       }
       free(lemmas[i]);
@@ -1050,7 +921,7 @@ void lmmacro::loadLexicalClasses(const char *fn)
 
 #ifdef DEBUG
   for (int x=0; x<lmtable::getDict()->size(); x++)
-    cout << "class of <" << lmtable::getDict()->decode(x) << "> (code=" << x << ") = " << lexicaltoken2classMap[x] << endl;
+    TRACE_ERR("class of <" << lmtable::getDict()->decode(x) << "> (code=" << x << ") = " << lexicaltoken2classMap[x] << endl);
 #endif
 
   return;

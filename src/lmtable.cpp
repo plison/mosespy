@@ -40,13 +40,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #include "util.h"
 
-#ifndef DEBUG
-#define DEBUG
-#endif
-
 //special value for pruned iprobs
-//#define NOPROB (int) -2
-//#define NOPROB (float) -2
 #define NOPROB ((float)-1.329227995784915872903807060280344576e36)
 
 using namespace std;
