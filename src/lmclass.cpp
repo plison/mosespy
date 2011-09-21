@@ -229,11 +229,11 @@ void lmclass::mapping(ngram &in, ngram &out) {
   int out_code, in_code;
   for (int i=insize; i>0; i--) {
     in_code = *in.wordp(i);
-    if (in_code < MapScoreN)
+    if (in_code < MapScoreN){ //the input word is known by the map
       out_code = getMap(in_code);
-    else 
-      out_code = lmtable::getDict()->oovcode();
-
+    }else{ //the input word is un-known by the map, so I map this word into the class mapped by the oov (of the words)
+      out_code = getMap(getDict()->oovcode());
+    }
     TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in_code=" << in_code << " out_code=" << out_code << " MapScoreN=" << MapScoreN << "\n");
     out.pushc(out_code);
   }
