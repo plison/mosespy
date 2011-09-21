@@ -6,13 +6,12 @@
 #include <string>
 #include <fstream>
 #include "gzfilebuf.h"
+#include "n_gram.h"
 
 
-#ifdef TRACE_ENABLE
-#define TRACE_ERR(str) { std::cerr << str; }
-#else
-#define TRACE_ERR(str) { }
-#endif
+
+#define LMTMAXLEV  20
+#define MAX_LINE  1024
 
 std::string gettempfolder();
 void createtempfile(std::ofstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
@@ -39,6 +38,10 @@ int Munmap(void	*p,size_t	len,int	sync);
 void ResetUserTime();
 void PrintUserTime(const std::string &message);
 double GetUserTime();
+
+
+int parseWords(char *, const char **, int);
+int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow);
 
 #endif
 

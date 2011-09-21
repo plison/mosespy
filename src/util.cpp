@@ -220,3 +220,66 @@ double GetUserTime()
 	return g_timer.get_elapsed_time();
 }
 
+
+
+
+int parseWords(char *sentence, const char **words, int max)
+{
+  char *word;
+  int i = 0;
+	
+  const char *const wordSeparators = " \t\r\n";
+	
+  for (word = strtok(sentence, wordSeparators);
+       i < max && word != 0;
+       i++, word = strtok(0, wordSeparators))
+    {
+      words[i] = word;
+    }
+	
+  if (i < max){words[i] = 0;}
+	
+  return i;
+}
+
+
+//Load a LM as a text file. LM could have been generated either with the
+//IRST LM toolkit or with the SRILM Toolkit. In the latter we are not
+//sure that n-grams are lexically ordered (according to the 1-grams).
+//However, we make the following assumption:
+//"all successors of any prefix are sorted and written in contiguous lines!"
+//This method also loads files processed with the quantization
+//tool: qlm
+
+int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow){
+	
+  const char* words[1+ LMTMAXLEV + 1 + 1];
+  int howmany;
+  char line[MAX_LINE];
+	
+  inp.getline(line,MAX_LINE);
+  if (strlen(line)==MAX_LINE-1){
+    cerr << "parseline: input line exceed MAXLINE ("
+	 << MAX_LINE << ") chars " << line << "\n";
+    exit(1);
+  }
+	
+  howmany = parseWords(line, words, Order + 3);
+	
+  if (!(howmany == (Order+ 1) || howmany == (Order + 2)))
+    assert(howmany == (Order+ 1) || howmany == (Order + 2));
+	
+  //read words
+  ng.size=0;
+  for (int i=1;i<=Order;i++)
+    ng.pushw(strcmp(words[i],"<unk>")?words[i]:ng.dict->OOV());
+	
+  //read logprob/code and logbow/code
+  assert(sscanf(words[0],"%f",&prob));
+  if (howmany==(Order+2))
+    assert(sscanf(words[Order+1],"%f",&bow));
+  else
+    bow=0.0; //this is log10prob=0 for implicit backoff
+
+  return 1;
+}
