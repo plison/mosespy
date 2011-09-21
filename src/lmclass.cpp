@@ -36,8 +36,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "lmclass.h"
 #include "util.h"
 
-
-
 #ifndef DEBUG
 #define DEBUG
 #endif
@@ -119,7 +117,7 @@ void lmclass::load(const std::string filename,int memmap){
 
   inputfilestream inW2C(W2Cdict);
   if (!inW2C.good()) {
-    std::cerr << "Failed to open " << lmfilename << "!" << std::endl;
+    std::cerr << "Failed to open " << W2Cdict << "!" << std::endl;
     exit(1);
   }
   loadMap(inW2C);
@@ -177,7 +175,7 @@ void lmclass::loadMap(istream& inW2C){
   }
   
 #ifdef DEBUG
-  cout << "There are " << MapScoreN << " entries in the map\n";
+  TRACE_ERR("There are " << MapScoreN << " entries in the map\n");
 #endif
 
   dict->incflag(0); //can NOT add to the dictionary of lmclass
@@ -194,11 +192,12 @@ void lmclass::checkMap(){
 void lmclass::loadMapElement(const char* in, const char* out, double sc){
   //freq of word (in) encodes the ID of the class (out) 
   //save the probability associated with the pair (in,out)
-  int wcode=dict->encode(in);
+  size_t wcode=dict->encode(in);
   dict->freq(wcode,lmtable::dict->encode(out));
   MapScore[wcode]=sc;
+  TRACE_ERR("In lmclass::loadMapElement(...) in=" << in  << " wcode=" <<  wcode << " out=" << out << " ccode=" << lmtable::dict->encode(out) << " MapScoreN=" << MapScoreN  << "\n");
 
-  MapScoreN++;
+  if (wcode >= MapScoreN) MapScoreN++; //increment size of the array MapScore if the element is new
 }
 
 double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize,bool* extendible){
@@ -221,7 +220,7 @@ void lmclass::mapping(ngram &in, ngram &out) {
   int insize = in.size;
   
 #ifdef DEBUG
-  cout << "In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n";
+  TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
 #endif
 
   // map the input sequence (in) into the corresponding output sequence (out), by applying the provided map
@@ -234,6 +233,7 @@ void lmclass::mapping(ngram &in, ngram &out) {
     else 
       out_code = lmtable::getDict()->oovcode();
 
+    TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in_code=" << in_code << " out_code=" << out_code << " MapScoreN=" << MapScoreN << "\n");
     out.pushc(out_code);
   }
   TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
