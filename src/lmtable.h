@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "ngramcache.h"
 #include "dictionary.h"
 #include "n_gram.h"
+#include "lmContainer.h"
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -82,7 +83,7 @@ typedef unsigned char qfloat_t; //type for quantized probabilities
 
 inline int getLanguageModelType(std::string filename);
 
-class lmtable{
+class lmtable: public lmContainer{
   static const bool debug=true;
 
   void loadtxt(std::istream& inp,const char* header,const char* filename,int mmap);
@@ -102,9 +103,6 @@ class lmtable{
   table_entry_pos_t       cursize[LMTMAXLEV+1];  //current size of levels
   table_entry_pos_t       maxsize[LMTMAXLEV+1];  //max size of levels
   table_entry_pos_t*     startpos[LMTMAXLEV+1];  //support vector to store start positions
-	
-  int          maxlev; //max level of table
-  int  requiredMaxlev; //max loaded level, i.e. load up to requiredMaxlev levels
   char      info[100]; //information put in the header
   
   //statistics 
@@ -249,9 +247,6 @@ class lmtable{
   void resize_level(int level, const char* outfilename, int mmap);
   void resize_level_nommap(int level);
   void resize_level_mmap(int level, const char* filename);
-
-  inline virtual void setMaxLoadedLevel(int lev){ requiredMaxlev=lev; };
-  inline virtual int getMaxLoadedLevel(){ return requiredMaxlev; };
 
   void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
 
@@ -470,31 +465,6 @@ class lmtable{
   inline float GetNgramcacheLoadFactor(){ return  ngramcache_load_factor; }
   inline float GetDictioanryLoadFactor(){ return  ngramcache_load_factor; }
 };
-
-
-#define _IRSTLM_LMUNKNOWN 0
-#define _IRSTLM_LMTABLE 1
-#define _IRSTLM_LMMACRO 2
-#define _IRSTLM_LMCLASS 3
-
-inline int getLanguageModelType(std::string filename){
-  fstream inp(filename.c_str(),ios::in|ios::binary);
-
-  if (!inp.good()) {
-    std::cerr << "Failed to open " << filename << "!" << std::endl;
-    exit(1);
-  }  
-  //give a look at the header to get informed about the language model type
-  std::string header;
-  inp >> header;
-  inp.close();
-
-  if (header == "lmmacro" || header == "LMMACRO")        return _IRSTLM_LMMACRO;
-  else if (header == "lmclass" || header == "LMCLASS")        return _IRSTLM_LMCLASS;
-  else		                return _IRSTLM_LMTABLE;
-
-  return _IRSTLM_LMUNKNOWN;
-}
 
 #endif
 

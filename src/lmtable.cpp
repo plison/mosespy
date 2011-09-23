@@ -36,6 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "ngramcache.h"
 #include "dictionary.h"
 #include "n_gram.h"
+#include "lmContainer.h"
 #include "lmtable.h"
 
 #include "util.h"
@@ -66,7 +67,7 @@ void print(prob_and_state_t* pst, std::ostream& out){
 }
 
 //instantiate an empty lm table
-lmtable::lmtable(float nlf, float dlf){
+lmtable::lmtable(float nlf, float dlf):lmContainer(){
   ngramcache_load_factor = nlf;	
   dictionary_load_factor = dlf;	
   configure(1,false);
@@ -325,75 +326,6 @@ int lmtable::reload(std::set<string> words){
   return 1;	
 }
 
-int parseWords(char *sentence, const char **words, int max)
-{
-  char *word;
-  int i = 0;
-	
-  const char *const wordSeparators = " \t\r\n";
-	
-  for (word = strtok(sentence, wordSeparators);
-       i < max && word != 0;
-       i++, word = strtok(0, wordSeparators))
-    {
-      words[i] = word;
-    }
-	
-  if (i < max){words[i] = 0;}
-	
-  return i;
-}
-
-
-
-//Load a LM as a text file. LM could have been generated either with the
-//IRST LM toolkit or with the SRILM Toolkit. In the latter we are not
-//sure that n-grams are lexically ordered (according to the 1-grams).
-//However, we make the following assumption:
-//"all successors of any prefix are sorted and written in contiguous lines!"
-//This method also loads files processed with the quantization
-//tool: qlm
-
-int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow){
-	
-  const char* words[1+ LMTMAXLEV + 1 + 1];
-  int howmany;
-  char line[MAX_LINE];
-	
-  inp.getline(line,MAX_LINE);
-  if (strlen(line)==MAX_LINE-1){
-    cerr << "parseline: input line exceed MAXLINE ("
-	 << MAX_LINE << ") chars " << line << "\n";
-    exit(1);
-  }
-	
-  howmany = parseWords(line, words, Order + 3);
-	
-  if (!(howmany == (Order+ 1) || howmany == (Order + 2)))
-    assert(howmany == (Order+ 1) || howmany == (Order + 2));
-	
-  //read words
-  ng.size=0;
-  for (int i=1;i<=Order;i++)
-    ng.pushw(strcmp(words[i],"<unk>")?words[i]:ng.dict->OOV());
-	
-  //read logprob/code and logbow/code
-  assert(sscanf(words[0],"%f",&prob));
-  if (howmany==(Order+2))
-    assert(sscanf(words[Order+1],"%f",&bow));
-  else
-    bow=0.0; //this is log10prob=0 for implicit backoff
-	
-  /**
-     if (Order>1) {
-     cout << prob << "\n";
-     for (int i=1;i<=Order;i++)
-     cout <<  words[i] << " ";
-     cout << "\n" << bow  << "\n\n";
-     }
-  **/
-  return 1;
-}
 
 
 void lmtable::load_centers(istream& inp,int Order){
@@ -905,7 +837,6 @@ int lmtable::add(ngram& ng, TA iprob,TB ibow){
   static int no_more_msg = 0;
 	
   //cerr << "add(): ng.size: " << ng.size << " ng: |" << ng << "| cursize[ng.size]: " << cursize[ng.size] << " maxsize[ng.size]: " << maxsize[ng.size];
-
   if (ng.size>1){
 		
     // find the prefix starting from the first level
@@ -1467,7 +1398,8 @@ void lmtable::loadbin_header(istream& inp,const char* header){
   configure(maxlev,isQtable);
 	
   for (int l=1;l<=maxlev;l++){
-    inp >> cursize[l]; maxsize[l]=cursize[l];
+    inp >> cursize[l];
+    maxsize[l]=cursize[l];
   }
 	
   char header2[MAX_LINE];
@@ -1670,57 +1602,57 @@ int lmtable::get(ngram& ng,int n,int lev){
 
 void lmtable::dumplm(fstream& out,ngram ng, int ilev, int elev, table_entry_pos_t ipos,table_entry_pos_t epos){
 	
-	LMT_TYPE ndt=tbltype[ilev];
-	ngram ing(ng.dict);
-	int ndsz=nodesize(ndt);
+  LMT_TYPE ndt=tbltype[ilev];
+  ngram ing(ng.dict);
+  int ndsz=nodesize(ndt);
 	
-	assert(ng.size==ilev-1);
-	//Note that ipos and epos are always larger than or equal to 0 because they are unsigned int
-	assert(epos<=cursize[ilev] && ipos<epos);
-	ng.pushc(0);
+  assert(ng.size==ilev-1);
+  //Note that ipos and epos are always larger than or equal to 0 because they are unsigned int
+  assert(epos<=cursize[ilev] && ipos<epos);
+  ng.pushc(0);
 	
-	for (table_entry_pos_t i=ipos;i<epos;i++){
-		*ng.wordp(1)=word(table[ilev]+(table_pos_t) i*ndsz);
+  for (table_entry_pos_t i=ipos;i<epos;i++){
+    *ng.wordp(1)=word(table[ilev]+(table_pos_t) i*ndsz);
 		
-		float ipr=prob(table[ilev]+(table_pos_t) i*ndsz,ndt);
+    float ipr=prob(table[ilev]+(table_pos_t) i*ndsz,ndt);
 		
-		//skip pruned n-grams
-		if(isPruned && ipr==NOPROB) continue;
+    //skip pruned n-grams
+    if(isPruned && ipr==NOPROB) continue;
 		
-		if (ilev<elev){
-			//get first and last successor position
-			table_entry_pos_t isucc=(i>0?bound(table[ilev]+ (table_pos_t) (i-1) * ndsz,ndt):0);
-			table_entry_pos_t esucc=bound(table[ilev]+ (table_pos_t) i * ndsz,ndt);
-			if (isucc < esucc) //there are successors!
-				dumplm(out,ng,ilev+1,elev,isucc,esucc);
-			//else
-			//cout << "no successors for " << ng << "\n";
-		}
-		else{
-			out << ipr <<"\t";
+    if (ilev<elev){
+      //get first and last successor position
+      table_entry_pos_t isucc=(i>0?bound(table[ilev]+ (table_pos_t) (i-1) * ndsz,ndt):0);
+      table_entry_pos_t esucc=bound(table[ilev]+ (table_pos_t) i * ndsz,ndt);
+      if (isucc < esucc) //there are successors!
+	dumplm(out,ng,ilev+1,elev,isucc,esucc);
+      //else
+      //cout << "no successors for " << ng << "\n";
+    }
+    else{
+      out << ipr <<"\t";
 			
-			// if table is inverted then revert n-gram
-			if (isInverted & ng.size>1){
-				ing.invert(ng);
-				for (int k=ing.size;k>=1;k--){
-					if (k<ing.size) out << " ";
-					out << lmtable::getDict()->decode(*ing.wordp(k));
-				}
-			}else{
-				for (int k=ng.size;k>=1;k--){
-					if (k<ng.size) out << " ";
-					out << lmtable::getDict()->decode(*ng.wordp(k));
-				}
-			}
-			
-			if (ilev<maxlev){
-				float ibo=bow(table[ilev]+ (table_pos_t)i * ndsz,ndt);
-				if (isQtable) out << "\t" << ibo;
-				else if (ibo!=0.0) out << "\t" << ibo;
-			}
-			out << "\n";
-		}
+      // if table is inverted then revert n-gram
+      if (isInverted & ng.size>1){
+	ing.invert(ng);
+	for (int k=ing.size;k>=1;k--){
+	  if (k<ing.size) out << " ";
+	  out << lmtable::getDict()->decode(*ing.wordp(k));
 	}
+      }else{
+	for (int k=ng.size;k>=1;k--){
+	  if (k<ng.size) out << " ";
+	  out << lmtable::getDict()->decode(*ng.wordp(k));
+	}
+      }
+			
+      if (ilev<maxlev){
+	float ibo=bow(table[ilev]+ (table_pos_t)i * ndsz,ndt);
+	if (isQtable) out << "\t" << ibo;
+	else if (ibo!=0.0) out << "\t" << ibo;
+      }
+      out << "\n";
+    }
+  }
 }
 
 //succscan iteratively returns all successors of an ngram h for which
@@ -1866,107 +1798,107 @@ const char *lmtable::cmaxsuffptr(ngram ong, unsigned int* size){
 //non recursive version, also includes maxsuffptr 
 double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize, bool* extendible){
 	
-	if (ong.size==0) return 0.0; //sanity check
-	if (ong.size>maxlev) ong.size=maxlev; //adjust n-gram level to table size
+  if (ong.size==0) return 0.0; //sanity check
+  if (ong.size>maxlev) ong.size=maxlev; //adjust n-gram level to table size
 	
-	if (bow) *bow=0; //initialize back-off weight
-	if (bol) *bol=0; //initialize bock-off level	
-	
-	
-	double rbow=0,lpr=0; //output back-off weight and logprob 
-	float ibow,iprob;    //internal back-off weight and logprob
+  if (bow) *bow=0; //initialize back-off weight
+  if (bol) *bol=0; //initialize bock-off level	
 	
 	
-	if (isInverted){
-		ngram ing=ong; //Inverted ngram TRIE
+  double rbow=0,lpr=0; //output back-off weight and logprob 
+  float ibow,iprob;    //internal back-off weight and logprob
+	
+	
+  if (isInverted){
+    ngram ing=ong; //Inverted ngram TRIE
 		
-		ing.invert(ong);
-		get(ing,ing.size,ing.size); // dig in the trie   
-		if (ing.lev >0){ //found something?
-			iprob=ing.prob;
-			lpr = (double)(isQtable?Pcenters[ing.lev][(qfloat_t)iprob]:iprob);
-			if (*ong.wordp(1)==dict->oovcode()) lpr-=logOOVpenalty; //add OOV penalty
-			if (statesize)  *statesize=MIN(ing.lev,(ing.size-1)); //find largest n-1 gram suffix 
-			if (maxsuffptr) *maxsuffptr=ing.path[MIN(ing.lev,(ing.size-1))];
-			if (extendible){
-				if (succrange(ing.path[ing.lev],ing.lev)>0){
-					*extendible=true;
-				}else{
-					*extendible=false;
-				}
-			} 	
-		}else{ // means a real unknown word!	
-			lpr=-log(UNIGRAM_RESOLUTION)/M_LN10;
-			if (statesize)  *statesize=0;     //default statesize for zero-gram! 
-			if (maxsuffptr) *maxsuffptr=NULL; //default stateptr for zero-gram! 
-			if (extendible) *extendible=false; //default extendibility for zero-gram!
-		}
-		
-		if (ing.lev < ing.size){ //compute backoff weight
-			int depth=(ing.lev>0?ing.lev:1); //ing.lev=0 (real unknown word) is still a 1-gram 
-			if (bol) *bol=ing.size-depth;
-			ing.size--; //get n-gram context
-			get(ing,ing.size,ing.size); // dig in the trie
-			if (ing.lev>0){//found something?
-				//collect back-off weights
-				for (int l=depth;l<=ing.lev;l++){
-					//start from first back-off level
-					assert(ing.path[l]!=NULL); //check consistency of table
-					ibow=this->bow(ing.path[l],tbltype[l]);
-					rbow+= (double) (isQtable?Bcenters[l][(qfloat_t)ibow]:ibow);
-					//avoids bad quantization of bow of <unk>
-					//    if (isQtable && (*ing.wordp(1)==dict->oovcode())) {
-					if (isQtable && (*ing.wordp(ing.size)==dict->oovcode())) {
-						rbow-=(double)Bcenters[l][(qfloat_t)ibow];
-					}
-				}
-			}
-		}
-		
-		if (bow) (*bow)=rbow;
-		return rbow + lpr;
-	} //Direct ngram TRIE
-	else{
-		assert(extendible==NULL);
-		for (ngram ng=ong;ng.size>0;ng.size--){
-			if (get(ng,ng.size,ng.size)){ 
-				iprob=ng.prob; 
-				lpr = (double)(isQtable?Pcenters[ng.size][(qfloat_t)iprob]:iprob);
-				if (*ng.wordp(1)==dict->oovcode()) lpr-=logOOVpenalty; //add OOV penalty
-				if (maxsuffptr || statesize){ //one extra step is needed if ng.size=ong.size
-					if (ong.size==ng.size){
-						ng.size--;
-						get(ng,ng.size,ng.size);
-					}
-					if (statesize)  *statesize=ng.size;
-					if (maxsuffptr) *maxsuffptr=ng.link; //we should check ng.link != NULL   
-				}
-				return rbow+lpr; 
-			}else{
-				if (ng.size==1){ //means a real unknow word!
-					if (maxsuffptr) *maxsuffptr=NULL; //default stateptr for zero-gram! 
-					if (statesize)  *statesize=0;
-					return rbow -log(UNIGRAM_RESOLUTION)/M_LN10;
-				}
-				else{ //compute backoff
-					if (bol) (*bol)++; //increase backoff level
-					if (ng.lev==(ng.size-1)){ //if search stopped at previous level
-						ibow=ng.bow; 
-						rbow+= (double) (isQtable?Bcenters[ng.lev][(qfloat_t)ibow]:ibow);
-						//avoids bad quantization of bow of <unk>
-						if (isQtable && (*ng.wordp(2)==dict->oovcode())) {
-							rbow-=(double)Bcenters[ng.lev][(qfloat_t)ibow];
-						}
-					}  
-					if (bow) (*bow)=rbow;
-				}
-				
-			}
-			
-		}
+    ing.invert(ong);
+    get(ing,ing.size,ing.size); // dig in the trie   
+    if (ing.lev >0){ //found something?
+      iprob=ing.prob;
+      lpr = (double)(isQtable?Pcenters[ing.lev][(qfloat_t)iprob]:iprob);
+      if (*ong.wordp(1)==dict->oovcode()) lpr-=logOOVpenalty; //add OOV penalty
+      if (statesize)  *statesize=MIN(ing.lev,(ing.size-1)); //find largest n-1 gram suffix 
+      if (maxsuffptr) *maxsuffptr=ing.path[MIN(ing.lev,(ing.size-1))];
+      if (extendible){
+	if (succrange(ing.path[ing.lev],ing.lev)>0){
+	  *extendible=true;
+	}else{
+	  *extendible=false;
 	}
-	assert(0); //never pass here!!!
-	return 1.0;
+      } 	
+    }else{ // means a real unknown word!	
+      lpr=-log(UNIGRAM_RESOLUTION)/M_LN10;
+      if (statesize)  *statesize=0;     //default statesize for zero-gram! 
+      if (maxsuffptr) *maxsuffptr=NULL; //default stateptr for zero-gram! 
+      if (extendible) *extendible=false; //default extendibility for zero-gram!
+    }
+		
+    if (ing.lev < ing.size){ //compute backoff weight
+      int depth=(ing.lev>0?ing.lev:1); //ing.lev=0 (real unknown word) is still a 1-gram 
+      if (bol) *bol=ing.size-depth;
+      ing.size--; //get n-gram context
+      get(ing,ing.size,ing.size); // dig in the trie
+      if (ing.lev>0){//found something?
+	//collect back-off weights
+	for (int l=depth;l<=ing.lev;l++){
+	  //start from first back-off level
+	  assert(ing.path[l]!=NULL); //check consistency of table
+	  ibow=this->bow(ing.path[l],tbltype[l]);
+	  rbow+= (double) (isQtable?Bcenters[l][(qfloat_t)ibow]:ibow);
+	  //avoids bad quantization of bow of <unk>
+	  //    if (isQtable && (*ing.wordp(1)==dict->oovcode())) {
+	  if (isQtable && (*ing.wordp(ing.size)==dict->oovcode())) {
+	    rbow-=(double)Bcenters[l][(qfloat_t)ibow];
+	  }
+	}
+      }
+    }
+		
+    if (bow) (*bow)=rbow;
+    return rbow + lpr;
+  } //Direct ngram TRIE
+  else{
+    if (extendible) *extendible=false;  //not supported for direct trie
+    for (ngram ng=ong;ng.size>0;ng.size--){
+      if (get(ng,ng.size,ng.size)){ 
+	iprob=ng.prob; 
+	lpr = (double)(isQtable?Pcenters[ng.size][(qfloat_t)iprob]:iprob);
+	if (*ng.wordp(1)==dict->oovcode()) lpr-=logOOVpenalty; //add OOV penalty
+	if (maxsuffptr || statesize){ //one extra step is needed if ng.size=ong.size
+	  if (ong.size==ng.size){
+	    ng.size--;
+	    get(ng,ng.size,ng.size);
+	  }
+	  if (statesize)  *statesize=ng.size;
+	  if (maxsuffptr) *maxsuffptr=ng.link; //we should check ng.link != NULL   
+	}
+	return rbow+lpr; 
+      }else{
+	if (ng.size==1){ //means a real unknow word!
+	  if (maxsuffptr) *maxsuffptr=NULL; //default stateptr for zero-gram! 
+	  if (statesize)  *statesize=0;
+	  return rbow -log(UNIGRAM_RESOLUTION)/M_LN10;
+	}
+	else{ //compute backoff
+	  if (bol) (*bol)++; //increase backoff level
+	  if (ng.lev==(ng.size-1)){ //if search stopped at previous level
+	    ibow=ng.bow; 
+	    rbow+= (double) (isQtable?Bcenters[ng.lev][(qfloat_t)ibow]:ibow);
+	    //avoids bad quantization of bow of <unk>
+	    if (isQtable && (*ng.wordp(2)==dict->oovcode())) {
+	      rbow-=(double)Bcenters[ng.lev][(qfloat_t)ibow];
+	    }
+	  }  
+	  if (bow) (*bow)=rbow;
+	}
+				
+      }
+			
+    }
+  }
+  assert(0); //never pass here!!!
+  return 1.0;
 }	
 
 
@@ -2370,9 +2302,7 @@ table_entry_pos_t lmtable::ngcnt(table_entry_pos_t *cnt, ngram	ng, int	l, table_
     if(ipr==NOPROB) continue;
     ++cnt[l];
     if(l==maxlev) continue;
-    succrange(ndp,l,&isucc,&esucc);  
-    //isucc = (i>0)?bound(ndp-ndsz, ndt):0;
-    //esucc = bound(ndp, ndt);
+    succrange(ndp,l,&isucc,&esucc);
     if(isucc < esucc) ngcnt(cnt, ng, l+1, isucc, esucc);
   }
   return 0;

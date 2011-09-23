@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libirstlm.la
-	
+
 AM_CXXFLAGS = -isystem/usr/include -W -Wall -ffor-scope -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES $(BOOST_CPPFLAGS) -DMYCODESIZE=3
 
 libirstlm_ladir = ${includedir}
@@ -10,9 +10,11 @@ libirstlm_la_HEADERS = \
         gzfilebuf.h \
         htable.h \
         index.h \
+        lmContainer.h \
         lmclass.h \
         lmmacro.h \
         lmtable.h \
+        lmInterpolation.h \
         mempool.h \
         mfstream.h \
         n_gram.h \
@@ -33,9 +35,11 @@ libirstlm_la_SOURCES = \
         cmd.c \
         dictionary.cpp \
         htable.cpp \
+        lmContainer.cpp \
         lmclass.cpp \
         lmmacro.cpp \
         lmtable.cpp \
+        lmInterpolation.cpp \
         mempool.cpp \
         mfstream.cpp \
         n_gram.cpp \
@@ -59,7 +63,7 @@ libirstlm_la_LIBADD = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 LDADD = -lirstlm 
 DEPENDENCIES = libirstlm.la
 
-bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa
+bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa test
 
 dict_SOURCES = dict.cpp
 dict_DEPENDENCIES = $(DEPENDENCIES)
@@ -79,6 +83,7 @@ tlm_SOURCES = tlm.cpp
 tlm_DEPENDENCIES = $(DEPENDENCIES)
 plsa_SOURCES = plsa.cpp
 plsa_DEPENDENCIES = $(DEPENDENCIES)
-
+test_SOURCES = test.cpp
+test_DEPENDENCIES = $(DEPENDENCIES)
 
 

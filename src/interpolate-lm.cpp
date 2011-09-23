@@ -49,7 +49,6 @@ std::string slevel = "";
 /********************************/
 
 lmtable *load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf);
-int parseWords(char *sentence, const char **words, int max);
 
 void usage(const char *msg = 0) {
   if (msg) { std::cerr << msg << std::endl; }
@@ -429,10 +428,10 @@ int main(int argc, const char **argv)
 	
 	    ngram ong(lmt[i]->getDict());
 	    ong.trans(ng);
-	    logpr = lmt[i]->clprob(ong,&bow,&bol,&msp,&statesize); //LM log-prob
+	    logpr = lmt[i]->clprob(ong,&bow,&bol,&msp,&statesize); //actual prob of the interpolation
 	    //logpr = lmt[i]->clprob(ong,&bow,&bol); //LM log-prob
 
-	    Pr+=w[i] * pow(10.0,logpr); //LM log-prob	
+	    Pr+=w[i] * pow(10.0,logpr); //actual prob of the interpolation	
 	    if (bol < minbol) minbol=bol; //backoff of LM[i]						
 
 	    if (*ong.wordp(1) != lmt[i]->getDict()->oovcode()) OOV_all_flag=false; //OOV wrt LM[i]
@@ -522,7 +521,9 @@ int main(int argc, const char **argv)
 	  ong.trans(ng);
 	  logpr = lmt[i]->clprob(ong,&bow,&bol,NULL,&statesize); //LM log-prob (using caches if available)
 
-	  Pr+=w[i] * pow(10.0,logpr); //LM log-prob (using caches if available)
+	  Pr+=w[i] * pow(10.0,logpr); //actual prob of the interpolation
+std::cout << "lm i: " << i << " logpr: " << logpr << std::endl;
+std::cout << "lm i: " << i << " weight: " << w[i] << std::endl;
 	  if (maxbol<bol) maxbol=bol;     
 	  if (maxstatesize<statesize) maxstatesize=statesize;     
 	}

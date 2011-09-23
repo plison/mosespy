@@ -29,9 +29,11 @@ using namespace std;
 #include <stdlib.h>
 #include "util.h"
 #include "math.h"
+#include "lmContainer.h"
 #include "lmtable.h"
 #include "lmmacro.h"
 #include "lmclass.h"
+#include "lmInterpolation.h"
 
 
 /* GLOBAL OPTIONS ***************/
@@ -217,8 +219,22 @@ int main(int argc, const char **argv)
 	int lmtype = getLanguageModelType(infile);
 	std::cerr << "Language Model Type of " << infile << " is " << lmtype << std::endl;
 	
-	lmtable* lmt;
-	if (lmtype == _IRSTLM_LMMACRO){
+	lmContainer* lmt;
+	if (lmtype == _IRSTLM_LMINTERPOLATION){
+                if (sfilter != ""){
+                        std::cerr << "This functionality has not yet been implement for this kind of language model\n";
+                        exit(1);
+                }
+
+                lmt = new lmInterpolation(ngramcache_load_factor,dictionary_load_factor);
+
+                //let know that table has inverted n-grams
+                if (invert) lmt->is_inverted(invert);
+
+		lmt->setMaxLoadedLevel(requiredMaxlev);	
+                ((lmInterpolation*) lmt)->load(infile);
+
+        }else if (lmtype == _IRSTLM_LMMACRO){
 		if (sfilter != ""){
 			std::cerr << "This functionality has not yet been implement for this kind of language model\n";
 			exit(1);
@@ -260,11 +276,11 @@ int main(int argc, const char **argv)
 			exit(1);
 		}  
 		lmt->setMaxLoadedLevel(requiredMaxlev);
-		lmt->load(inp,infile.c_str(),outfile.c_str(),memmap,outtype);
+		((lmtable*) lmt)->load(inp,infile.c_str(),outfile.c_str(),memmap,outtype);
 		if (sfilter != ""){
 			std::cerr << "filtering... \n";
 			dictionary *dict=new dictionary((char *)sfilter.c_str());
-			lmtable* sublmt=lmt->cpsublm(dict,(skeepunigrams=="yes"));
+			lmtable* sublmt=((lmtable*) lmt)->cpsublm(dict,(skeepunigrams=="yes"));
 			delete lmt;
 			delete dict;
 			lmt=sublmt;
@@ -337,7 +353,7 @@ int main(int argc, const char **argv)
 			std::cout.setf(ios::fixed);
 			std::cout.precision(2);
 			
-			if (debug>0) std::cout.precision(8);
+			//			if (debug>0) std::cout.precision(8);
 			std::fstream inptxt(seval.c_str(),std::ios::in);
 			
 			int Nbo=0, Nw=0,Noov=0;

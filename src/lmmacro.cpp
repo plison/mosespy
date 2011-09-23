@@ -40,8 +40,6 @@ using namespace std;
 
 // local utilities: start
 
-int parseWords(char *sentence, const char **words, int max);
-
 inline void error(const char* message){
   cerr << message << "\n";
   throw runtime_error(message);

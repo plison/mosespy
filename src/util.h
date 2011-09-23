@@ -8,6 +8,11 @@
 #include "gzfilebuf.h"
 #include "n_gram.h"
 
+#ifdef TRACE_ENABLE
+#define TRACE_ERR(str) { std::cerr << str; }
+#else
+#define TRACE_ERR(str) { }
+#endif
 
 
 #define LMTMAXLEV  20

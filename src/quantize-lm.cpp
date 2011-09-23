@@ -59,8 +59,6 @@ int cmpFloatEntry(const void* a,const void* b){
 //  Global entry points
 //----------------------------------------------------------------------
 
-int parseWords(char *sentence, const char **words, int max);
-
 int ComputeCluster(int nc, double* cl,unsigned int N,DataItem* Pts);
 
 //----------------------------------------------------------------------
@@ -441,26 +439,4 @@ int ComputeCluster(int centers,double* ctrs,unsigned int N,DataItem* bintable){
 //              at position i.  Returns false on error or EOF.
 //      printPt - prints a points to output file
 //----------------------------------------------------------------------
-
-
-int parseWords(char *sentence, const char **words, int max)
-{
-  const char *word;
-  int i = 0;
-  
-  const char *const wordSeparators = " \t\r\n";
-  
-  for (word = strtok(sentence, wordSeparators);
-       i < max && word != 0;
-       i++, word = strtok(0, wordSeparators))
-  {
-    words[i] = word;
-  }
-  if (i < max) {
-    words[i] = 0;
-  }
-  
-  return i;
-}
-
 
