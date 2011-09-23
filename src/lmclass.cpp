@@ -213,20 +213,11 @@ double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 
 void lmclass::mapping(ngram &in, ngram &out) {
   int insize = in.size;
-  
-#ifdef DEBUG
   TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
-#endif
 
   // map the input sequence (in) into the corresponding output sequence (out), by applying the provided map
+  for (int i=insize; i>0; i--) { out.pushc(getMap(*in.wordp(i))); }
 
-  int out_code, in_code;
-  for (int i=insize; i>0; i--) {
-    in_code = *in.wordp(i);
-    out_code = getMap(in_code);
-    TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in_code=" << in_code << " out_code=" << out_code << " MapScoreN=" << MapScoreN << "\n");
-    out.pushc(out_code);
-  }
   TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return;
 }
