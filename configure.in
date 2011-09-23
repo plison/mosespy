@@ -63,10 +63,10 @@ fi
 
 if test "x$enable_debugging" != 'xno'
 then
-    AC_MSG_NOTICE([debugging enabled, compilation with "-g -O2" (default)])
+    AC_MSG_NOTICE([generation of debugging symbols enabled, compilation with "-g -O2" (default)])
     CPPFLAGS="$CPPFLAGS -g -O2"
 else
-    AC_MSG_NOTICE([debugging disabled])
+    AC_MSG_NOTICE([generation of debugging symbols disabled, compilation without "-g"])
 fi
 
 if test "x$enable_profiling" = 'xyes'
@@ -137,7 +137,6 @@ else
     AC_MSG_NOTICE([documentation will not be created (default); get it through the website $WEBSITE])
 fi
 
-##AC_CONFIG_FILES(Makefile src/Makefile scripts/Makefile doc/Makefile)
 AC_CONFIG_FILES(Makefile src/Makefile scripts/Makefile doc/Makefile)
 
 AC_SUBST(transform,'s/_lm/-lm/')
