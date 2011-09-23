@@ -305,7 +305,11 @@ int main(int argc, char **argv){
 		lm->prunesingletons(NO);
 	}else{
 		lm->prunetopsingletons(NO);
-		lm->prunesingletons(prunesingletons==YES);	
+		if (prunesingletons==YES){
+			lm->prunesingletons(YES);	
+		}else{
+			lm->prunesingletons(NO);	
+		}
 	}
 
 	if (adaptoov) lm->dict->incflag(1);
