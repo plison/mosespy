@@ -36,10 +36,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "lmclass.h"
 #include "util.h"
 
-#ifndef DEBUG
-#define DEBUG
-#endif
-
 using namespace std;
 
 // local utilities: start
@@ -175,9 +171,7 @@ void lmclass::loadMap(istream& inW2C){
     checkMap();
   }
   
-#ifdef DEBUG
   TRACE_ERR("There are " << MapScoreN << " entries in the map\n");
-#endif
 
   dict->incflag(0); //can NOT add to the dictionary of lmclass
 }
@@ -229,11 +223,7 @@ void lmclass::mapping(ngram &in, ngram &out) {
   int out_code, in_code;
   for (int i=insize; i>0; i--) {
     in_code = *in.wordp(i);
-    if (in_code < MapScoreN){ //the input word is known by the map
-      out_code = getMap(in_code);
-    }else{ //the input word is un-known by the map, so I map this word into the class mapped by the oov (of the words)
-      out_code = getMap(getDict()->oovcode());
-    }
+    out_code = getMap(in_code);
     TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in_code=" << in_code << " out_code=" << out_code << " MapScoreN=" << MapScoreN << "\n");
     out.pushc(out_code);
   }

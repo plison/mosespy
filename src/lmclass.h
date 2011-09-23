@@ -47,8 +47,19 @@ class lmclass: public lmtable {
   void loadMap(std::istream& inp);
   void loadMapElement(const char* in, const char* out, double sc);
   void mapping(ngram &in, ngram &out);
-  inline double getMapScore(int wcode){ return MapScore[wcode]; };
-  inline size_t getMap(int wcode){ return dict->freq(wcode); };
+
+  inline double getMapScore(int wcode){
+//the input word is un-known by the map, so I "transform" this word into the oov (of the words)
+    if (wcode >= MapScoreN){ wcode = getDict()->oovcode(); }
+    return MapScore[wcode];
+  };
+
+  inline size_t getMap(int wcode){
+//the input word is un-known by the map, so I "transform" this word into the oov (of the words)
+    if (wcode >= MapScoreN){ wcode = getDict()->oovcode(); }
+    return dict->freq(wcode); 
+  };
+
   void checkMap();
 
  public:
