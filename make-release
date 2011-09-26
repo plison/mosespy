@@ -20,14 +20,12 @@ echo "directory $tmdir already exists. Please check!"
 exit 1;
 fi
 
-svn export https://hermessvn.fbk.eu/svn/hermes/software/irstlm/trunk $tmpdir
+svn export https://irstlm.svn.sourceforge.net/svnroot/irstlm/trunk $tmpdir
 
 tar czf ${cwd}/${srcinstallname}.tgz $tmpdir
 zip -r ${cwd}/${srcinstallname}.zip $tmpdir
 
-pushd $tmpdir
-cp -r ${prefixdir}/bin ${prefixdir}/lib ${prefixdir}/include .
-popd
+cp -r ${prefixdir}/bin ${prefixdir}/lib ${prefixdir}/include $tmpdir/
 
 tar czf ${cwd}/${bininstallname}.tgz $tmpdir/bin
 zip -r -y ${cwd}/${bininstallname}.zip $tmpdir/bin
