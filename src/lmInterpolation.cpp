@@ -85,11 +85,8 @@ void lmInterpolation::load(const std::string filename,int mmap){
     for (size_t j=0;j<_dict->size();j++){
       dict->encode(_dict->decode(j));
     }
-    TRACE_ERR("LM " << i << " dict:" << (void*) _dict << " _dict->size():" <<  _dict->size() << std::endl);
   }
   getDict()->genoovcode();
-
-  TRACE_ERR("LM-int dict:" << (void*) getDict() << " getDict()->size():" <<  getDict()->size() << std::endl);
 
   dict->incflag(0);
   inp.close();
@@ -135,7 +132,6 @@ lmtable* lmInterpolation::load_lm(std::string file,int dub,int memmap, float nlf
 
     lmt->setMaxLoadedLevel(getMaxLoadedLevel());
     ((lmclass*) lmt)->load(file,memmap);
-		
   }else if (lmtype == _IRSTLM_LMTABLE){
     lmt=new lmtable(nlf,dlf);
 
@@ -144,9 +140,9 @@ lmtable* lmInterpolation::load_lm(std::string file,int dub,int memmap, float nlf
 
     lmt->setMaxLoadedLevel(getMaxLoadedLevel());
     if (file.compare(file.size()-3,3,".mm")==0)
-      lmt->load(inplm,file.c_str(),NULL,1,NONE);                
+       ((lmtable*) lmt)->load(inplm,file.c_str(),NULL,1,NONE);                
     else 
-      lmt->load(inplm,file.c_str(),NULL,memmap,NONE);                   
+      ((lmtable*) lmt)->load(inplm,file.c_str(),NULL,memmap,NONE);                   
   }else{
     std::cerr << "This language model type is unknown!" << std::endl;
     exit(1);

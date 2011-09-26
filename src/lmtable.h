@@ -63,7 +63,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define UNIGRAM_RESOLUTION 10000000.0
 
 typedef enum {INTERNAL,QINTERNAL,LEAF,QLEAF} LMT_TYPE;
-typedef enum {BINARY,TEXT,YRANIB,NONE} OUTFILE_TYPE;
+//typedef enum {BINARY,TEXT,YRANIB,NONE} OUTFILE_TYPE;
 typedef char* node;
 
 typedef enum {LMT_FIND,    //!< search: find an entry
@@ -223,7 +223,7 @@ class lmtable: public lmContainer{
     return logOOVpenalty=oovp;
   }
   
-  virtual int maxlevel() const {return maxlev;};
+  virtual int maxlevel() const { return maxlev;};
   bool isQuantized() const {return isQtable;}
   
   

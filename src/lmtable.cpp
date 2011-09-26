@@ -265,7 +265,9 @@ bool lmtable::are_caches_active(){
 }
 
 void lmtable::configure(int n,bool quantized){
+  TRACE_ERR("void lmtable::configure(int n,bool quantized) with n:" << n << std::endl);
   maxlev=n;
+  TRACE_ERR("   maxlev:" << maxlev << " maxlevel():" << maxlevel() << " this->maxlevel():" << this->maxlevel() << std::endl);
 
   //The value for index 0 is never used 
   for (int i=0;i<n;i++) tbltype[i]=(quantized?QINTERNAL:INTERNAL);
@@ -418,8 +420,11 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
       maxsize[Order] = n; maxlev=Order; //upadte Order
       cerr << "size[" << Order << "]=" << maxsize[Order] << "\n";
     }
-		
+
+    TRACE_ERR("maxlev" << maxlev << std::endl);
     if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
+    TRACE_ERR("maxlev" << maxlev << std::endl);
+    TRACE_ERR("lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
 
     if (backslash && sscanf(line, "\\%d-grams", &Order) == 1) {
 			
@@ -1431,7 +1436,11 @@ void lmtable::loadbin(istream& inp, const char* header, const char* filename,int
   loadbin_header(inp,header);
   loadbin_dict(inp);
 
+
+  TRACE_ERR("maxlev" << maxlev << std::endl);
   if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
+  TRACE_ERR("maxlev" << maxlev << std::endl);
+  TRACE_ERR("lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
 
   //if MMAP is used, then open the file
   if (filename && mmap>0){

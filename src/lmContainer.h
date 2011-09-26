@@ -33,27 +33,33 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <stdio.h>
 #include <cstdlib>
 #include <stdlib.h>
+#include "util.h"
 #include "n_gram.h"
 #include "dictionary.h"
+
+typedef enum {BINARY,TEXT,YRANIB,NONE} OUTFILE_TYPE;
 
 class lmContainer{
   static const bool debug=true;
 
  protected:
-  int               maxlev; //maximun order of sub LMs;
+  int          maxlev; //maximun order of sub LMs;
   int  requiredMaxlev; //max loaded level, i.e. load up to requiredMaxlev levels
 
  public:
     
   lmContainer();
   virtual ~lmContainer(){};
+
+  virtual void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE){};
+
   virtual void savetxt(const char */*filename*/){};
   virtual void savebin(const char */*filename*/){};
   virtual double getlogOOVpenalty() const{return 0.0;};
   virtual double setlogOOVpenalty(int /*dub*/){return 0.0;};
   virtual double setlogOOVpenalty2(double /*oovp*/){return 0.0;};
-  virtual inline dictionary* getDict() const{return NULL;};
-  virtual int maxlevel() const{return 0;};
+  virtual inline dictionary* getDict() const{ return NULL;};
+  virtual int maxlevel() const{ return 0;};
   virtual void stat(int /*lev=0*/){};
   virtual void stat(){};
 
@@ -77,7 +83,9 @@ class lmContainer{
   virtual void used_caches(){};
   virtual void init_caches(int /*uptolev*/){};
   virtual void check_caches_levels(){};
-
+  virtual void reset_caches(){};
+ 
+  virtual void  reset_mmap(){};
 };
 
 inline int getLanguageModelType(std::string filename){

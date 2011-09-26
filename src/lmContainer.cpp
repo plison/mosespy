@@ -35,5 +35,5 @@ inline void error(const char* message){
   throw std::runtime_error(message);
 }
 
-lmContainer::lmContainer(){}
+lmContainer::lmContainer(){ requiredMaxlev=1000; }
 
