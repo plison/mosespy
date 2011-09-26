@@ -63,7 +63,7 @@ libirstlm_la_LIBADD = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 LDADD = -lirstlm 
 DEPENDENCIES = libirstlm.la
 
-bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa test
+bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa
 
 dict_SOURCES = dict.cpp
 dict_DEPENDENCIES = $(DEPENDENCIES)
@@ -83,7 +83,4 @@ tlm_SOURCES = tlm.cpp
 tlm_DEPENDENCIES = $(DEPENDENCIES)
 plsa_SOURCES = plsa.cpp
 plsa_DEPENDENCIES = $(DEPENDENCIES)
-test_SOURCES = test.cpp
-test_DEPENDENCIES = $(DEPENDENCIES)
-
 
