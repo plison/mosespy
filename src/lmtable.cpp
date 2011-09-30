@@ -265,9 +265,9 @@ bool lmtable::are_caches_active(){
 }
 
 void lmtable::configure(int n,bool quantized){
-  TRACE_ERR("void lmtable::configure(int n,bool quantized) with n:" << n << std::endl);
+  VERBOSE(2,"void lmtable::configure(int n,bool quantized) with n:" << n << std::endl);
   maxlev=n;
-  TRACE_ERR("   maxlev:" << maxlev << " maxlevel():" << maxlevel() << " this->maxlevel():" << this->maxlevel() << std::endl);
+  VERBOSE(2,"   maxlev:" << maxlev << " maxlevel():" << maxlevel() << " this->maxlevel():" << this->maxlevel() << std::endl);
 
   //The value for index 0 is never used 
   for (int i=0;i<n;i++) tbltype[i]=(quantized?QINTERNAL:INTERNAL);
@@ -284,8 +284,35 @@ void lmtable::configure(int n,bool quantized){
 }
 
 
+void lmtable::load(const std::string infile, int mmap){
+  VERBOSE(2,"lmtable::load(const std::string filename, int mmap)" << std::endl);
+  VERBOSE(2,"Reading " << infile << "..." << std::endl);
+  inputfilestream inp(infile.c_str());
+    
+  if (!inp.good()) {
+    std::cerr << "Failed to open " << infile << "!" << std::endl;
+    exit(1);
+  }            
+  setMaxLoadedLevel(requiredMaxlev);
+
+  //check whether memory mapping is required
+  if (infile.compare(infile.size()-3,3,".mm")==0){
+    mmap=1;
+  }
+
+  if (mmap>0){ //check whether memory mapping can be used
+#ifdef WIN32
+    mmap=0; //don't use memory map
+#endif
+  }
+
+  load(inp,infile.c_str(),NULL,mmap,NONE);
+  getDict()->incflag(0);
+}
 
 void lmtable::load(istream& inp,const char* filename,const char* outfilename,int keep_on_disk, OUTFILE_TYPE /* unused parameter: outtype */){
+
+  VERBOSE(2,"lmtable::load(istream& inp,...)" << std::endl);
 
 #ifdef WIN32
   if (keep_on_disk>0){
@@ -421,10 +448,10 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
       cerr << "size[" << Order << "]=" << maxsize[Order] << "\n";
     }
 
-    TRACE_ERR("maxlev" << maxlev << std::endl);
+    VERBOSE(2,"maxlev" << maxlev << std::endl);
     if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
-    TRACE_ERR("maxlev" << maxlev << std::endl);
-    TRACE_ERR("lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
+    VERBOSE(2,"maxlev" << maxlev << std::endl);
+    VERBOSE(2,"lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
 
     if (backslash && sscanf(line, "\\%d-grams", &Order) == 1) {
 			
@@ -592,7 +619,6 @@ void lmtable::loadtxt_ram(istream& inp,const char* header){
   int Order,n;
 	
   while (inp.getline(line,MAX_LINE)){
-    std::cerr << "READ line:" << line << std::endl;		
     if (strlen(line)==MAX_LINE-1){
       cerr << "lmtable::loadtxt_ram: input line exceed MAXLINE ("
 	   << MAX_LINE << ") chars " << line << "\n";
@@ -1387,16 +1413,19 @@ void lmtable::loadbin_header(istream& inp,const char* header){
 	
   // read rest of header
   inp >> maxlev;
-	
+
+  //set the inverted falg to false, in order to rely on the header only
+  isInverted=false;
+
   if (strncmp(header,"Qblmt",5)==0){ 
-    isQtable=1;
+    isQtable=true;
     if (strncmp(header,"QblmtI",6)==0)
-      isInverted=1;
+      isInverted=true;
   }
   else if(strncmp(header,"blmt",4)==0){ 
-    isQtable=0;
+    isQtable=false;
     if (strncmp(header,"blmtI",5)==0)
-      isInverted=1;
+      isInverted=true;
   }
   else error((char*)"loadbin: LM file is not in binary format");
 	
@@ -1437,10 +1466,10 @@ void lmtable::loadbin(istream& inp, const char* header, const char* filename,int
   loadbin_dict(inp);
 
 
-  TRACE_ERR("maxlev" << maxlev << std::endl);
+  VERBOSE(2,"maxlev" << maxlev << std::endl);
   if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
-  TRACE_ERR("maxlev" << maxlev << std::endl);
-  TRACE_ERR("lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
+  VERBOSE(2,"maxlev" << maxlev << std::endl);
+  VERBOSE(2,"lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
 
   //if MMAP is used, then open the file
   if (filename && mmap>0){

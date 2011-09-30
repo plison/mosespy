@@ -30,10 +30,6 @@ using namespace std;
 #include "util.h"
 #include "math.h"
 #include "lmContainer.h"
-#include "lmtable.h"
-#include "lmmacro.h"
-#include "lmclass.h"
-#include "lmInterpolation.h"
 
 
 /* GLOBAL OPTIONS ***************/
@@ -216,88 +212,34 @@ int main(int argc, const char **argv)
 	
 	
 	//checking the language model type
-	int lmtype = getLanguageModelType(infile);
-	std::cerr << "Language Model Type of " << infile << " is " << lmtype << std::endl;
-	
-	lmContainer* lmt;
-	if (lmtype == _IRSTLM_LMINTERPOLATION){
-                if (sfilter != ""){
-                        std::cerr << "This functionality has not yet been implement for this kind of language model\n";
-                        exit(1);
-                }
+	lmContainer* lmt=NULL;
 
-                lmt = new lmInterpolation(ngramcache_load_factor,dictionary_load_factor);
+	int lmtype = lmt->getLanguageModelType(infile);
+	VERBOSE(1,"Language Model Type of " << infile << " is " << lmtype << std::endl);
 
-                //let know that table has inverted n-grams
-                if (invert) lmt->is_inverted(invert);
+	lmt = lmt->CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor); 
 
-		lmt->setMaxLoadedLevel(requiredMaxlev);	
-                ((lmInterpolation*) lmt)->load(infile);
+	//let know that table has inverted n-grams
+        if (invert) lmt->is_inverted(invert);
 
-        }else if (lmtype == _IRSTLM_LMMACRO){
-		if (sfilter != ""){
-			std::cerr << "This functionality has not yet been implement for this kind of language model\n";
-			exit(1);
-		}
-		
-		lmt = new lmmacro(ngramcache_load_factor,dictionary_load_factor);
-		
-		//let know that table has inverted n-grams
-		if (invert) lmt->is_inverted(invert);
-	
-		lmt->setMaxLoadedLevel(requiredMaxlev);	
-		((lmmacro*) lmt)->load(infile);
-		
-	}else if (lmtype == _IRSTLM_LMCLASS){
-		if (sfilter != ""){
-			std::cerr << "This functionality has not yet been implement for this kind of language model\n";
-			exit(1);
-		}
-		
-		lmt = new lmclass(ngramcache_load_factor,dictionary_load_factor);
-		
-		//let know that table has inverted n-grams
-		if (invert) lmt->is_inverted(invert);
-		
-		lmt->setMaxLoadedLevel(requiredMaxlev);
-		((lmclass*) lmt)->load(infile);
-		
-	}else if (lmtype == _IRSTLM_LMTABLE){
-		lmt = new lmtable(ngramcache_load_factor,dictionary_load_factor); 
-		
-		//let know that table has inverted n-grams
-		if (invert) lmt->is_inverted(invert);
-		
-		std::cerr << "Reading " << infile << "..." << std::endl;
-		inputfilestream inp(infile.c_str());
-		
-		if (!inp.good()) {
-			std::cerr << "Failed to open " << infile << "!" << std::endl;
-			exit(1);
-		}  
-		lmt->setMaxLoadedLevel(requiredMaxlev);
-		((lmtable*) lmt)->load(inp,infile.c_str(),outfile.c_str(),memmap,outtype);
-		if (sfilter != ""){
-			std::cerr << "filtering... \n";
-			dictionary *dict=new dictionary((char *)sfilter.c_str());
-			lmtable* sublmt=((lmtable*) lmt)->cpsublm(dict,(skeepunigrams=="yes"));
+	lmt->setMaxLoadedLevel(requiredMaxlev);
+
+	lmt->load(infile);
+
+//CHECK this part for sfilter to make it possible only for LMTABLE
+ 	if (sfilter != ""){
+                lmContainer* filtered_lmt = NULL;
+		// the function filter performs the filtering and returns true, only for specific lm type
+		if (lmt->filter(sfilter,filtered_lmt,skeepunigrams)){
 			delete lmt;
-			delete dict;
-			lmt=sublmt;
-			std::cerr << "...done\n";
+			lmt=filtered_lmt;
 		}
-	}else{  
-		std::cerr << "This language model type is unknown!" << std::endl;
-		exit(1);
 	}
-	
-	if (debug) 
-		std::cout << "lmtable has " << (lmt->is_inverted()?"inverted":"direct") << " ngrams\n";
-	
+
 	if (dub) lmt->setlogOOVpenalty((int)dub);
 	
 	//use caches to save time (only if PS_CACHE_ENABLE is defined through compilation flags)
-	lmt->init_caches(((lmtable *)lmt)->maxlevel());
+	lmt->init_caches(lmt->maxlevel());
 	
 	if (seval != ""){		
 		if (randcalls>0){ 
@@ -369,11 +311,10 @@ int main(int argc, const char **argv)
 			int eos=ng.dict->encode(ng.dict->EoS());
 			ng.dict->incflag(0);
 			
-			
-			
 			double bow; int bol=0; char *msp; unsigned int statesize;
-			if (lmtype == _IRSTLM_LMMACRO) { ng.dict->incflag(1); }
-			if (lmtype == _IRSTLM_LMCLASS) { ng.dict->incflag(1); }
+
+			lmt->dictionary_incflag(1);
+
 			while(inptxt >> ng){      
 				
 				if (ng.size>lmt->maxlevel()) ng.size=lmt->maxlevel();
@@ -406,7 +347,8 @@ int main(int argc, const char **argv)
 					if (debug>4){
 						std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "]" << " " << Pr << " bow:" << bow << std::endl;
 						double totp=0.0; int oldw=*ng.wordp(1);
-						double oovp=lmt->getlogOOVpenalty();lmt->setlogOOVpenalty2(0);
+						double oovp=lmt->getlogOOVpenalty();
+						lmt->setlogOOVpenalty((double) 0);
 						for (int c=0;c<ng.dict->size();c++){
 							*ng.wordp(1)=c;
 							totp+=pow(10.0,lmt->clprob(ng)); //(using caches if available)  
@@ -418,10 +360,10 @@ int main(int argc, const char **argv)
 						else 
 							std::cout << "\n";
 						
-						lmt->setlogOOVpenalty2((double)oovp);
+						lmt->setlogOOVpenalty((double)oovp);
 					}
 					
-					if (*ng.wordp(1) == lmt->getDict()->oovcode()){ Noov++; sent_Noov++; } 
+					if (lmt->is_OOV(*ng.wordp(1))){ Noov++; sent_Noov++; } 
 					if (bol){  Nbo++; sent_Nbo++; }
 					Nw++;                 
 					sent_Nw++;
@@ -481,9 +423,12 @@ int main(int argc, const char **argv)
 		
 		std::cout.setf(ios::scientific);
 		std::cout << "> ";
-		
+	
+/*	
 		if (lmtype == _IRSTLM_LMMACRO) { ng.dict->incflag(1); }
 		if (lmtype == _IRSTLM_LMCLASS) { ng.dict->incflag(1); }
+*/
+		lmt->dictionary_incflag(1);
 		
 		while(std::cin >> ng){
 			

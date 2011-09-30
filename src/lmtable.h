@@ -81,8 +81,6 @@ typedef unsigned char qfloat_t; //type for quantized probabilities
 #define BOUND_EMPTY1 (numeric_limits<table_entry_pos_t>::max() - 2)
 #define BOUND_EMPTY2 (numeric_limits<table_entry_pos_t>::max() - 1)
 
-inline int getLanguageModelType(std::string filename);
-
 class lmtable: public lmContainer{
   static const bool debug=true;
 
@@ -206,7 +204,10 @@ class lmtable: public lmContainer{
 
   void reset_mmap();
   
-  bool is_inverted(const bool flag){return isInverted=flag;}
+//set the inverted flag to load ngrams in an inverted order
+//this choice is disregarded if a binary LM is loaded,
+//because the info is stored into the header
+  bool is_inverted(const bool flag){ return isInverted=flag; }
   bool is_inverted(){return isInverted;}
 	
   void configure(int n,bool quantized);
@@ -216,10 +217,11 @@ class lmtable: public lmContainer{
   
   double setlogOOVpenalty(int dub){ 
     assert(dub > dict->size());
-    return logOOVpenalty=log((double)(dub - dict->size()))/log(10.0);
+    dictionary_upperbound = dub;
+    return logOOVpenalty=log((double)(dictionary_upperbound - dict->size()))/M_LN10;
   }
   
-  double setlogOOVpenalty2(double oovp){ 
+  double setlogOOVpenalty(double oovp){ 
     return logOOVpenalty=oovp;
   }
   
@@ -248,6 +250,7 @@ class lmtable: public lmContainer{
   void resize_level_nommap(int level);
   void resize_level_mmap(int level, const char* filename);
 
+  void load(const std::string filename, int mmap=0);
   void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
 
   void load_centers(std::istream& inp,int l);
@@ -464,6 +467,20 @@ class lmtable: public lmContainer{
 
   inline float GetNgramcacheLoadFactor(){ return  ngramcache_load_factor; }
   inline float GetDictioanryLoadFactor(){ return  ngramcache_load_factor; }
+
+//never allow the increment of the dictionary through this function
+  inline virtual void dictionary_incflag(const bool flag){ UNUSED(flag); };
+
+  inline virtual bool filter(const string sfilter, lmContainer* sublmt, const string skeepunigrams){
+    std::cerr << "filtering... \n";
+    dictionary *dict=new dictionary((char *)sfilter.c_str());
+    sublmt=this->cpsublm(dict,(skeepunigrams=="yes"));
+    delete dict;
+    std::cerr << "...done\n";
+    return true;
+  }
+
+  inline virtual bool is_OOV(int code){ return (code == dict->oovcode()); };
 };
 
 #endif

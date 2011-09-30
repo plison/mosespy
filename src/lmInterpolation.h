@@ -27,16 +27,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <cstdlib>
 #include <stdlib.h>
 #include <string>
+#include <math.h>
 #include <vector>
+#include "util.h"
 #include "dictionary.h"
 #include "n_gram.h"
 #include "lmContainer.h"
 
 
 /*
-interpolation of lmtable and lmmacro and lmclass (NOT lmInterpolation)
+interpolation of several sub LMs
 */
 
+#define MAX_TOKEN 2
 
 class lmInterpolation: public lmContainer{
   static const bool debug=true;
@@ -44,7 +47,7 @@ class lmInterpolation: public lmContainer{
   int order;
   int dictionary_upperbound; //set by user
   double  logOOVpenalty; //penalty for OOV words (default 0)
-
+  bool      isInverted;
   int memmap;  //level from which n-grams are accessed via mmap
 
   std::vector<double> m_weight;
@@ -64,7 +67,7 @@ class lmInterpolation: public lmContainer{
   virtual ~lmInterpolation(){};
 
   void load(const std::string filename,int mmap=0);
-  lmtable* load_lm(std::string file,int dub,int memmap, float nlf, float dlf);
+  lmContainer* load_lm(std::string file, int memmap, float nlf, float dlf);
 
   virtual double clprob(ngram ng,            double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
   virtual double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
@@ -75,33 +78,25 @@ class lmInterpolation: public lmContainer{
   virtual inline dictionary* getDict() const { return dict; };
 
   //set penalty for OOV words  
-  virtual double getlogOOVpenalty() const { return logOOVpenalty; }
+  virtual inline double getlogOOVpenalty() const { return logOOVpenalty; }
   
-  virtual double setlogOOVpenalty(int dub){ 
-    assert(dub > dict->size());
-    double _logpr;
-    double OOVpenalty=0.0;
+  virtual double setlogOOVpenalty(int dub); 
+  
+  double inline setlogOOVpenalty(double oovp){ return logOOVpenalty=oovp; }
+
+//set the inverted flag (used to set the inverted flag of each subLM, when loading)
+  inline bool is_inverted(const bool flag){ return isInverted = flag; }
+
+//for an  Iterpolation LM this variable makes no sense
+//for compatibility, we return true if all subLM return true
+  inline bool is_inverted(){
     for (int i=0;i<m_number_lm;i++){
-      m_lm[i]->setlogOOVpenalty(dub);  //set OOV Penalty for each LM
-      _logpr=m_lm[i]->getlogOOVpenalty();
-      OOVpenalty+=m_weight[i]*exp(_logpr);
+      if (m_lm[i]->is_inverted() == false) return false;
     }
-    logOOVpenalty=log(OOVpenalty);
-    return logOOVpenalty;
-  }
-  
-  double setlogOOVpenalty2(double oovp){ 
-    return logOOVpenalty=oovp;
+    return true;
   }
 
-  /*
-  inline virtual void setMaxLoadedLevel(int lev){
-    lmContainer::setMaxLoadedLevel(lev);
-    for (int i=0;i<m_number_lm;i++){
-      m_lm[i]->setMaxLoadedLevel(lev);  //set the vaalue for each LM
-    }
-  };
-*/
+  inline virtual void dictionary_incflag(const bool flag){ dict->incflag(flag); };
 };
 
 #endif

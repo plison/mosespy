@@ -27,13 +27,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <string>
 #include <cassert>
 #include "lmContainer.h"
-#include "lmtable.h"
-#include "lmmacro.h"
-#include "lmclass.h"
 #include "lmInterpolation.h"
 
 using namespace std;
-
 
 inline void error(const char* message){
   std::cerr << message << "\n";
@@ -49,6 +45,10 @@ lmInterpolation::lmInterpolation(float nlf, float dlf){
 }
 
 void lmInterpolation::load(const std::string filename,int mmap){
+  VERBOSE(2,"lmInterpolation::load(const std::string filename,int memmap)" << std::endl);
+  VERBOSE(2," filename:|" << filename << "|" << std::endl);
+
+
   dictionary_upperbound=1000000;
   int memmap=mmap;
 
@@ -59,14 +59,16 @@ void lmInterpolation::load(const std::string filename,int mmap){
   fstream inp(filename.c_str(),ios::in|ios::binary);
 
   char line[MAX_LINE];
-  const char* words[MAX_TOKEN_N_MAP];
+  const char* words[MAX_TOKEN];
   int tokenN;
   inp.getline(line,MAX_LINE,'\n');
-  tokenN = parseWords(line,words,MAX_TOKEN_N_MAP);
+  tokenN = parseWords(line,words,MAX_TOKEN);
 
   if (tokenN != 2 || ((strcmp(words[0],"LMINTERPOLATION") != 0) && (strcmp(words[0],"lmmacro")!=0)))
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMINTERPOLATION number_of_models\nweight_of_LM_1 filename_of_LM_1\nweight_of_LM_2 filename_of_LM_2");
   m_number_lm = atoi(words[1]);
+
+  VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_number_lm:"<< m_number_lm << std::endl;);
 
   dict->incflag(1);
   for (int i=0;i<m_number_lm;i++){
@@ -78,17 +80,18 @@ void lmInterpolation::load(const std::string filename,int mmap){
     }
     m_weight.push_back((float) atof(words[0]));
     m_lm_file.push_back(words[1]);
+  VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_lm_file:"<< words[1] << std::endl;);
 
-    m_lm.push_back(load_lm(m_lm_file[i],dictionary_upperbound,memmap,ngramcache_load_factor,dictionary_load_factor));
+    m_lm.push_back(load_lm(m_lm_file[i],memmap,ngramcache_load_factor,dictionary_load_factor));
 
     dictionary *_dict=m_lm[i]->getDict();
-    for (size_t j=0;j<_dict->size();j++){
+    for (int j=0;j<_dict->size();j++){
       dict->encode(_dict->decode(j));
     }
   }
   getDict()->genoovcode();
 
-  dict->incflag(0);
+  getDict()->incflag(1);
   inp.close();
 
   int maxorder = 0;
@@ -106,13 +109,39 @@ void lmInterpolation::load(const std::string filename,int mmap){
   maxlev=order;
 }
 
+lmContainer* lmInterpolation::load_lm(std::string file,int memmap, float nlf, float dlf) {
+
+        //checking the language model type
+        lmContainer* lmt=NULL;
+
+        lmt = lmt->CreateLanguageModel(file,nlf,dlf);
+
+        //let know that table has inverted n-grams
+        if (isInverted){
+	  for (int i=0;i<m_number_lm;i++){
+            m_lm[i]->is_inverted(isInverted);  //set inverted flag for each LM
+          }
+        }
+
+        lmt->setMaxLoadedLevel(requiredMaxlev);
+
+        lmt->load(file, memmap);
+       
+        lmt->init_caches(lmt->maxlevel());
+	return lmt;
+}
+
+
+/*
 lmtable* lmInterpolation::load_lm(std::string file,int dub,int memmap, float nlf, float dlf) {
+  UNUSED(dub);
+
+  lmtable* lmt = NULL;
 
   //checking the language model type
-  int lmtype = getLanguageModelType(file);
+  int lmtype = lmt->getLanguageModelType(file);
   std::cerr << "Language Model Type of " << file << " is " << lmtype << std::endl;
         
-  lmtable* lmt = NULL;
   if (lmtype == _IRSTLM_LMMACRO){
 
     lmt = new lmmacro(nlf,dlf);
@@ -152,6 +181,8 @@ lmtable* lmInterpolation::load_lm(std::string file,int dub,int memmap, float nlf
   lmt->init_caches(lmt->maxlevel());
   return lmt;
 }
+*/
+
 
 double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,unsigned int* statesize,bool* extendible){
 
@@ -225,4 +256,18 @@ double lmInterpolation::clprob(int* codes, int sz, double* bow,int* bol,char** m
   assert (ong.size == sz);
 
   return clprob(ong, bow, bol, maxsuffptr, statesize, extendible);
-} 
+}
+
+double lmInterpolation::setlogOOVpenalty(int dub){
+  assert(dub > dict->size());
+  double _logpr;
+  double OOVpenalty=0.0;
+  for (int i=0;i<m_number_lm;i++){
+    m_lm[i]->setlogOOVpenalty(dub);  //set OOV Penalty for each LM
+    _logpr=m_lm[i]->getlogOOVpenalty();
+    OOVpenalty+=m_weight[i]*exp(_logpr);
+  }
+  logOOVpenalty=log(OOVpenalty);
+  return logOOVpenalty;
+}
+ 
