@@ -1835,6 +1835,7 @@ const char *lmtable::cmaxsuffptr(ngram ong, unsigned int* size){
 
 //non recursive version, also includes maxsuffptr 
 double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize, bool* extendible){
+  VERBOSE(3," lmtable::lprob(ngram) ong " << ong  << "\n");
 	
   if (ong.size==0) return 0.0; //sanity check
   if (ong.size>maxlev) ong.size=maxlev; //adjust n-gram level to table size
@@ -1942,6 +1943,8 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 
 //return log10 probsL use cache memory
 double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
+  VERBOSE(3," lmtable::clprob(ngram), parameter = <" <<  ong << ">\n");
+
 #ifdef TRACE_CACHELM
   if (probcache && ong.size==maxlev && sentence_id>0){
     *cacheout << sentence_id << " " << ong << "\n";
@@ -1999,6 +2002,7 @@ double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned in
 //return log10 probsL use cache memory
 //this functions simulates the clprob(ngram, ...) but it takes as input an array of codes instead of the ngram
 double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
+  VERBOSE(3," lmmacro::clprob(int*, int,...)\n");
 #ifdef TRACE_CACHELM
   if (probcache && sz==maxlev && sentence_id>0){
     *cacheout << sentence_id << "\n";
