@@ -28,8 +28,7 @@ using namespace std;
 #include <stdlib.h>
 #include "util.h"
 #include "math.h"
-#include "lmtable.h"
-#include "lmmacro.h"
+#include "lmContainer.h"
 
 /* GLOBAL OPTIONS ***************/
 
@@ -44,11 +43,11 @@ std::string ssent_PP_flag = "no";
 std::string sdictionary_load_factor = "0.0";
 std::string sngramcache_load_factor = "0.0";
 
-std::string slevel = "";
+std::string slevel = "1000";
 
 /********************************/
 
-lmtable *load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf);
+lmContainer* load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf);
 
 void usage(const char *msg = 0) {
   if (msg) { std::cerr << msg << std::endl; }
@@ -149,7 +148,7 @@ int main(int argc, const char **argv)
   int order=atoi(sorder.c_str());
   int debug = atoi(sdebug.c_str()); 
   int memmap = atoi(smemmap.c_str());
-  int requiredMaxlev = ((slevel != "") ? atoi(slevel.c_str()) : 0);
+  int requiredMaxlev = atoi(slevel.c_str());
   int dub = atoi(sdub.c_str()); //dictionary upper bound
 
   float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
@@ -182,12 +181,13 @@ int main(int argc, const char **argv)
   if (learn) std::cerr << "outfile: " << outfile << std::endl;
   if (score) std::cerr << "interactive: " << sscore << std::endl;
   if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
+  std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
   std::cerr << "order: " << order << std::endl;
   if (requiredMaxlev > 0) std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
 
   std::cerr << "dub: " << dub<< std::endl;
 	
-  lmtable *lmt[100], *start_lmt[100]; //interpolated language models
+  lmContainer *lmt[100], *start_lmt[100]; //interpolated language models
   std::string lmf[100]; //lm filenames
 		
   float w[100]; //interpolation weights
@@ -551,36 +551,19 @@ std::cout << "lm i: " << i << " weight: " << w[i] << std::endl;
   return 0;
 }
 
-lmtable *load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf) {
+lmContainer* load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf) {
+  lmContainer* lmt=NULL;
 
-  //checking the language model type
-  int lmtype = getLanguageModelType(file);
-  std::cerr << "Language Model Type of " << file << " is " << lmtype << std::endl;
-	
-  lmtable* lmt = NULL;
-  if (lmtype == _IRSTLM_LMMACRO){
-    lmt = new lmmacro(nlf,dlf);
+  int lmtype = lmt->getLanguageModelType(file);
+  VERBOSE(1,"Language Model Type of " << file << " is " << lmtype << std::endl);
 
-    if (requiredMaxlev > 0) lmt->setMaxLoadedLevel(requiredMaxlev);
-    ((lmmacro*) lmt)->load(file,memmap);
+  lmt = lmt->CreateLanguageModel(file,nlf,dlf); 
 
-  }else if (lmtype == _IRSTLM_LMTABLE){
-    lmt=new lmtable(nlf,dlf);
+  lmt->setMaxLoadedLevel(requiredMaxlev);
 
-    inputfilestream inplm(file.c_str());
-    std::cerr << "Reading " << file << "..." << std::endl;
+  lmt->load(file,memmap);
 
-    if (requiredMaxlev > 0) lmt->setMaxLoadedLevel(requiredMaxlev);
-    if (file.compare(file.size()-3,3,".mm")==0)
-      lmt->load(inplm,file.c_str(),NULL,1,NONE);   		
-    else 
-      lmt->load(inplm,file.c_str(),NULL,memmap,NONE);   		
-  }else{
-    std::cerr << "This language model type is unknown!" << std::endl;
-    exit(1);
-  }
-
-  if (dub) lmt->setlogOOVpenalty(dub);	//set OOV Penalty for each LM
+  if (dub) lmt->setlogOOVpenalty((int)dub);
 
   //use caches to save time (only if PS_CACHE_ENABLE is defined through compilation flags)
   lmt->init_caches(lmt->maxlevel());
