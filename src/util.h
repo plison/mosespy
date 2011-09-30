@@ -17,6 +17,7 @@
 #ifdef TRACE_ENABLE
 #define TRACE_ERR(str) { std::cerr << str; }
 #else
+#undef DEBUG
 #define TRACE_ERR(str) { }
 #endif
 
@@ -24,7 +25,7 @@
 #ifdef DEBUG
 #define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
 #else
-#define VERBOSE(level,str) { UNUSED(level); UNUSED(str)); }
+#define VERBOSE(level,str) { }
 #endif
 
 #define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
