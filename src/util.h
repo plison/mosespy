@@ -10,11 +10,11 @@
 
 #define UNUSED(x) { (void) x; }
 
-#define DEBUG
 #define _DEBUG_LEVEL 2
 
 /** trace macros **/
 #ifdef TRACE_ENABLE
+#define DEBUG
 #define TRACE_ERR(str) { std::cerr << str; }
 #else
 #undef DEBUG
@@ -24,11 +24,12 @@
 /** verbose macros **/
 #ifdef DEBUG
 #define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
+#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
 #else
 #define VERBOSE(level,str) { }
+#define IFVERBOSE(level) { } 
 #endif
 
-#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
 
 
 #define LMTMAXLEV  20
