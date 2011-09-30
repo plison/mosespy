@@ -554,9 +554,6 @@ std::cout << "lm i: " << i << " weight: " << w[i] << std::endl;
 lmContainer* load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf) {
   lmContainer* lmt=NULL;
 
-  int lmtype = lmt->getLanguageModelType(file);
-  VERBOSE(1,"Language Model Type of " << file << " is " << lmtype << std::endl);
-
   lmt = lmt->CreateLanguageModel(file,nlf,dlf); 
 
   lmt->setMaxLoadedLevel(requiredMaxlev);

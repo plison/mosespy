@@ -214,9 +214,6 @@ int main(int argc, const char **argv)
 	//checking the language model type
 	lmContainer* lmt=NULL;
 
-	int lmtype = lmt->getLanguageModelType(infile);
-	VERBOSE(1,"Language Model Type of " << infile << " is " << lmtype << std::endl);
-
 	lmt = lmt->CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor); 
 
 	//let know that table has inverted n-grams
@@ -424,10 +421,6 @@ int main(int argc, const char **argv)
 		std::cout.setf(ios::scientific);
 		std::cout << "> ";
 	
-/*	
-		if (lmtype == _IRSTLM_LMMACRO) { ng.dict->incflag(1); }
-		if (lmtype == _IRSTLM_LMCLASS) { ng.dict->incflag(1); }
-*/
 		lmt->dictionary_incflag(1);
 		
 		while(std::cin >> ng){

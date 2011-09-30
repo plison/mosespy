@@ -132,58 +132,6 @@ lmContainer* lmInterpolation::load_lm(std::string file,int memmap, float nlf, fl
 }
 
 
-/*
-lmtable* lmInterpolation::load_lm(std::string file,int dub,int memmap, float nlf, float dlf) {
-  UNUSED(dub);
-
-  lmtable* lmt = NULL;
-
-  //checking the language model type
-  int lmtype = lmt->getLanguageModelType(file);
-  std::cerr << "Language Model Type of " << file << " is " << lmtype << std::endl;
-        
-  if (lmtype == _IRSTLM_LMMACRO){
-
-    lmt = new lmmacro(nlf,dlf);
-		
-    //let know that table has inverted n-grams
-    //SERVE????      if (invert) lmt->is_inverted(invert);
-
-    lmt->setMaxLoadedLevel(getMaxLoadedLevel());
-    ((lmmacro*) lmt)->load(file,memmap);
-
-  }else if (lmtype == _IRSTLM_LMCLASS){
-    
-    lmt = new lmclass(nlf,dlf);
-		
-    //let know that table has inverted n-grams
-    //SERVE????      if (invert) lmt->is_inverted(invert);
-
-    lmt->setMaxLoadedLevel(getMaxLoadedLevel());
-    ((lmclass*) lmt)->load(file,memmap);
-  }else if (lmtype == _IRSTLM_LMTABLE){
-    lmt=new lmtable(nlf,dlf);
-
-    inputfilestream inplm(file.c_str());
-    std::cerr << "Reading " << file << "..." << std::endl;
-
-    lmt->setMaxLoadedLevel(getMaxLoadedLevel());
-    if (file.compare(file.size()-3,3,".mm")==0)
-       ((lmtable*) lmt)->load(inplm,file.c_str(),NULL,1,NONE);                
-    else 
-      ((lmtable*) lmt)->load(inplm,file.c_str(),NULL,memmap,NONE);                   
-  }else{
-    std::cerr << "This language model type is unknown!" << std::endl;
-    exit(1);
-  }
-
-  //use caches to save time (only if PS_CACHE_ENABLE is defined through compilation flags)
-  lmt->init_caches(lmt->maxlevel());
-  return lmt;
-}
-*/
-
-
 double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,unsigned int* statesize,bool* extendible){
 
   double pr=0.0;
