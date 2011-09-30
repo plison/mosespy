@@ -5,12 +5,6 @@
 #include "timer.h"
 
 
-//#ifdef TRACE_ENABLE
-#define TRACE_ERR(str) { std::cerr << str; }
-//#else
-//#define TRACE_ERR(str) { }
-//#endif
-
 /***
  * Return the total time that the timer has been in the "running"
  * state since it was first "started" or last "restarted".  For
@@ -43,7 +37,7 @@ double Timer::get_elapsed_time()
 void Timer::start(const char* msg)
 {
   // Print an optional message, something like "Starting timer t";
-	if (msg) TRACE_ERR( msg << std::endl);
+	if (msg) VERBOSE(0, msg << std::endl);
 
   // Return immediately if the timer is already running
   if (running) return;
@@ -62,7 +56,7 @@ void Timer::start(const char* msg)
 inline void Timer::restart(const char* msg)
 {
   // Print an optional message, something like "Restarting timer t";
-  if (msg) TRACE_ERR( msg << std::endl;
+  if (msg) VERBOSE(0, msg << std::endl;
 
   // Set the timer status to running
   running = true;
@@ -95,10 +89,9 @@ inline void Timer::stop(const char* msg)
 void Timer::check(const char* msg)
 {
   // Print an optional message, something like "Checking timer t";
-  if (msg) TRACE_ERR( msg << " : ");
+  if (msg) VERBOSE(0, msg << " : ");
 
-//  TRACE_ERR( "[" << std::setiosflags(std::ios::fixed) << std::setprecision(2) << (running ? elapsed_time() : 0) << "] seconds\n");
-  TRACE_ERR( "[" << (running ? elapsed_time() : 0) << "] seconds\n");
+  VERBOSE(0, "[" << (running ? elapsed_time() : 0) << "] seconds\n");
 }
 
 /***

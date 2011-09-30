@@ -8,11 +8,26 @@
 #include "gzfilebuf.h"
 #include "n_gram.h"
 
+#define UNUSED(x) { (void) x; }
+
+#define DEBUG
+#define _DEBUG_LEVEL 2
+
+/** trace macros **/
 #ifdef TRACE_ENABLE
 #define TRACE_ERR(str) { std::cerr << str; }
 #else
 #define TRACE_ERR(str) { }
 #endif
+
+/** verbose macros **/
+#ifdef DEBUG
+#define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
+#else
+#define VERBOSE(level,str) { UNUSED(level); UNUSED(str)); }
+#endif
+
+#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
 
 
 #define LMTMAXLEV  20
