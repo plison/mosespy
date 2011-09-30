@@ -40,8 +40,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 class lmclass: public lmtable {
   dictionary     *dict; // dictionary (words - macro tags)
   double *MapScore;
-  size_t MapScoreN;
-  size_t MaxMapSize;
+  int MapScoreN;
+  int MaxMapSize;
 
  protected:
   void loadMap(std::istream& inp);
@@ -80,6 +80,7 @@ class lmclass: public lmtable {
   };
 
   inline dictionary* getDict() const { return dict; }
+  inline virtual void dictionary_incflag(const bool flag){ dict->incflag(flag); };
 };
 
 

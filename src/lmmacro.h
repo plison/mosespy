@@ -92,6 +92,10 @@ class lmmacro: public lmtable {
 
   inline dictionary* getDict() const { return dict; }
   inline int maxlevel() const { return maxlev; };
+
+  inline virtual void dictionary_incflag(const bool flag){ dict->incflag(flag); };
+
+  inline virtual bool filter(const string sfilter, lmContainer* sublmt, const string skeepunigrams){ UNUSED(sfilter); UNUSED(sublmt); UNUSED(skeepunigrams); return false; }
 };
 
 

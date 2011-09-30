@@ -65,6 +65,7 @@ lmclass::~lmclass(){
 }
 
 void lmclass::load(const std::string filename,int memmap){
+  VERBOSE(2,"lmclass::load(const std::string filename,int memmap)" << std::endl);
 
   //get info from the configuration file
   fstream inp(filename.c_str(),ios::in|ios::binary);
@@ -118,9 +119,10 @@ void lmclass::load(const std::string filename,int memmap){
     exit(1);
   }
   loadMap(inW2C);
-  dict->genoovcode();
+  getDict()->genoovcode();
 
-  TRACE_ERR("OOV code of lmclass is " << getDict()->oovcode() << " mapped into " << getMap(getDict()->oovcode())<< "\n");
+  VERBOSE(2,"OOV code of lmclass is " << getDict()->oovcode() << " mapped into " << getMap(getDict()->oovcode())<< "\n");
+  getDict()->incflag(1);
 }
 
 void lmclass::loadMap(istream& inW2C){
@@ -158,7 +160,7 @@ void lmclass::loadMap(istream& inW2C){
       lprob=(double)log10(lprob);
     }else if(howmany==2){
 
-      TRACE_ERR("No score for the pair (" << words[0] << "," << words[1] << "); set to default 1.0\n");
+      VERBOSE(3,"No score for the pair (" << words[0] << "," << words[1] << "); set to default 1.0\n");
 
       lprob=0.0;
     }else{
@@ -171,7 +173,7 @@ void lmclass::loadMap(istream& inW2C){
     checkMap();
   }
   
-  TRACE_ERR("There are " << MapScoreN << " entries in the map\n");
+  VERBOSE(2,"There are " << MapScoreN << " entries in the map\n");
 
   dict->incflag(0); //can NOT add to the dictionary of lmclass
 }
@@ -180,17 +182,17 @@ void lmclass::checkMap(){
   if (MapScoreN > MaxMapSize){
     MaxMapSize=2*MapScoreN;
     MapScore = (double*) realloc(MapScore, sizeof(double)*(MaxMapSize));
-    TRACE_ERR("In lmclass::checkMap(...) MaxMapSize=" <<  MaxMapSize  << " MapScoreN=" <<  MapScoreN  << "\n");
+    VERBOSE(2,"In lmclass::checkMap(...) MaxMapSize=" <<  MaxMapSize  << " MapScoreN=" <<  MapScoreN  << "\n");
   }
 }
 
 void lmclass::loadMapElement(const char* in, const char* out, double sc){
   //freq of word (in) encodes the ID of the class (out) 
   //save the probability associated with the pair (in,out)
-  size_t wcode=dict->encode(in);
+  int wcode=dict->encode(in);
   dict->freq(wcode,lmtable::dict->encode(out));
   MapScore[wcode]=sc;
-  TRACE_ERR("In lmclass::loadMapElement(...) in=" << in  << " wcode=" <<  wcode << " out=" << out << " ccode=" << lmtable::dict->encode(out) << " MapScoreN=" << MapScoreN  << "\n");
+  VERBOSE(3,"In lmclass::loadMapElement(...) in=" << in  << " wcode=" <<  wcode << " out=" << out << " ccode=" << lmtable::dict->encode(out) << " MapScoreN=" << MapScoreN  << "\n");
 
   if (wcode >= MapScoreN) MapScoreN++; //increment size of the array MapScore if the element is new
 }
@@ -198,7 +200,7 @@ void lmclass::loadMapElement(const char* in, const char* out, double sc){
 double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize,bool* extendible){
   double lpr=getMapScore(*ong.wordp(1));
 
-  TRACE_ERR("In lmclass::lprob(...) Mapscore    = " <<  lpr  << "\n");
+  VERBOSE(3,"In lmclass::lprob(...) Mapscore    = " <<  lpr  << "\n");
 
   //convert ong to it's clustered encoding
   ngram mapped_ng(lmtable::getDict());
@@ -207,17 +209,17 @@ double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 
   lpr+=lmtable::clprob(mapped_ng,bow,bol,maxsuffptr,statesize, extendible);
 
-  TRACE_ERR("In lmclass::lprob(...) global prob  = " <<  lpr  << "\n");
+  VERBOSE(3,"In lmclass::lprob(...) global prob  = " <<  lpr  << "\n");
   return lpr;
 }
 
 void lmclass::mapping(ngram &in, ngram &out) {
   int insize = in.size;
-  TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
+  VERBOSE(3,"In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
 
   // map the input sequence (in) into the corresponding output sequence (out), by applying the provided map
   for (int i=insize; i>0; i--) { out.pushc(getMap(*in.wordp(i))); }
 
-  TRACE_ERR("In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
+  VERBOSE(3,"In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return;
 }

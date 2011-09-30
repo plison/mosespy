@@ -51,7 +51,7 @@ inline void error(const char* message){
 
 lmmacro::lmmacro(float nlf, float dlfi):lmtable(nlf,dlfi){
   dict = new dictionary((char *)NULL,1000000); // dict of micro tags
-  dict->incflag(1);
+  getDict()->incflag(1);
 };
 
 lmmacro::~lmmacro(){
@@ -60,6 +60,7 @@ lmmacro::~lmmacro(){
 
 
 void lmmacro::load(const std::string filename,int memmap){
+  VERBOSE(2,"lmmacro::load(const std::string filename,int memmap)" << std::endl);
 
   //get info from the configuration file
   fstream inp(filename.c_str(),ios::in|ios::binary);
@@ -126,6 +127,10 @@ void lmmacro::load(const std::string filename,int memmap){
     mapFlag = false;
   }
 
+  //allow the dictionary to add new words
+  getDict()->incflag(1);
+
+
   if ((!mapFlag) && (collapseFlag)){
     error((char*)"ERROR: you must specify a map if you want to collapse a specific field!");
   }
@@ -141,16 +146,15 @@ void lmmacro::load(const std::string filename,int memmap){
   if (lexicalclassesfilename != "")    loadLexicalClasses(lexicalclassesfilename.c_str());
 #endif
 
-  inputfilestream inpLM(lmfilename.c_str());
-
   // Load the (possibly binary) LM 
-  lmtable::load(inpLM,lmfilename.c_str(),NULL,memmap);
+  lmtable::load(lmfilename,memmap);
 
   
   if (mapFlag)
     loadmap(mapfilename);
 
   getDict()->genoovcode();
+  getDict()->incflag(1);
 };
 
 void lmmacro::unloadmap() {
@@ -245,13 +249,11 @@ void lmmacro::loadmap(const std::string mapfilename) {
       if (!bos && !strcmp(microW,BOS_)) bos=true;
       if (!eos && !strcmp(microW,EOS_)) eos=true;
 
-#ifdef DEBUG
-      TRACE_ERR("\nmicroW = " << microW << "\n"
+      VERBOSE(2,"\nmicroW = " << microW << "\n"
 		<< "macroW = " << macroW << "\n"
 		<< "microMacroMapN = " << microMacroMapN << "\n"
 		<< "code of micro = " <<  getDict()->getcode(microW) << "\n"
 		<< "code of macro = " <<  lmtable::getDict()->getcode(macroW) << "\n");
-#endif
 
       microMacroMapN++;
   }
@@ -278,29 +280,23 @@ void lmmacro::loadmap(const std::string mapfilename) {
   }
   //  getDict()->incflag(0);
   
-#ifdef DEBUG
-  TRACE_ERR("oovcode(micro)=" <<  getDict()->oovcode() << "\n" 
+  VERBOSE(2,"oovcode(micro)=" <<  getDict()->oovcode() << "\n" 
 	    << "oovcode(macro)=" <<  lmtable::getDict()->oovcode() << "\n"
 	    << "microMacroMapN = " << microMacroMapN << "\n"
 	    << "macrodictsize  = " << getDict()->size() << "\n"
 	    << "microdictsize  = " << lmtable::getDict()->size() << "\n");
-#endif  
 
-#ifdef DEBUG
-  for (int i=0; i<microMacroMapN; i++) {
-    TRACE_ERR("micro[" << getDict()->decode(i) << "] -> " << lmtable::getDict()->decode(microMacroMap[i]) << "\n");
-  }
-#endif
-    
+  IFVERBOSE(2){
+    for (int i=0; i<microMacroMapN; i++) {
+      VERBOSE(2,"micro[" << getDict()->decode(i) << "] -> " << lmtable::getDict()->decode(microMacroMap[i]) << "\n");
+    }
+  } 
   std::cerr << "...done\n";
 }
   
   
 double lmmacro::lprob(ngram micro_ng) {
-  
-#ifdef DEBUG
-  TRACE_ERR(" lmmacro::lprob, parameter = <" <<  micro_ng << ">\n");
-#endif
+  VERBOSE(2,"lmmacro::lprob, parameter = <" <<  micro_ng << ">\n");
 
   ngram macro_ng(lmtable::getDict());
 
@@ -309,17 +305,13 @@ double lmmacro::lprob(ngram micro_ng) {
   else
     map(&micro_ng, &macro_ng); // mapping required
 
-#ifdef DEBUG
-  TRACE_ERR("lmmacro::lprob: micro_ng = " << micro_ng << "\n"
+  VERBOSE(3,"lmmacro::lprob: micro_ng = " << micro_ng << "\n"
 	    <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
-#endif
 
   // ask LM with macro 
   double prob;
   prob = lmtable::lprob(macro_ng);
-#ifdef DEBUG
-  TRACE_ERR("prob = " << prob << "\n");
-#endif
+  VERBOSE(3,"prob = " << prob << "\n");
 
   return prob; 
 }; 
@@ -332,40 +324,30 @@ double lmmacro::clprob(int* codes, int sz,  double* bow, int* bol, char** state,
 
 double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
 
-#ifdef DEBUG
-  TRACE_ERR(" lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n");
-#endif
+  VERBOSE(3," lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n");
 
   ngram transformed_ng(lmtable::getDict());
   bool collapsed = transform(micro_ng, transformed_ng);
+  VERBOSE(3,"lmmacro::clprob(ngram), transformed_ng = <" <<  transformed_ng << ">\n");
 
   double logpr;
 
   if (collapsed){
     // the last token of the ngram continues an already open "chunk"
     // the probability at chunk-level is not computed because it has been already computed when the actual"chunk" opens
-#ifdef DEBUG
-    TRACE_ERR("  SKIPPED call to lmtable::clprob because of collapse; logpr: 0.0\n");
-#endif
+    VERBOSE(3,"  SKIPPED call to lmtable::clprob because of collapse; logpr: 0.0\n");
     logpr = 0.0;
   } else{
-#ifdef DEBUG
-    TRACE_ERR("  QUERY MACRO LM on (after transformation and size reduction) " << transformed_ng << "\n");
-#endif    
+    VERBOSE(3,"  QUERY MACRO LM on (after transformation and size reduction) " << transformed_ng << "\n");
     logpr = lmtable::clprob(transformed_ng, bow, bol, state, statesize, extendible);
   }
-#ifdef DEBUG
-  TRACE_ERR("  GET logpr: " << logpr << "\n");
-#endif
+  VERBOSE(3,"  GET logpr: " << logpr << "\n");
   
   return logpr;
 }
 
 bool lmmacro::transform(ngram &in, ngram &out){
-
-#ifdef DEBUG
-  TRACE_ERR(" lmmacro::transform(ngram &in, ngram &out), in = <" <<  in << ">\n");
-#endif
+  VERBOSE(3,"lmmacro::transform(ngram &in, ngram &out), in = <" <<  in << ">\n");
 
   //step 1: selection of the correct field
   ngram field_ng(getDict());
@@ -390,20 +372,17 @@ bool lmmacro::transform(ngram &in, ngram &out){
 
   if (out.size>lmtable::maxlevel()) out.size=lmtable::maxlevel();
 
-#ifdef DEBUG
-  TRACE_ERR(" lmmacro::transform(ngram &in, ngram &out), out = <" <<  out << ">\n");
-#endif
+  VERBOSE(3,"lmmacro::transform(ngram &in, ngram &out), out = <" <<  out << ">\n");
   return collapsed;
 }
 
 
 
 void lmmacro::field_selection(ngram &in, ngram &out) {
+  VERBOSE(3,"In lmmacro::field_selection(ngram &in, ngram &out) in    = " <<  in  << "\n");
+
   int microsize = in.size;
 
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::field_selection(ngram &in, ngram &out) in    = " <<  in  << "\n");
-#endif
   for (int i=microsize; i>0; i--) {
 
     char curr_token[BUFSIZ];
@@ -449,17 +428,12 @@ void lmmacro::field_selection(ngram &in, ngram &out) {
       **/
     }
   }
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::field_selection(ngram &in, ngram &out) out    = " <<  out  << "\n");
-#endif
+  VERBOSE(3,"In lmmacro::field_selection(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return;
 }
 
 bool lmmacro::collapse(ngram &in, ngram &out) {
-
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::collapse(ngram &in, ngram &out) in    = " <<  in  << "\n")
-#endif
+  VERBOSE(3,"In lmmacro::collapse(ngram &in, ngram &out) in    = " <<  in  << "\n")
 
   // fill the ngram out with the collapsed tokens
   //return true if collapse happens for the most recent token
@@ -502,19 +476,14 @@ bool lmmacro::collapse(ngram &in, ngram &out) {
   }
   // and insert the most recent token
   out.pushc(*in.wordp(1));
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::collapse(ngram &in, ngram &out) out    = " <<  out  << "\n");
-#endif
+  VERBOSE(3,"In lmmacro::collapse(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return false;
 }
 
 void lmmacro::mapping(ngram &in, ngram &out) {
- 
+  VERBOSE(3,"In lmmacro::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
+
   int microsize = in.size;
-  
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
-#endif
 
   // map microtag sequence (in) into the corresponding sequence of macrotags (possibly shorter) (out)
 
@@ -529,9 +498,7 @@ void lmmacro::mapping(ngram &in, ngram &out) {
 
     out.pushc(out_code);
   }
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
-#endif
+  VERBOSE(3,"In lmmacro::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return;
 }
 
@@ -549,10 +516,8 @@ const char *lmmacro::maxsuffptr(ngram micro_ng, unsigned int* size){
   else
     map(&micro_ng, &macro_ng); // mapping required
 
-#ifdef DEBUG
-  TRACE_ERR("lmmacro::lprob: micro_ng = " << micro_ng << "\n"
+  VERBOSE(2,"lmmacro::lprob: micro_ng = " << micro_ng << "\n"
 	    << "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
-#endif
 
   return lmtable::maxsuffptr(macro_ng,size);
 }
@@ -573,10 +538,8 @@ const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size){
   else
     map(&micro_ng, &macro_ng); // mapping required
 
-#ifdef DEBUG
-  TRACE_ERR("lmmacro::lprob: micro_ng = " << micro_ng << "\n"
+  VERBOSE(2,"lmmacro::lprob: micro_ng = " << micro_ng << "\n"
 	    <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n")
-#endif
 
   return lmtable::cmaxsuffptr(macro_ng,size);
  
@@ -585,10 +548,9 @@ const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size){
 
 void lmmacro::map(ngram *in, ngram *out) {
 
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::map, in = " << *in << endl
+  VERBOSE(2,"In lmmacro::map, in = " << *in << endl
 	    << " (selectedField = " << selectedField << " )\n");
-#endif
+
   if (selectedField==-2) // the whole token is compatible with the LM words
     One2OneMapping(in, out);
 
@@ -684,15 +646,11 @@ void lmmacro::map(ngram *in, ngram *out) {
 	    tag = strtok(0, "#");
 	}
 
-#ifdef DEBUG
-	TRACE_ERR("(tag,lemma) = " << tag << " " << lemma << "\n");
-#endif
+	VERBOSE(3,"(tag,lemma) = " << tag << " " << lemma << "\n");
       } else {
 	tag = curr_token;
 	lemma = curr_token;
-#ifdef DEBUG
-	TRACE_ERR("(tag=lemma) = " << tag << " " << lemma << "\n");
-#endif
+	VERBOSE(3,"(tag=lemma) = " << tag << " " << lemma << "\n");
       }
       if (tag) {
 	tag_ng.pushw(tag);
@@ -712,10 +670,7 @@ void lmmacro::map(ngram *in, ngram *out) {
     
   }
 
-#ifdef DEBUG
-  TRACE_ERR("In lmmacro::map, FINAL out = " << *out << endl);
-#endif
-
+  VERBOSE(2,"In lmmacro::map, FINAL out = " << *out << endl);
 }
 
 void lmmacro::One2OneMapping(ngram *in, ngram *out)
@@ -740,9 +695,7 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out)
 
   int microsize = in->size;
 
-#ifdef DEBUG
-  TRACE_ERR("In Micro2MacroMapping, in    = " <<  *in  << "\n");
-#endif
+  VERBOSE(2,"In Micro2MacroMapping, in    = " <<  *in  << "\n");
 
   // map microtag sequence (in) into the corresponding sequence of macrotags (possibly shorter) (out)
 
@@ -785,22 +738,19 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out)
 
 void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 {
-
-#ifdef DEBUG
-  TRACE_ERR("In Micro2MacroMapping, in    = " <<  *in  << "\n")
-#endif
+  VERBOSE(2,"In Micro2MacroMapping, in    = " <<  *in  << "\n")
 
   int microsize = in->size;
 
-#ifdef DEBUG
-  TRACE_ERR("In Micro2MacroMapping, lemmas:\n");
-  if (lexicaltoken2classMap)
-    for (int i=microsize; i>0; i--)
-      TRACE_ERR("lemmas[" << i << "]=" << lemmas[i] << " -> class -> " << lexicaltoken2classMap[lmtable::getDict()->encode(lemmas[i])] << endl);
-  else
-    for (int i=microsize; i>0; i--)
-      TRACE_ERR("lemmas[" << i << "]=" << lemmas[i] << endl);
-#endif
+  IFVERBOSE(3){
+  VERBOSE(3,"In Micro2MacroMapping, lemmas:\n");
+    if (lexicaltoken2classMap)
+      for (int i=microsize; i>0; i--)
+        VERBOSE(3,"lemmas[" << i << "]=" << lemmas[i] << " -> class -> " << lexicaltoken2classMap[lmtable::getDict()->encode(lemmas[i])] << endl);
+    else
+      for (int i=microsize; i>0; i--)
+        VERBOSE(3,"lemmas[" << i << "]=" << lemmas[i] << endl);
+  }
 
   // map microtag sequence (in) into the corresponding sequence of macrotags (possibly shorter) (out)
 
@@ -824,9 +774,7 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 	else
 	  sprintf(tag_lemma, "%s_%s", curr_macrotag, lemmas[microsize]);
 
-#ifdef DEBUG
-      TRACE_ERR("In Micro2MacroMapping, starting tag_lemma = >" <<  tag_lemma   << "<\n");
-#endif
+      VERBOSE(2,"In Micro2MacroMapping, starting tag_lemma = >" <<  tag_lemma   << "<\n");
 
       out->pushw(tag_lemma);
       free(lemmas[microsize]);
@@ -849,9 +797,7 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 	else
 	  sprintf(tag_lemma, "%s_%s", curr_macrotag, curr_lemma);
 
-#ifdef DEBUG
-      TRACE_ERR("In Micro2MacroMapping, tag_lemma = >" <<  tag_lemma   << "<\n");
-#endif
+      VERBOSE(2,"In Micro2MacroMapping, tag_lemma = >" <<  tag_lemma   << "<\n");
 
       if (strcmp(curr_macrotag,prev_macrotag) != 0 ||
 	  !(
@@ -860,25 +806,15 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]=='+' ) ||
 	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]==')' && curr_microtag[0]!='(' ))) {
 
-#ifdef DEBUG
-	TRACE_ERR("In Micro2MacroMapping, before pushw, out = " <<  *out << endl);
-#endif
+	VERBOSE(2,"In Micro2MacroMapping, before pushw, out = " <<  *out << endl);
 	out->pushw(tag_lemma);
-#ifdef DEBUG
-	TRACE_ERR("In Micro2MacroMapping, after pushw, out = " <<  *out << endl);
-#endif
+	VERBOSE(2,"In Micro2MacroMapping, after pushw, out = " <<  *out << endl);
       } else {
-#ifdef DEBUG
-	TRACE_ERR("In Micro2MacroMapping, before shift, out = " <<  *out << endl);
-#endif
+        VERBOSE(2,"In Micro2MacroMapping, before shift, out = " <<  *out << endl);
 	out->shift();
-#ifdef DEBUG
-	TRACE_ERR("In Micro2MacroMapping, after shift, out = " <<  *out << endl);
-#endif
+	VERBOSE(2,"In Micro2MacroMapping, after shift, out = " <<  *out << endl);
 	out->pushw(tag_lemma);
-#ifdef DEBUG
-	TRACE_ERR("In Micro2MacroMapping, after push, out = " <<  *out << endl);
-#endif
+	VERBOSE(2,"In Micro2MacroMapping, after push, out = " <<  *out << endl);
       }
       free(lemmas[i]);
     }
@@ -917,10 +853,10 @@ void lmmacro::loadLexicalClasses(const char *fn)
 
   lmtable::getDict()->incflag(0);
 
-#ifdef DEBUG
-  for (int x=0; x<lmtable::getDict()->size(); x++)
-    TRACE_ERR("class of <" << lmtable::getDict()->decode(x) << "> (code=" << x << ") = " << lexicaltoken2classMap[x] << endl);
-#endif
+  IFVERBOSE(3){
+    for (int x=0; x<lmtable::getDict()->size(); x++)
+      VERBOSE(3,"class of <" << lmtable::getDict()->decode(x) << "> (code=" << x << ") = " << lexicaltoken2classMap[x] << endl);
+  }
 
   return;
 }
