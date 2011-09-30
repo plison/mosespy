@@ -32,15 +32,10 @@
 #include <iostream>
 #include <ostream>
 #include <cassert>
+#include "util.h"
 #include "mempool.h"
 
 using namespace std;
-
-#ifdef TRACE_ENABLE
-#define TRACE_ERR(str) { std::cerr << str; }
-#else
-#define TRACE_ERR(str) { }
-#endif
 
 /*! The pool contains:
    - entries of size is
@@ -207,7 +202,7 @@ void mempool::map (ostream& co){
 
 void mempool::stat(){
   
-  TRACE_ERR("mempool class statistics\n"
+  VERBOSE(1, "mempool class statistics\n"
             << "entries " << entries
             << " blocks " << blocknum
             << " used memory " << (blocknum * true_size)/1024 << " Kb\n");
@@ -237,7 +232,7 @@ strstack::strstack(int bs){
 
 void strstack::stat(){
   
-  TRACE_ERR("strstack class statistics\n"
+  VERBOSE(1, "strstack class statistics\n"
             << "entries " << entries
             << " blocks " << blocknum
             << " used memory " << memory/1024 << " Kb\n");
@@ -493,7 +488,7 @@ void storage::stat(){
       waste+=poolset[i]->wasted();
     }
       
-      TRACE_ERR("storage class statistics\n"
+      VERBOSE(1, "storage class statistics\n"
                 << "alloc entries " << newcalls 
                 << " used memory " << newmemory/1024 << "Kb\n"
                 << "mpools " << setsize
