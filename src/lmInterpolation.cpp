@@ -65,9 +65,15 @@ void lmInterpolation::load(const std::string filename,int mmap){
   inp.getline(line,MAX_LINE,'\n');
   tokenN = parseWords(line,words,MAX_TOKEN);
 
-  if (tokenN != 2 || ((strcmp(words[0],"LMINTERPOLATION") != 0) && (strcmp(words[0],"lmmacro")!=0)))
+  if (tokenN != 2 || ((strcmp(words[0],"LMINTERPOLATION") != 0) && (strcmp(words[0],"lminterpolation")!=0)))
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMINTERPOLATION number_of_models\nweight_of_LM_1 filename_of_LM_1\nweight_of_LM_2 filename_of_LM_2");
+
   m_number_lm = atoi(words[1]);
+
+  m_weight.resize(m_number_lm);
+  m_file.resize(m_number_lm);
+  m_isinverted.resize(m_number_lm);
+  m_lm.resize(m_number_lm);
 
   VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_number_lm:"<< m_number_lm << std::endl;);
 
@@ -75,15 +81,26 @@ void lmInterpolation::load(const std::string filename,int mmap){
   for (int i=0;i<m_number_lm;i++){
     inp.getline(line,BUFSIZ,'\n');
     tokenN = parseWords(line,words,3);
-    if(tokenN != 2){
-      std::cerr << "Wrong input format." << std::endl;
-      exit(1);
-    }
-    m_weight.push_back((float) atof(words[0]));
-    m_lm_file.push_back(words[1]);
-  VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_lm_file:"<< words[1] << std::endl;);
 
-    m_lm.push_back(load_lm(m_lm_file[i],memmap,ngramcache_load_factor,dictionary_load_factor));
+    if(tokenN < 2 || tokenN >3){
+      error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMINTERPOLATION number_of_models\nweight_of_LM_1 filename_of_LM_1\nweight_of_LM_2 filename_of_LM_2");
+    }
+
+//check whether the (textual) LM has to be loaded as inverted	
+    m_isinverted[i] = false;
+    if(tokenN == 3){
+      if (strcmp(words[2],"inverted") == 0)
+         m_isinverted[i] = true;
+    }
+VERBOSE(2,"i:" << i << " m_isinverted[i]:" << m_isinverted[i] << endl);
+
+    m_weight[i] = (float) atof(words[0]);
+    m_file[i] = words[1];
+  VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_file:"<< words[1] << std::endl;);
+
+    m_lm[i] = load_lm(i,memmap,ngramcache_load_factor,dictionary_load_factor);
+//set the actual value for inverted flag, which is known only after loading the lM
+    m_isinverted[i] = m_lm[i]->is_inverted();
 
     dictionary *_dict=m_lm[i]->getDict();
     for (int j=0;j<_dict->size();j++){
@@ -110,21 +127,19 @@ void lmInterpolation::load(const std::string filename,int mmap){
   maxlev=order;
 }
 
-lmContainer* lmInterpolation::load_lm(std::string file,int memmap, float nlf, float dlf) {
+lmContainer* lmInterpolation::load_lm(int i,int memmap, float nlf, float dlf) {
 
         //checking the language model type
         lmContainer* lmt=NULL;
 
-        lmt = lmt->CreateLanguageModel(file,nlf,dlf);
+        lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
 
         //let know that table has inverted n-grams
-        if (isInverted){
-          lmt->is_inverted(isInverted);  //set inverted flag for each LM
-        }
+        lmt->is_inverted(m_isinverted[i]);  //set inverted flag for each LM
 
         lmt->setMaxLoadedLevel(requiredMaxlev);
 
-        lmt->load(file, memmap);
+        lmt->load(m_file[i], memmap);
        
         lmt->init_caches(lmt->maxlevel());
 	return lmt;

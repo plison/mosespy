@@ -51,7 +51,8 @@ class lmInterpolation: public lmContainer{
   int memmap;  //level from which n-grams are accessed via mmap
 
   std::vector<double> m_weight;
-  std::vector<std::string> m_lm_file;
+  std::vector<std::string> m_file;
+  std::vector<bool> m_isinverted;
   std::vector<lmContainer*> m_lm;
 
   int               maxlev; //maximun order of sub LMs;
@@ -67,7 +68,7 @@ class lmInterpolation: public lmContainer{
   virtual ~lmInterpolation(){};
 
   void load(const std::string filename,int mmap=0);
-  lmContainer* load_lm(std::string file, int memmap, float nlf, float dlf);
+  lmContainer* load_lm(int i, int memmap, float nlf, float dlf);
 
   virtual double clprob(ngram ng,            double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
   virtual double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
@@ -87,11 +88,11 @@ class lmInterpolation: public lmContainer{
 //set the inverted flag (used to set the inverted flag of each subLM, when loading)
   inline bool is_inverted(const bool flag){ return isInverted = flag; }
 
-//for an  Iterpolation LM this variable makes no sense
+//for an interpolation LM this variable does not make sense
 //for compatibility, we return true if all subLM return true
   inline bool is_inverted(){
     for (int i=0;i<m_number_lm;i++){
-      if (m_lm[i]->is_inverted() == false) return false;
+      if (m_isinverted[i] == false) return false;
     }
     return true;
   }
