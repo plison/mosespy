@@ -70,8 +70,9 @@ void print(prob_and_state_t* pst, std::ostream& out){
 lmtable::lmtable(float nlf, float dlf):lmContainer(){
   ngramcache_load_factor = nlf;	
   dictionary_load_factor = dlf;	
+  isInverted=false;
   configure(1,false);
-	
+
   dict=new dictionary((char *)NULL,1000000,dictionary_load_factor);
 	
   memset(table, 0, sizeof(table));

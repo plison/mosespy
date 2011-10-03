@@ -42,6 +42,7 @@ lmInterpolation::lmInterpolation(float nlf, float dlf){
   
   order=0;
   memmap=0;
+  isInverted=false;
 }
 
 void lmInterpolation::load(const std::string filename,int mmap){
@@ -118,9 +119,7 @@ lmContainer* lmInterpolation::load_lm(std::string file,int memmap, float nlf, fl
 
         //let know that table has inverted n-grams
         if (isInverted){
-	  for (int i=0;i<m_number_lm;i++){
-            m_lm[i]->is_inverted(isInverted);  //set inverted flag for each LM
-          }
+          lmt->is_inverted(isInverted);  //set inverted flag for each LM
         }
 
         lmt->setMaxLoadedLevel(requiredMaxlev);

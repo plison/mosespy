@@ -208,7 +208,7 @@ class lmtable: public lmContainer{
 //this choice is disregarded if a binary LM is loaded,
 //because the info is stored into the header
   bool is_inverted(const bool flag){ return isInverted=flag; }
-  bool is_inverted(){return isInverted;}
+  bool is_inverted(){ return isInverted;}
 	
   void configure(int n,bool quantized);
     
