@@ -34,7 +34,7 @@
 
 
 #ifndef GROWTH_STEP 
-#define GROWTH_STEP 100000
+#define GROWTH_STEP 1.5
 #endif
 
 #ifndef DICT_INITSIZE

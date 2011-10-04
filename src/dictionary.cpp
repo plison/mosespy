@@ -30,6 +30,7 @@
 #include "htable.h"
 #include "dictionary.h"
 #include "index.h"
+#include "util.h"
 
 using namespace std;
 
@@ -425,27 +426,26 @@ void dictionary::stat(){
 }
 
 void dictionary::grow(){
-  
   delete htb;  
 
   cerr << "+\b";
 
-  dict_entry *tb2=new dict_entry[lim+GROWTH_STEP];
+  int newlim=(int) (lim*GROWTH_STEP);
+  dict_entry *tb2=new dict_entry[newlim];
   
   memcpy(tb2,tb,sizeof(dict_entry) * lim );
   
   delete [] tb; tb=tb2;
   
-  htb=new HASHTABLE_t((size_t) ((lim+GROWTH_STEP)/load_factor));
-  
+  htb=new HASHTABLE_t((size_t) ((newlim)/load_factor));
   for (int i=0;i<lim;i++){
     //always insert without checking whether the word is already in
     htb->insert((char*)&tb[i].word);
   }
 
-  for (int i=lim;i<lim+GROWTH_STEP;i++) tb[i].freq=0;
+  for (int i=lim;i<newlim;i++) tb[i].freq=0;
   
-  lim+=GROWTH_STEP;
+  lim=newlim;
 }
 
 void dictionary::save(char *filename,int freqflag){
