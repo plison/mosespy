@@ -16,7 +16,7 @@ echo $libinstallname
 tmpdir=${PACKAGE_NAME}-${PACKAGE_VERSION}
 
 if [ -d $tmpdir ] ; then
-echo "directory $tmdir already exists. Please check!"
+echo "directory $tmpdir already exists. Please check!"
 exit 1;
 fi
 
