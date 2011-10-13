@@ -1,4 +1,4 @@
-// $Id: gzfilebuf.h 236 2009-02-03 13:25:19Z nicolabertoldi $
+	// $Id: gzfilebuf.h 236 2009-02-03 13:25:19Z nicolabertoldi $
 
 #ifndef _GZFILEBUF_H_
 #define _GZFILEBUF_H_
@@ -6,6 +6,7 @@
 #include <streambuf>
 #include <cstring> 
 #include <zlib.h>
+#include <iostream>
 
 class gzfilebuf : public std::streambuf {
 public:
