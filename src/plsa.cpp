@@ -59,7 +59,6 @@ int main(int argc, char **argv)
 	char *ctfile=NULL;
 	char *txtfile=NULL;
 	char *binfile=NULL;
-	char *docfile=NULL;
 	
 	int binsize=0;
 	int topics=0;  //number of topics
@@ -98,10 +97,7 @@ int main(int argc, char **argv)
 				  
 				  "TxtFile", CMDSTRINGTYPE, &txtfile,
 				  "txt", CMDSTRINGTYPE, &txtfile,
-
-				  "DocFile", CMDSTRINGTYPE, &docfile,
-				  "doc", CMDSTRINGTYPE, &docfile,
-
+				  
 				  "Inference", CMDSTRINGTYPE, &adafile,
 				  "inf", CMDSTRINGTYPE, &adafile,
 				  
@@ -147,9 +143,6 @@ int main(int argc, char **argv)
 		cerr <<"Infer a full 1-gram distribution from a model and a small text. The 1-gram\n";
 		cerr <<"is saved in the feature file. The 1-gram\n";
 		cerr <<"\n";
-
-		cerr <<"Optional parameters\n";
-		cerr <<"-doc=<file>: Output the topic/document distributions.\n";
 		exit(1);	
 	}
 	
@@ -219,7 +212,6 @@ int main(int argc, char **argv)
 	if (trainfile){
 		tc.train(trainfile,it,.5,1,0.5,st);
 		if (txtfile) tc.saveWtxt(txtfile);
-		if (docfile) tc.saveHtxt(trainfile, docfile);
 	}
 	
 	if (adafile){

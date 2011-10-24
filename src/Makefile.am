@@ -29,9 +29,7 @@ libirstlm_la_HEADERS = \
         normcache.h \
         shiftlm.h \
 	cplsa.h \
-	doc.h \
-	lmadapt.h \
-	lmadaptplsa.h 
+	doc.h
 
 libirstlm_la_SOURCES = \
         cmd.c \
@@ -56,9 +54,7 @@ libirstlm_la_SOURCES = \
         normcache.cpp \
         shiftlm.cpp \
 	cplsa.cpp \
-	doc.cpp \
-	lmadapt.cpp \
-	lmadaptplsa.cpp
+	doc.cpp
 
 CLEANFILES = $(BUILT_SOURCES)
 
@@ -67,7 +63,7 @@ libirstlm_la_LIBADD = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 LDADD = -lirstlm 
 DEPENDENCIES = libirstlm.la
 
-bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm test-lm plsa
+bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa
 
 dict_SOURCES = dict.cpp
 dict_DEPENDENCIES = $(DEPENDENCIES)
@@ -87,6 +83,4 @@ tlm_SOURCES = tlm.cpp
 tlm_DEPENDENCIES = $(DEPENDENCIES)
 plsa_SOURCES = plsa.cpp
 plsa_DEPENDENCIES = $(DEPENDENCIES)
-test_lm_SOURCES = test-lm.cpp
-test_lm_DEPENDENCIES = $(DEPENDENCIES)
 
