@@ -38,6 +38,8 @@ public:
   plsa(dictionary* dictfile,int top,
        char* baseFile, char* featFile,char* hfile,char* wfile,char* tfile);
 
+  plsa(dictionary* dictfile); //! Simplified constructor for use with LM Adaptation
+
   ~plsa(){
     //destroy W
     for (int i=0;i<dict->size();i++){
@@ -52,15 +54,24 @@ public:
   int  saveT(char* fname);
   int combineT(char* tlist);
   int saveWtxt(char* fname);
+  int saveTtxt(char* fname);
+  int saveHtxt(char *trainfile, char* fname);
   int loadW(char* fname);
   
   int initW(double noise,int spectopic);
   int initH(double noise,int maxdoc);
   
+  int infer(doc *trset, int maxiter, double noiseH);
   int train(char *trainfile,int maxiter,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
   
   int saveFeat(char* fname);
 
+  int loadModel(char* fname); //! Loads a PLSA model.
+
+private:
+  void initArrays(); //! Initialize the array data structures.
+
+  bool isInitialized;
 };
 
 

@@ -32,13 +32,29 @@ using namespace std;
 
 #define MY_RAND (((double)rand()/RAND_MAX)* 2.0 - 1.0)
 
+plsa::plsa(dictionary* dictfile) {
+  isInitialized = false;
+  dict = dictfile;
+
+  // TODO: Generate a random hinfname for each inference run.
+  hinfname=new char[BUFSIZ];
+  sprintf(hinfname,"%s","hfff");
+
+  houtfname=new char[BUFSIZ];
+  sprintf(houtfname,"%s.out",hinfname);
+
+  // Force topic count to zero so that the count will be set by the loaded model.
+  topics = 0;
+}
+
 plsa::plsa(dictionary* dictfile,int top,
 		   char* baseFile,char* featFile,char* hFile,char* wFile,char* tFile){
-	
+	isInitialized = false;
 	dict = dictfile;
 	
 	topics=top;
 	
+	/*
 	assert (topics>0);
 	
 	W=new double* [dict->size()+1];
@@ -48,6 +64,8 @@ plsa::plsa(dictionary* dictfile,int top,
 	for (int i=0;i<(dict->size()+1);i++) T[i]=new double [topics];
 	
 	H=new double [topics];
+	*/
+	initArrays();
 	
 	basefname=baseFile;
 	featfname=featFile;
@@ -60,6 +78,25 @@ plsa::plsa(dictionary* dictfile,int top,
 	houtfname=new char[BUFSIZ];
 	sprintf(houtfname,"%s.out",hinfname);	
 	cerr << "Hfile in:" << hinfname << " out:" << houtfname << "\n";
+}
+
+void plsa::initArrays() {
+
+  if (!isInitialized) {
+    assert (topics > 0);
+
+    W=new double* [dict->size()+1];
+    for (int i=0;i<(dict->size()+1);i++)
+      W[i]=new double [topics];
+
+    T=new double* [dict->size()+1];
+    for (int i=0;i<(dict->size()+1);i++)
+      T[i]=new double [topics];
+
+    H=new double [topics];
+
+    isInitialized = true;
+  }
 }
 
 int plsa::initW(double noise,int spectopic){
@@ -101,7 +138,10 @@ int plsa::initH(double noise,int n){
     for (int j=0;j<n;j++){
       double TotH=0;
       for (int t=0;t<topics;t++) TotH+=H[t]=1+noise * MY_RAND;
-      for (int t=0;t<topics;t++) H[t]/=TotH;
+      for (int t=0;t<topics;t++) {
+        H[t]/=TotH;
+      }
+      
       hinfd.write((const char*)H,topics *sizeof(double));
     }
     hinfd.close();
@@ -138,6 +178,50 @@ int plsa::saveW(char* fname){
   return 1;
 }
 
+int plsa::saveHtxt(char *trainfile, char* fname) {
+	mfstream out(fname,ios::out);	
+
+	mfstream hindf(hinfname,ios::in);
+	hindf.clear();
+	// mfstream hindf(houtfname,ios::in);
+	doc trset(dict,trainfile);
+	trset.open(); //n is known
+
+	// int i = 0;
+
+	cout << "Writing H..." << "\n";
+	out << topics << "\n";
+	for (int i = 1; i <= trset.n; i++) {
+		//resume H
+		hindf.read((char *)H,topics * sizeof(float));
+
+		out << i << " ";
+		for (int t=0; t<topics; t++) {
+			out << H[t] << " ";
+		}
+
+		out << "\n";
+	}
+
+	out.close();
+	return 1;
+}
+
+int plsa::saveTtxt(char* fname){
+  mfstream out(fname,ios::out);
+  out << topics << "\n";
+  for (int i=0; i<dict->size(); i++) {
+    i++;
+    out << i << " ";
+    for (int t=0; t < topics; t++) {
+      out << T[i][t] << " " ;
+    }
+    out << "\n";
+  }
+  out.close();
+  return 1;
+}
+
 int plsa::saveT(char* fname){
   mfstream out(fname,ios::out);	
   out.write((const char*)&topics,sizeof(int));
@@ -152,7 +236,6 @@ int plsa::saveT(char* fname){
   out.close();
   return 1;
 }
-
 
 int plsa::combineT(char* tlist){
 	
@@ -191,6 +274,24 @@ int plsa::combineT(char* tlist){
 	return 1;
 }
 
+// TODO: This looks too similar to plsa::loadW(). Consolidate them.
+int plsa::loadModel(char* fname) {
+  int r;
+  mfstream inp(fname,ios::in);
+  inp.read((char *)&r,sizeof(int)); //number of topics
+
+  topics = r;
+
+  // Now that the # of topics is set, we can initialize the data structures.
+  initArrays();
+
+  // Load W
+  for (int i=0;i<dict->size();i++)
+      inp.read((char *)W[i],sizeof(double)*topics);
+
+  return 1;
+}
+
 int plsa::loadW(char* fname){
   int r;
   mfstream inp(fname,ios::in);
@@ -201,10 +302,10 @@ int plsa::loadW(char* fname){
     exit(2);
   }
   else
-	topics=r;
-  
-  for (int i=0;i<dict->size();i++)
+    topics=r;
+  for (int i=0;i<dict->size();i++) {
     inp.read((char *)W[i],sizeof(double)*topics);
+  }
 
   return 1;
 }
@@ -234,7 +335,9 @@ int plsa::saveFeat(char* fname){
   
   for (int i=0;i<dict->size();i++){
     *ng.wordp(1)=i;
-    ng.freq=(int)floor((WH[i]/maxp) * 1000000);
+//    ng.freq=(int)floor((WH[i]/maxp) * 1000000) + 1;
+    ng.freq=(int)floor(WH[i] * 10000000);
+    //ng.freq=(int)floor((WH[i]/minp));
     if (ng.freq){
       ng2.trans(ng);
       ng2.freq=ng.freq;
@@ -250,6 +353,123 @@ int plsa::saveFeat(char* fname){
   return 1;
 }
 
+//int plsa::infer(std::string s, int maxiter, double noiseH, int flagW, double noiseW, int spectopic) {
+//  dsize = dict->size(); // includes possible OOV
+//  srand(100);
+//
+//  if (flagW) {
+//    // initialize W
+//    initW(noiseW, spectopic);
+//  }
+//
+//  initH(noiseH, 1);
+//
+//  //support array
+//  double *WH = new double [dsize];
+//
+//  //command
+//  char cmd[100];
+//  sprintf(cmd,"mv %s %s",houtfname,hinfname);
+//
+//  //start of training
+//
+//  double lastLL=10;
+//  double LL=-1e+99;
+//
+//  int iter=0;
+//  int r=topics;
+//
+//
+//}
+
+int plsa::infer(doc *trset, int maxiter, double noiseH) {
+  int dsize=dict->size(); //includes possible OOV
+
+  srand(100);
+  initH(noiseH, trset->n);
+
+  // support array
+  double *WH = new double[dsize];
+
+  // command
+  char cmd[100];
+  sprintf(cmd,"mv %s %s",houtfname,hinfname);
+
+  //start of training
+  double lastLL=10;
+  double LL=-1e+99;
+
+  int iter=0;
+  int r=topics;
+
+  while (iter < maxiter) {
+    lastLL = LL;
+    LL = 0;
+
+    mfstream hindf(hinfname,ios::in);
+    mfstream houtdf(houtfname,ios::out);
+
+    while(trset->read()) {
+      int m = trset->m;
+      int j = trset->cd; // current document
+      int N = 0; // doc length
+
+      // resume H
+      hindf.read((char *)H, topics * sizeof(double));
+
+      // precompute WHij z=0,...m-1; j=n-1 fixed
+      for (int i =0; i < m; i++) {
+        WH[trset->V[i]] = 0;
+        N += trset->N[trset->V[i]];
+
+        for (int t = 0; t < r; t++) {
+          WH[trset->V[i]] += W[trset->V[i]][t] * H[t];
+        }
+
+        LL += trset->N[trset.V[i]] * log(WH[trset->V[i]]);
+      }
+
+      // Update Haj
+      double totH = 0;
+      for (int t = 0; t < r; t++) {
+        double tmpHaj = 0;
+        for (int i = 0; i < m; i++) {
+          tmpHaj += (trset->N[trset->V[i]] * W[trset->V[i]][t] * H[t] / WH[trset->V[i]]);
+        }
+
+        H[t] = tmpHaj / (double)N;
+        totH += H[t];
+      }
+
+      // Verify that totH sums to unity
+      if (totH > 1.000001 || totH < 0.999999999) {
+        cerr << "totH=" << totH << "\n";
+        // TODO: We probably don't want to just throw an exit code. Perhaps exception handling?
+        exit(1);
+      }
+
+      // Save H
+      houtdf.write((const char*)H,topics * sizeof(double));
+
+      // Start a new document
+      if (!(j % 10000)) cerr << ".";
+
+      hindf.close();
+      houtdf.close();
+
+      system(cmd);
+    }
+
+    trset->reset();
+
+    cout << "iteration: " << ++iter << " LL: " << LL << "\n";
+  }
+
+  // TODO: Save features
+
+  delete [] WH;
+  return 1;
+}
 
 int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noiseW,int spectopic){
 	
@@ -309,7 +529,7 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
 				//resume H
 				hindf.read((char *)H,topics * sizeof(double));
 				
-				//precompute WHij i=0,...,m-1; j=n-1 fixed
+				//precompute WHij z=0,...,m-1; j=n-1 fixed
 				for (int i=0;i<m;i++){
 					WH[trset.V[i]]=0;
 					N+=trset.N[trset.V[i]];
@@ -337,6 +557,7 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
 								 H[t]/WH[trset.V[i]]);
 					H[t]=tmpHaj/(double)N;
 					totH+=H[t];
+
 				}
 				
 				if(totH>1.000001 || totH<0.999999999){
@@ -355,7 +576,6 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
 			hindf.close();
 			houtdf.close();
 			
-			cerr << cmd <<"\n";
 			system(cmd);
 		}
 		

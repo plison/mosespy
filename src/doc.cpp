@@ -29,9 +29,21 @@ using namespace std;
 #include "n_gram.h"
 #include "doc.h"
 
+#include <sstream>
 
+doc::doc(dictionary* d) {
+  dict=d;
+    n=0;
+    m=0;
+    V=new int[dict->size()];
+    N=new int[dict->size()];
+    T=new int[dict->size()];
+    cd=-1;
+    df=NULL;
+    loadFromFile=false;
+}
 
-doc::doc(dictionary* d,char* docfname){
+doc::doc(dictionary* d,char* docfname) {
   dict=d;
   n=0;
   m=0;
@@ -41,6 +53,7 @@ doc::doc(dictionary* d,char* docfname){
   cd=-1;
   dfname=docfname;
   df=NULL;
+  loadFromFile=true;
 };
 
 doc::~doc(){
@@ -49,9 +62,42 @@ doc::~doc(){
   delete [] T;
 }
 
+int doc::loadstring(const char* text) {
+  std::istringstream instr(text);
 
+  // Only one document is assumed.
+  n = 1;
+
+  // Assuming one line in the string
+  m=0;
+
+  // Init word counts
+  for (int i=0;i<dict->size();i++) N[i]=0;
+
+  int eod=dict->encode(dict->EoD());
+  int bod=dict->encode(dict->BoD());
+
+  ngram ng(dict);
+
+  while(instr >> ng){
+    if (ng.size>0){
+      if (*ng.wordp(1)==bod){ng.size=0; continue;}
+      if (*ng.wordp(1)==eod){ng.size=0; break;}
+      N[*ng.wordp(1)]++;
+      if (N[*ng.wordp(1)]==1)V[m++]=*ng.wordp(1);
+    }
+  }
+  cd++;
+
+  return 1;
+}
 
 int doc::open(){
+	// Make sure a filename is specified.
+  if (!loadFromFile) {
+	    cerr << "doc::open no file name specified\n";
+	    exit(0);
+	}
 	
 	df=new mfstream(dfname,ios::in);
 	

@@ -22,6 +22,7 @@
 
 class doc{
   bool binary;   //is file in binary format?
+  bool loadFromFile; //! load the dictionary from a file?
   mfstream* df; //doc file descriptor
   char* dfname; //doc file name
   dictionary* dict;
@@ -34,10 +35,12 @@ class doc{
   int* N;      //frequencies in doc
   int* T;      //temporary frequencies
 
+  doc(dictionary* d);
   doc(dictionary* d,char* docfname);
   ~doc();
   int count();
   int open();
+  int loadstring(const char* text);
   int save(char* fname);
   int savernd(char* fname,int num);
   int save(char* fname,int bsz);
