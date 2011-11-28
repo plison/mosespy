@@ -143,13 +143,18 @@ if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
 fi
 
 #check tmpdir
+tmpdir_created=0;
 if [ ! -d $tmpdir ]; then
    echo "Temporary directory $tmpdir not found";
    echo "creating $tmpdir";
    mkdir -p $tmpdir;
+   tmpdir_created=1;
 else
     echo "Cleaning temporary directory $tmpdir";
     rm $tmpdir/dict* $tmpdir/ngram.dict.* $tmpdir/lm.dict.* $tmpdir/ikn.stat.* 2> /dev/null
+    if [ $? != 0 ]; then
+        echo "Warning: some temporary files could not be removed"
+    fi
 fi
 
 
@@ -189,7 +194,12 @@ $scr/merge-sublm.pl --size $order --sublm $tmpdir/lm.dict -lm $outfile  >> $logf
 echo "Cleaning temporary directory $tmpdir";
 rm $tmpdir/dict* $tmpdir/ngram.dict.* $tmpdir/lm.dict.* $tmpdir/ikn.stat.dict.* 2> /dev/null
 
-echo "Removing temporary directory $tmpdir";
-rmdir $tmpdir 2> /dev/null
-
-exit
+if [ $tmpdir_created -eq 1 ]; then
+    echo "Removing temporary directory $tmpdir";
+    rmdir $tmpdir 2> /dev/null
+    if [ $? != 0 ]; then
+        echo "Warning: the temporary directory could not be removed."
+    fi
+fi
+ 
+exit 0
