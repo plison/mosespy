@@ -27,7 +27,7 @@
 
 
 #define LMTMAXLEV  20
-#define MAX_LINE  1024
+#define MAX_LINE  100000
 
 std::string gettempfolder();
 void createtempfile(std::ofstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);

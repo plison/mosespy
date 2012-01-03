@@ -44,7 +44,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 #define LMTMAXLEV  20
-#define MAX_LINE  1024
+#define MAX_LINE  100000
 
 #ifndef  LMTCODESIZE
 #define  LMTCODESIZE  (int)3
