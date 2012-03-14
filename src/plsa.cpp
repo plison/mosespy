@@ -54,6 +54,7 @@ int main(int argc, char **argv)
 	char *featurefile=NULL;
 	char *basefile=NULL;
 	char *hfile=NULL;
+	char *tmphfile=NULL;
 	char *tfile=NULL;
 	char *wfile=NULL;
 	char *ctfile=NULL;
@@ -83,8 +84,8 @@ int main(int argc, char **argv)
 				  "Model", CMDSTRINGTYPE, &basefile,
 				  "m", CMDSTRINGTYPE, &basefile,
 				  
-				  "HFile", CMDSTRINGTYPE, &hfile,
-				  "hf", CMDSTRINGTYPE, &hfile,
+				  "HFile", CMDSTRINGTYPE, &tmphfile,
+				  "hf", CMDSTRINGTYPE, &tmphfile,
 				  
 				  "WFile", CMDSTRINGTYPE, &wfile,
 				  "wf", CMDSTRINGTYPE, &wfile,
@@ -119,6 +120,7 @@ int main(int argc, char **argv)
 				  (char *)NULL
 				  );
 	
+
 	GetParams(&argc, &argv, (char*) NULL);
 	
 	if (argc==1 || help){
@@ -170,9 +172,14 @@ int main(int argc, char **argv)
 		exit(1);
     }
 	
-	if (!hfile){
+	if (!tmphfile){
 		//set default value
-		 strcpy(hfile,"hfff");
+		hfile=new char[4+1];
+		strcpy(hfile,"hfff");
+	}else{
+		//set the value of the parameter
+		hfile=new char[strlen(tmphfile)+1];
+		strcpy(hfile,tmphfile);
 	}
 
 	dictionary dict(dictfile);
@@ -219,6 +226,7 @@ int main(int argc, char **argv)
 		tc.train(adafile,it,.0);
 	}
 	if (strcmp(hfile,"hfff")==0)  system("rm -f hfff");
+	delete hfile;
 	
 	exit(1); 
 }
