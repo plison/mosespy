@@ -1,5 +1,7 @@
 #! /bin/sh
 
+set -m # Enable Job Control
+
 usage()
 {
 cat << EOF
@@ -171,9 +173,11 @@ echo "used to generate n-gram blocks,  so that sub language model blocks results
 for sdict in $tmpdir/dict.*;do
 sdict=`basename $sdict`
 echo $sdict;
-$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary  -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1
+$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary  -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
 done
 
+# Wait for all parallel jobs to finish
+while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
 echo "Estimating language models for each word list"
 for sdict in `ls $tmpdir/dict.*` ; do
@@ -181,12 +185,15 @@ sdict=`basename $sdict`
 echo $sdict;
 
 if [ $smoothing = "--kneser-ney" -o $smoothing = "--improved-kneser-ney" ]; then
-$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile #2>&1
+$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile #2>&1 &
 else
-$scr/build-sublm.pl $verbose $prune $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile #2>&1
+$scr/build-sublm.pl $verbose $prune $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile #2>&1 &
 fi
 
 done
+
+# Wait for all parallel jobs to finish
+while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
 echo "Merging language models into $outfile"
 $scr/merge-sublm.pl --size $order --sublm $tmpdir/lm.dict -lm $outfile  >> $logfile 2>&1
@@ -203,3 +210,7 @@ if [ $tmpdir_created -eq 1 ]; then
 fi
  
 exit 0
+
+
+
+
