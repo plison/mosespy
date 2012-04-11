@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 #adds sentence start/end symbols to standard input and 
 #trims words longer than 80 characters

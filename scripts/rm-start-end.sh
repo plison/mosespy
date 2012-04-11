@@ -1,6 +1,6 @@
-#! /bin/sh
+#! /bin/bash
 
-#rm star-end symbols
+#rm start-end symbols
 
 sed 's/<s>//g' | sed 's/<\/s>//g' | sed 's/^ *//' | sed 's/ *$//' | sed '/^$/d'
 

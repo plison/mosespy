@@ -1,4 +1,4 @@
-##! /bin/sh
+#! /bin/bash
 
 usage()
 {
@@ -13,7 +13,7 @@ OPTIONS:
    -o      Output gzipped LM, e.g. lm.gz
    -k      Number of splits (default 5)
    -n      Order of language model (default 3)
-   -t      Directory for temporary files (default ./stat)
+   -t      Directory for temporary files (default ./stat_PID)
    -p      Prune singleton n-grams (default false)
    -u      Use uniform word frequency for dictionary splitting (default false)
    -q      parameters for qsub ("-q <queue>", and any other)
@@ -40,6 +40,8 @@ fi
 #paths to scripts and commands in irstlm
 scr=$IRSTLM/bin
 bin=$IRSTLM/bin
+gzip=`which gzip 2> /dev/null`;
+gunzip=`which gunzip 2> /dev/null`;
 
 #check irstlm installation
 if [ ! -e $bin/dict -o  ! -e $scr/split-dict.pl ]; then
@@ -49,7 +51,7 @@ fi
 
 #default parameters
 logfile=/dev/null
-tmpdir=stat$$
+tmpdir=stat_$$
 order=3
 parts=3
 inpfile="";
@@ -109,7 +111,7 @@ do
                      ;;
 	     *) 
 		 echo "wrong smoothing setting";
-		 exiti 4;
+		 exit 4;
 	     esac
              ;;
          p)
@@ -132,8 +134,8 @@ do
 done
 
 
-if [ $verbose ];then
-echo inpfile=\"$inpfile\" outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary
+if [ $verbose ]; then
+echo inpfile=\"$inpfile\" outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose
 fi
 
 if [ ! "$inpfile" -o ! "$outfile" ]; then
@@ -152,16 +154,19 @@ if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout"]; then
 fi
 
 #check tmpdir
+tmpdir_created=0;
 if [ ! -d $tmpdir ]; then
-   echo "Temporary directory $tmpdir not found";
+   echo "Temporary directory $tmpdir does not exist";
    echo "creating $tmpdir";
    mkdir -p $tmpdir;
+   tmpdir_created=1;
 else
-    echo "Cleaning temporary directory $tmpdir";
-    rm $tmpdir/dict* $tmpdir/ngram.dict.* $tmpdir/lm.dict.* $tmpdir/ikn.stat.dict.* 2> /dev/null
+   echo "Cleaning temporary directory $tmpdir";
+   rm -r $tmpdir 2> /dev/null
+   if [ $? != 0 ]; then
+      echo "Warning: some temporary files could not be removed"
+   fi
 fi
-
-
 
 workingdir=`pwd | perl -pe 's/\/nfsmnt//g'`
 cd $workingdir
@@ -198,13 +203,16 @@ qsubname="NGT"
 
 unset getpids
 echo "Extracting n-gram statistics for each word list"
+echo "Important: dictionary must be ordered according to order of appearance of words in data"
+echo "used to generate n-gram blocks,  so that sub language model blocks results ordered too"
+
 for sfx in ${suffix[@]} ; do
 
 (\
 qsub $queueparameters -b no -j yes -sync no -o $qsubout.$sfx -e $qsuberr.$sfx -N $qsubname-$sfx << EOF
 cd $workingdir
 echo exit status $?
-$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="gzip -c > $tmpdir/ngram.dict.${sfx}.gz" -fd="$tmpdir/dict.${sfx}" $dictionary -iknstat="$tmpdir/ikn.stat.dict.${sfx}" 
+$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.dict.${sfx}.gz" -fd="$tmpdir/dict.${sfx}" $dictionary -iknstat="$tmpdir/ikn.stat.dict.${sfx}" 
 echo exit status $?
 echo
 EOF
@@ -237,7 +245,7 @@ qsub $queueparameters -b no -j yes -sync no -o $qsubout.$sfx -e $qsuberr.$sfx -N
 cd $workingdir
 echo exit status $?
 
-$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict*" --size $order --ngrams "gunzip -c $tmpdir/ngram.dict.${sfx}.gz" -sublm $tmpdir/lm.dict.${sfx}  
+$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.dict.${sfx}.gz" -sublm $tmpdir/lm.dict.${sfx}  
 echo exit status $?
 
 echo
@@ -258,7 +266,7 @@ qsub $queueparameters -b no -j yes -sync no -o $qsubout.$sfx -e $qsuberr.$sfx -N
 cd $workingdir
 echo exit status $?
 
-$scr/build-sublm.pl $verbose $prune $smoothing --size $order --ngrams "gunzip -c $tmpdir/ngram.dict.${sfx}.gz" -sublm $tmpdir/lm.dict.${sfx}  
+$scr/build-sublm.pl $verbose $prune $smoothing --size $order --ngrams "$gunzip -c $tmpdir/ngram.dict.${sfx}.gz" -sublm $tmpdir/lm.dict.${sfx}  
 
 echo
 EOF
@@ -292,9 +300,16 @@ EOF
 ) 2>&1 > $qsublog
 
 echo "Cleaning temporary directory $tmpdir";
-rm -r $tmpdir 2> /dev/null
+rm $tmpdir/* 2> /dev/null
 rm $qsubout* $qsuberr* $qsublog* 2> /dev/null
 
-exit
+if [ $tmpdir_created -eq 1 ]; then
+    echo "Removing temporary directory $tmpdir";
+    rmdir $tmpdir 2> /dev/null
+    if [ $? != 0 ]; then
+        echo "Warning: the temporary directory could not be removed."
+    fi
+fi
 
+exit 0
 

@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 #usage:
 #ngt-split.sh <input> <output> <size> <parts>

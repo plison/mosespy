@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 set -m # Enable Job Control
 
@@ -15,7 +15,7 @@ OPTIONS:
    -o      Output gzipped LM, e.g. lm.gz
    -k      Number of splits (default 5)
    -n      Order of language model (default 3)
-   -t      Directory for temporary files (default ./stat)
+   -t      Directory for temporary files (default ./stat_PID)
    -p      Prune singleton n-grams (default false)
    -u      Use uniform word frequency for dictionary splitting (default false)
    -s      Smoothing methods: witten-bell (default), kneser-ney, improved-kneser-ney
@@ -32,7 +32,7 @@ if [ ! $IRSTLM ]; then
 fi
 
 #paths to scripts and commands in irstlm
-scr=$IRSTLM/bin/
+scr=$IRSTLM/bin
 bin=$IRSTLM/bin
 gzip=`which gzip 2> /dev/null`;
 gunzip=`which gunzip 2> /dev/null`;
@@ -45,7 +45,7 @@ fi
 
 #default parameters
 logfile=/dev/null
-tmpdir=stat
+tmpdir=stat_$$
 order=3
 parts=3
 inpfile="";
@@ -147,13 +147,13 @@ fi
 #check tmpdir
 tmpdir_created=0;
 if [ ! -d $tmpdir ]; then
-   echo "Temporary directory $tmpdir not found";
+   echo "Temporary directory $tmpdir does not exist";
    echo "creating $tmpdir";
    mkdir -p $tmpdir;
    tmpdir_created=1;
 else
-    echo "Cleaning temporary directory $tmpdir";
-    rm $tmpdir/dict* $tmpdir/ngram.dict.* $tmpdir/lm.dict.* $tmpdir/ikn.stat.* 2> /dev/null
+   echo "Cleaning temporary directory $tmpdir";
+    rm $tmpdir/* 2> /dev/null
     if [ $? != 0 ]; then
         echo "Warning: some temporary files could not be removed"
     fi
@@ -185,9 +185,9 @@ sdict=`basename $sdict`
 echo $sdict;
 
 if [ $smoothing = "--kneser-ney" -o $smoothing = "--improved-kneser-ney" ]; then
-$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile #2>&1 &
+$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile 2>&1 &
 else
-$scr/build-sublm.pl $verbose $prune $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile #2>&1 &
+$scr/build-sublm.pl $verbose $prune $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile 2>&1 &
 fi
 
 done
@@ -199,7 +199,7 @@ echo "Merging language models into $outfile"
 $scr/merge-sublm.pl --size $order --sublm $tmpdir/lm.dict -lm $outfile  >> $logfile 2>&1
 
 echo "Cleaning temporary directory $tmpdir";
-rm $tmpdir/dict* $tmpdir/ngram.dict.* $tmpdir/lm.dict.* $tmpdir/ikn.stat.dict.* 2> /dev/null
+rm $tmpdir/* 2> /dev/null
 
 if [ $tmpdir_created -eq 1 ]; then
     echo "Removing temporary directory $tmpdir";
