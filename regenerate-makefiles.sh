@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # NOTE:
 # Versions 1.9 (or higher) of aclocal and automake are required.
@@ -14,7 +14,7 @@
 force=$1;
 # set parameter force to the value "--force" if you want to recreate all links to the autotools
 
-function die () {
+die () {
   echo "$@" >&2
   exit 1
 }
