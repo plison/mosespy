@@ -1255,21 +1255,21 @@ int ngramtable::get(ngram& ng,int n,int lev){
 
 int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram& ng,ACTION action,int maxl){
 	
-  assert(lev<=maxlev);
+	assert(lev<=maxlev);
 	
-  if ((I_FREQ_NUM==0) && (maxl < maxlev)){
-    cerr << "scan: ngram cannot be smaller than LEAFPROB table\n";
-    exit(1);
-  }
-  
+	if ((I_FREQ_NUM==0) && (maxl < maxlev)){
+		cerr << "scan: ngram cannot be smaller than LEAFPROB table\n";
+		exit(1);
+	}
 	
-  if (maxl==-1) maxl=maxlev;
-  
-  ng.size=maxl;
-  
-  switch (action){
-    
-         
+	
+	if (maxl==-1) maxl=maxlev;
+	
+	ng.size=maxl;
+	
+	switch (action){
+			
+			
 		case INIT:
 			//reset ngram local indexes
 			
@@ -1282,7 +1282,7 @@ int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram&
 			if (lev>(maxl-1)) return 0;
 			
 			if (ng.midx[lev]<msucc(nd))
-      {
+			{
 				//put current word into ng
 				*ng.wordp(maxl-lev)=
 				word(mtable(nd)+ng.midx[lev] * mtablesz(nd));
@@ -1292,14 +1292,14 @@ int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram&
 				
 				if (lev<(maxl-1)){
 					if (scan(mtable(nd) + ng.midx[lev] * mtablesz(nd),
-									 INODE,
-									 lev+1,ng,CONT,maxl))
+							 INODE,
+							 lev+1,ng,CONT,maxl))
 						return 1;
 					else{
 						ng.midx[lev]++; //go to next
 						for (int l=lev+1;l<=maxlev;l++) ng.midx[l]=0;//reset indexes
-							
-							return scan(nd,INODE,lev,ng,CONT,maxl); //restart scanning
+						
+						return scan(nd,INODE,lev,ng,CONT,maxl); //restart scanning
 					}
 				}
 				else{
@@ -1326,16 +1326,16 @@ int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram&
 					
 					return 1;
 				}
-      }
-				else
-					return 0;
-    
-    default:
+			}
+			else
+				return 0;
+			
+		default:
 			cerr << "scan: not supported action\n";
 			break;
-      
-  }
-  return 0;
+			
+	}
+	return 0;
 }
 
 

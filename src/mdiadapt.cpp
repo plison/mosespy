@@ -1223,8 +1223,8 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 				// skip also eos symbols not at the final
 				if (sng.containsWord(dict->EoS(),i-1)) continue;
 				
-				//				mdiadaptlm::discount(ng,i,fstar,dummy);
-				//				pr=mdiadaptlm::prob(ng,i);
+				//	mdiadaptlm::discount(ng,i,fstar,dummy);
+				//	pr=mdiadaptlm::prob(ng,i);
 				pr=mdiadaptlm::prob(ng,i,fstar,dummy,dummy2);
 
 				if (!(pr<=1.0 && pr > 1e-10)){
@@ -1289,39 +1289,223 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 }
 
 ///// Save in format for ARPA backoff N-gram models
-int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
+int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile ){
+	
+	system("date");
+	
+	//subdict and accumulated unigram oov prob 
+	dictionary* subdict; double oovprob=0; 
+	if (subdictfile) subdict=new dictionary(subdictfile);
+	else   subdict=dict; // default is subdict=dict
+	
+	//main output file
+	fstream out(filename,ios::out);
+	
+	//create temporary output file stream
+	assert(strlen(filename)<1000);	
+	char tfilename[MAX_NGRAM][1000];
+	fstream *tout[MAX_NGRAM];
+	for (int i=1;i<=lmsize();i++){
+		sprintf(tfilename[i],"%s.%d",filename,i);
+		tout[i]=new fstream(tfilename[i],ios::out);
+		*tout[i] << "\n\\" << i << "-grams:\n";
+	}
+	
+	
+	ngram ng(dict,lmsize());
+	ngram oldng(dict,lmsize());
+	ngram locng(dict,lmsize());
+	
+	ngram sng(subdict,lmsize());
+	
+	double fstar,lambda,bo,dummy,dummy2;
+	
+	//n-gram counters
+	int num[lmsize()+1];
+	for (int i=1;i<=lmsize();i++) num[i]=0;
+	
+	
+	//main loop
+	for (int w=0;w<dict->size();w++){
+		
+		if (!w % 10000) cerr << ".";
+		
+		//1-gram
+		ngram ung(dict,1); *ung.wordp(1)=w;
+		sng.trans(ung);  
+		
+		//exclude words not occurring in the subdictionary
+		if (sng.containsWord(subdict->OOV(),1) && !ung.containsWord(dict->OOV(),1))	continue;
+		
+		double pr=mdiadaptlm::prob(ung,1);	
+		
+		if (w==dict->oovcode())
+			*tout[1] << (float) (pr?log10(pr):-99) << "\t" << "<unk>";
+		else
+			*tout[1] << (float) (pr?log10(pr):-99) << "\t" << (char *)dict->decode(w);
+		
+		num[1]++;
+		
+		if (lmsize()>1){ //print back-off 
+			ung.pushc(0); //extend by one				
+			mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);	  
+			ung.shift();//shrink by one
+			
+			assert(!backoff || ((lambda<1.00000001 && lambda>0.99999999) || bo< 1.0000001 ));
+			
+			if (lambda < 0.99999999) //output back-off prob 
+				*tout[1] << "\t" << (float) (log10(lambda) -log10(bo));
+			
+		}
+		*tout[1] << "\n";
+		
+		//manage n-grams
+		
+	
+		if (get(ung,1,1)){
+			
+			//create n-gram with history w	
+			*ng.wordp(lmsize())=w;
+			
+			//create sentinel n-gram 
+			for (int i=1;i<=lmsize();i++) *oldng.wordp(i)=-1;
+			
+			scan(ung.link,ung.info,1,ng,INIT,lmsize());
+			while(scan(ung.link,ung.info,1,ng,CONT,lmsize())){
+				//cerr << ng << "\n";										
+				sng.trans(ng); // convert to subdictionary
+				locng=ng;      // make a local copy
+				int f;	
+				
+				//find first internal level that changed
+				for (f=lmsize();f>1;f--) 
+					if (*oldng.wordp(f)!=*ng.wordp(f)) break;
+				
+				if (f==lmsize()) f--; //unigrams have been already covered
+				
+				for (int i=1;i<=f;i++){		
+					
+					int l=lmsize()-i+1; //ngram word pointer						
+					
+					if (i>1) locng.shift(); //ngram has size level
+					
+					if (sng.containsWord(subdict->OOV(),l)) continue;
+					
+					// skip also eos symbols not at the final
+					if (sng.containsWord(dict->EoS(),l-1)) continue;
+					
+					pr=mdiadaptlm::prob(locng,l,fstar,dummy,dummy2);
+					
+					//PATCH by Nicola (16-04-2008)
+					
+					if (!(pr<=1.0 && pr > 1e-10)){
+						cerr << ng << " " << pr << "\n";
+						assert(pr<=1.0);
+						cerr << "prob modified to 1e-10\n";
+						pr=1e-10;
+					}
+					
+					if (l<lmsize()){ 
+						
+						locng.pushc(0); //extend by one
+						
+						mdiadaptlm::bodiscount(locng,l+1,dummy,lambda,bo);
+						
+						locng.shift();
+						
+						if (fstar>=0.0000000001 || lambda <= 0.9999999999){
+							*tout[l] << (float) log10(pr);
+							*tout[l] << "\t" << (char *)dict->decode(*locng.wordp(l));
+							for (int j=l-1;j>0;j--) 
+								*tout[l] << " " << (char *)dict->decode(*locng.wordp(j));													
+							
+							if (lambda < 0.9999999999) //output back-off prob 
+								*tout[l] << "\t" << (float) (log10(lambda/bo));
+							*tout[l] << "\n";
+							
+							num[l]++;	
+						}
+						else continue; //skip n-grams with too small fstar
+					}
+					else{
+						if (fstar >0.0000000001){
+							*tout[l] << (float) log10(pr);
+							*tout[l] << "\t" << (char *)dict->decode(*locng.wordp(l));
+							for (int j=l-1;j>0;j--) 
+								*tout[l] << " " << (char *)dict->decode(*locng.wordp(j));													
+							*tout[l] << "\n";							
+							num[l]++;								
+						}else continue; //skip n-grams with too small fstar																								
+					}											
+					
+				}				
+				oldng=ng;
+			}
+		}			
+		
+	}
+	
+	
+    //print header
+	out << "\n\\data\\" << "\n";
+	char buff[100];
+	for (int i=1;i<=lmsize();i++){
+		sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
+		out << buff;
+	}
+	out << "\n";
+	
+	//append and remove temporary files
+	for (int i=1;i<=lmsize();i++){
+		delete tout[i];
+		tout[i]=new fstream(tfilename[i],ios::in);  
+		out << tout[i]->rdbuf();
+		delete tout[i];
+		remove(tfilename[i]);
+	}
+	
+	out << "\\end\\" << "\n";
+	
+	cerr << "\n";
+	system("date");
+	
+	return 1;
+};
+
+///// Save in format for ARPA backoff N-gram models
+int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
 {
-  system("date");
-
-  //subdict and accumulated unigram oov prob 
-  dictionary* subdict; double oovprob=0; 
-  if (subdictfile){
-    subdict=new dictionary(subdictfile);
-  }  
-  else
-    subdict=dict; // default is subdict=dict
-
-  fstream out(filename,ios::out);
+	system("date");
+	
+	//subdict and accumulated unigram oov prob 
+	dictionary* subdict; double oovprob=0; 
+	if (subdictfile){
+		subdict=new dictionary(subdictfile);
+	}  
+	else
+		subdict=dict; // default is subdict=dict
+	
+	fstream out(filename,ios::out);
 	//  out.precision(15);  
 	
-  streampos pos[lmsize()+1];
-  int num[lmsize()+1];
-  char buff[100];
-
-  //print header
-  out << "\n\\data\\" << "\n";
-  
-  for (int i=1;i<=lmsize();i++){
-    num[i]=0;
-    pos[i]=out.tellp();
-    sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
-    out << buff;
-  }
-
-  out << "\n";
-
-  //start writing n-grams
-
+	streampos pos[lmsize()+1];
+	int num[lmsize()+1];
+	char buff[100];
+	
+	//print header
+	out << "\n\\data\\" << "\n";
+	
+	for (int i=1;i<=lmsize();i++){
+		num[i]=0;
+		pos[i]=out.tellp();
+		sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
+		out << buff;
+	}
+	
+	out << "\n";
+	
+	//start writing n-grams
+	
 	for (int i=1;i<=lmsize();i++){
 		cerr << "saving level " << i << "...\n";
 		
@@ -1391,17 +1575,10 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
 				// skip also eos symbols not at the final
 				if (sng.containsWord(dict->EoS(),i-1)) continue;
 				
-//				mdiadaptlm::discount(ng,i,fstar,dummy);
-//				pr=mdiadaptlm::prob(ng,i);
 				pr=mdiadaptlm::prob(ng,i,fstar,dummy,dummy2);
 				
 				//PATCH by Nicola (16-04-2008)
-				/* 
-				 if (!(pr<=1.0 && pr > 1e-10)){
-				 cerr << ng << " " << pr << "\n";
-				 assert(pr<=1.0 && pr > 1e-10);
-				 };
-				 */
+				
 				if (!(pr<=1.0 && pr > 1e-10)){
 					cerr << ng << " " << pr << "\n";
 					assert(pr<=1.0);
@@ -1440,21 +1617,21 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
 		
 		cerr << i << "grams tot:" << num[i] << "\n";
 	}
-
-  streampos last=out.tellp();
-  
-  //update headers
-  for (int i=1;i<=lmsize();i++){
-    sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
-    out.seekp(pos[i]);
-    out << buff;
-  }
-  
-  out.seekp(last);
-  out << "\\end\\" << "\n";
-  system("date");
-  
-  return 1;
+	
+	streampos last=out.tellp();
+	
+	//update headers
+	for (int i=1;i<=lmsize();i++){
+		sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
+		out.seekp(pos[i]);
+		out << buff;
+	}
+	
+	out.seekp(last);
+	out << "\\end\\" << "\n";
+	system("date");
+	
+	return 1;
 };
 
 

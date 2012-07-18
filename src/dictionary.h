@@ -172,6 +172,8 @@ class dictionary{
   void save(char *filename, int freqflag=0);
   void load(std::istream& fd);
   void save(std::ostream& fd);
+	
+  void augment(dictionary *d);
 
   int size(){return n;}
   int getcode(const char *w);

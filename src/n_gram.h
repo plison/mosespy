@@ -48,7 +48,9 @@ public:
 	char* link;            // ngram-tree pointer
 	char* succlink;        // pointer to the first successor
 	int  midx[MAX_NGRAM];  // ngram-tree scan pointer
-	char* path[MAX_NGRAM]; //path in the ngram-tree
+	char* path[MAX_NGRAM]; // path in the ngram-trie
+	float bowv[MAX_NGRAM]; //vector of bow found in the trie
+	
 	int    lev;            // ngram-tree level
 	int   size;            // ngram size
 	long long   freq;      // ngram frequency or integer prob

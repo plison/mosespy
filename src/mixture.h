@@ -35,14 +35,17 @@ class mixture: public mdiadaptlm{
   interplm** sublm;
   char *ipfname;
   char *opfname;
+ 
 
   double reldist(double *l1,double *l2,int n);
   int genpmap();
   int pmap(ngram ng,int lev);  
  public:
+   
+  bool usefulltable;
+	
+  mixture(bool fulltable,char *sublminfo,int depth,int prunefreq=0,char* ipfile=NULL,char* opfile=NULL);
   
-  mixture(char *bigtable,char *sublminfo,int depth,int prunefreq=0,char* ipfile=NULL,char* opfile=NULL);
-
   int train();
 
   int savepar(char* opf);
@@ -56,12 +59,18 @@ class mixture: public mdiadaptlm{
     }
     return (dict->dub(value));  
   }
-
+	
   void settying(int a,int b){k1=a;k2=b;}
-  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
+	int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
+	
+	
+	
   ~mixture(){}
-};
 
+  //this extension builds a commong ngramtable on demand		
+  int get(ngram& ng,int n,int lev);
+		
+};
 
 #endif
 

@@ -69,13 +69,14 @@ static Enum_T SLmTypeEnum [] = {
 };
 
 
-mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ipfile,char* opfile):
-  mdiadaptlm(bigtable,depth)
+mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ipfile,char* opfile):
+  mdiadaptlm((char *)NULL,depth)
 {
 	
 	prunethresh=prunefreq;
 	ipfname=ipfile;
 	opfname=opfile;
+	usefulltable=fulltable;
 	
 	mfstream inp(sublminfo,ios::in );
 	if (!inp){
@@ -88,7 +89,7 @@ mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ip
 	sublm=new interplm* [numslm];
 	int slmtype;
 	int subprunesingletons;
-        int subprunetopsingletons;
+	int subprunetopsingletons;
 	int subprunefreq;
 
 	char *subtrainfile;
@@ -147,7 +148,7 @@ mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ip
 				break;
 				
 			case MIXTURE:
-				sublm[i]=new mixture((char *)NULL,subtrainfile,depth,subprunefreq);
+				sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
 				break;
 				
 			default:
@@ -158,17 +159,24 @@ mixture::mixture(char* bigtable,char* sublminfo,int depth,int prunefreq,char* ip
                 sublm[i]->prunesingletons(subprunesingletons==YES);
                 sublm[i]->prunetopsingletons(subprunetopsingletons==YES);
         
-	        if (subprunetopsingletons==YES) //keep most specific 
+	        if (subprunetopsingletons==YES) 
+				//apply most specific pruning method
         	        sublm[i]->prunesingletons(NO);
 
 	
 		cerr << "eventually generate OOV code ";
-		cerr << sublm[i]->dict->encode(dict->OOV()) << "\n";      
+		sublm[i]->dict->genoovcode();      
 		
-		if ((slmtype==MIXTURE) || (i<(numslm-1)))
-			augment(sublm[i]);
+		//create super dictionary
+		dict->augment(sublm[i]->dict);
+		
+		//creates the super n-gram table
+		if(usefulltable) augment(sublm[i]);
+
     }
-	
+
+	dict->genoovcode();
+	cerr << "-------- dict size:" << dict->size() << "\n";	
 	//tying parameters
 	k1=2;
 	k2=10;
@@ -457,6 +465,40 @@ int mixture::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unu
 }
 
 
+//creates the ngramtable on demand from the sublm tables
+int mixture::get(ngram& ng,int n,int lev){
+	
+	//free current tree
+	resetngramtable();
+	
+	//get 1-word prefix from ng
+	ngram ug(dict,1);
+	*ug.wordp(1)=*ng.wordp(ng.size);
+	
+	//local ngram to upload entries
+	ngram locng(dict,maxlevel());
+
+	//allocate subtrees from sublm
+	for (int i=0;i<numslm;i++){
+		
+		ngram subug(sublm[i]->dict,1); subug.trans(ug);
+
+		if (sublm[i]->get(subug,1,1)){
+		
+			ngram subng(sublm[i]->dict,maxlevel()); 
+			*subng.wordp(maxlevel())=*subug.wordp(1);
+			sublm[i]->scan(subug.link,subug.info,1,subng,INIT,maxlevel());
+			while(sublm[i]->scan(subug.link,subug.info,1,subng,CONT,maxlevel())){
+				locng.trans(subng);
+				put(locng);
+			}
+		}
+	}
+	
+	return ngramtable::get(ng,n,lev);
+	
+}
+		
 
 
 

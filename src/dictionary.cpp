@@ -137,6 +137,17 @@ void dictionary::generate(char *filename){
 	
 }
 
+void dictionary::augment(dictionary *d){
+	incflag(1);
+	for (int i=0;i<d->n;i++)
+		encode(d->decode(i));
+	incflag(0);
+	encode(OOV());
+}
+
+
+
+
 // print_curve: show statistics on dictionary growth and (optionally) on 
 // OOV rates computed on test corpus
 
@@ -483,24 +494,24 @@ int dictionary::getcode(const char *w){
 int dictionary::encode(const char *w){
 	//case of strange characters
 	if (strlen(w)==0){cerr << "0";w=OOV();}
-
-        
-        dict_entry* ptr;
-        
-        if ((ptr=(dict_entry *)htb->find((char *)&w))!=NULL) 
-                return ptr->code;	
+	
+	
+	dict_entry* ptr;
+	
+	if ((ptr=(dict_entry *)htb->find((char *)&w))!=NULL) 
+		return ptr->code;	
 	else{
 		if (!ifl){ //do not extend dictionary
 			if (oov_code==-1){ //did not use OOV yet
 				cerr << "starting to use OOV words [" << w << "]\n";
 				tb[n].word=st->push(OOV());
-                                htb->insert((char  *)&tb[n].word);
+				htb->insert((char  *)&tb[n].word);
 				tb[n].code=n;
 				tb[n].freq=0;
 				oov_code=n;
 				if (++n==lim) grow();
 			}
-						
+			
 			return encode(OOV()); 
 		}
 		else{ //extend dictionary

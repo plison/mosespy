@@ -91,6 +91,7 @@ protected:
   int saveASR(char *filename,int backoff,char* subdictfile=NULL);
   int saveMT(char *filename,int backoff,char* subdictfile=NULL,int resolution=10000000,double decay=0.999900);
   int saveARPA(char *filename,int backoff=0,char* subdictfile=NULL);
+  int saveARPA2(char *filename,int backoff=0,char* subdictfile=NULL);
   int saveBIN(char *filename,int backoff=0,char* subdictfile=NULL,int mmap=0);
   
   int netsize();

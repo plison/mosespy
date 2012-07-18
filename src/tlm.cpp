@@ -103,6 +103,8 @@ int main(int argc, char **argv){
 	
 	char *BINfile=NULL;
 	char *ARPAfile=NULL;
+	char *ARPAfile2=NULL;
+
 	char *ASRfile=NULL;
 	
 	char* scalefactorfile=NULL;
@@ -158,6 +160,8 @@ int main(int argc, char **argv){
 				  "o", CMDSTRINGTYPE, &ARPAfile,
 				  "oARPA", CMDSTRINGTYPE, &ARPAfile,
 				  "oarpa", CMDSTRINGTYPE, &ARPAfile,
+				  
+				  "o2", CMDSTRINGTYPE, &ARPAfile2,
 				  
 				  "oBIN", CMDSTRINGTYPE, &BINfile,
 				  "obin", CMDSTRINGTYPE, &BINfile,
@@ -234,7 +238,7 @@ int main(int argc, char **argv){
 	
 	GetParams(&argc, &argv, (char*) NULL);
 	
-	if (!trainfile || !lmtype)
+	if (!lmtype || (!trainfile && lmtype!=MIXTURE))
     {
 		cerr <<"Missing parameters\n";
 		exit(1);
@@ -280,7 +284,11 @@ int main(int argc, char **argv){
 			
 		case MIXTURE:
 			//temporary check: so far unable to proper handle this flag in sub LMs
-			lm=new mixture(trainfile,slminfo,size,prunefreq,imixpar,omixpar);
+			//no ngramtable is created 
+			if (BINfile)
+				lm=new mixture(true,slminfo,size,prunefreq,imixpar,omixpar);
+			else
+				lm=new mixture(false,slminfo,size,prunefreq,imixpar,omixpar);
 			break;
 			
 		default:
@@ -498,6 +506,12 @@ int main(int argc, char **argv){
 	if (ARPAfile){
 		cerr << "TLM: save lm (ARPA)...";
 		lm->saveARPA(ARPAfile,backoff,dictfile);
+		cerr << "\n";
+	}
+	
+	if (ARPAfile2){
+		cerr << "TLM: save lm (ARPA2)...";
+		lm->saveARPA2(ARPAfile2,backoff,dictfile);
 		cerr << "\n";
 	}
 	

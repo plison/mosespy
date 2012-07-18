@@ -335,7 +335,29 @@ public:
 	inline char* ngtype(char *str=NULL){if (str!=NULL) strcpy(info,str);return info;}
 	
 	~ngramtable();
+	
+	inline void freetree(){freetree(tree);};
 	void freetree(node nd);
+
+	void resetngramtable(){
+		//clean up all memory and restart from an empty table
+		
+		freetree(); //clean memory pool
+		memset(tree,0,inodesize(6)); //reset tree
+		//1-gram table initial flags
+
+		if (maxlev>1) mtflags(tree,INODE | FREQ4);
+		else if (maxlev==1) mtflags(tree,LNODE | FREQ4);
+		
+		word(tree,0);      //dummy word
+		msucc(tree,0);     // number of different n-grams 
+		mtable(tree,NULL); // table of n-gram			
+
+		for (int i=1;i<=maxlev;i++)
+			mentr[i]=memory[i]=occupancy[i]=0;		
+		
+	}
+	
 	void stat(int level=4);
 	
 	inline long long totfreq(long long v=-1){
@@ -397,7 +419,7 @@ public:
 	int put(ngram& ng,node nd,NODETYPE ndt,int lev);
 	
 	inline int get(ngram& ng){ return get(ng,maxlev,maxlev); }
-	int get(ngram& ng,int n,int lev);
+	virtual int get(ngram& ng,int n,int lev);
 	
 	int comptbsize(int n);
 	table *grow(table *tb,NODETYPE ndt,int lev,int n,int sz,NODETYPE oldndt=0);
