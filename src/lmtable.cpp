@@ -1000,27 +1000,27 @@ int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table
 	
 #ifdef INTERP_SEARCH
 
-	char *lp;char  *hp;
+	char *lp=NULL;char  *hp=NULL;
 	
-	//fast check if key cannot occur inside ar
-	
-	lp=(char *) (ar + (low * size));
-	hp=(char *) (ar + ((high-1) * size));			
-	
-	if (codecmp((char *)key,lp)<0){ *idx=low; return 0;}
-	if (codecmp((char *)key,hp)>0){ *idx=high; return 0;} 	
-	
-#endif	
-	
+#endif
+			
 	
 	while (low < high)
 	{
 		
+#ifdef INTERP_SEARCH		
 		//use interpolation search only for intervals with at least 4096 entries
 		
-#ifdef INTERP_SEARCH		
-		if ((high-low)>=4096)			
-			*idx= low + ((high-1)-low) * codediff((char *)key,lp)/codediff(hp,(char *)lp);
+		if ((high-low)>=10000){
+			
+			lp=(char *) (ar + (low * size));
+			if (codecmp((char *)key,lp)<0){ *idx=low; return 0;}
+			
+			hp=(char *) (ar + ((high-1) * size));		
+			if (codecmp((char *)key,hp)>0){ *idx=high; return 0;} 				
+			
+			*idx= low + ((high-1)-low) * codediff((char *)key,lp)/codediff(hp,(char *)lp);  
+		}
 		else
 #endif
 			*idx = (low + high) / 2;
@@ -1031,20 +1031,11 @@ int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table
 		p = (unsigned char *) (ar + (*idx * size));		
 		result=codecmp((char *)key,(char *)p);
 		
-		if (result < 0){
-			high = *idx;
-#ifdef INTERP_SEARCH
-			hp=(char *)(ar + ((high-1) * size));
-			if (codecmp((char *)key,hp)>0) return 0;
-#endif			
-		}
-		else if (result > 0){
-			low = ++(*idx);
-#ifdef INTERP_SEARCH
-			lp=(char *) (ar + (low * size));
-			if (codecmp((char *)key,lp)<0) return 0;
-#endif
-		}
+		if (result < 0)
+			high = *idx;		
+		
+		else if (result > 0)
+			low = ++(*idx);		
 		else
 			return 1;
 	}

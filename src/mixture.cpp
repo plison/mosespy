@@ -98,11 +98,10 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
 				  "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
 				  "str",CMDSTRINGTYPE, &subtrainfile,
 				  "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
-                                  "sps",CMDENUMTYPE, &subprunesingletons, BooleanEnum,
-                                  "spts",CMDENUMTYPE, &subprunetopsingletons, BooleanEnum,
-                                  
-                                  (char *)NULL
-                                  );
+				  "sps",CMDENUMTYPE, &subprunesingletons, BooleanEnum,
+				  "spts",CMDENUMTYPE, &subprunetopsingletons, BooleanEnum,
+				  (char *)NULL
+				  );
 	
         cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
 

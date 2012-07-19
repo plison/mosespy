@@ -735,48 +735,43 @@ void ngramtable::show(){
 
 int ngramtable::mybsearch(char *ar, int n, int size, unsigned char *key, int *idx)
 {
+	if (n==0) return 0;	
 	
 	register int low = 0, high = n; *idx=0;
 	register unsigned char *p=NULL;
-	int result;
-
-#ifdef INTERP_SEARCH
-	char *lp;char  *hp;
-#endif
+	int result;			
 	
-	if (n==0) return 0;	
+#ifdef INTERP_SEARCH	
+	char* lp; char* hp;	
+#endif	
 	
 	/* return idx with the first 
 	 position equal or greater than key */
 	
 	/* Warning("start bsearch \n"); */
 	
-#ifdef INTERP_SEARCH
-	//fast check if key cannot occur inside ar
 	
-	lp=(char *) (ar + (low * size));
-	hp=(char *) (ar + ((high-1) * size));			
-		
-	if (codecmp((char *)key,lp)<0){ *idx=low; return 0;}
-	if (codecmp((char *)key,hp)>0){ *idx=high; return 0;} 	
-
-#endif	
-	
-	
-	//cerr << "key="<< wkey <<  "intial a["<<low<<"]="<< wlp << " <= a[" << high-1 << "]=" <<whp << "\n";
-
 	while (low < high)
-	{
+	{		
 		
-		//use interpolation search only for intervals with at least 4096 entries
-
+		
 #ifdef INTERP_SEARCH		
-		if ((high-low)>=4096)			
-			*idx= low + ((high-1)-low) * codediff((char *)key,lp)/codediff(hp,(char *)lp);
+		//use interpolation search only for intervals with at least 4096 entries
+		
+		if ((high-low)>=10000){
+
+			lp=(char *) (ar + (low * size));
+			if (codecmp((char *)key,lp)<0){ *idx=low; return 0;}
+
+			hp=(char *) (ar + ((high-1) * size));		
+			if (codecmp((char *)key,hp)>0){ *idx=high; return 0;} 				
+
+			*idx= low + ((high-1)-low) * codediff((char *)key,lp)/codediff(hp,(char *)lp);  
+		}
 		else
 #endif
 			*idx = (low + high) / 2;
-
+		
 		//after redefining the interval there is no guarantee
 		//that wlp <= wkey <= whigh
 		
@@ -784,18 +779,10 @@ int ngramtable::mybsearch(char *ar, int n, int size, unsigned char *key, int *id
 		result=codecmp((char *)key,(char *)p);
 		
 		if (result < 0){
-			high = *idx;
-#ifdef INTERP_SEARCH
-			hp=(char *)(ar + ((high-1) * size));
-			if (codecmp((char *)key,hp)>0) return 0;
-#endif			
+			high = *idx;		
 		}
 		else if (result > 0){
 			low = ++(*idx);
-#ifdef INTERP_SEARCH
-			lp=(char *) (ar + (low * size));
-			if (codecmp((char *)key,lp)<0) return 0;
-#endif
 		}
 		else
 			return 1;
