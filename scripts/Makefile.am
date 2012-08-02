@@ -7,12 +7,12 @@ wrapperbindir = @prefix@/bin
 
 install:
 	for p in $(sh_programs) $(perl_programs) ; do \
-		cp $$p $(wrapperbindir) ;\
+		cp $$p $(DESTDIR)$(wrapperbindir) ;\
 	done
 
 uninstall:
 	for p in $(sh_programs) $(perl_programs) ; do \
-                rm -f $(wrapperbindir)/$$p ;\
+                rm -f $(DESTDIR)$(wrapperbindir)/$$p ;\
         done
 
 EXTRA_DIST = $(dist_programs)

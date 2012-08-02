@@ -28,7 +28,7 @@ EOF
 
 if [ ! $IRSTLM ]; then
    echo "Set IRSTLM environment variable with path to irstlm"
-   exit 2;
+   exit 2
 fi
 
 #paths to scripts and commands in irstlm
@@ -40,7 +40,7 @@ gunzip=`which gunzip 2> /dev/null`;
 #check irstlm installation
 if [ ! -e $bin/dict -o  ! -e $scr/split-dict.pl ]; then
    echo "$IRSTLM does not contain a proper installation of IRSTLM"
-   exit 3;
+   exit 3
 fi
 
 #default parameters
@@ -104,7 +104,7 @@ do
 		     ;;
 	     *) 
 		 echo "wrong smoothing setting";
-		 exit 4;
+		 exit 4
 	     esac
              ;;
   
@@ -119,7 +119,7 @@ do
              ;;
          ?)
              usage
-             exit
+             exit 1
              ;;
      esac
 done
@@ -136,12 +136,12 @@ fi
  
 if [ -e $outfile ]; then
    echo "Output file $outfile already exists! either remove or rename it."
-   exit 6;
+   exit 6
 fi
 
 if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
    echo "Logfile $logfile already exists! either remove or rename it."
-   exit 7;
+   exit 7
 fi
 
 #check tmpdir
