@@ -1096,36 +1096,27 @@ int mdiadaptlm::saveMT(char *filename,int backoff,
 };
 
 
-
 ///// Save in binary format forbackoff N-gram models
 int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 {
   system("date");
 
-  //subdict and accumulated unigram oov prob 
-  dictionary* subdict; double oovprob=0; 
-  if (subdictfile){
-    subdict=new dictionary(subdictfile);
-  }  
-  else{
-    subdict=dict; // default is subdict=dict
+  //subdict 
+  dictionary* subdict;
+	
+  //accumulated unigram oov prob 
+  double oovprob=0; 
+	
+  if (subdictfile)     subdict=new dictionary(subdictfile);
+  else    subdict=dict; // default is subdict=dict
 
-/*
- if (isPruned){
-			cerr << "savebin: pruned LM cannot be saved in binary form\n";
-			exit(0);
-		}
-*/
-	}
-	
-	
 	if (mmap){
 		cerr << "savebin with memory map: " << filename << "\n";
 	}else{
 		cerr << "savebin: " << filename << "\n";		
 	}
+
 	streampos pos[lmsize()+1];
-	
 	int maxlev=lmsize();
 	char buff[100];
 	int isQuant=0; //savebin for quantized LM is not yet implemented
@@ -1210,7 +1201,7 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 					ibow=0.0; //default value for backoff weight at the lowest level
 				}		
 				lmt->add(ng,(float)pr,(float)ibow);
-			}
+				}
 			//cerr << "totprob = " << totp << "\n";
 		}
 		else{ //i>1 , bigrams, trigrams, fourgrams...
@@ -1288,13 +1279,20 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 	return 1;			
 }
 
+
 ///// Save in format for ARPA backoff N-gram models
 int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile ){
 	
 	system("date");
 	
-	//subdict and accumulated unigram oov prob 
-	dictionary* subdict; double oovprob=0; 
+	//subdict
+	dictionary* subdict;
+
+	//accumulated unigram oov prob 
+//CHECK why this is not used (differently from what happens in the other save functions
+//	double oovprob=0;
+	
+	
 	if (subdictfile) subdict=new dictionary(subdictfile);
 	else   subdict=dict; // default is subdict=dict
 	
@@ -1477,8 +1475,12 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
 {
 	system("date");
 	
-	//subdict and accumulated unigram oov prob 
-	dictionary* subdict; double oovprob=0; 
+	//subdict
+	dictionary* subdict;
+	
+	//accumulated unigram oov prob 
+	double oovprob=0; 
+	
 	if (subdictfile){
 		subdict=new dictionary(subdictfile);
 	}  
@@ -1633,7 +1635,6 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
 	
 	return 1;
 };
-
 
 
 /*

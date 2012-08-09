@@ -72,9 +72,15 @@ int lmContainer::getLanguageModelType(std::string filename){
 };
 
 lmContainer* lmContainer::CreateLanguageModel(const std::string infile, float nlf, float dlf){
-
   int type = getLanguageModelType(infile);
   std::cerr << "Language Model Type of " << infile << " is " << type << std::endl;
+
+  return CreateLanguageModel(type, nlf, dlf);
+}
+
+lmContainer* lmContainer::CreateLanguageModel(int type, float nlf, float dlf){
+
+  std::cerr << "Language Model Type is " << type << std::endl;
 
   lmContainer* lm=NULL;
 
@@ -105,5 +111,21 @@ lmContainer* lmContainer::CreateLanguageModel(const std::string infile, float nl
 
   lm->setLanguageModelType(type);
   return lm;
+}
+
+bool lmContainer::filter(const string sfilter, lmContainer*& sublmC, const string skeepunigrams){
+	if (lmtype == _IRSTLM_LMTABLE){
+		sublmC = sublmC->CreateLanguageModel(lmtype,((lmtable*) this)->GetNgramcacheLoadFactor(),((lmtable*) this)->GetDictioanryLoadFactor());
+		
+		//let know that table has inverted n-grams
+		sublmC->is_inverted(is_inverted());
+		sublmC->setMaxLoadedLevel(getMaxLoadedLevel());
+		sublmC->maxlevel(maxlevel());
+		
+		bool res=((lmtable*) this)->filter(sfilter, (lmtable*) sublmC, skeepunigrams);
+		
+		return res;
+	}
+	return false;
 };
 

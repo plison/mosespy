@@ -3,22 +3,22 @@
 /******************************************************************************
  IrstLM: IRST Language Model Toolkit, compile LM
  Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
-
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
-
+ 
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
-
+ 
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
-
-******************************************************************************/
+ 
+ ******************************************************************************/
 
 using namespace std;
 
@@ -53,34 +53,34 @@ std::string slevel = "1000";
 /********************************/
 
 void usage(const char *msg = 0) {
-
+	
   if (msg) { std::cerr << msg << std::endl; }
   std::cerr << "Usage: compile-lm [options] input-file.lm [output-file.blm]" << std::endl;
   if (!msg) std::cerr << std::endl
-		      << "  compile-lm reads a standard LM file in ARPA format and produces" << std::endl
-		      << "  a compiled representation that the IRST LM toolkit can quickly" << std::endl
-		      << "  read and process. LM file can be compressed with gzip." << std::endl << std::endl;
+		<< "  compile-lm reads a standard LM file in ARPA format and produces" << std::endl
+		<< "  a compiled representation that the IRST LM toolkit can quickly" << std::endl
+		<< "  read and process. LM file can be compressed with gzip." << std::endl << std::endl;
   std::cerr << "Options:\n"
-	    << "--text|-t [yes|no]  (output is again in text format)" << std::endl
-	    << "--invert|-i [yes|no]  (build an inverted n-gram binary table for fast access: default no)" << std::endl
-	    << "--filter|-f wordlist (filter a binary language model with a word list)"<< std::endl
-	    << "--keepunigrams|-ku [yes|no] (filter by keeping all unigrams in the table: default yes)"<< std::endl
-	    << "--eval|-e text-file (computes perplexity of text-file and returns)"<< std::endl
-	    << "--randcalls|-r N (computes N random calls on the eval text-file)"<< std::endl
-	    << "--dub dict-size (dictionary upperbound to compute OOV word penalty: default 10^7)"<< std::endl
-	    << "--score|-s [yes|no]  (computes log-prob scores from standard input)"<< std::endl
-	    << "--debug|-d 1 (verbose output for --eval option)"<< std::endl
-	    << "--sentence [yes|no] (compute pperplexity at sentence level (identified through the end symbol)"<< std::endl
-	    << "--memmap|-mm 1 (uses memory map to read a binary LM)"<< std::endl
-	    << "--ngram_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-	    << "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-	    << "--level|l <value> (set the maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken)" << std::endl
-	    << "--tmpdir <directory> (directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")" << std::endl;
+	<< "--text|-t [yes|no]  (output is again in text format)" << std::endl
+	<< "--invert|-i [yes|no]  (build an inverted n-gram binary table for fast access: default no)" << std::endl
+	<< "--filter|-f wordlist (filter a binary language model with a word list)"<< std::endl
+	<< "--keepunigrams|-ku [yes|no] (filter by keeping all unigrams in the table: default yes)"<< std::endl
+	<< "--eval|-e text-file (computes perplexity of text-file and returns)"<< std::endl
+	<< "--randcalls|-r N (computes N random calls on the eval text-file)"<< std::endl
+	<< "--dub dict-size (dictionary upperbound to compute OOV word penalty: default 10^7)"<< std::endl
+	<< "--score|-s [yes|no]  (computes log-prob scores from standard input)"<< std::endl
+	<< "--debug|-d 1 (verbose output for --eval option)"<< std::endl
+	<< "--sentence [yes|no] (compute pperplexity at sentence level (identified through the end symbol)"<< std::endl
+	<< "--memmap|-mm 1 (uses memory map to read a binary LM)"<< std::endl
+	<< "--ngram_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
+	<< "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
+	<< "--level|l <value> (set the maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken)" << std::endl
+	<< "--tmpdir <directory> (directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")" << std::endl;
 }
 
 bool starts_with(const std::string &s, const std::string &pre) {
   if (pre.size() > s.size()) return false;
-
+	
   if (pre == s) return true;
   std::string pre_equals(pre+'=');
   if (pre_equals.size() > s.size()) return false;
@@ -213,26 +213,34 @@ int main(int argc, const char **argv)
 	
 	//checking the language model type
 	lmContainer* lmt=NULL;
-
+	
 	lmt = lmt->CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor); 
-
+	
 	//let know that table has inverted n-grams
-        if (invert) lmt->is_inverted(invert);
-
+	if (invert) lmt->is_inverted(invert);
+	
 	lmt->setMaxLoadedLevel(requiredMaxlev);
-
+	
 	lmt->load(infile);
-
-//CHECK this part for sfilter to make it possible only for LMTABLE
+	
+	//CHECK this part for sfilter to make it possible only for LMTABLE
  	if (sfilter != ""){
-                lmContainer* filtered_lmt = NULL;
+		lmContainer* filtered_lmt = NULL;
+		std::cerr << "BEFORE sublmC (" << (void*) filtered_lmt <<  ") (" << (void*) &filtered_lmt << ")\n";
+		
 		// the function filter performs the filtering and returns true, only for specific lm type
-		if (lmt->filter(sfilter,filtered_lmt,skeepunigrams)){
+		if (((lmContainer*) lmt)->filter(sfilter,filtered_lmt,skeepunigrams)){
+			std::cerr << "BFR filtered_lmt (" << (void*) filtered_lmt << ") (" << (void*) &filtered_lmt << ")\n";
+			filtered_lmt->stat();
 			delete lmt;
 			lmt=filtered_lmt;
+			std::cerr << "AFTER filtered_lmt (" << (void*) filtered_lmt << ")\n";
+			filtered_lmt->stat();
+			std::cerr << "AFTER lmt (" << (void*) lmt << ")\n";
+			lmt->stat();
 		}
 	}
-
+	
 	if (dub) lmt->setlogOOVpenalty((int)dub);
 	
 	//use caches to save time (only if PS_CACHE_ENABLE is defined through compilation flags)
@@ -309,9 +317,9 @@ int main(int argc, const char **argv)
 			ng.dict->incflag(0);
 			
 			double bow; int bol=0; char *msp; unsigned int statesize;
-
+			
 			lmt->dictionary_incflag(1);
-
+			
 			while(inptxt >> ng){      
 				
 				if (ng.size>lmt->maxlevel()) ng.size=lmt->maxlevel();
@@ -420,7 +428,7 @@ int main(int argc, const char **argv)
 		
 		std::cout.setf(ios::scientific);
 		std::cout << "> ";
-	
+		
 		lmt->dictionary_incflag(1);
 		
 		while(std::cin >> ng){
@@ -453,9 +461,14 @@ int main(int argc, const char **argv)
 	if (textoutput) {
 		std::cerr << "Saving in txt format to " << outfile << std::endl;
 		lmt->savetxt(outfile.c_str());    
-	} else if (sfilter != "" || !memmap) {
+		//	} else if (sfilter != "") {
+		//		std::cerr << "Saving in bin format to " << outfile << std::endl;
+		//		lmt->savebin(outfile.c_str());
+	} else if (!memmap) {
 		std::cerr << "Saving in bin format to " << outfile << std::endl;
 		lmt->savebin(outfile.c_str());
+	} else{
+		std::cerr << "Impossible to save to " << outfile << std::endl;
 	}
 	delete lmt;
 	return 0;

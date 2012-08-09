@@ -46,7 +46,7 @@ class lmContainer{
   int          lmtype; //auto reference to its own type
   int          maxlev; //maximun order of sub LMs;
   int  requiredMaxlev; //max loaded level, i.e. load up to requiredMaxlev levels
-
+ 
  public:
     
   lmContainer();
@@ -61,9 +61,10 @@ class lmContainer{
   virtual double setlogOOVpenalty(int dub){ UNUSED(dub); return 0.0; };
   virtual double setlogOOVpenalty(double oovp){ UNUSED(oovp); return 0.0; };
 
-  virtual inline dictionary* getDict() const{ return NULL;};
-  virtual int maxlevel() const{ return 0;};
-  virtual void stat(int lev=0){  UNUSED(lev); };
+  inline virtual dictionary* getDict() const{ return NULL;};
+  inline virtual void maxlevel(int lev) { maxlev = lev; };
+  inline virtual int maxlevel() const{ return maxlev; };
+  inline virtual void stat(int lev=0){  UNUSED(lev); };
 
   inline virtual void setMaxLoadedLevel(int lev){ requiredMaxlev=lev; };
   inline virtual int getMaxLoadedLevel(){ return requiredMaxlev; };
@@ -82,13 +83,14 @@ class lmContainer{
 
   inline void setLanguageModelType(int type){ lmtype=type; };
   inline int getLanguageModelType(){ return lmtype; };
+  int getLanguageModelType(std::string filename);
 
   inline virtual void dictionary_incflag(const bool flag){ UNUSED(flag); };
 
-  inline virtual bool filter(const string sfilter, lmContainer* sublmt, const string skeepunigrams){ UNUSED(sfilter); UNUSED(sublmt); UNUSED(skeepunigrams); return false; }
+  virtual bool filter(const string sfilter, lmContainer*& sublmt, const string skeepunigrams);
 
-  int getLanguageModelType(std::string filename);
   lmContainer* CreateLanguageModel(const std::string infile, float nlf=0.0, float dlf=0.0);
+  lmContainer* CreateLanguageModel(int type, float nlf=0.0, float dlf=0.0);
 
   inline virtual bool is_OOV(int code){ UNUSED(code); return false; };
 };

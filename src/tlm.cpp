@@ -508,7 +508,7 @@ int main(int argc, char **argv){
 		lm->saveARPA(ARPAfile,backoff,dictfile);
 		cerr << "\n";
 	}
-	
+
 	if (ARPAfile2){
 		cerr << "TLM: save lm (ARPA2)...";
 		lm->saveARPA2(ARPAfile2,backoff,dictfile);

@@ -22,6 +22,12 @@
 		3D4F4DD0135C5C2500E85480 /* quantize-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D77D1C420B2F1FCA00D79D16 /* quantize-lm.cpp */; };
 		3D4F4DDD135C5C6300E85480 /* interpolate-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD9567B0FB42D07001B8680 /* interpolate-lm.cpp */; };
 		3D4F4DFC135C5DCB00E85480 /* ngt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* ngt.cpp */; };
+		3DE5453915CBB2BC003869E0 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453715CBB2BC003869E0 /* lmContainer.cpp */; };
+		3DE5453A15CBB2BC003869E0 /* lmContainer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5453815CBB2BC003869E0 /* lmContainer.h */; };
+		3DE5454115CBB30A003869E0 /* lmclass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453D15CBB30A003869E0 /* lmclass.cpp */; };
+		3DE5454215CBB30A003869E0 /* lmclass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5453E15CBB30A003869E0 /* lmclass.h */; };
+		3DE5454315CBB30A003869E0 /* lmInterpolation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453F15CBB30A003869E0 /* lmInterpolation.cpp */; };
+		3DE5454415CBB30A003869E0 /* lmInterpolation.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5454015CBB30A003869E0 /* lmInterpolation.h */; };
 		AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0BD17113EC529000230F82 /* ngramtable.cpp */; };
 		AD2CE6AA112E80D900E05137 /* timer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD2CE6A8112E80D900E05137 /* timer.cpp */; };
 		AD2CE6AB112E80D900E05137 /* timer.h in Headers */ = {isa = PBXBuildFile; fileRef = AD2CE6A9112E80D900E05137 /* timer.h */; };
@@ -121,6 +127,12 @@
 		3D4F4DC5135C5B8800E85480 /* tlm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tlm; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4DDB135C5C4C00E85480 /* interpolate-lm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "interpolate-lm"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4DF6135C5D7300E85480 /* plsa */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = plsa; sourceTree = BUILT_PRODUCTS_DIR; };
+		3DE5453715CBB2BC003869E0 /* lmContainer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmContainer.cpp; path = src/lmContainer.cpp; sourceTree = "<group>"; };
+		3DE5453815CBB2BC003869E0 /* lmContainer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmContainer.h; path = src/lmContainer.h; sourceTree = "<group>"; };
+		3DE5453D15CBB30A003869E0 /* lmclass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmclass.cpp; path = src/lmclass.cpp; sourceTree = "<group>"; };
+		3DE5453E15CBB30A003869E0 /* lmclass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmclass.h; path = src/lmclass.h; sourceTree = "<group>"; };
+		3DE5453F15CBB30A003869E0 /* lmInterpolation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmInterpolation.cpp; path = src/lmInterpolation.cpp; sourceTree = "<group>"; };
+		3DE5454015CBB30A003869E0 /* lmInterpolation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmInterpolation.h; path = src/lmInterpolation.h; sourceTree = "<group>"; };
 		AD0BD17113EC529000230F82 /* ngramtable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngramtable.cpp; path = src/ngramtable.cpp; sourceTree = "<group>"; };
 		AD2CE53B1125B0D100E05137 /* sort-lm.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = "sort-lm.pl"; sourceTree = "<group>"; };
 		AD2CE6A8112E80D900E05137 /* timer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = timer.cpp; path = src/timer.cpp; sourceTree = "<group>"; };
@@ -269,6 +281,10 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3DE5453D15CBB30A003869E0 /* lmclass.cpp */,
+				3DE5453E15CBB30A003869E0 /* lmclass.h */,
+				3DE5453F15CBB30A003869E0 /* lmInterpolation.cpp */,
+				3DE5454015CBB30A003869E0 /* lmInterpolation.h */,
 				AD0BD17113EC529000230F82 /* ngramtable.cpp */,
 				AD8104AD1132B93300B0363D /* mdiadapt.cpp */,
 				AD70DBD3115C1D4900F05491 /* linearlm.cpp */,
@@ -294,6 +310,8 @@
 				D77D1C7C0B3032EC00D79D16 /* dict.cpp */,
 				D7F00B640B38508400A1FF7A /* ngt.cpp */,
 				D77D1C620B3030E100D79D16 /* mfstream.cpp */,
+				3DE5453715CBB2BC003869E0 /* lmContainer.cpp */,
+				3DE5453815CBB2BC003869E0 /* lmContainer.h */,
 				D77D1C650B3030E100D79D16 /* ngramtable.h */,
 				D77D1C420B2F1FCA00D79D16 /* quantize-lm.cpp */,
 				D701C7930B2EB37D007D2774 /* util.cpp */,
@@ -371,6 +389,9 @@
 				D701C7AF0B2EB472007D2774 /* util.h in Headers */,
 				3D45653A1164C9F100119984 /* interplm.h in Headers */,
 				3D4565621164CC3F00119984 /* mixture.h in Headers */,
+				3DE5453A15CBB2BC003869E0 /* lmContainer.h in Headers */,
+				3DE5454215CBB30A003869E0 /* lmclass.h in Headers */,
+				3DE5454415CBB30A003869E0 /* lmInterpolation.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -641,6 +662,9 @@
 				3D4565391164C9EF00119984 /* interplm.cpp in Sources */,
 				3D4565611164CC3F00119984 /* mixture.cpp in Sources */,
 				AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */,
+				3DE5453915CBB2BC003869E0 /* lmContainer.cpp in Sources */,
+				3DE5454115CBB30A003869E0 /* lmclass.cpp in Sources */,
+				3DE5454315CBB30A003869E0 /* lmInterpolation.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -702,6 +726,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
@@ -914,8 +941,10 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				INSTALL_PATH = "";
 				OTHER_LDFLAGS = (
 					"-lz",
@@ -1078,6 +1107,7 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				INSTALL_PATH = "";

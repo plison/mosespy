@@ -259,7 +259,7 @@ class lmtable: public lmContainer{
   void expand_level(int level, table_entry_pos_t size, const char* outfilename, int mmap);
   void expand_level_nommap(int level, table_entry_pos_t size);
   void expand_level_mmap(int level, table_entry_pos_t size, const char* outfilename);	
-  lmtable* cpsublm(dictionary* subdict,bool keepunigr=true);
+  void cpsublm(lmtable* sublmt, dictionary* subdict,bool keepunigr=true);
 
   int reload(std::set<string> words);
 	
@@ -472,10 +472,11 @@ class lmtable: public lmContainer{
 //never allow the increment of the dictionary through this function
   inline virtual void dictionary_incflag(const bool flag){ UNUSED(flag); };
 
-  inline virtual bool filter(const string sfilter, lmContainer* sublmt, const string skeepunigrams){
+  inline virtual bool filter(const string sfilter, lmtable* sublmt, const string skeepunigrams){
     std::cerr << "filtering... \n";
     dictionary *dict=new dictionary((char *)sfilter.c_str());
-    sublmt=this->cpsublm(dict,(skeepunigrams=="yes"));
+
+    cpsublm(sublmt, dict,(skeepunigrams=="yes"));
     delete dict;
     std::cerr << "...done\n";
     return true;
