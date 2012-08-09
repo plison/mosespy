@@ -1677,8 +1677,7 @@ void lmtable::dumplm(fstream& out,ngram ng, int ilev, int elev, table_entry_pos_
       if (ilev<maxlev){
 	float ibo=bow(table[ilev]+ (table_pos_t)i * ndsz,ndt);
 	if (isQtable) out << "\t" << ibo;
-	else if (ibo!=0.0) out << "\t" << ibo;
-//	else if (ibo < -1.0e-10) out << "\t" << ibo;
+	else if (ibo < -1.0e-10) out << "\t" << ibo;
       }
       out << "\n";
     }
