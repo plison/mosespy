@@ -334,7 +334,7 @@ public:
 	
 	inline char* ngtype(char *str=NULL){if (str!=NULL) strcpy(info,str);return info;}
 	
-	~ngramtable();
+	virtual ~ngramtable();
 	
 	inline void freetree(){freetree(tree);};
 	void freetree(node nd);
