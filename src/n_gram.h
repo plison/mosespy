@@ -20,7 +20,7 @@
 
 ******************************************************************************/
 
-// n-gram tables 
+// n-gram tables
 // by M. Federico
 // Copyright Marcello Federico, ITC-irst, 1998
 
@@ -41,102 +41,105 @@ class dictionary;
 
 //typedef int code;
 
-class ngram{
-	int  word[MAX_NGRAM];  //encoded ngram
+class ngram
+{
+  int  word[MAX_NGRAM];  //encoded ngram
 public:
-	dictionary *dict;      //dictionary
-	char* link;            // ngram-tree pointer
-	char* succlink;        // pointer to the first successor
-	int  midx[MAX_NGRAM];  // ngram-tree scan pointer
-	char* path[MAX_NGRAM]; // path in the ngram-trie
-	float bowv[MAX_NGRAM]; //vector of bow found in the trie
-	
-	int    lev;            // ngram-tree level
-	int   size;            // ngram size
-	long long   freq;      // ngram frequency or integer prob
-	int   succ;            // number of successors
-	float   bow;           // back-off weight 
-	float   prob;          // probability
-	
-	unsigned char info;    // ngram-tree info flags
-	unsigned char pinfo;   // ngram-tree parent info flags
-	int  isym;             // last interruption symbol
-	
-	ngram(dictionary* d,int sz=0);
-	ngram(ngram& ng);
-	
-	int *wordp()// n-gram pointer
-    {return wordp(size);} 
-	int *wordp(int k) // n-gram pointer
-    {return size>=k?&word[MAX_NGRAM-k]:0;} 
-	const int *wordp() const // n-gram pointer
-    {return wordp(size);} 
-	const int *wordp(int k) const // n-gram pointer
-    {return size>=k?&word[MAX_NGRAM-k]:0;} 
-	
-	
-	int containsWord(const char* s,int lev){
-		
-		int c=dict->encode(s);
-		if (c == -1) return 0;
-		
-		assert(lev <= size);
-		for (int i=0;i<lev;i++){
-			if (*wordp(size-i)== c) return 1;
-		}
-		return 0;
-	}
-    
-	
-	void trans(const ngram& ng);
-	void invert (const ngram& ng);
-	void shift ();
-	
-	friend std::ifstream& operator>> (std::ifstream& fi,ngram& ng);
-	friend std::ofstream& operator<< (std::ofstream& fi,ngram& ng);
-	friend std::istream& operator>> (std::istream& fi,ngram& ng);
-	friend std::ostream& operator<< (std::ostream& fi,ngram& ng);
-	
-	inline bool operator==(const ngram &compare) const
-	{
-		if ( size != compare.size || dict != compare.dict)
-			return false;
-		else
-			for (int i=size;i>0;i--)
-				if (word[MAX_NGRAM-i] != compare.word[MAX_NGRAM-i])
-					return false;
-		return true;
-	}
-	
-	inline bool operator!=(const ngram &compare) const
-	{
-		if ( size != compare.size || dict != compare.dict)
-            return true;
-		else
-            for (int i=size;i>0;i--)
-				if (word[MAX_NGRAM-i] != compare.word[MAX_NGRAM-i])
-					return true;
-		return false;
-	}
-	
-	
-	
-	inline int ckhisto(int sz){
-		
-		for (int i=sz;i>1;i--) 
-			if (*wordp(i)==dict->oovcode())
-				return 0;
-		return 1;
-	}
-	
-	int pushc(int c);
-	int pushc(int* codes, int sz);
-	int pushw(const char* w);
-	
-	//~ngram();
-	
-	
-	
+  dictionary *dict;      //dictionary
+  char* link;            // ngram-tree pointer
+  char* succlink;        // pointer to the first successor
+  int  midx[MAX_NGRAM];  // ngram-tree scan pointer
+  char* path[MAX_NGRAM]; // path in the ngram-trie
+  float bowv[MAX_NGRAM]; //vector of bow found in the trie
+
+  int    lev;            // ngram-tree level
+  int   size;            // ngram size
+  long long   freq;      // ngram frequency or integer prob
+  int   succ;            // number of successors
+  float   bow;           // back-off weight
+  float   prob;          // probability
+
+  unsigned char info;    // ngram-tree info flags
+  unsigned char pinfo;   // ngram-tree parent info flags
+  int  isym;             // last interruption symbol
+
+  ngram(dictionary* d,int sz=0);
+  ngram(ngram& ng);
+
+  int *wordp() { // n-gram pointer
+    return wordp(size);
+  }
+  int *wordp(int k) { // n-gram pointer
+    return size>=k?&word[MAX_NGRAM-k]:0;
+  }
+  const int *wordp() const { // n-gram pointer
+    return wordp(size);
+  }
+  const int *wordp(int k) const { // n-gram pointer
+    return size>=k?&word[MAX_NGRAM-k]:0;
+  }
+
+
+  int containsWord(const char* s,int lev) {
+
+    int c=dict->encode(s);
+    if (c == -1) return 0;
+
+    assert(lev <= size);
+    for (int i=0; i<lev; i++) {
+      if (*wordp(size-i)== c) return 1;
+    }
+    return 0;
+  }
+
+
+  void trans(const ngram& ng);
+  void invert (const ngram& ng);
+  void shift ();
+
+  friend std::ifstream& operator>> (std::ifstream& fi,ngram& ng);
+  friend std::ofstream& operator<< (std::ofstream& fi,ngram& ng);
+  friend std::istream& operator>> (std::istream& fi,ngram& ng);
+  friend std::ostream& operator<< (std::ostream& fi,ngram& ng);
+
+  inline bool operator==(const ngram &compare) const {
+    if ( size != compare.size || dict != compare.dict)
+      return false;
+    else
+      for (int i=size; i>0; i--)
+        if (word[MAX_NGRAM-i] != compare.word[MAX_NGRAM-i])
+          return false;
+    return true;
+  }
+
+  inline bool operator!=(const ngram &compare) const {
+    if ( size != compare.size || dict != compare.dict)
+      return true;
+    else
+      for (int i=size; i>0; i--)
+        if (word[MAX_NGRAM-i] != compare.word[MAX_NGRAM-i])
+          return true;
+    return false;
+  }
+
+
+
+  inline int ckhisto(int sz) {
+
+    for (int i=sz; i>1; i--)
+      if (*wordp(i)==dict->oovcode())
+        return 0;
+    return 1;
+  }
+
+  int pushc(int c);
+  int pushc(int* codes, int sz);
+  int pushw(const char* w);
+
+  //~ngram();
+
+
+
 };
 
 #endif

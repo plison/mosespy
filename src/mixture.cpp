@@ -44,20 +44,20 @@ using namespace std;
 
 
 static Enum_T BooleanEnum [] = {
-  {    "Yes",    YES }, 
+  {    "Yes",    YES },
   {    "No",     NO},
-  {    "yes",    YES }, 
+  {    "yes",    YES },
   {    "no",     NO},
-  {    "y",     YES }, 
+  {    "y",     YES },
   {    "n",     NO},
   END_ENUM
 };
 
 static Enum_T SLmTypeEnum [] = {
-  {    "ModifiedShiftBeta",  MOD_SHIFT_BETA }, 
-  {    "msb",                MOD_SHIFT_BETA }, 
-  {    "InterpShiftBeta",    SHIFT_BETA }, 
-  {    "sb",                 SHIFT_BETA }, 
+  {    "ModifiedShiftBeta",  MOD_SHIFT_BETA },
+  {    "msb",                MOD_SHIFT_BETA },
+  {    "InterpShiftBeta",    SHIFT_BETA },
+  {    "sb",                 SHIFT_BETA },
   {    "InterpShiftOne",     SHIFT_ONE },
   {    "s1",                 SHIFT_ONE },
   {    "InterpShiftZero",    SHIFT_ZERO },
@@ -72,119 +72,119 @@ static Enum_T SLmTypeEnum [] = {
 mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ipfile,char* opfile):
   mdiadaptlm((char *)NULL,depth)
 {
-	
-	prunethresh=prunefreq;
-	ipfname=ipfile;
-	opfname=opfile;
-	usefulltable=fulltable;
-	
-	mfstream inp(sublminfo,ios::in );
-	if (!inp){
-		cerr << "cannot open " << sublminfo << "\n";
-		exit(1);
-	}
-	
-	inp >> numslm;
-	
-	sublm=new interplm* [numslm];
-	int slmtype;
-	int subprunesingletons;
-	int subprunetopsingletons;
-	int subprunefreq;
 
-	char *subtrainfile;
-	
-	DeclareParams(
-				  "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
-				  "str",CMDSTRINGTYPE, &subtrainfile,
-				  "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
-				  "sps",CMDENUMTYPE, &subprunesingletons, BooleanEnum,
-				  "spts",CMDENUMTYPE, &subprunetopsingletons, BooleanEnum,
-				  (char *)NULL
-				  );
-	
-        cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
+  prunethresh=prunefreq;
+  ipfname=ipfile;
+  opfname=opfile;
+  usefulltable=fulltable;
 
-	for (int i=0;i<numslm;i++)
-    {
-		int npar=4;
-		char **par=new char*[npar];  
-		for (int j=0;j<4;j++){
-			par[j]=new char[BUFSIZ];
-		}    
-		
-		par[0][0]='\0';
-		inp >> par[1] >> par[2] >> par[3];
-		
-		subtrainfile=NULL;
-		slmtype=0;
-		subprunefreq=-1;
-	        subprunesingletons=YES;
-        	subprunetopsingletons=NO;
-		GetParams(&npar, &par, (char*) NULL);
-		
-		if (!slmtype || !subtrainfile || !subprunefreq==-1){
-			cerr << "slm incomplete parameters\n";
-			exit(1);
-		}
-		
-		switch (slmtype){
-				
-			case LINEAR_WB:
-				sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-				break;
-				
-			case SHIFT_BETA:
-				sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
-				break;
-				
-			case SHIFT_ONE:
-				sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
-				break;
-				
-			case MOD_SHIFT_BETA:
-				sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-				break;
-				
-			case MIXTURE:
-				sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
-				break;
-				
-			default:
-				cerr << "not implemented yet\n";
-				exit(1);
-		};
+  mfstream inp(sublminfo,ios::in );
+  if (!inp) {
+    cerr << "cannot open " << sublminfo << "\n";
+    exit(1);
+  }
 
-                sublm[i]->prunesingletons(subprunesingletons==YES);
-                sublm[i]->prunetopsingletons(subprunetopsingletons==YES);
-        
-	        if (subprunetopsingletons==YES) 
-				//apply most specific pruning method
-        	        sublm[i]->prunesingletons(NO);
+  inp >> numslm;
 
-	
-		cerr << "eventually generate OOV code ";
-		sublm[i]->dict->genoovcode();      
-		
-		//create super dictionary
-		dict->augment(sublm[i]->dict);
-		
-		//creates the super n-gram table
-		if(usefulltable) augment(sublm[i]);
+  sublm=new interplm* [numslm];
+  int slmtype;
+  int subprunesingletons;
+  int subprunetopsingletons;
+  int subprunefreq;
 
+  char *subtrainfile;
+
+  DeclareParams(
+    "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
+    "str",CMDSTRINGTYPE, &subtrainfile,
+    "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
+    "sps",CMDENUMTYPE, &subprunesingletons, BooleanEnum,
+    "spts",CMDENUMTYPE, &subprunetopsingletons, BooleanEnum,
+    (char *)NULL
+  );
+
+  cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
+
+  for (int i=0; i<numslm; i++) {
+    int npar=4;
+    char **par=new char*[npar];
+    for (int j=0; j<4; j++) {
+      par[j]=new char[BUFSIZ];
     }
 
-	dict->genoovcode();
-	cerr << "-------- dict size:" << dict->size() << "\n";	
-	//tying parameters
-	k1=2;
-	k2=10;
-	
+    par[0][0]='\0';
+    inp >> par[1] >> par[2] >> par[3];
+
+    subtrainfile=NULL;
+    slmtype=0;
+    subprunefreq=-1;
+    subprunesingletons=YES;
+    subprunetopsingletons=NO;
+    GetParams(&npar, &par, (char*) NULL);
+
+    if (!slmtype || !subtrainfile || !subprunefreq==-1) {
+      cerr << "slm incomplete parameters\n";
+      exit(1);
+    }
+
+    switch (slmtype) {
+
+    case LINEAR_WB:
+      sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+      break;
+
+    case SHIFT_BETA:
+      sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
+      break;
+
+    case SHIFT_ONE:
+      sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
+      break;
+
+    case MOD_SHIFT_BETA:
+      sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+      break;
+
+    case MIXTURE:
+      sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
+      break;
+
+    default:
+      cerr << "not implemented yet\n";
+      exit(1);
+    };
+
+    sublm[i]->prunesingletons(subprunesingletons==YES);
+    sublm[i]->prunetopsingletons(subprunetopsingletons==YES);
+
+    if (subprunetopsingletons==YES)
+      //apply most specific pruning method
+      sublm[i]->prunesingletons(NO);
+
+
+    cerr << "eventually generate OOV code ";
+    sublm[i]->dict->genoovcode();
+
+    //create super dictionary
+    dict->augment(sublm[i]->dict);
+
+    //creates the super n-gram table
+    if(usefulltable) augment(sublm[i]);
+
+  }
+
+  dict->genoovcode();
+  cerr << "-------- dict size:" << dict->size() << "\n";
+  //tying parameters
+  k1=2;
+  k2=10;
+
 };
 
-double mixture::reldist(double *l1,double *l2,int n){
+double mixture::reldist(double *l1,double *l2,int n)
+{
   double dist=0.0,size=0.0;
-  for (int i=0;i<n;i++){
+  for (int i=0; i<n; i++) {
     dist+=(l1[i]-l2[i])*(l1[i]-l2[i]);
     size+=l1[i]*l1[i];
   }
@@ -192,63 +192,68 @@ double mixture::reldist(double *l1,double *l2,int n){
 }
 
 
-double rand01(){
+double rand01()
+{
   return (double)rand()/(double)RAND_MAX;
 }
 
-int mixture::genpmap(){
-	dictionary* d=sublm[0]->dict;
-	
-	cerr << "Computing parameters mapping: ..." << d->size() << " ";
-	pm=new int[d->size()];
-	//initialize
-	for (int i=0;i<d->size();i++) pm[i]=0;
-	
-	pmax=k2-k1+1; //update # of parameters	
-	
-	for (int w=0;w<d->size();w++){
-		int f=d->freq(w);
-		if ((f>k1) && (f<=k2)) pm[w]=f-k1;
-		else if (f>k2){
-			pm[w]=pmax++;
-		}
-	}
-	cerr << "pmax " << pmax << " ";
-	return 1;
+int mixture::genpmap()
+{
+  dictionary* d=sublm[0]->dict;
+
+  cerr << "Computing parameters mapping: ..." << d->size() << " ";
+  pm=new int[d->size()];
+  //initialize
+  for (int i=0; i<d->size(); i++) pm[i]=0;
+
+  pmax=k2-k1+1; //update # of parameters
+
+  for (int w=0; w<d->size(); w++) {
+    int f=d->freq(w);
+    if ((f>k1) && (f<=k2)) pm[w]=f-k1;
+    else if (f>k2) {
+      pm[w]=pmax++;
+    }
+  }
+  cerr << "pmax " << pmax << " ";
+  return 1;
 }
 
-int mixture::pmap(ngram ng,int lev){
-  
+int mixture::pmap(ngram ng,int lev)
+{
+
   ngram h(sublm[0]->dict);
   h.trans(ng);
-  
+
   if (lev<=1) return 0;
-  //get the last word of history  
+  //get the last word of history
   if (!sublm[0]->get(h,2,1)) return 0;
   return (int) pm[*h.wordp(2)];
 }
 
 
-int mixture::savepar(char* opf){
+int mixture::savepar(char* opf)
+{
   mfstream out(opf,ios::out);
-  
+
   cerr << "saving parameters in " << opf << "\n";
   out << lmsize() << " " << pmax << "\n";
 
-  for (int i=0;i<=lmsize();i++)
-    for (int j=0;j<pmax;j++)
+  for (int i=0; i<=lmsize(); i++)
+    for (int j=0; j<pmax; j++)
       out.writex(l[i][j],sizeof(double),numslm);
 
-  
+
   return 1;
 }
 
 
-int mixture::loadpar(char* ipf){
+int mixture::loadpar(char* ipf)
+{
 
   mfstream inp(ipf,ios::in);
-  
-  if (!inp){
+
+  if (!inp) {
     cerr << "cannot open file with parameters: " << ipf << "\n";
     exit(1);
   }
@@ -260,244 +265,250 @@ int mixture::loadpar(char* ipf){
   inp.getline(header,100);
   int value1,value2;
   sscanf(header,"%d %d",&value1,&value2);
-  
-  if (value1 != lmsize() || value2 != pmax){
+
+  if (value1 != lmsize() || value2 != pmax) {
     cerr << "parameter file " << ipf << " is incompatible\n";
     exit(1);
   }
 
-  for (int i=0;i<=lmsize();i++)
-    for (int j=0;j<pmax;j++)
+  for (int i=0; i<=lmsize(); i++)
+    for (int j=0; j<pmax; j++)
       inp.readx(l[i][j],sizeof(double),numslm);
 
   return 1;
 }
 
-int mixture::train(){
-	
-	double zf;
-	
-	srand(1333);
-	
-	genpmap();
-	
-	if (dub()<=dict->size()){
-		cerr << "\nWarning: DUB value is too small: the LM will\n";
-		cerr << "possibly compute wrong probabilities if sub-LMs\n";
-		cerr << "have different vocabularies!\n";
-	}
-	
-	cerr << "mixlm --> DUB: " << dub() << endl;
-	for (int i=0;i<numslm;i++){
-		cerr << i << " sublm --> DUB: " << sublm[i]->dub()  << endl;
-		cerr << "eventually generate OOV code ";
-		cerr << sublm[i]->dict->encode(sublm[i]->dict->OOV()) << "\n";
-		sublm[i]->train();
-	}
-	
-	//initialize parameters
-	
-	for (int i=0;i<=lmsize();i++){
-		l[i]=new double*[pmax];
-		for (int j=0;j<pmax;j++){
-			l[i][j]=new double[numslm];
-			for (int k=0;k<numslm;k++)
-				l[i][j][k]=1.0/(double)numslm;
-		}}
-	
-	if (ipfname){
-		//load parameters from file
-		loadpar(ipfname);
-	}
-	else{
-		//start training of mixture model
-		
-		double oldl[pmax][numslm];
-		char alive[pmax],used[pmax];
-		int totalive;
-		
-		ngram ng(sublm[0]->dict);
-		
-		for (int lev=1;lev<=lmsize();lev++){
-			
-			zf=sublm[0]->zerofreq(lev);
-			
-			cerr << "Starting training at lev:" << lev << "\n";
-			
-			for (int i=0;i<pmax;i++) {
-				alive[i]=1;
-				used[i]=0;
-			}
-			totalive=1;
-			int iter=0;
-			while (totalive && (iter < 20) ){
-				
-				iter++;
-				
-				for (int i=0;i<pmax;i++)
-					if (alive[i])
-						for (int j=0;j<numslm;j++) {
-							oldl[i][j]=l[lev][i][j];
-							l[lev][i][j]=1.0/(double)numslm;
-						}
-				
-				sublm[0]->scan(ng,INIT,lev);
-				while(sublm[0]->scan(ng,CONT,lev)){
+int mixture::train()
+{
 
-					//do not include oov for unigrams
-					if ((lev==1) && (*ng.wordp(1)==sublm[0]->dict->oovcode()))
-						continue;
-					
-					int par=pmap(ng,lev);
-					used[par]=1;
+  double zf;
 
-					//controllo se aggiornare il parametro
-					if (alive[par]){
-						
-						double backoff=(lev>1?prob(ng,lev-1):1); //backoff
-						double numer[numslm],denom=0.0;
-						double fstar,lambda;
-						
-						//int cv=(int)floor(zf * (double)ng.freq + rand01());      	
-						//int cv=1; //old version of leaving-one-out
-						int cv=(int)floor(zf * (double)ng.freq)+1;      	
-						//int cv=1; //old version of leaving-one-out
-						//if (lev==3)q
-						
-						//if (iter>10)
-						// cout << ng 
-						// << " backoff " << backoff 
-						// << " level " << lev 
-						// << "\n";	  
-						
-						for (int i=0;i<numslm;i++){
-							
-							//use cv if i=0
-							
-							sublm[i]->discount(ng,lev,fstar,lambda,(i==0)*(cv)); 
-							numer[i]=oldl[par][i]*(fstar + lambda * backoff);
-							
-							assert(numer[i]>0);
-							
-							ngram ngslm(sublm[i]->dict);
-							ngslm.trans(ng);
-							if ((*ngslm.wordp(1)==sublm[i]->dict->oovcode()) &&
-								(dict->dub() > sublm[i]->dict->size()))
-								numer[i]/=(double)(dict->dub() - sublm[i]->dict->size());
-							
-							assert(numer[i]>0);
-							
-							denom+=numer[i];
-						};
-						
-						for (int i=0;i<numslm;i++){ 
-							l[lev][par][i]+=(ng.freq * (numer[i]/denom));
-							//if (iter>10)
-							//cout << ng << " l: " << l[lev][par][i] << "\n";	  
-						}
-					}
-				}
-				
-				//normalize all parameters
-				totalive=0;
-				for (int i=0;i<pmax;i++){
-					double tot=0;
-					if (alive[i]){
-						for (int j=0;j<numslm;j++) tot+=(l[lev][i][j]);
-						for (int j=0;j<numslm;j++) l[lev][i][j]/=tot;
-						
-						//decide if to continue to update
-						if (!used[i] || (reldist(l[lev][i],oldl[i],numslm)<=0.05))
-							alive[i]=0;
-					}
-					totalive+=alive[i];
-				}
-				
-				cerr << "Lev " << lev << " iter " << iter << " tot alive " << totalive << "\n";
-				
-			}
-		}
-	}
-	
-	if (opfname) savepar(opfname);
-	
-	
-	return 1;
+  srand(1333);
+
+  genpmap();
+
+  if (dub()<=dict->size()) {
+    cerr << "\nWarning: DUB value is too small: the LM will\n";
+    cerr << "possibly compute wrong probabilities if sub-LMs\n";
+    cerr << "have different vocabularies!\n";
+  }
+
+  cerr << "mixlm --> DUB: " << dub() << endl;
+  for (int i=0; i<numslm; i++) {
+    cerr << i << " sublm --> DUB: " << sublm[i]->dub()  << endl;
+    cerr << "eventually generate OOV code ";
+    cerr << sublm[i]->dict->encode(sublm[i]->dict->OOV()) << "\n";
+    sublm[i]->train();
+  }
+
+  //initialize parameters
+
+  for (int i=0; i<=lmsize(); i++) {
+    l[i]=new double*[pmax];
+    for (int j=0; j<pmax; j++) {
+      l[i][j]=new double[numslm];
+      for (int k=0; k<numslm; k++)
+        l[i][j][k]=1.0/(double)numslm;
+    }
+  }
+
+  if (ipfname) {
+    //load parameters from file
+    loadpar(ipfname);
+  } else {
+    //start training of mixture model
+
+    double oldl[pmax][numslm];
+    char alive[pmax],used[pmax];
+    int totalive;
+
+    ngram ng(sublm[0]->dict);
+
+    for (int lev=1; lev<=lmsize(); lev++) {
+
+      zf=sublm[0]->zerofreq(lev);
+
+      cerr << "Starting training at lev:" << lev << "\n";
+
+      for (int i=0; i<pmax; i++) {
+        alive[i]=1;
+        used[i]=0;
+      }
+      totalive=1;
+      int iter=0;
+      while (totalive && (iter < 20) ) {
+
+        iter++;
+
+        for (int i=0; i<pmax; i++)
+          if (alive[i])
+            for (int j=0; j<numslm; j++) {
+              oldl[i][j]=l[lev][i][j];
+              l[lev][i][j]=1.0/(double)numslm;
+            }
+
+        sublm[0]->scan(ng,INIT,lev);
+        while(sublm[0]->scan(ng,CONT,lev)) {
+
+          //do not include oov for unigrams
+          if ((lev==1) && (*ng.wordp(1)==sublm[0]->dict->oovcode()))
+            continue;
+
+          int par=pmap(ng,lev);
+          used[par]=1;
+
+          //controllo se aggiornare il parametro
+          if (alive[par]) {
+
+            double backoff=(lev>1?prob(ng,lev-1):1); //backoff
+            double numer[numslm],denom=0.0;
+            double fstar,lambda;
+
+            //int cv=(int)floor(zf * (double)ng.freq + rand01());
+            //int cv=1; //old version of leaving-one-out
+            int cv=(int)floor(zf * (double)ng.freq)+1;
+            //int cv=1; //old version of leaving-one-out
+            //if (lev==3)q
+
+            //if (iter>10)
+            // cout << ng
+            // << " backoff " << backoff
+            // << " level " << lev
+            // << "\n";
+
+            for (int i=0; i<numslm; i++) {
+
+              //use cv if i=0
+
+              sublm[i]->discount(ng,lev,fstar,lambda,(i==0)*(cv));
+              numer[i]=oldl[par][i]*(fstar + lambda * backoff);
+
+              assert(numer[i]>0);
+
+              ngram ngslm(sublm[i]->dict);
+              ngslm.trans(ng);
+              if ((*ngslm.wordp(1)==sublm[i]->dict->oovcode()) &&
+                  (dict->dub() > sublm[i]->dict->size()))
+                numer[i]/=(double)(dict->dub() - sublm[i]->dict->size());
+
+              assert(numer[i]>0);
+
+              denom+=numer[i];
+            };
+
+            for (int i=0; i<numslm; i++) {
+              l[lev][par][i]+=(ng.freq * (numer[i]/denom));
+              //if (iter>10)
+              //cout << ng << " l: " << l[lev][par][i] << "\n";
+            }
+          }
+        }
+
+        //normalize all parameters
+        totalive=0;
+        for (int i=0; i<pmax; i++) {
+          double tot=0;
+          if (alive[i]) {
+            for (int j=0; j<numslm; j++) tot+=(l[lev][i][j]);
+            for (int j=0; j<numslm; j++) l[lev][i][j]/=tot;
+
+            //decide if to continue to update
+            if (!used[i] || (reldist(l[lev][i],oldl[i],numslm)<=0.05))
+              alive[i]=0;
+          }
+          totalive+=alive[i];
+        }
+
+        cerr << "Lev " << lev << " iter " << iter << " tot alive " << totalive << "\n";
+
+      }
+    }
+  }
+
+  if (opfname) savepar(opfname);
+
+
+  return 1;
 }
 
-int mixture::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unused parameter: cv */){
-	
-	ngram ng(dict);ng.trans(ng_);
-	
-	double lambda2,fstar2;
-	fstar=0.0;lambda=0.0;
-	int p=pmap(ng,size);
-	assert(p <= pmax);
-	double lsum=0;
-	
+int mixture::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unused parameter: cv */)
+{
 
-	for (int i=0;i<numslm;i++){
-		sublm[i]->discount(ng,size,fstar2,lambda2,0);
+  ngram ng(dict);
+  ng.trans(ng_);
 
-			
-		ngram ngslm(sublm[i]->dict);
-		ngslm.trans(ng);
-		
-		if (dict->dub() > sublm[i]->dict->size())
-			if (*ngslm.wordp(1) == sublm[i]->dict->oovcode()){
-				fstar2/=(double)(dict->dub() - sublm[i]->dict->size()+1);
-			}
-		
-		
-		fstar+=(l[size][p][i]*fstar2);
-		lambda+=(l[size][p][i]*lambda2);
-		lsum+=l[size][p][i];
-	}
-	
-	if (dict->dub() > dict->size())
-		if (*ng.wordp(1) == dict->oovcode()){
-			fstar*=(double)(dict->dub() - dict->size()+1);
-		}
-	
-	assert((lsum>0.999999999999) && (lsum <=1.000000000001));
-	return 1;
+  double lambda2,fstar2;
+  fstar=0.0;
+  lambda=0.0;
+  int p=pmap(ng,size);
+  assert(p <= pmax);
+  double lsum=0;
+
+
+  for (int i=0; i<numslm; i++) {
+    sublm[i]->discount(ng,size,fstar2,lambda2,0);
+
+
+    ngram ngslm(sublm[i]->dict);
+    ngslm.trans(ng);
+
+    if (dict->dub() > sublm[i]->dict->size())
+      if (*ngslm.wordp(1) == sublm[i]->dict->oovcode()) {
+        fstar2/=(double)(dict->dub() - sublm[i]->dict->size()+1);
+      }
+
+
+    fstar+=(l[size][p][i]*fstar2);
+    lambda+=(l[size][p][i]*lambda2);
+    lsum+=l[size][p][i];
+  }
+
+  if (dict->dub() > dict->size())
+    if (*ng.wordp(1) == dict->oovcode()) {
+      fstar*=(double)(dict->dub() - dict->size()+1);
+    }
+
+  assert((lsum>0.999999999999) && (lsum <=1.000000000001));
+  return 1;
 }
 
 
 //creates the ngramtable on demand from the sublm tables
-int mixture::get(ngram& ng,int n,int lev){
-	
-	//free current tree
-	resetngramtable();
-	
-	//get 1-word prefix from ng
-	ngram ug(dict,1);
-	*ug.wordp(1)=*ng.wordp(ng.size);
-	
-	//local ngram to upload entries
-	ngram locng(dict,maxlevel());
+int mixture::get(ngram& ng,int n,int lev)
+{
 
-	//allocate subtrees from sublm
-	for (int i=0;i<numslm;i++){
-		
-		ngram subug(sublm[i]->dict,1); subug.trans(ug);
+  //free current tree
+  resetngramtable();
 
-		if (sublm[i]->get(subug,1,1)){
-		
-			ngram subng(sublm[i]->dict,maxlevel()); 
-			*subng.wordp(maxlevel())=*subug.wordp(1);
-			sublm[i]->scan(subug.link,subug.info,1,subng,INIT,maxlevel());
-			while(sublm[i]->scan(subug.link,subug.info,1,subng,CONT,maxlevel())){
-				locng.trans(subng);
-				put(locng);
-			}
-		}
-	}
-	
-	return ngramtable::get(ng,n,lev);
-	
+  //get 1-word prefix from ng
+  ngram ug(dict,1);
+  *ug.wordp(1)=*ng.wordp(ng.size);
+
+  //local ngram to upload entries
+  ngram locng(dict,maxlevel());
+
+  //allocate subtrees from sublm
+  for (int i=0; i<numslm; i++) {
+
+    ngram subug(sublm[i]->dict,1);
+    subug.trans(ug);
+
+    if (sublm[i]->get(subug,1,1)) {
+
+      ngram subng(sublm[i]->dict,maxlevel());
+      *subng.wordp(maxlevel())=*subug.wordp(1);
+      sublm[i]->scan(subug.link,subug.info,1,subng,INIT,maxlevel());
+      while(sublm[i]->scan(subug.link,subug.info,1,subng,CONT,maxlevel())) {
+        locng.trans(subng);
+        put(locng);
+      }
+    }
+  }
+
+  return ngramtable::get(ng,n,lev);
+
 }
-		
+
 
 
 

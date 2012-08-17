@@ -41,7 +41,8 @@ interpolation of several sub LMs
 
 #define MAX_TOKEN 2
 
-class lmInterpolation: public lmContainer{
+class lmInterpolation: public lmContainer
+{
   static const bool debug=true;
   int m_number_lm;
   int order;
@@ -62,50 +63,64 @@ class lmInterpolation: public lmContainer{
 
   dictionary *dict; // dictionary for all interpolated LMs
 
- public:
-    
+public:
+
   lmInterpolation(float nlf=0.0, float dlfi=0.0);
-  virtual ~lmInterpolation(){};
+  virtual ~lmInterpolation() {};
 
   void load(const std::string filename,int mmap=0);
   lmContainer* load_lm(int i, int memmap, float nlf, float dlf);
 
-  virtual double clprob(ngram ng,            double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
-  virtual double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
+  virtual double clprob(ngram ng,            double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
+  virtual double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
 
-  int maxlevel() const {return maxlev;};
+  int maxlevel() const {
+    return maxlev;
+  };
 
-  virtual inline void setDict(dictionary* d) { dict=d; };
-  virtual inline dictionary* getDict() const { return dict; };
+  virtual inline void setDict(dictionary* d) {
+    dict=d;
+  };
+  virtual inline dictionary* getDict() const {
+    return dict;
+  };
 
-  //set penalty for OOV words  
-  virtual inline double getlogOOVpenalty() const { return logOOVpenalty; }
-  
-  virtual double setlogOOVpenalty(int dub); 
-  
-  double inline setlogOOVpenalty(double oovp){ return logOOVpenalty=oovp; }
+  //set penalty for OOV words
+  virtual inline double getlogOOVpenalty() const {
+    return logOOVpenalty;
+  }
+
+  virtual double setlogOOVpenalty(int dub);
+
+  double inline setlogOOVpenalty(double oovp) {
+    return logOOVpenalty=oovp;
+  }
 
 //set the inverted flag (used to set the inverted flag of each subLM, when loading)
-  inline bool is_inverted(const bool flag){ return isInverted = flag; }
+  inline bool is_inverted(const bool flag) {
+    return isInverted = flag;
+  }
 
 //for an interpolation LM this variable does not make sense
 //for compatibility, we return true if all subLM return true
-  inline bool is_inverted(){
-    for (int i=0;i<m_number_lm;i++){
+  inline bool is_inverted() {
+    for (int i=0; i<m_number_lm; i++) {
       if (m_isinverted[i] == false) return false;
     }
     return true;
   }
 
-  inline virtual void dictionary_incflag(const bool flag){ dict->incflag(flag); };
-	
-	inline virtual bool is_OOV(int code){ //returns true if the word is OOV for each subLM
-    for (int i=0;i<m_number_lm;i++){
-			int _code=m_lm[i]->getDict()->encode(getDict()->decode(code));
+  inline virtual void dictionary_incflag(const bool flag) {
+    dict->incflag(flag);
+  };
+
+  inline virtual bool is_OOV(int code) { //returns true if the word is OOV for each subLM
+    for (int i=0; i<m_number_lm; i++) {
+      int _code=m_lm[i]->getDict()->encode(getDict()->decode(code));
       if (m_lm[i]->is_OOV(_code) == false) return false;
     }
     return true;
-	}
+  }
 };
 
 #endif

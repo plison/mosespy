@@ -37,50 +37,59 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define MAX_TOKEN 2
 
-class lmclass: public lmtable {
+class lmclass: public lmtable
+{
   dictionary     *dict; // dictionary (words - macro tags)
   double *MapScore;
   int MapScoreN;
   int MaxMapSize;
 
- protected:
+protected:
   void loadMap(std::istream& inp);
   void loadMapElement(const char* in, const char* out, double sc);
   void mapping(ngram &in, ngram &out);
 
-  inline double getMapScore(int wcode){
+  inline double getMapScore(int wcode) {
 //the input word is un-known by the map, so I "transform" this word into the oov (of the words)
-    if (wcode >= MapScoreN){ wcode = getDict()->oovcode(); }
+    if (wcode >= MapScoreN) {
+      wcode = getDict()->oovcode();
+    }
     return MapScore[wcode];
   };
 
-  inline size_t getMap(int wcode){
+  inline size_t getMap(int wcode) {
 //the input word is un-known by the map, so I "transform" this word into the oov (of the words)
-    if (wcode >= MapScoreN){ wcode = getDict()->oovcode(); }
-    return dict->freq(wcode); 
+    if (wcode >= MapScoreN) {
+      wcode = getDict()->oovcode();
+    }
+    return dict->freq(wcode);
   };
 
   void checkMap();
 
- public:
+public:
   lmclass(float nlf=0.0, float dlfi=0.0);
-  
+
   ~lmclass();
 
   void load(const std::string filename,int mmap=0);
 
   double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
-  inline double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL){
+  inline double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL) {
     return lprob(ng,bow,bol,maxsuffptr,statesize,extendible);
   };
-  inline double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL){
+  inline double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL) {
     ngram ong(getDict());
     ong.pushc(ng,ngsize);
     return lprob(ong,bow,bol,maxsuffptr,statesize,extendible);
   };
 
-  inline dictionary* getDict() const { return dict; }
-  inline virtual void dictionary_incflag(const bool flag){ dict->incflag(flag); };
+  inline dictionary* getDict() const {
+    return dict;
+  }
+  inline virtual void dictionary_incflag(const bool flag) {
+    dict->incflag(flag);
+  };
 };
 
 

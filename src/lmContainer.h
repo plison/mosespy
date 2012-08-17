@@ -39,60 +39,121 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 typedef enum {BINARY,TEXT,YRANIB,NONE} OUTFILE_TYPE;
 
-class lmContainer{
+class lmContainer
+{
   static const bool debug=true;
 
- protected:
+protected:
   int          lmtype; //auto reference to its own type
   int          maxlev; //maximun order of sub LMs;
   int  requiredMaxlev; //max loaded level, i.e. load up to requiredMaxlev levels
- 
- public:
-    
+
+public:
+
   lmContainer();
-  virtual ~lmContainer(){};
+  virtual ~lmContainer() {};
 
-  virtual void load(const std::string filename, int mmap=0){ UNUSED(filename); UNUSED(mmap); };
+  virtual void load(const std::string filename, int mmap=0) {
+    UNUSED(filename);
+    UNUSED(mmap);
+  };
 
-  virtual void savetxt(const char *filename){ UNUSED(filename); };
-  virtual void savebin(const char *filename){ UNUSED(filename); };
+  virtual void savetxt(const char *filename) {
+    UNUSED(filename);
+  };
+  virtual void savebin(const char *filename) {
+    UNUSED(filename);
+  };
 
-  virtual double getlogOOVpenalty() const{ return 0.0; };
-  virtual double setlogOOVpenalty(int dub){ UNUSED(dub); return 0.0; };
-  virtual double setlogOOVpenalty(double oovp){ UNUSED(oovp); return 0.0; };
+  virtual double getlogOOVpenalty() const {
+    return 0.0;
+  };
+  virtual double setlogOOVpenalty(int dub) {
+    UNUSED(dub);
+    return 0.0;
+  };
+  virtual double setlogOOVpenalty(double oovp) {
+    UNUSED(oovp);
+    return 0.0;
+  };
 
-  inline virtual dictionary* getDict() const{ return NULL;};
-  inline virtual void maxlevel(int lev) { maxlev = lev; };
-  inline virtual int maxlevel() const{ return maxlev; };
-  inline virtual void stat(int lev=0){  UNUSED(lev); };
+  inline virtual dictionary* getDict() const {
+    return NULL;
+  };
+  inline virtual void maxlevel(int lev) {
+    maxlev = lev;
+  };
+  inline virtual int maxlevel() const {
+    return maxlev;
+  };
+  inline virtual void stat(int lev=0) {
+    UNUSED(lev);
+  };
 
-  inline virtual void setMaxLoadedLevel(int lev){ requiredMaxlev=lev; };
-  inline virtual int getMaxLoadedLevel(){ return requiredMaxlev; };
+  inline virtual void setMaxLoadedLevel(int lev) {
+    requiredMaxlev=lev;
+  };
+  inline virtual int getMaxLoadedLevel() {
+    return requiredMaxlev;
+  };
 
-  virtual bool is_inverted(const bool flag){ UNUSED(flag); return false; };
-  virtual bool is_inverted(){return false; };
-  virtual double clprob(ngram ng, double* bow=NULL, int* bol=NULL, char** maxsuffptr=NULL, unsigned int* statesize=NULL,bool* extendible=NULL){ UNUSED(ng); UNUSED(bow); UNUSED(bol); UNUSED(maxsuffptr); UNUSED(statesize); UNUSED(extendible); return 0.0; };
-  virtual double clprob(int* ng, int ngsize, double* bow=NULL, int* bol=NULL, char** maxsuffptr=NULL, unsigned int* statesize=NULL,bool* extendible=NULL){ UNUSED(ng); UNUSED(ngsize); UNUSED(bow); UNUSED(bol); UNUSED(maxsuffptr); UNUSED(statesize); UNUSED(extendible); return 0.0; };
+  virtual bool is_inverted(const bool flag) {
+    UNUSED(flag);
+    return false;
+  };
+  virtual bool is_inverted() {
+    return false;
+  };
+  virtual double clprob(ngram ng, double* bow=NULL, int* bol=NULL, char** maxsuffptr=NULL, unsigned int* statesize=NULL,bool* extendible=NULL) {
+    UNUSED(ng);
+    UNUSED(bow);
+    UNUSED(bol);
+    UNUSED(maxsuffptr);
+    UNUSED(statesize);
+    UNUSED(extendible);
+    return 0.0;
+  };
+  virtual double clprob(int* ng, int ngsize, double* bow=NULL, int* bol=NULL, char** maxsuffptr=NULL, unsigned int* statesize=NULL,bool* extendible=NULL) {
+    UNUSED(ng);
+    UNUSED(ngsize);
+    UNUSED(bow);
+    UNUSED(bol);
+    UNUSED(maxsuffptr);
+    UNUSED(statesize);
+    UNUSED(extendible);
+    return 0.0;
+  };
 
-  virtual void used_caches(){};
-  virtual void init_caches(int uptolev){ UNUSED(uptolev); };
-  virtual void check_caches_levels(){};
-  virtual void reset_caches(){};
- 
-  virtual void  reset_mmap(){};
+  virtual void used_caches() {};
+  virtual void init_caches(int uptolev) {
+    UNUSED(uptolev);
+  };
+  virtual void check_caches_levels() {};
+  virtual void reset_caches() {};
 
-  inline void setLanguageModelType(int type){ lmtype=type; };
-  inline int getLanguageModelType(){ return lmtype; };
+  virtual void  reset_mmap() {};
+
+  inline void setLanguageModelType(int type) {
+    lmtype=type;
+  };
+  inline int getLanguageModelType() {
+    return lmtype;
+  };
   int getLanguageModelType(std::string filename);
 
-  inline virtual void dictionary_incflag(const bool flag){ UNUSED(flag); };
+  inline virtual void dictionary_incflag(const bool flag) {
+    UNUSED(flag);
+  };
 
   virtual bool filter(const string sfilter, lmContainer*& sublmt, const string skeepunigrams);
 
   lmContainer* CreateLanguageModel(const std::string infile, float nlf=0.0, float dlf=0.0);
   lmContainer* CreateLanguageModel(int type, float nlf=0.0, float dlf=0.0);
 
-  inline virtual bool is_OOV(int code){ UNUSED(code); return false; };
+  inline virtual bool is_OOV(int code) {
+    UNUSED(code);
+    return false;
+  };
 };
 
 

@@ -21,56 +21,64 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 // Non linear Shift based interpolated LMs
 
-class shiftone: public mdiadaptlm{
+class shiftone: public mdiadaptlm
+{
 protected:
   int prunethresh;
-  double beta;   
+  double beta;
 public:
   shiftone(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=SHIFTBETA_B);
   int train();
-  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);  
-  ~shiftone(){}
+  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
+  ~shiftone() {}
 };
 
 
-class shiftbeta: public mdiadaptlm{
- protected:
+class shiftbeta: public mdiadaptlm
+{
+protected:
   int prunethresh;
   double* beta;
 
- public:
+public:
   shiftbeta(char* ngtfile,int depth=0,int prunefreq=0,double beta=-1,TABLETYPE tt=SHIFTBETA_B);
   int train();
-  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);  
-  ~shiftbeta(){delete [] beta;}
+  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
+  ~shiftbeta() {
+    delete [] beta;
+  }
 
 };
 
 
-class symshiftbeta: public shiftbeta{
- public:
+class symshiftbeta: public shiftbeta
+{
+public:
   symshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,double beta=-1):
-    shiftbeta(ngtfile,depth,prunefreq,beta){}
-  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);  
+    shiftbeta(ngtfile,depth,prunefreq,beta) {}
+  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 };
 
 
-class mshiftbeta: public mdiadaptlm{
- protected:
+class mshiftbeta: public mdiadaptlm
+{
+protected:
   int prunethresh;
   double beta[3][MAX_NGRAM];
   ngramtable* tb[MAX_NGRAM];
 
   double oovsum;
 
- public:
+public:
   mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=MSHIFTBETA_B);
   int train();
-  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);  
+  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 
-  ~mshiftbeta(){}
+  ~mshiftbeta() {}
 
-  int mfreq(ngram& ng,int l){return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);}
+  int mfreq(ngram& ng,int l) {
+    return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);
+  }
 
 };
 

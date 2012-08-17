@@ -39,8 +39,11 @@ int		aflag=0;
 
 /********************************/
 
-void usage(const char *msg = 0) {
-  if (msg) { std::cerr << msg << std::endl; }
+void usage(const char *msg = 0)
+{
+  if (msg) {
+    std::cerr << msg << std::endl;
+  }
   std::cerr << "Usage: prune-lm [--threshold=th2,th3,...] [--abs=1|0] input-file [output-file]" << std::endl << std::endl;
   std::cerr << "    prune-lm reads a LM in either ARPA or compiled format and" << std::endl;
   std::cerr << "    prunes out n-grams (n=2,3,..) for which backing-off to the" << std::endl;
@@ -54,7 +57,8 @@ void usage(const char *msg = 0) {
 
 }
 
-bool starts_with(const std::string &s, const std::string &pre) {
+bool starts_with(const std::string &s, const std::string &pre)
+{
   if (pre.size() > s.size()) return false;
 
   if (pre == s) return true;
@@ -81,7 +85,10 @@ std::string get_param(const std::string& opt, int argc, const char **argv, int& 
 
 void handle_option(const std::string& opt, int argc, const char **argv, int& argi)
 {
-  if (opt == "--help" || opt == "-h") { usage(); exit(1); }
+  if (opt == "--help" || opt == "-h") {
+    usage();
+    exit(1);
+  }
 
   if (starts_with(opt, "--threshold") || starts_with(opt, "-t"))
     spthr = get_param(opt, argc, argv, argi);
@@ -108,15 +115,24 @@ int main(int argc, const char **argv)
 {
   float thr[MAX_NGRAM];
 
-  if (argc < 2) { usage(); exit(1); }
+  if (argc < 2) {
+    usage();
+    exit(1);
+  }
   std::vector<std::string> files;
   for(int i=1; i < argc; i++) {
     std::string opt = argv[i];
     if(opt[0] == '-') handle_option(opt, argc, argv, i);
     else files.push_back(opt);
   }
-  if (files.size() > 2) { usage("Too many arguments"); exit(1); }
-  if (files.size() < 1) { usage("Please specify a LM file to read from"); exit(1); }
+  if (files.size() > 2) {
+    usage("Too many arguments");
+    exit(1);
+  }
+  if (files.size() < 1) {
+    usage("Please specify a LM file to read from");
+    exit(1);
+  }
   memset(thr, 0, sizeof(thr));
   if(spthr != "") s2t(spthr, thr);
   std::string infile = files[0];
@@ -135,8 +151,7 @@ int main(int argc, const char **argv)
       outfile.erase(outfile.size()-3,3);
 
     outfile+=".plm";
-  }
-  else
+  } else
     outfile = files[1];
 
 
@@ -150,7 +165,7 @@ int main(int argc, const char **argv)
   lmt.load(inp,infile.c_str(),outfile.c_str(),0,NONE);
   std::cerr << "pruning LM with thresholds: \n";
 
-  for (int i=1;i<lmt.maxlevel();i++) std::cerr<< " " << thr[i];
+  for (int i=1; i<lmt.maxlevel(); i++) std::cerr<< " " << thr[i];
   std::cerr << "\n";
   lmt.wdprune((float*)thr, aflag);
   lmt.savetxt(outfile.c_str());

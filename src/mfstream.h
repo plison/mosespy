@@ -46,7 +46,8 @@ extern "C" {
 
 
 //! File description for I/O stream buffer
-class fdbuf : public std::streambuf {
+class fdbuf : public std::streambuf
+{
 
 protected:
   int fd;    // file descriptor
@@ -54,25 +55,25 @@ protected:
   // write one character
   virtual int_type overflow (int_type c) {
     char z = c;
-      if (c != EOF) {
-	if (write (fd, &z, 1) != 1) {
-	  return EOF;
-	}
+    if (c != EOF) {
+      if (write (fd, &z, 1) != 1) {
+        return EOF;
       }
-      //cerr << "overflow: \n";
-      //cerr << "pptr: " << (int) pptr() << "\n";
-      return c;
+    }
+    //cerr << "overflow: \n";
+    //cerr << "pptr: " << (int) pptr() << "\n";
+    return c;
   }
 
   // write multiple characters
   virtual
   std::streamsize xsputn (const char* s,
-			  std::streamsize num) {
+                          std::streamsize num) {
     return write(fd,s,num);
 
   }
 
-  virtual streampos seekpos ( streampos /* unused parameter: sp */, ios_base::openmode /* unused parameter: which */= ios_base::in | ios_base::out ){
+  virtual streampos seekpos ( streampos /* unused parameter: sp */, ios_base::openmode /* unused parameter: which */= ios_base::in | ios_base::out ) {
     std::cerr << "mfstream::seekpos is not implemented" << std::endl;;
 
     return (streampos) 0;
@@ -81,48 +82,48 @@ protected:
   //read one character
   virtual int_type underflow () {
     // is read position before end of buffer?
-        if (gptr() < egptr()) {
-            return traits_type::to_int_type(*gptr());
-        }
+    if (gptr() < egptr()) {
+      return traits_type::to_int_type(*gptr());
+    }
 
-        /* process size of putback area
-         * - use number of characters read
-         * - but at most four
-         */
-        int numPutback;
-        numPutback = gptr() - eback();
-        if (numPutback > 4) {
-            numPutback = 4;
-        }
+    /* process size of putback area
+     * - use number of characters read
+     * - but at most four
+     */
+    int numPutback;
+    numPutback = gptr() - eback();
+    if (numPutback > 4) {
+      numPutback = 4;
+    }
 
-        /* copy up to four characters previously read into
-         * the putback buffer (area of first four characters)
-         */
-        std::memmove (buffer+(4-numPutback), gptr()-numPutback,
-                      numPutback);
+    /* copy up to four characters previously read into
+     * the putback buffer (area of first four characters)
+     */
+    std::memmove (buffer+(4-numPutback), gptr()-numPutback,
+                  numPutback);
 
-        // read new characters
-        int num;
-        num = read (fd, buffer+4, bufferSize-4);
-        if (num <= 0) {
-            // ERROR or EOF
-            return EOF;
-        }
+    // read new characters
+    int num;
+    num = read (fd, buffer+4, bufferSize-4);
+    if (num <= 0) {
+      // ERROR or EOF
+      return EOF;
+    }
 
-        // reset buffer pointers
-        setg (buffer+(4-numPutback),   // beginning of putback area
-              buffer+4,                // read position
-              buffer+4+num);           // end of buffer
+    // reset buffer pointers
+    setg (buffer+(4-numPutback),   // beginning of putback area
+          buffer+4,                // read position
+          buffer+4+num);           // end of buffer
 
-        // return next character
-        return traits_type::to_int_type(*gptr());
+    // return next character
+    return traits_type::to_int_type(*gptr());
   }
 
 
   // read multiple characters
   virtual
   std::streamsize xsgetn (char* s,
-			  std::streamsize num) {
+                          std::streamsize num) {
     return read(fd,s,num);
   }
 
@@ -134,8 +135,8 @@ public:
   // constructor
   fdbuf (int _fd) : fd(_fd) {
     setg (buffer+4,     // beginning of putback area
-	  buffer+4,     // read position
-	  buffer+4);    // end position
+          buffer+4,     // read position
+          buffer+4);    // end position
   }
 
 };
@@ -144,14 +145,15 @@ public:
 
 //! Extension of fstream to commands
 
-class mfstream : public std::fstream{
+class mfstream : public std::fstream
+{
 
 protected:
   fdbuf* buf;
   int _cmd;
   openmode _mode;
   FILE* _FILE;
-  
+
 
   int swapbytes(char *p, int sz, int n);
 
@@ -165,16 +167,16 @@ public:
     _mode=mode;
     open(name,mode);
   }
-  
+
   //! Closes and destroys a file/command stream
-  ~mfstream(){
+  ~mfstream() {
     if (_cmd<2) close();
   }
 
-  //! Opens an existing mfstream 
+  //! Opens an existing mfstream
   void open(const char *name,openmode mode);
 
-  //! Closes an existing mfstream 
+  //! Closes an existing mfstream
   void close();
 
   //! Write function for machine-independent byte order
@@ -182,22 +184,22 @@ public:
 
   //! Read function for machine-independent byte order
   mfstream& readx(void *p, int sz,int n=1);
-  
+
   //! Write function at a given stream position for machine-independent byte order
   mfstream& iwritex(streampos loc,void *ptr,int size,int n=1);
-  
+
   //! Tells current position within a file
-  streampos tellp(){
+  streampos tellp() {
     if (_cmd==0) return (streampos) fstream::tellg();
     cerr << "tellp not allowed on commands\n";
     exit(1);
   }
 
   //! Seeks a position within a file
-  mfstream& seekp(streampos loc){
-    if (_cmd==0) 
+  mfstream& seekp(streampos loc) {
+    if (_cmd==0)
       fstream::seekg(loc);
-    else{
+    else {
       cerr << "seekp not allowed on commands\n";
       exit(1);
     }
@@ -206,21 +208,20 @@ public:
 
   //! Reopens an input stream
 
-  mfstream& reopen(){
+  mfstream& reopen() {
 
-    if (_mode != in){
+    if (_mode != in) {
       cerr << "mfstream::reopen() openmode must be ios:in\n";
       exit(1);
     }
 
-    if (strlen(_cmdname)>0){
+    if (strlen(_cmdname)>0) {
       char *a=new char[strlen(_cmdname)+1];
       strcpy(a,_cmdname);
       cerr << "close/open " << a <<"\n";
       close();
       open(a,ios::in);
-    }
-    else
+    } else
       seekp(0);
 
     return *this;

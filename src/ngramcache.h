@@ -31,19 +31,20 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define NGRAMCACHE_LOAD_FACTOR  0.5
 
-typedef struct PROB_AND_STATE_ENTRY{
-        double logpr;   //!< probability value of an ngram
-        char* state;  //!< the largest suffix of an n-gram contained in the LM table.
-        unsigned int statesize; //!< LM statesize of an ngram
-        double bow;     //!< backoff weight
-        int bol;        //!< backoff level
-        bool extendible;  //!< flag for extendibility of the ngram
-        PROB_AND_STATE_ENTRY(double lp=0.0, char* st=NULL, unsigned int stsz=0, double bw=0.0, int bl=0, bool ex=false): logpr(lp), state(st), statesize(stsz), bow(bw), bol(bl), extendible(ex) {}; //initializer
+typedef struct PROB_AND_STATE_ENTRY {
+  double logpr;   //!< probability value of an ngram
+  char* state;  //!< the largest suffix of an n-gram contained in the LM table.
+  unsigned int statesize; //!< LM statesize of an ngram
+  double bow;     //!< backoff weight
+  int bol;        //!< backoff level
+  bool extendible;  //!< flag for extendibility of the ngram
+  PROB_AND_STATE_ENTRY(double lp=0.0, char* st=NULL, unsigned int stsz=0, double bw=0.0, int bl=0, bool ex=false): logpr(lp), state(st), statesize(stsz), bow(bw), bol(bl), extendible(ex) {}; //initializer
 } prob_and_state_t;
 
 void print(prob_and_state_t* pst,  std::ostream& out=std::cout);
 
-class ngramcache{
+class ngramcache
+{
 private:
 
   static const bool debug=true;
@@ -57,14 +58,18 @@ private:
   int hits;
   int entries;
   float load_factor; //!< ngramcache loading factor
-void print(const int*);
+  void print(const int*);
 
 public:
   ngramcache(int n,int size,int maxentries,float lf=NGRAMCACHE_LOAD_FACTOR);
   ~ngramcache();
 
-  int cursize(){return entries;}
-  int maxsize(){return maxn;}
+  int cursize() {
+    return entries;
+  }
+  int maxsize() {
+    return maxn;
+  }
   void reset(int n=0);
   char* get(const int* ngp,char*& info);
   char* get(const int* ngp,double& info);
@@ -72,11 +77,17 @@ public:
   int add(const int* ngp,const char*& info);
   int add(const int* ngp,const double& info);
   int add(const int* ngp,const prob_and_state_t& info);
-  int isfull(){return (entries >= maxn);}
+  int isfull() {
+    return (entries >= maxn);
+  }
   void stat();
-  inline void used(){ stat(); };
+  inline void used() {
+    stat();
+  };
 
-  inline float set_load_factor(float value){ return load_factor=value; }
+  inline float set_load_factor(float value) {
+    return load_factor=value;
+  }
 };
 
 #endif

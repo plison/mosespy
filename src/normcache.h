@@ -20,7 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 // Normalization factors cache
 
-class normcache{
+class normcache
+{
   dictionary* dict;
   ngramtable *ngt;
   double* cache[2];
@@ -28,11 +29,14 @@ class normcache{
   int maxcache[2];
   int hit;
   int miss;
-  
- public:
+
+public:
   normcache(dictionary* d);
-  ~normcache(){
-    delete [] cache[0];delete [] cache[1]; delete ngt;}
+  ~normcache() {
+    delete [] cache[0];
+    delete [] cache[1];
+    delete ngt;
+  }
 
   void expand(int i);
   double get(ngram ng,int size,double& value);

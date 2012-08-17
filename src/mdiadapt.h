@@ -23,7 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #ifndef MF_MDIADAPTLM_H
 #define MF_MDIADAPTLM_H
 
-class mdiadaptlm:public interplm{
+class mdiadaptlm:public interplm
+{
 
   int adaptlev;
   interplm* forelm;
@@ -35,34 +36,36 @@ protected:
 
 //to improve access speed
   NGRAMCACHE_t** probcache;
-  NGRAMCACHE_t** backoffcache; 
+  NGRAMCACHE_t** backoffcache;
   int max_caching_level;
 
- public:
+public:
 
   mdiadaptlm(char* ngtfile,int depth=0,TABLETYPE tt=FULL);
 
-  inline normcache* get_zetacache(){ return cache; }
+  inline normcache* get_zetacache() {
+    return cache;
+  }
   inline NGRAMCACHE_t* get_probcache(int level);
   inline NGRAMCACHE_t* get_backoffcache(int level);
-	
+
   void create_caches(int mcl);
   void init_caches();
   void init_caches(int level);
   void delete_caches();
   void delete_caches(int level);
-		
+
   void check_cache_levels();
   void check_cache_levels(int level);
   void reset_caches();
   void reset_caches(int level);
-	
+
   void caches_stat();
-	
+
   double gis_step;
 
   double zeta(ngram ng,int size);
-  
+
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 
   int bodiscount(ngram ng,int size,double& fstar,double& lambda,double& bo);
@@ -72,20 +75,20 @@ protected:
   double backunig(ngram ng);
 
   double foreunig(ngram ng);
-  
+
   int adapt(char* ngtfile,int alev=1,double gis_step=0.4);
-  
+
   int scalefact(char* ngtfile);
 
   int savescalefactor(char* filename);
-	
+
   double scalefact(ngram ng);
-  
+
   double prob(ngram ng,int size);
   double prob(ngram ng,int size,double& fstar,double& lambda, double& bo);
-		
+
   double prob2(ngram ng,int size,double & fstar);
-  
+
   double txclprob(ngram ng,int size);
 
   int saveASR(char *filename,int backoff,char* subdictfile=NULL);
@@ -93,16 +96,16 @@ protected:
   int saveARPA(char *filename,int backoff=0,char* subdictfile=NULL);
   int saveARPA2(char *filename,int backoff=0,char* subdictfile=NULL);
   int saveBIN(char *filename,int backoff=0,char* subdictfile=NULL,int mmap=0);
-  
+
   int netsize();
-	
+
   ~mdiadaptlm();
 
-  double myround(double x){
+  double myround(double x) {
     long int i=(long int)x;
     return (x-i)>0.500?i+1.0:(double)i;
   }
-  
+
 };
 
 #endif

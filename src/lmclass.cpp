@@ -42,7 +42,8 @@ using namespace std;
 
 int parseWords(char *sentence, const char **words, int max);
 
-inline void error(const char* message){
+inline void error(const char* message)
+{
   cerr << message << "\n";
   throw runtime_error(message);
 }
@@ -51,7 +52,8 @@ inline void error(const char* message){
 
 
 
-lmclass::lmclass(float nlf, float dlfi):lmtable(nlf,dlfi){
+lmclass::lmclass(float nlf, float dlfi):lmtable(nlf,dlfi)
+{
   MaxMapSize=1000000;
   MapScore= (double *)malloc(MaxMapSize*sizeof(double));// //array of probabilities
   memset(MapScore,0,MaxMapSize*sizeof(double));
@@ -59,12 +61,14 @@ lmclass::lmclass(float nlf, float dlfi):lmtable(nlf,dlfi){
   dict = new dictionary((char *)NULL,MaxMapSize); //word to cluster dictionary
 };
 
-lmclass::~lmclass(){
+lmclass::~lmclass()
+{
   free (MapScore);
   delete dict;
 }
 
-void lmclass::load(const std::string filename,int memmap){
+void lmclass::load(const std::string filename,int memmap)
+{
   VERBOSE(2,"lmclass::load(const std::string filename,int memmap)" << std::endl);
 
   //get info from the configuration file
@@ -81,31 +85,31 @@ void lmclass::load(const std::string filename,int memmap){
 
   maxlev = atoi(words[1]);
   std::string lmfilename;
-  if (inp.getline(line,MAX_LINE,'\n')){
+  if (inp.getline(line,MAX_LINE,'\n')) {
     tokenN = parseWords(line,words,MAX_TOKEN);
     lmfilename = words[0];
-  }else{
+  } else {
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");
   }
 
   std::string W2Cdict = "";
-  if (inp.getline(line,MAX_LINE,'\n')){
+  if (inp.getline(line,MAX_LINE,'\n')) {
     tokenN = parseWords(line,words,MAX_TOKEN);
     W2Cdict = words[0];
-  }else{
+  } else {
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");
   }
   inp.close();
 
   std::cerr << "lmfilename:" << lmfilename << std::endl;
-  if (W2Cdict != ""){
+  if (W2Cdict != "") {
     std::cerr << "mapfilename:" << W2Cdict << std::endl;
-  }else{
+  } else {
     error((char*)"ERROR: you must specify a map!");
   }
 
 
-  // Load the (possibly binary) LM 
+  // Load the (possibly binary) LM
   inputfilestream inpLM(lmfilename.c_str());
   if (!inpLM.good()) {
     std::cerr << "Failed to open " << lmfilename << "!" << std::endl;
@@ -125,8 +129,9 @@ void lmclass::load(const std::string filename,int memmap){
   getDict()->incflag(1);
 }
 
-void lmclass::loadMap(istream& inW2C){
-  
+void lmclass::loadMap(istream& inW2C)
+{
+
   double lprob=0.0;
   int howmany=0;
 
@@ -142,28 +147,28 @@ void lmclass::loadMap(istream& inW2C){
 
   loadMapElement(dict->BoS(),lmtable::dict->BoS(),0.0);
   loadMapElement(dict->EoS(),lmtable::dict->EoS(),0.0);
-    
+
   //should i add <unk> to the dict or just let the trans_freq handle <unk>
   loadMapElement(dict->OOV(),lmtable::dict->OOV(),0.0);
 
-  while (inW2C.getline(line,MAX_LINE)){
-    if (strlen(line)==MAX_LINE-1){
+  while (inW2C.getline(line,MAX_LINE)) {
+    if (strlen(line)==MAX_LINE-1) {
       cerr << "lmtable::loadW2Cdict: input line exceed MAXLINE ("
-	   << MAX_LINE << ") chars " << line << "\n";
+           << MAX_LINE << ") chars " << line << "\n";
       exit(1);
     }
 
     howmany = parseWords(line, words, 4); //3
 
-    if(howmany == 3){
+    if(howmany == 3) {
       assert(sscanf(words[2], "%lf", &lprob));
       lprob=(double)log10(lprob);
-    }else if(howmany==2){
+    } else if(howmany==2) {
 
       VERBOSE(3,"No score for the pair (" << words[0] << "," << words[1] << "); set to default 1.0\n");
 
       lprob=0.0;
-    }else{
+    } else {
       cerr << "parseline: not enough entries" << line << "\n";
       exit(1);
     }
@@ -172,22 +177,24 @@ void lmclass::loadMap(istream& inW2C){
     //check if the are available position in MapScore
     checkMap();
   }
-  
+
   VERBOSE(2,"There are " << MapScoreN << " entries in the map\n");
 
   dict->incflag(0); //can NOT add to the dictionary of lmclass
 }
 
-void lmclass::checkMap(){
-  if (MapScoreN > MaxMapSize){
+void lmclass::checkMap()
+{
+  if (MapScoreN > MaxMapSize) {
     MaxMapSize=2*MapScoreN;
     MapScore = (double*) realloc(MapScore, sizeof(double)*(MaxMapSize));
     VERBOSE(2,"In lmclass::checkMap(...) MaxMapSize=" <<  MaxMapSize  << " MapScoreN=" <<  MapScoreN  << "\n");
   }
 }
 
-void lmclass::loadMapElement(const char* in, const char* out, double sc){
-  //freq of word (in) encodes the ID of the class (out) 
+void lmclass::loadMapElement(const char* in, const char* out, double sc)
+{
+  //freq of word (in) encodes the ID of the class (out)
   //save the probability associated with the pair (in,out)
   int wcode=dict->encode(in);
   dict->freq(wcode,lmtable::dict->encode(out));
@@ -197,7 +204,8 @@ void lmclass::loadMapElement(const char* in, const char* out, double sc){
   if (wcode >= MapScoreN) MapScoreN++; //increment size of the array MapScore if the element is new
 }
 
-double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize,bool* extendible){
+double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigned int* statesize,bool* extendible)
+{
   double lpr=getMapScore(*ong.wordp(1));
 
   VERBOSE(3,"In lmclass::lprob(...) Mapscore    = " <<  lpr  << "\n");
@@ -213,12 +221,15 @@ double lmclass::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
   return lpr;
 }
 
-void lmclass::mapping(ngram &in, ngram &out) {
+void lmclass::mapping(ngram &in, ngram &out)
+{
   int insize = in.size;
   VERBOSE(3,"In lmclass::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
 
   // map the input sequence (in) into the corresponding output sequence (out), by applying the provided map
-  for (int i=insize; i>0; i--) { out.pushc(getMap(*in.wordp(i))); }
+  for (int i=insize; i>0; i--) {
+    out.pushc(getMap(*in.wordp(i)));
+  }
 
   VERBOSE(3,"In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return;

@@ -1,7 +1,7 @@
 // $Id: htable.cpp 3680 2010-10-13 09:10:21Z bertoldi $
 
 /******************************************************************************
- IrstLM: IRST Language Model Toolkit 
+ IrstLM: IRST Language Model Toolkit
  Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
 
  This library is free software; you can redistribute it and/or
@@ -31,10 +31,18 @@
 using namespace std;
 
 template <>
-void htable<int*>::set_keylen(int kl){ keylen=kl/sizeof(int); return; }
+void htable<int*>::set_keylen(int kl)
+{
+  keylen=kl/sizeof(int);
+  return;
+}
 
 template <>
-void htable<char*>::set_keylen(int kl){ keylen=kl; return; }
+void htable<char*>::set_keylen(int kl)
+{
+  keylen=kl;
+  return;
+}
 
 template <>
 address htable<int *>::Hash(int* key)
@@ -43,7 +51,7 @@ address htable<int *>::Hash(int* key)
   register int i;
 
   //Thomas Wang's 32 bit Mix Function
-  for (i=0,h=0;i<keylen;i++){
+  for (i=0,h=0; i<keylen; i++) {
     h+=key[i];
     h += ~(h << 15);
     h ^=  (h >> 10);
@@ -58,14 +66,15 @@ address htable<int *>::Hash(int* key)
 
 template <>
 address htable<char *>::Hash(char* key)
-{ //actually char* key is a char**, i.e. a pointer to a char*
+{
+  //actually char* key is a char**, i.e. a pointer to a char*
   char *Key = *(char**)key;
   int  length=strlen(Key);
- 
+
   register address h=0;
   register int i;
 
-  for (i=0,h=0;i<length;i++)
+  for (i=0,h=0; i<length; i++)
     h = h * Prime1 ^ (Key[i] - ' ');
   h %= Prime2;
 
@@ -76,10 +85,10 @@ template <>
 int htable<int*>::Comp(int *key1, int *key2)
 {
   assert(key1 && key2);
-  
+
   register int i;
-  
-  for (i=0;i<keylen;i++)
+
+  for (i=0; i<keylen; i++)
     if (key1[i]!=key2[i]) return 1;
   return 0;
 }
@@ -88,7 +97,7 @@ template <>
 int htable<char*>::Comp(char *key1, char *key2)
 {
   assert(key1 && key2);
- 
+
   char *Key1 = *(char**)key1;
   char *Key2 = *(char**)key2;
 

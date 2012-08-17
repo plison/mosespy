@@ -34,14 +34,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
-inline void error(const char* message){
+inline void error(const char* message)
+{
   std::cerr << message << "\n";
   throw std::runtime_error(message);
 }
 
-lmContainer::lmContainer(){ requiredMaxlev=1000; }
+lmContainer::lmContainer()
+{
+  requiredMaxlev=1000;
+}
 
-int lmContainer::getLanguageModelType(std::string filename){
+int lmContainer::getLanguageModelType(std::string filename)
+{
   fstream inp(filename.c_str(),ios::in|ios::binary);
 
   if (!inp.good()) {
@@ -54,37 +59,39 @@ int lmContainer::getLanguageModelType(std::string filename){
   inp.close();
 
   VERBOSE(1,"LM header:|" << header << "|" << std::endl);
- 
+
   int type=_IRSTLM_LMUNKNOWN;
   VERBOSE(1,"type: " << type << std::endl);
-  if (header == "lmminterpolation" || header == "LMINTERPOLATION"){
-        type = _IRSTLM_LMINTERPOLATION;
-  }else if (header == "lmmacro" || header == "LMMACRO"){
-        type = _IRSTLM_LMMACRO;
-  }else if (header == "lmclass" || header == "LMCLASS"){
-        type = _IRSTLM_LMCLASS;
-  }else{
-        type = _IRSTLM_LMTABLE;
+  if (header == "lmminterpolation" || header == "LMINTERPOLATION") {
+    type = _IRSTLM_LMINTERPOLATION;
+  } else if (header == "lmmacro" || header == "LMMACRO") {
+    type = _IRSTLM_LMMACRO;
+  } else if (header == "lmclass" || header == "LMCLASS") {
+    type = _IRSTLM_LMCLASS;
+  } else {
+    type = _IRSTLM_LMTABLE;
   }
   VERBOSE(1,"type: " << type << std::endl);
 
   return type;
 };
 
-lmContainer* lmContainer::CreateLanguageModel(const std::string infile, float nlf, float dlf){
+lmContainer* lmContainer::CreateLanguageModel(const std::string infile, float nlf, float dlf)
+{
   int type = getLanguageModelType(infile);
   std::cerr << "Language Model Type of " << infile << " is " << type << std::endl;
 
   return CreateLanguageModel(type, nlf, dlf);
 }
 
-lmContainer* lmContainer::CreateLanguageModel(int type, float nlf, float dlf){
+lmContainer* lmContainer::CreateLanguageModel(int type, float nlf, float dlf)
+{
 
   std::cerr << "Language Model Type is " << type << std::endl;
 
   lmContainer* lm=NULL;
 
-  switch (type){
+  switch (type) {
 
   case _IRSTLM_LMTABLE:
     lm = new lmtable(nlf, dlf);
@@ -113,19 +120,20 @@ lmContainer* lmContainer::CreateLanguageModel(int type, float nlf, float dlf){
   return lm;
 }
 
-bool lmContainer::filter(const string sfilter, lmContainer*& sublmC, const string skeepunigrams){
-	if (lmtype == _IRSTLM_LMTABLE){
-		sublmC = sublmC->CreateLanguageModel(lmtype,((lmtable*) this)->GetNgramcacheLoadFactor(),((lmtable*) this)->GetDictioanryLoadFactor());
-		
-		//let know that table has inverted n-grams
-		sublmC->is_inverted(is_inverted());
-		sublmC->setMaxLoadedLevel(getMaxLoadedLevel());
-		sublmC->maxlevel(maxlevel());
-		
-		bool res=((lmtable*) this)->filter(sfilter, (lmtable*) sublmC, skeepunigrams);
-		
-		return res;
-	}
-	return false;
+bool lmContainer::filter(const string sfilter, lmContainer*& sublmC, const string skeepunigrams)
+{
+  if (lmtype == _IRSTLM_LMTABLE) {
+    sublmC = sublmC->CreateLanguageModel(lmtype,((lmtable*) this)->GetNgramcacheLoadFactor(),((lmtable*) this)->GetDictioanryLoadFactor());
+
+    //let know that table has inverted n-grams
+    sublmC->is_inverted(is_inverted());
+    sublmC->setMaxLoadedLevel(getMaxLoadedLevel());
+    sublmC->maxlevel(maxlevel());
+
+    bool res=((lmtable*) this)->filter(sfilter, (lmtable*) sublmC, skeepunigrams);
+
+    return res;
+  }
+  return false;
 };
 

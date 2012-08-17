@@ -37,7 +37,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define MAX_TOKEN_N_MAP 4
 
-class lmmacro: public lmtable {
+class lmmacro: public lmtable
+{
 
   dictionary     *dict;
   int             maxlev; //max level of table
@@ -66,15 +67,15 @@ class lmmacro: public lmtable {
   bool collapse(ngram &in, ngram &out);
   void mapping(ngram &in, ngram &out);
 
- public:
+public:
 
- lmmacro(float nlf=0.0, float dlfi=0.0);
- ~lmmacro();
+  lmmacro(float nlf=0.0, float dlfi=0.0);
+  ~lmmacro();
 
   void load(const std::string filename,int mmap=0);
 
-  double lprob(ngram ng); 
-  double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
+  double lprob(ngram ng);
+  double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
   double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
 
   const char *maxsuffptr(ngram ong, unsigned int* size=NULL);
@@ -90,12 +91,23 @@ class lmmacro: public lmtable {
 #endif
 
 
-  inline dictionary* getDict() const { return dict; }
-  inline int maxlevel() const { return maxlev; };
+  inline dictionary* getDict() const {
+    return dict;
+  }
+  inline int maxlevel() const {
+    return maxlev;
+  };
 
-  inline virtual void dictionary_incflag(const bool flag){ dict->incflag(flag); };
+  inline virtual void dictionary_incflag(const bool flag) {
+    dict->incflag(flag);
+  };
 
-  inline virtual bool filter(const string sfilter, lmContainer* sublmt, const string skeepunigrams){ UNUSED(sfilter); UNUSED(sublmt); UNUSED(skeepunigrams); return false; }
+  inline virtual bool filter(const string sfilter, lmContainer* sublmt, const string skeepunigrams) {
+    UNUSED(sfilter);
+    UNUSED(sublmt);
+    UNUSED(skeepunigrams);
+    return false;
+  }
 };
 
 

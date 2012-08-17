@@ -15,13 +15,13 @@
 /** trace macros **/
 /** verbose macros **/
 #ifdef TRACE_ENABLE
-  #define TRACE_ERR(str) { std::cerr << str; }
-  #define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
-  #define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
+#define TRACE_ERR(str) { std::cerr << str; }
+#define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
+#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
 
 #else
-  #define VERBOSE(level,str) { }
-  #define IFVERBOSE(level) { } 
+#define VERBOSE(level,str) { }
+#define IFVERBOSE(level) { }
 #endif
 
 
@@ -36,14 +36,16 @@ void removefile(const std::string &filePath);
 class inputfilestream : public std::istream
 {
 protected:
-	std::streambuf *m_streambuf;
+  std::streambuf *m_streambuf;
   bool _good;
 public:
-  
-	inputfilestream(const std::string &filePath);
-	~inputfilestream();
-  bool good(){return _good;}
-	void close();
+
+  inputfilestream(const std::string &filePath);
+  ~inputfilestream();
+  bool good() {
+    return _good;
+  }
+  void close();
 };
 
 void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap);

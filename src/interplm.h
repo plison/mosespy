@@ -30,81 +30,108 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define MOD_SHIFT_BETA   8
 
 
-class interplm:public ngramtable{
-	
-	int lms;
-	
-	double epsilon; //Bayes smoothing
-	
-	int unismooth; //0 Bayes, 1 Witten Bell
-	
-	int prune_singletons;
-	
-	int prune_top_singletons;
-	
-public: 
-	
-	int backoff; //0 interpolation, 1 Back-off  
-	
-	interplm(char* ngtfile,int depth=0,TABLETYPE tt=FULL);
-	
-	int prunesingletons(int flag=-1){
-		return (flag==-1?prune_singletons:prune_singletons=flag);
-	}
-	
-	int prunetopsingletons(int flag=-1){
-		return (flag==-1?prune_top_singletons:prune_top_singletons=flag);
-	}
-	
-	void gencorrcounts();
-	
-	void gensuccstat();
-	
-	virtual int dub(){return dict->dub();}
-	
-	virtual int dub(int value){ return (dict->dub(value)); }
-	
-	int setusmooth(int v=0){return unismooth=v;}
-	
-	double setepsilon(double v=1.0){return epsilon=v;}
-	
-	ngramtable *unitbl;
-	
-	void trainunigr();
-	
-	double unigr(ngram ng);
-	
-	double zerofreq(int lev);
-	
-	inline int lmsize(){return lms;}
-	
-	inline int obswrd(){return dict->size();}
-	
-	virtual int train(){return 0;}
-	
-	virtual void adapt(char* /* unused parameter: ngtfile */, double /* unused parameter:  w */){}
-	
-	virtual double prob(ngram /* unused parameter: ng */,int /* unused parameter: size */){return 0.0;}
-	
-	virtual double boprob(ngram /* unused parameter: ng */,int /* unused parameter: size */){return 0.0;}
-	
-	void test_ngt(ngramtable& ngt,int sz=0,int backoff=0,int checkpr=0);
-	
-	void test_txt(char *filename,int sz=0,int backoff=0,int checkpr=0,char* outpr=NULL);
-	
-	void test(char* filename,int sz,int backoff=0,int checkpr=0,char* outpr=NULL);
-	
-	virtual int discount(ngram /* unused parameter: ng */,int /* unused parameter: size */,double& /* unused parameter: fstar */ ,double& /* unused parameter: lambda */,int /* unused parameter: cv*/=0){ return 0;}
-	
-	virtual int savebin(char* /* unused parameter: filename */,int /* unused parameter: lmsize=2 */){ return 0; }
-	
-	virtual int netsize(){return 0;}
-	
-	void lmstat(int level){stat(level);}
-	
-	virtual ~interplm(){}
-	
-	
+class interplm:public ngramtable
+{
+
+  int lms;
+
+  double epsilon; //Bayes smoothing
+
+  int unismooth; //0 Bayes, 1 Witten Bell
+
+  int prune_singletons;
+
+  int prune_top_singletons;
+
+public:
+
+  int backoff; //0 interpolation, 1 Back-off
+
+  interplm(char* ngtfile,int depth=0,TABLETYPE tt=FULL);
+
+  int prunesingletons(int flag=-1) {
+    return (flag==-1?prune_singletons:prune_singletons=flag);
+  }
+
+  int prunetopsingletons(int flag=-1) {
+    return (flag==-1?prune_top_singletons:prune_top_singletons=flag);
+  }
+
+  void gencorrcounts();
+
+  void gensuccstat();
+
+  virtual int dub() {
+    return dict->dub();
+  }
+
+  virtual int dub(int value) {
+    return (dict->dub(value));
+  }
+
+  int setusmooth(int v=0) {
+    return unismooth=v;
+  }
+
+  double setepsilon(double v=1.0) {
+    return epsilon=v;
+  }
+
+  ngramtable *unitbl;
+
+  void trainunigr();
+
+  double unigr(ngram ng);
+
+  double zerofreq(int lev);
+
+  inline int lmsize() {
+    return lms;
+  }
+
+  inline int obswrd() {
+    return dict->size();
+  }
+
+  virtual int train() {
+    return 0;
+  }
+
+  virtual void adapt(char* /* unused parameter: ngtfile */, double /* unused parameter:  w */) {}
+
+  virtual double prob(ngram /* unused parameter: ng */,int /* unused parameter: size */) {
+    return 0.0;
+  }
+
+  virtual double boprob(ngram /* unused parameter: ng */,int /* unused parameter: size */) {
+    return 0.0;
+  }
+
+  void test_ngt(ngramtable& ngt,int sz=0,int backoff=0,int checkpr=0);
+
+  void test_txt(char *filename,int sz=0,int backoff=0,int checkpr=0,char* outpr=NULL);
+
+  void test(char* filename,int sz,int backoff=0,int checkpr=0,char* outpr=NULL);
+
+  virtual int discount(ngram /* unused parameter: ng */,int /* unused parameter: size */,double& /* unused parameter: fstar */ ,double& /* unused parameter: lambda */,int /* unused parameter: cv*/=0) {
+    return 0;
+  }
+
+  virtual int savebin(char* /* unused parameter: filename */,int /* unused parameter: lmsize=2 */) {
+    return 0;
+  }
+
+  virtual int netsize() {
+    return 0;
+  }
+
+  void lmstat(int level) {
+    stat(level);
+  }
+
+  virtual ~interplm() {}
+
+
 };
 
 

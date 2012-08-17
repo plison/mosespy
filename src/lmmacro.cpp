@@ -40,7 +40,8 @@ using namespace std;
 
 // local utilities: start
 
-inline void error(const char* message){
+inline void error(const char* message)
+{
   cerr << message << "\n";
   throw runtime_error(message);
 }
@@ -49,17 +50,20 @@ inline void error(const char* message){
 
 
 
-lmmacro::lmmacro(float nlf, float dlfi):lmtable(nlf,dlfi){
+lmmacro::lmmacro(float nlf, float dlfi):lmtable(nlf,dlfi)
+{
   dict = new dictionary((char *)NULL,1000000); // dict of micro tags
   getDict()->incflag(1);
 };
 
-lmmacro::~lmmacro(){
+lmmacro::~lmmacro()
+{
   if (mapFlag) unloadmap();
 }
 
 
-void lmmacro::load(const std::string filename,int memmap){
+void lmmacro::load(const std::string filename,int memmap)
+{
   VERBOSE(2,"lmmacro::load(const std::string filename,int memmap)" << std::endl);
 
   //get info from the configuration file
@@ -82,7 +86,7 @@ void lmmacro::load(const std::string filename,int memmap){
     collapseFlag = false;
   else
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMMACRO lmsize field [true|false]\nfilename_of_LM\nfilename_of_map (optional)");
-    
+
 #ifdef DLEXICALLM
   selectedFieldForLexicon = atoi(words[3]);
   collapseFlag = atoi(words[4]);
@@ -99,30 +103,28 @@ void lmmacro::load(const std::string filename,int memmap){
 
 
   std::string lmfilename;
-  if (inp.getline(line,MAX_LINE,'\n')){
+  if (inp.getline(line,MAX_LINE,'\n')) {
     tokenN = parseWords(line,words,MAX_TOKEN_N_MAP);
     lmfilename = words[0];
-  }
-  else
+  } else
     error((char*)"ERROR: wrong format of configuration file\ncorrect format: LMMACRO lmsize field [true|false]\nfilename_of_LM\nfilename_of_map (optional)");
-  
+
   std::string mapfilename = "";
-  if (inp.getline(line,MAX_LINE,'\n')){
+  if (inp.getline(line,MAX_LINE,'\n')) {
     tokenN = parseWords(line,words,MAX_TOKEN_N_MAP);
     mapfilename = words[0];
     mapFlag = true;
-  }else{
+  } else {
     mapFlag = false;
   }
-      
+
   inp.close();
 
 
   std::cerr << "lmfilename:" << lmfilename << std::endl;
-  if (mapfilename != ""){
+  if (mapfilename != "") {
     std::cerr << "mapfilename:" << mapfilename << std::endl;
-  }
-  else{
+  } else {
     std::cerr << "no mapfilename" << std::endl;
     mapFlag = false;
   }
@@ -131,7 +133,7 @@ void lmmacro::load(const std::string filename,int memmap){
   getDict()->incflag(1);
 
 
-  if ((!mapFlag) && (collapseFlag)){
+  if ((!mapFlag) && (collapseFlag)) {
     error((char*)"ERROR: you must specify a map if you want to collapse a specific field!");
   }
 #ifdef DLEXICALLM
@@ -146,10 +148,10 @@ void lmmacro::load(const std::string filename,int memmap){
   if (lexicalclassesfilename != "")    loadLexicalClasses(lexicalclassesfilename.c_str());
 #endif
 
-  // Load the (possibly binary) LM 
+  // Load the (possibly binary) LM
   lmtable::load(lmfilename,memmap);
 
-  
+
   if (mapFlag)
     loadmap(mapfilename);
 
@@ -157,10 +159,11 @@ void lmmacro::load(const std::string filename,int memmap){
   getDict()->incflag(1);
 };
 
-void lmmacro::unloadmap() {
+void lmmacro::unloadmap()
+{
   delete dict;
   free(microMacroMap);
-  if (collapseFlag){
+  if (collapseFlag) {
     free(collapsableMap);
     free(collapsatorMap);
   }
@@ -169,7 +172,8 @@ void lmmacro::unloadmap() {
 #endif
 }
 
-void lmmacro::loadmap(const std::string mapfilename) {
+void lmmacro::loadmap(const std::string mapfilename)
+{
   microMacroMapN = 0;
   microMacroMap = NULL;
   collapsableMap = NULL;
@@ -181,7 +185,7 @@ void lmmacro::loadmap(const std::string mapfilename) {
 #endif
 
   microMacroMap = (int *)calloc(BUFSIZ, sizeof(int));
-  if (collapseFlag){
+  if (collapseFlag) {
     collapsableMap = (bool *)calloc(BUFSIZ, sizeof(bool));
     collapsatorMap = (bool *)calloc(BUFSIZ, sizeof(bool));
   }
@@ -208,7 +212,7 @@ void lmmacro::loadmap(const std::string mapfilename) {
   // Load the dictionary of micro tags (to be put in "dict" of lmmacro class):
   inputfilestream inpMap(mapfilename.c_str());
   std::cerr << "Reading map " << mapfilename << "..." << std::endl;
-  while (inpMap.getline(line,MAX_LINE,'\n')){
+  while (inpMap.getline(line,MAX_LINE,'\n')) {
     tokenN = parseWords(line,words,MAX_TOKEN_N_MAP);
     if (tokenN != 2)
       error((char*)"ERROR: wrong format of map file\n");
@@ -217,56 +221,56 @@ void lmmacro::loadmap(const std::string mapfilename) {
     getDict()->encode(microW);
 
 
-    if (microMacroMapN>0 && !(microMacroMapN % BUFSIZ)){
+    if (microMacroMapN>0 && !(microMacroMapN % BUFSIZ)) {
       microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
-      if (collapseFlag){
-	//create supporting info for collapse
+      if (collapseFlag) {
+        //create supporting info for collapse
 
-	collapsableMap = (bool *)realloc(collapsableMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
-	collapsatorMap = (bool *)realloc(collapsatorMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
+        collapsableMap = (bool *)realloc(collapsableMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
+        collapsatorMap = (bool *)realloc(collapsatorMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
       }
     }
     microMacroMap[microMacroMapN] = lmtable::getDict()->getcode(macroW);
 
-      if (collapseFlag){
-	
-	int len = strlen(microW)-1;
-	if (microW[len] == '('){
-	  collapsableMap[microMacroMapN] = false;
-	  collapsatorMap[microMacroMapN] = true;
-	}else if (microW[len] == ')'){
-	  collapsableMap[microMacroMapN] = true;
-	  collapsatorMap[microMacroMapN] = false;
-	}else if (microW[len] == '+'){
-	  collapsableMap[microMacroMapN] = true;
-	  collapsatorMap[microMacroMapN] = true;
-	}else{
-	  collapsableMap[microMacroMapN] = false;
-	  collapsatorMap[microMacroMapN] = false;
-	}
+    if (collapseFlag) {
+
+      int len = strlen(microW)-1;
+      if (microW[len] == '(') {
+        collapsableMap[microMacroMapN] = false;
+        collapsatorMap[microMacroMapN] = true;
+      } else if (microW[len] == ')') {
+        collapsableMap[microMacroMapN] = true;
+        collapsatorMap[microMacroMapN] = false;
+      } else if (microW[len] == '+') {
+        collapsableMap[microMacroMapN] = true;
+        collapsatorMap[microMacroMapN] = true;
+      } else {
+        collapsableMap[microMacroMapN] = false;
+        collapsatorMap[microMacroMapN] = false;
       }
-      
-      if (!bos && !strcmp(microW,BOS_)) bos=true;
-      if (!eos && !strcmp(microW,EOS_)) eos=true;
+    }
 
-      VERBOSE(2,"\nmicroW = " << microW << "\n"
-		<< "macroW = " << macroW << "\n"
-		<< "microMacroMapN = " << microMacroMapN << "\n"
-		<< "code of micro = " <<  getDict()->getcode(microW) << "\n"
-		<< "code of macro = " <<  lmtable::getDict()->getcode(macroW) << "\n");
+    if (!bos && !strcmp(microW,BOS_)) bos=true;
+    if (!eos && !strcmp(microW,EOS_)) eos=true;
 
-      microMacroMapN++;
+    VERBOSE(2,"\nmicroW = " << microW << "\n"
+            << "macroW = " << macroW << "\n"
+            << "microMacroMapN = " << microMacroMapN << "\n"
+            << "code of micro = " <<  getDict()->getcode(microW) << "\n"
+            << "code of macro = " <<  lmtable::getDict()->getcode(macroW) << "\n");
+
+    microMacroMapN++;
   }
 
   if ((microMacroMapN == 0) && (selectedField == -1))
     error((char*)"ERROR: with no field selection, a map for the whole string is mandatory\n");
-  
+
   if (microMacroMapN>0) {
     // Add <s>-><s> to map if missing
     if (!bos) {
       getDict()->encode(BOS_);
       if (microMacroMapN && !(microMacroMapN%BUFSIZ))
-	microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
+        microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
       microMacroMap[microMacroMapN++] = lmtable::getDict()->getcode(BOS_);
     }
 
@@ -274,28 +278,29 @@ void lmmacro::loadmap(const std::string mapfilename) {
     if (!eos) {
       getDict()->encode(EOS_);
       if (microMacroMapN && !(microMacroMapN%BUFSIZ))
-	microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
+        microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
       microMacroMap[microMacroMapN++] = lmtable::getDict()->getcode(EOS_);
     }
   }
   //  getDict()->incflag(0);
-  
-  VERBOSE(2,"oovcode(micro)=" <<  getDict()->oovcode() << "\n" 
-	    << "oovcode(macro)=" <<  lmtable::getDict()->oovcode() << "\n"
-	    << "microMacroMapN = " << microMacroMapN << "\n"
-	    << "macrodictsize  = " << getDict()->size() << "\n"
-	    << "microdictsize  = " << lmtable::getDict()->size() << "\n");
 
-  IFVERBOSE(2){
+  VERBOSE(2,"oovcode(micro)=" <<  getDict()->oovcode() << "\n"
+          << "oovcode(macro)=" <<  lmtable::getDict()->oovcode() << "\n"
+          << "microMacroMapN = " << microMacroMapN << "\n"
+          << "macrodictsize  = " << getDict()->size() << "\n"
+          << "microdictsize  = " << lmtable::getDict()->size() << "\n");
+
+  IFVERBOSE(2) {
     for (int i=0; i<microMacroMapN; i++) {
       VERBOSE(2,"micro[" << getDict()->decode(i) << "] -> " << lmtable::getDict()->decode(microMacroMap[i]) << "\n");
     }
-  } 
+  }
   std::cerr << "...done\n";
 }
-  
-  
-double lmmacro::lprob(ngram micro_ng) {
+
+
+double lmmacro::lprob(ngram micro_ng)
+{
   VERBOSE(2,"lmmacro::lprob, parameter = <" <<  micro_ng << ">\n");
 
   ngram macro_ng(lmtable::getDict());
@@ -306,23 +311,25 @@ double lmmacro::lprob(ngram micro_ng) {
     map(&micro_ng, &macro_ng); // mapping required
 
   VERBOSE(3,"lmmacro::lprob: micro_ng = " << micro_ng << "\n"
-	    <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
+          <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
 
-  // ask LM with macro 
+  // ask LM with macro
   double prob;
   prob = lmtable::lprob(macro_ng);
   VERBOSE(3,"prob = " << prob << "\n");
 
-  return prob; 
-}; 
+  return prob;
+};
 
-double lmmacro::clprob(int* codes, int sz,  double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
+double lmmacro::clprob(int* codes, int sz,  double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible)
+{
   ngram micro_ng(getDict());
   micro_ng.pushc(codes,sz);
   return clprob(micro_ng,bow,bol,state,statesize,extendible);
 }
 
-double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible){
+double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible)
+{
 
   VERBOSE(3," lmmacro::clprob(ngram), parameter = <" <<  micro_ng << ">\n");
 
@@ -332,21 +339,22 @@ double lmmacro::clprob(ngram micro_ng, double* bow, int* bol, char** state,unsig
 
   double logpr;
 
-  if (collapsed){
+  if (collapsed) {
     // the last token of the ngram continues an already open "chunk"
     // the probability at chunk-level is not computed because it has been already computed when the actual"chunk" opens
     VERBOSE(3,"  SKIPPED call to lmtable::clprob because of collapse; logpr: 0.0\n");
     logpr = 0.0;
-  } else{
+  } else {
     VERBOSE(3,"  QUERY MACRO LM on (after transformation and size reduction) " << transformed_ng << "\n");
     logpr = lmtable::clprob(transformed_ng, bow, bol, state, statesize, extendible);
   }
   VERBOSE(3,"  GET logpr: " << logpr << "\n");
-  
+
   return logpr;
 }
 
-bool lmmacro::transform(ngram &in, ngram &out){
+bool lmmacro::transform(ngram &in, ngram &out)
+{
   VERBOSE(3,"lmmacro::transform(ngram &in, ngram &out), in = <" <<  in << ">\n");
 
   //step 1: selection of the correct field
@@ -378,7 +386,8 @@ bool lmmacro::transform(ngram &in, ngram &out){
 
 
 
-void lmmacro::field_selection(ngram &in, ngram &out) {
+void lmmacro::field_selection(ngram &in, ngram &out)
+{
   VERBOSE(3,"In lmmacro::field_selection(ngram &in, ngram &out) in    = " <<  in  << "\n");
 
   int microsize = in.size;
@@ -389,42 +398,41 @@ void lmmacro::field_selection(ngram &in, ngram &out) {
     strcpy(curr_token, getDict()->decode(*in.wordp(i)));
     char *field;
     if (strcmp(curr_token,"<s>") &&
-	strcmp(curr_token,"</s>") &&
-	strcmp(curr_token,"_unk_")) {
+        strcmp(curr_token,"</s>") &&
+        strcmp(curr_token,"_unk_")) {
       field = strtok(curr_token, "#");
       int j=0;
-      while (j<selectedField && field != NULL){
-	field = strtok(0, "#");
-	j++;
+      while (j<selectedField && field != NULL) {
+        field = strtok(0, "#");
+        j++;
       }
-    } else{ 
+    } else {
       field = curr_token;
     }
-	   
-    
-    if (field){
+
+
+    if (field) {
       out.pushw(field);
-    }
-    else {
+    } else {
 
       out.pushw((char*)"_unk_");
 
       // cerr << *in << "\n";
       // error((char*)"ERROR: Malformed input: selected field does not exist in token\n");
 
-      /** 
-	  We can be here in 2 cases:
+      /**
+      We can be here in 2 cases:
 
-	  a. effectively when the token is malformed, that is the selected
-	  field does not exist
+      a. effectively when the token is malformed, that is the selected
+      field does not exist
 
-	  b. in case of verbatim translation, that is the source word is
-	  not known to the phrase table and moses transfers it as it is
-	  to the target side: in this case, no assumption can be made on its
-	  format, which means that the selected field can not exist
+      b. in case of verbatim translation, that is the source word is
+      not known to the phrase table and moses transfers it as it is
+      to the target side: in this case, no assumption can be made on its
+      format, which means that the selected field can not exist
 
-	  The possibility of case (b) makes incorrect the error exit from
-	  the code at this point: correct, on the contrary, push the _unk_ string
+      The possibility of case (b) makes incorrect the error exit from
+      the code at this point: correct, on the contrary, push the _unk_ string
       **/
     }
   }
@@ -432,7 +440,8 @@ void lmmacro::field_selection(ngram &in, ngram &out) {
   return;
 }
 
-bool lmmacro::collapse(ngram &in, ngram &out) {
+bool lmmacro::collapse(ngram &in, ngram &out)
+{
   VERBOSE(3,"In lmmacro::collapse(ngram &in, ngram &out) in    = " <<  in  << "\n")
 
   // fill the ngram out with the collapsed tokens
@@ -440,8 +449,8 @@ bool lmmacro::collapse(ngram &in, ngram &out) {
   //return false if collapse does not happen for the most recent token
   int microsize = in.size;
   out.size = 0;
-  
-  if (microsize == 1){
+
+  if (microsize == 1) {
     out.pushc(*in.wordp(1));
     return false;
   }
@@ -449,8 +458,8 @@ bool lmmacro::collapse(ngram &in, ngram &out) {
   int curr_code = *in.wordp(1);
   int prev_code = *in.wordp(2);
 
-  if (microMacroMap[curr_code] == microMacroMap[prev_code]){
-    if (collapsableMap[curr_code] && collapsatorMap[prev_code]){
+  if (microMacroMap[curr_code] == microMacroMap[prev_code]) {
+    if (collapsableMap[curr_code] && collapsatorMap[prev_code]) {
       return true;
     }
   }
@@ -461,15 +470,15 @@ bool lmmacro::collapse(ngram &in, ngram &out) {
   prev_code = *in.wordp(microsize);
   out.pushc(prev_code);
 
-  for (int i=microsize-1; i>1; i--){
-   
+  for (int i=microsize-1; i>1; i--) {
+
     curr_code = *in.wordp(i);
 
-    if (microMacroMap[curr_code] != microMacroMap[prev_code]){
+    if (microMacroMap[curr_code] != microMacroMap[prev_code]) {
       out.pushc(curr_code);
-    }else{
-      if (!(collapsableMap[curr_code] && collapsatorMap[prev_code])){
-	out.pushc(prev_code);
+    } else {
+      if (!(collapsableMap[curr_code] && collapsatorMap[prev_code])) {
+        out.pushc(prev_code);
       }
     }
     prev_code = curr_code;
@@ -480,7 +489,8 @@ bool lmmacro::collapse(ngram &in, ngram &out) {
   return false;
 }
 
-void lmmacro::mapping(ngram &in, ngram &out) {
+void lmmacro::mapping(ngram &in, ngram &out)
+{
   VERBOSE(3,"In lmmacro::mapping(ngram &in, ngram &out) in    = " <<  in  << "\n");
 
   int microsize = in.size;
@@ -493,7 +503,7 @@ void lmmacro::mapping(ngram &in, ngram &out) {
     int out_code;
     if (in_code < microMacroMapN)
       out_code = microMacroMap[in_code];
-    else 
+    else
       out_code = lmtable::getDict()->oovcode();
 
     out.pushc(out_code);
@@ -503,12 +513,13 @@ void lmmacro::mapping(ngram &in, ngram &out) {
 }
 
 
-//maxsuffptr returns the largest suffix of an n-gram that is contained 
-//in the LM table. This can be used as a compact representation of the 
-//(n-1)-gram state of a n-gram LM. if the input k-gram has k>=n then it 
+//maxsuffptr returns the largest suffix of an n-gram that is contained
+//in the LM table. This can be used as a compact representation of the
+//(n-1)-gram state of a n-gram LM. if the input k-gram has k>=n then it
 //is trimmed to its n-1 suffix.
 
-const char *lmmacro::maxsuffptr(ngram micro_ng, unsigned int* size){  
+const char *lmmacro::maxsuffptr(ngram micro_ng, unsigned int* size)
+{
   ngram macro_ng(lmtable::getDict());
 
   if (micro_ng.dict ==  macro_ng.dict)
@@ -517,14 +528,15 @@ const char *lmmacro::maxsuffptr(ngram micro_ng, unsigned int* size){
     map(&micro_ng, &macro_ng); // mapping required
 
   VERBOSE(2,"lmmacro::lprob: micro_ng = " << micro_ng << "\n"
-	    << "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
+          << "lmmacro::lprob: macro_ng = " << macro_ng << "\n");
 
   return lmtable::maxsuffptr(macro_ng,size);
 }
 
-const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size){
+const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size)
+{
   //cerr << "lmmacro::CMAXsuffptr\n";
-  //cerr << "micro_ng: " << micro_ng	
+  //cerr << "micro_ng: " << micro_ng
   //	<< " -> micro_ng.size: " << micro_ng.size << "\n";
 
   //the LM working on the selected field = 0
@@ -539,17 +551,18 @@ const char *lmmacro::cmaxsuffptr(ngram micro_ng, unsigned int* size){
     map(&micro_ng, &macro_ng); // mapping required
 
   VERBOSE(2,"lmmacro::lprob: micro_ng = " << micro_ng << "\n"
-	    <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n")
+          <<  "lmmacro::lprob: macro_ng = " << macro_ng << "\n")
 
   return lmtable::cmaxsuffptr(macro_ng,size);
- 
+
 }
 
 
-void lmmacro::map(ngram *in, ngram *out) {
+void lmmacro::map(ngram *in, ngram *out)
+{
 
   VERBOSE(2,"In lmmacro::map, in = " << *in << endl
-	    << " (selectedField = " << selectedField << " )\n");
+          << " (selectedField = " << selectedField << " )\n");
 
   if (selectedField==-2) // the whole token is compatible with the LM words
     One2OneMapping(in, out);
@@ -567,49 +580,49 @@ void lmmacro::map(ngram *in, ngram *out) {
       strcpy(curr_token, ((lmmacro *)this)->getDict()->decode(*(in->wordp(i))));
       char *field;
       if (strcmp(curr_token,"<s>") &&
-	  strcmp(curr_token,"</s>") &&
-	  strcmp(curr_token,"_unk_")) {
-	field = strtok(curr_token, "#");
-	int j=0;
-	while (j<selectedField && field != NULL){
+          strcmp(curr_token,"</s>") &&
+          strcmp(curr_token,"_unk_")) {
+        field = strtok(curr_token, "#");
+        int j=0;
+        while (j<selectedField && field != NULL) {
           field = strtok(0, "#");
-	  j++;
+          j++;
         }
-      } else{ 
-	field = curr_token;
+      } else {
+        field = curr_token;
       }
 
       if (field)
-	field_ng.pushw(field);
+        field_ng.pushw(field);
       else {
 
-	field_ng.pushw((char*)"_unk_");
+        field_ng.pushw((char*)"_unk_");
 
-	// cerr << *in << "\n";
-	// error((char*)"ERROR: Malformed input: selected field does not exist in token\n");
+        // cerr << *in << "\n";
+        // error((char*)"ERROR: Malformed input: selected field does not exist in token\n");
 
-	/** 
-	    We can be here in 2 cases:
+        /**
+            We can be here in 2 cases:
 
-	    a. effectively when the token is malformed, that is the selected
-	    field does not exist
+            a. effectively when the token is malformed, that is the selected
+            field does not exist
 
-	    b. in case of verbatim translation, that is the source word is
-	    not known to the phrase table and moses transfers it as it is
-	    to the target side: in this case, no assumption can be made on its
-	    format, which means that the selected field can not exist
+            b. in case of verbatim translation, that is the source word is
+            not known to the phrase table and moses transfers it as it is
+            to the target side: in this case, no assumption can be made on its
+            format, which means that the selected field can not exist
 
-	    The possibility of case (b) makes incorrect the error exit from
-	    the code at this point: correct, on the contrary, push the _unk_ string
-	**/
+            The possibility of case (b) makes incorrect the error exit from
+            the code at this point: correct, on the contrary, push the _unk_ string
+        **/
       }
     }
-    if (microMacroMapN>0) 
+    if (microMacroMapN>0)
       Micro2MacroMapping(&field_ng, out);
-    else 
+    else
       out->trans(field_ng);
-  } else { 
-    
+  } else {
+
 #ifdef DLEXICALLM
     // selectedField>=10: tens=idx of micro tag (possibly to be mapped to
     // macro tag), unidx=idx of lemma to be concatenated by "_" to the
@@ -629,45 +642,45 @@ void lmmacro::map(ngram *in, ngram *out) {
       char *tag = NULL, *lemma = NULL;
 
       if (strcmp(curr_token,"<s>") &&
-	  strcmp(curr_token,"</s>") &&
-	  strcmp(curr_token,"_unk_")) {
-	
-	if (tagIdx<lemmaIdx) {
-	  tag = strtok(curr_token, "#");
-	  for (int j=0; j<tagIdx; j++)
-	    tag = strtok(0, "#");
-	  for (int j=tagIdx; j<lemmaIdx; j++)
-	    lemma = strtok(0, "#");
-	} else {
-	  lemma = strtok(curr_token, "#");
-	  for (int j=0; j<lemmaIdx; j++)
-	    lemma = strtok(0, "#");
-	  for (int j=lemmaIdx; j<tagIdx; j++)
-	    tag = strtok(0, "#");
-	}
+          strcmp(curr_token,"</s>") &&
+          strcmp(curr_token,"_unk_")) {
 
-	VERBOSE(3,"(tag,lemma) = " << tag << " " << lemma << "\n");
+        if (tagIdx<lemmaIdx) {
+          tag = strtok(curr_token, "#");
+          for (int j=0; j<tagIdx; j++)
+            tag = strtok(0, "#");
+          for (int j=tagIdx; j<lemmaIdx; j++)
+            lemma = strtok(0, "#");
+        } else {
+          lemma = strtok(curr_token, "#");
+          for (int j=0; j<lemmaIdx; j++)
+            lemma = strtok(0, "#");
+          for (int j=lemmaIdx; j<tagIdx; j++)
+            tag = strtok(0, "#");
+        }
+
+        VERBOSE(3,"(tag,lemma) = " << tag << " " << lemma << "\n");
       } else {
-	tag = curr_token;
-	lemma = curr_token;
-	VERBOSE(3,"(tag=lemma) = " << tag << " " << lemma << "\n");
+        tag = curr_token;
+        lemma = curr_token;
+        VERBOSE(3,"(tag=lemma) = " << tag << " " << lemma << "\n");
       }
       if (tag) {
-	tag_ng.pushw(tag);
-	lemmas[i] = strdup(lemma);
+        tag_ng.pushw(tag);
+        lemmas[i] = strdup(lemma);
       } else {
-	tag_ng.pushw((char*)"_unk_");
-	lemmas[i] = strdup("_unk_");
+        tag_ng.pushw((char*)"_unk_");
+        lemmas[i] = strdup("_unk_");
       }
     }
 
-    if (microMacroMapN>0) 
+    if (microMacroMapN>0)
       Micro2MacroMapping(&tag_ng, out, lemmas);
     else
       out->trans(tag_ng); // qui si dovrebbero sostituire i tag con tag_lemma, senza mappatura!
-    
+
 #endif
-    
+
   }
 
   VERBOSE(2,"In lmmacro::map, FINAL out = " << *out << endl);
@@ -682,7 +695,7 @@ void lmmacro::One2OneMapping(ngram *in, ngram *out)
   for (int i=insize; i>0; i--) {
 
     int curr_code = *(in->wordp(i));
-    const char *outtoken = 
+    const char *outtoken =
       lmtable::getDict()->decode((curr_code<microMacroMapN)?microMacroMap[curr_code]:lmtable::getDict()->oovcode());
     out->pushw(outtoken);
   }
@@ -719,12 +732,12 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out)
       int curr_len = strlen(curr_microtag)-1;
 
       if (strcmp(curr_macrotag,prev_macrotag) != 0 ||
-	  !(
-	    (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!= ')' )) &&  ( curr_microtag[curr_len]==')' && curr_microtag[0]!='(')) ||
-	    (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!= ')' )) &&  curr_microtag[curr_len]=='+' ) ||
-	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]=='+' ) ||
-	    (prev_microtag[prev_len]== '+' &&  ( curr_microtag[curr_len]==')' && curr_microtag[0]!='(' ))))
-	out->pushw(curr_macrotag);
+          !(
+            (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!= ')' )) &&  ( curr_microtag[curr_len]==')' && curr_microtag[0]!='(')) ||
+            (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!= ')' )) &&  curr_microtag[curr_len]=='+' ) ||
+            (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]=='+' ) ||
+            (prev_microtag[prev_len]== '+' &&  ( curr_microtag[curr_len]==')' && curr_microtag[0]!='(' ))))
+        out->pushw(curr_macrotag);
     }
   }
   return;
@@ -742,8 +755,8 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 
   int microsize = in->size;
 
-  IFVERBOSE(3){
-  VERBOSE(3,"In Micro2MacroMapping, lemmas:\n");
+  IFVERBOSE(3) {
+    VERBOSE(3,"In Micro2MacroMapping, lemmas:\n");
     if (lexicaltoken2classMap)
       for (int i=microsize; i>0; i--)
         VERBOSE(3,"lemmas[" << i << "]=" << lemmas[i] << " -> class -> " << lexicaltoken2classMap[lmtable::getDict()->encode(lemmas[i])] << endl);
@@ -764,15 +777,14 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
     const char *curr_lemma    = lemmas[i];
     const char *curr_macrotag = lmtable::getDict()->decode((curr_code<microMacroMapN)?microMacroMap[curr_code]:lmtable::getDict()->oovcode());
     int curr_len = strlen(curr_microtag)-1;
-    
+
     if (i==microsize) {
       if (( curr_microtag[curr_len]=='(' ) || ( curr_microtag[0]=='(' && curr_microtag[curr_len]!=')' ) || ( curr_microtag[curr_len]=='+' ))
-	sprintf(tag_lemma, "%s", curr_macrotag); // non lessicalizzo il macrotag se sono ancora all''interno del chunk
-      else 
-	if (lexicaltoken2classMap)
-	  sprintf(tag_lemma, "%s_class%d", curr_macrotag, lexicaltoken2classMap[lmtable::getDict()->encode(curr_lemma)]);
-	else
-	  sprintf(tag_lemma, "%s_%s", curr_macrotag, lemmas[microsize]);
+        sprintf(tag_lemma, "%s", curr_macrotag); // non lessicalizzo il macrotag se sono ancora all''interno del chunk
+      else if (lexicaltoken2classMap)
+        sprintf(tag_lemma, "%s_class%d", curr_macrotag, lexicaltoken2classMap[lmtable::getDict()->encode(curr_lemma)]);
+      else
+        sprintf(tag_lemma, "%s_%s", curr_macrotag, lemmas[microsize]);
 
       VERBOSE(2,"In Micro2MacroMapping, starting tag_lemma = >" <<  tag_lemma   << "<\n");
 
@@ -790,31 +802,30 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
       int prev_len = strlen(prev_microtag)-1;
 
       if (( curr_microtag[curr_len]=='(' ) || ( curr_microtag[0]=='(' && curr_microtag[curr_len]!=')' ) || ( curr_microtag[curr_len]=='+' ))
-	sprintf(tag_lemma, "%s", curr_macrotag); // non lessicalizzo il macrotag se sono ancora all''interno del chunk
-      else 
-	if (lexicaltoken2classMap)
-	  sprintf(tag_lemma, "%s_class%d", curr_macrotag, lexicaltoken2classMap[lmtable::getDict()->encode(curr_lemma)]);
-	else
-	  sprintf(tag_lemma, "%s_%s", curr_macrotag, curr_lemma);
+        sprintf(tag_lemma, "%s", curr_macrotag); // non lessicalizzo il macrotag se sono ancora all''interno del chunk
+      else if (lexicaltoken2classMap)
+        sprintf(tag_lemma, "%s_class%d", curr_macrotag, lexicaltoken2classMap[lmtable::getDict()->encode(curr_lemma)]);
+      else
+        sprintf(tag_lemma, "%s_%s", curr_macrotag, curr_lemma);
 
       VERBOSE(2,"In Micro2MacroMapping, tag_lemma = >" <<  tag_lemma   << "<\n");
 
       if (strcmp(curr_macrotag,prev_macrotag) != 0 ||
-	  !(
-	    (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!=')' )) && curr_microtag[curr_len]==')' && curr_microtag[0]!='(') ||
-	    (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!= ')')) && curr_microtag[curr_len]=='+' ) ||
-	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]=='+' ) ||
-	    (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]==')' && curr_microtag[0]!='(' ))) {
+          !(
+            (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!=')' )) && curr_microtag[curr_len]==')' && curr_microtag[0]!='(') ||
+            (( prev_microtag[prev_len]== '(' || ( prev_microtag[0]== '(' && prev_microtag[prev_len]!= ')')) && curr_microtag[curr_len]=='+' ) ||
+            (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]=='+' ) ||
+            (prev_microtag[prev_len]== '+' &&  curr_microtag[curr_len]==')' && curr_microtag[0]!='(' ))) {
 
-	VERBOSE(2,"In Micro2MacroMapping, before pushw, out = " <<  *out << endl);
-	out->pushw(tag_lemma);
-	VERBOSE(2,"In Micro2MacroMapping, after pushw, out = " <<  *out << endl);
+        VERBOSE(2,"In Micro2MacroMapping, before pushw, out = " <<  *out << endl);
+        out->pushw(tag_lemma);
+        VERBOSE(2,"In Micro2MacroMapping, after pushw, out = " <<  *out << endl);
       } else {
         VERBOSE(2,"In Micro2MacroMapping, before shift, out = " <<  *out << endl);
-	out->shift();
-	VERBOSE(2,"In Micro2MacroMapping, after shift, out = " <<  *out << endl);
-	out->pushw(tag_lemma);
-	VERBOSE(2,"In Micro2MacroMapping, after push, out = " <<  *out << endl);
+        out->shift();
+        VERBOSE(2,"In Micro2MacroMapping, after shift, out = " <<  *out << endl);
+        out->pushw(tag_lemma);
+        VERBOSE(2,"In Micro2MacroMapping, after push, out = " <<  *out << endl);
       }
       free(lemmas[i]);
     }
@@ -834,7 +845,7 @@ void lmmacro::loadLexicalClasses(const char *fn)
   lmtable::getDict()->incflag(1);
 
   inputfilestream inp(fn);
-  while (inp.getline(line,MAX_LINE,'\n')){
+  while (inp.getline(line,MAX_LINE,'\n')) {
     tokenN = parseWords(line,words,MAX_TOKEN_N_MAP);
     if (tokenN != 2)
       error((char*)"ERROR: wrong format of lexical classes file\n");
@@ -843,9 +854,9 @@ void lmmacro::loadLexicalClasses(const char *fn)
       int wordCode = lmtable::getDict()->encode(words[0]);
 
       if (wordCode>=lexicaltoken2classMapN) {
-	int r = (wordCode-lexicaltoken2classMapN)/BUFSIZ;
-	lexicaltoken2classMapN += (r+1)*BUFSIZ;
-	lexicaltoken2classMap = (int *)realloc(lexicaltoken2classMap, sizeof(int)*lexicaltoken2classMapN);
+        int r = (wordCode-lexicaltoken2classMapN)/BUFSIZ;
+        lexicaltoken2classMapN += (r+1)*BUFSIZ;
+        lexicaltoken2classMap = (int *)realloc(lexicaltoken2classMap, sizeof(int)*lexicaltoken2classMapN);
       }
       lexicaltoken2classMap[wordCode] = classIdx;
     }
@@ -853,7 +864,7 @@ void lmmacro::loadLexicalClasses(const char *fn)
 
   lmtable::getDict()->incflag(0);
 
-  IFVERBOSE(3){
+  IFVERBOSE(3) {
     for (int x=0; x<lmtable::getDict()->size(); x++)
       VERBOSE(3,"class of <" << lmtable::getDict()->decode(x) << "> (code=" << x << ") = " << lexicaltoken2classMap[x] << endl);
   }
@@ -872,7 +883,7 @@ void lmmacro::cutLex(ngram *in, ngram *out)
   int lexLen;
   if (p)
     lexLen=strlen(p);
-  else 
+  else
     lexLen=0;
   char curr_NoLexMacro[BUFSIZ];
   memset(&curr_NoLexMacro,0,BUFSIZ);

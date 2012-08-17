@@ -25,51 +25,57 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define END_ENUM    {   (char*)0,  0 }
 
-class mixture: public mdiadaptlm{
+class mixture: public mdiadaptlm
+{
   double** l[MAX_NGRAM]; //interpolation parameters
   int* pm; //parameter mappings
-  int  pmax; //#parameters 
+  int  pmax; //#parameters
   int k1,k2; //two thresholds
   int  numslm;
   int prunethresh;
   interplm** sublm;
   char *ipfname;
   char *opfname;
- 
+
 
   double reldist(double *l1,double *l2,int n);
   int genpmap();
-  int pmap(ngram ng,int lev);  
- public:
-   
+  int pmap(ngram ng,int lev);
+public:
+
   bool usefulltable;
-	
+
   mixture(bool fulltable,char *sublminfo,int depth,int prunefreq=0,char* ipfile=NULL,char* opfile=NULL);
-  
+
   int train();
 
   int savepar(char* opf);
   int loadpar(char* opf);
-  
-  inline int dub(){return dict->dub();}
-  inline int dub(int value){
-    for (int i=0;i<numslm;i++){
+
+  inline int dub() {
+    return dict->dub();
+  }
+  inline int dub(int value) {
+    for (int i=0; i<numslm; i++) {
       //      cerr << "I'm setting dub: " << value << endl;
       sublm[i]->dub(value);
     }
-    return (dict->dub(value));  
+    return (dict->dub(value));
   }
-	
-  void settying(int a,int b){k1=a;k2=b;}
-	int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
-	
-	
-	
-  ~mixture(){}
 
-  //this extension builds a commong ngramtable on demand		
+  void settying(int a,int b) {
+    k1=a;
+    k2=b;
+  }
+  int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
+
+
+
+  ~mixture() {}
+
+  //this extension builds a commong ngramtable on demand
   int get(ngram& ng,int n,int lev);
-		
+
 };
 
 #endif

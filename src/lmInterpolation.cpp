@@ -31,21 +31,24 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
-inline void error(const char* message){
+inline void error(const char* message)
+{
   std::cerr << message << "\n";
   throw std::runtime_error(message);
 }
 
-lmInterpolation::lmInterpolation(float nlf, float dlf){
-  ngramcache_load_factor = nlf; 
-  dictionary_load_factor = dlf; 
-  
+lmInterpolation::lmInterpolation(float nlf, float dlf)
+{
+  ngramcache_load_factor = nlf;
+  dictionary_load_factor = dlf;
+
   order=0;
   memmap=0;
   isInverted=false;
 }
 
-void lmInterpolation::load(const std::string filename,int mmap){
+void lmInterpolation::load(const std::string filename,int mmap)
+{
   VERBOSE(2,"lmInterpolation::load(const std::string filename,int memmap)" << std::endl);
   VERBOSE(2," filename:|" << filename << "|" << std::endl);
 
@@ -78,32 +81,32 @@ void lmInterpolation::load(const std::string filename,int mmap){
   VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_number_lm:"<< m_number_lm << std::endl;);
 
   dict->incflag(1);
-  for (int i=0;i<m_number_lm;i++){
+  for (int i=0; i<m_number_lm; i++) {
     inp.getline(line,BUFSIZ,'\n');
     tokenN = parseWords(line,words,3);
 
-    if(tokenN < 2 || tokenN >3){
+    if(tokenN < 2 || tokenN >3) {
       error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMINTERPOLATION number_of_models\nweight_of_LM_1 filename_of_LM_1\nweight_of_LM_2 filename_of_LM_2");
     }
 
-//check whether the (textual) LM has to be loaded as inverted	
+//check whether the (textual) LM has to be loaded as inverted
     m_isinverted[i] = false;
-    if(tokenN == 3){
+    if(tokenN == 3) {
       if (strcmp(words[2],"inverted") == 0)
-         m_isinverted[i] = true;
+        m_isinverted[i] = true;
     }
-VERBOSE(2,"i:" << i << " m_isinverted[i]:" << m_isinverted[i] << endl);
+    VERBOSE(2,"i:" << i << " m_isinverted[i]:" << m_isinverted[i] << endl);
 
     m_weight[i] = (float) atof(words[0]);
     m_file[i] = words[1];
-  VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_file:"<< words[1] << std::endl;);
+    VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_file:"<< words[1] << std::endl;);
 
     m_lm[i] = load_lm(i,memmap,ngramcache_load_factor,dictionary_load_factor);
 //set the actual value for inverted flag, which is known only after loading the lM
     m_isinverted[i] = m_lm[i]->is_inverted();
 
     dictionary *_dict=m_lm[i]->getDict();
-    for (int j=0;j<_dict->size();j++){
+    for (int j=0; j<_dict->size(); j++) {
       dict->encode(_dict->decode(j));
     }
   }
@@ -113,40 +116,42 @@ VERBOSE(2,"i:" << i << " m_isinverted[i]:" << m_isinverted[i] << endl);
   inp.close();
 
   int maxorder = 0;
-  for (int i=0;i<m_number_lm;i++){
+  for (int i=0; i<m_number_lm; i++) {
     maxorder = (maxorder > m_lm[i]->maxlevel())?maxorder:m_lm[i]->maxlevel();
   }
 
-  if (order == 0){
+  if (order == 0) {
     order = maxorder;
     std::cerr << "order is not set; reset to the maximum order of LMs: " << order << std::endl;
-  }else if (order > maxorder){
+  } else if (order > maxorder) {
     order = maxorder;
     std::cerr << "order is too high; reset to the maximum order of LMs: " << order << std::endl;
   }
   maxlev=order;
 }
 
-lmContainer* lmInterpolation::load_lm(int i,int memmap, float nlf, float dlf) {
-	
-	//checking the language model type
-	lmContainer* lmt=NULL;
-	
-	lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
-	
-	//let know that table has inverted n-grams
-	lmt->is_inverted(m_isinverted[i]);  //set inverted flag for each LM
-	
-	lmt->setMaxLoadedLevel(requiredMaxlev);
-	
-	lmt->load(m_file[i], memmap);
-	
-	lmt->init_caches(lmt->maxlevel());
-	return lmt;
+lmContainer* lmInterpolation::load_lm(int i,int memmap, float nlf, float dlf)
+{
+
+  //checking the language model type
+  lmContainer* lmt=NULL;
+
+  lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
+
+  //let know that table has inverted n-grams
+  lmt->is_inverted(m_isinverted[i]);  //set inverted flag for each LM
+
+  lmt->setMaxLoadedLevel(requiredMaxlev);
+
+  lmt->load(m_file[i], memmap);
+
+  lmt->init_caches(lmt->maxlevel());
+  return lmt;
 }
 
 
-double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,unsigned int* statesize,bool* extendible){
+double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,unsigned int* statesize,bool* extendible)
+{
 
   double pr=0.0;
   double _logpr;
@@ -156,23 +161,26 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
   int _bol=0,actualbol=MAX_NGRAM;
   double _bow=0.0,actualbow=0.0;
 //  bool _extendible=false,actualextendible=false;
-	bool* _extendible=NULL,actualextendible=false;
-	
-	if (extendible){ _extendible=new bool; _extendible=false; }
-	
-  for (size_t i=0;i<m_lm.size();i++){
-    
+  bool* _extendible=NULL,actualextendible=false;
+
+  if (extendible) {
+    _extendible=new bool;
+    _extendible=false;
+  }
+
+  for (size_t i=0; i<m_lm.size(); i++) {
+
     ngram _ng(m_lm[i]->getDict());
     _ng.trans(ng);
 //    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,&_extendible);
     _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,_extendible);
     //    assert(_statesize != InvalidContextLength);
-    
+
     /*
-		cerr.precision(10);
-    std::cerr << " LM " << i << " weight:" << m_weight[i] << std::endl;    
-    std::cerr << " LM " << i << " log10 logpr:" << _logpr<< std::endl;    
-    std::cerr << " LM " << i << " pr:" << pow(10.0,_logpr) << std::endl;    
+    cerr.precision(10);
+    std::cerr << " LM " << i << " weight:" << m_weight[i] << std::endl;
+    std::cerr << " LM " << i << " log10 logpr:" << _logpr<< std::endl;
+    std::cerr << " LM " << i << " pr:" << pow(10.0,_logpr) << std::endl;
     std::cerr << " _statesize:" << _statesize << std::endl;
     std::cerr << " _bow:" << _bow << std::endl;
     std::cerr << " _bol:" << _bol << std::endl;
@@ -185,7 +193,7 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
     //What is the bow of a LM interpolation? The weighted sum of the bow of the submodels
     //What is the prob of a LM interpolation? The weighted sum of the prob of the submodels
     //What is the extendible flag of a LM interpolation? true if the extendible flag is one for any LM
-    
+
     pr+=m_weight[i]*pow(10.0,_logpr);
     actualbow+=m_weight[i]*pow(10.0,_bow);
 
@@ -193,19 +201,22 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
       actualmaxsuffptr = _maxsuffptr;
       actualstatesize = _statesize;
     }
-    if (_bol < actualbol){
-      actualbol=_bol; //backoff limit of LM[i] 
+    if (_bol < actualbol) {
+      actualbol=_bol; //backoff limit of LM[i]
     }
-    if (_extendible){
+    if (_extendible) {
       actualextendible=true; //set extendible flag to true if the ngram is extendible for any LM
     }
-	}
+  }
   if (bol) *bol=actualbol;
   if (bow) *bow=log(actualbow);
   if (maxsuffptr) *maxsuffptr=actualmaxsuffptr;
   if (statesize) *statesize=actualstatesize;
-  if (extendible){ *extendible=actualextendible; delete _extendible;}
-  
+  if (extendible) {
+    *extendible=actualextendible;
+    delete _extendible;
+  }
+
   /*
   if (statesize) std::cerr << " statesize:" << *statesize << std::endl;
   if (bow) std::cerr << " bow:" << *bow << std::endl;
@@ -213,8 +224,9 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
   */
   return log(pr)/M_LN10;
 }
- 
-double lmInterpolation::clprob(int* codes, int sz, double* bow,int* bol,char** maxsuffptr,unsigned int* statesize,bool* extendible){
+
+double lmInterpolation::clprob(int* codes, int sz, double* bow,int* bol,char** maxsuffptr,unsigned int* statesize,bool* extendible)
+{
 
   //create the actual ngram
   ngram ong(dict);
@@ -224,11 +236,12 @@ double lmInterpolation::clprob(int* codes, int sz, double* bow,int* bol,char** m
   return clprob(ong, bow, bol, maxsuffptr, statesize, extendible);
 }
 
-double lmInterpolation::setlogOOVpenalty(int dub){
+double lmInterpolation::setlogOOVpenalty(int dub)
+{
   assert(dub > dict->size());
   double _logpr;
   double OOVpenalty=0.0;
-  for (int i=0;i<m_number_lm;i++){
+  for (int i=0; i<m_number_lm; i++) {
     m_lm[i]->setlogOOVpenalty(dub);  //set OOV Penalty for each LM
     _logpr=m_lm[i]->getlogOOVpenalty();
     OOVpenalty+=m_weight[i]*exp(_logpr);
@@ -236,4 +249,4 @@ double lmInterpolation::setlogOOVpenalty(int dub){
   logOOVpenalty=log(OOVpenalty);
   return logOOVpenalty;
 }
- 
+

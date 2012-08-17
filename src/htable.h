@@ -38,19 +38,19 @@ typedef unsigned int address;
 
 // Fast arithmetic, relying on powers of 2,
 // and on pre-processor concatenation property
-//use as 
+//use as
 template <class T>
-struct entry{
+struct entry {
   T                 key;
   entry*           next;  // secret from user
 };
 
 
 typedef enum {HT_FIND,    //!< search: find an entry
-	      HT_ENTER,   //!< search: enter an entry 
-	      HT_INIT,    //!< scan: start scan
-	      HT_CONT     //!< scan: continue scan
-} HT_ACTION;
+              HT_ENTER,   //!< search: enter an entry
+              HT_INIT,    //!< scan: start scan
+              HT_CONT     //!< scan: continue scan
+             } HT_ACTION;
 
 //!T is the type of the key and  should be (int*) or (char*)
 template <class T>
@@ -58,17 +58,17 @@ class htable
 {
   int        size;            //!< table size
   int      keylen;            //!< key length
-  entry<T>   **table;            //!< hash table  
-  int      scan_i;            //!< scan support 
-  entry<T>   *scan_p;            //!< scan support 
+  entry<T>   **table;            //!< hash table
+  int      scan_i;            //!< scan support
+  entry<T>   *scan_p;            //!< scan support
   // statistics
-  long       keys;            //!< # of entries 
+  long       keys;            //!< # of entries
   long   accesses;            //!< # of accesses
   long collisions;            //!< # of collisions
 
   mempool  *memory;           //!<  memory pool
 
- public:
+public:
 
   //! Creates an hash table
   htable(int n,int kl=0);
@@ -98,14 +98,17 @@ class htable
   void map(std::ostream& co=std::cout, int cols=80);
 
   //! Returns amount of used memory
-  int used(){ return size * sizeof(entry<T> **) + memory->used(); }
+  int used() {
+    return size * sizeof(entry<T> **) + memory->used();
+  }
 
 };
 
 
 
 template <class T>
-htable<T>::htable(int n,int kl){
+htable<T>::htable(int n,int kl)
+{
 
   memory=new mempool( sizeof(entry<T>) , BlockSize );
 
@@ -119,13 +122,15 @@ htable<T>::htable(int n,int kl){
 }
 
 template <class T>
-htable<T>::~htable(){
+htable<T>::~htable()
+{
   delete []table;
   delete memory;
 }
 
 template <class T>
-T htable<T>::find(T key){
+T htable<T>::find(T key)
+{
   address    h;
   entry<T>  *q,**p;
 
@@ -137,7 +142,7 @@ T htable<T>::find(T key){
   q=*p;
 
   /* Follow collision chain */
-  while (q != NULL && Comp(q->key,key)){
+  while (q != NULL && Comp(q->key,key)) {
     p = &(q->next);
     q = q->next;
 
@@ -150,7 +155,8 @@ T htable<T>::find(T key){
 }
 
 template <class T>
-T htable<T>::insert(T key){
+T htable<T>::insert(T key)
+{
   address    h;
   entry<T>  *q,**p;
 
@@ -162,7 +168,7 @@ T htable<T>::insert(T key){
   q=*p;
 
   /* Follow collision chain */
-  while (q != NULL && Comp(q->key,key)){
+  while (q != NULL && Comp(q->key,key)) {
     p = &(q->next);
     q = q->next;
 
@@ -187,32 +193,33 @@ T htable<T>::insert(T key){
 }
 
 template <class T>
-T htable<T>::scan(HT_ACTION action){
+T htable<T>::scan(HT_ACTION action)
+{
 
   T k;
 
-  if (action == HT_INIT)
-    {
-      scan_i=0;scan_p=table[0];
-      return NULL;
-    }
+  if (action == HT_INIT) {
+    scan_i=0;
+    scan_p=table[0];
+    return NULL;
+  }
 
   // if scan_p==NULL go to the first non null pointer
   while ((scan_p==NULL) && (++scan_i<size)) scan_p=table[scan_i];
 
-  if (scan_p!=NULL)
-    {
-      k=scan_p->key;
-      scan_p=(entry<T> *)scan_p->next;
-      return k;
-    };
+  if (scan_p!=NULL) {
+    k=scan_p->key;
+    scan_p=(entry<T> *)scan_p->next;
+    return k;
+  };
 
   return NULL;
 }
 
 
 template <class T>
-void htable<T>::map(ostream& co,int cols){
+void htable<T>::map(ostream& co,int cols)
+{
 
   entry<T> *p;
   char* img=new char[cols+1];
@@ -222,16 +229,16 @@ void htable<T>::map(ostream& co,int cols){
 
   co << "htable memory map: . (0 items), - (<5), # (>5)\n";
 
-  for (int i=0; i<size;i++)
-  {
-    int n=0;p=table[i];
+  for (int i=0; i<size; i++) {
+    int n=0;
+    p=table[i];
 
-    while(p!=NULL){
+    while(p!=NULL) {
       n++;
       p=(entry<T> *)p->next;
     };
 
-    if (i && (i % cols)==0){
+    if (i && (i % cols)==0) {
       co << img << "\n";
       memset(img,'.',cols);
     }
@@ -244,11 +251,12 @@ void htable<T>::map(ostream& co,int cols){
   img[size % cols]='\0';
   co << img << "\n";
 
-        delete []img;
+  delete []img;
 }
 
 template <class T>
-void htable<T>::stat(){
+void htable<T>::stat()
+{
   cerr << "htable class statistics\n";
   cerr << "size " << size
        << " keys " << keys

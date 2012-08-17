@@ -23,14 +23,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 //Witten and Bell linear discounting
 
-class linearwb: public mdiadaptlm{
+class linearwb: public mdiadaptlm
+{
   int prunethresh;
   int minfreqthresh;
- public:
+public:
   linearwb(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=SHIFTBETA_B);
   int train();
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
-  ~linearwb(){}
+  ~linearwb() {}
 };
 
 

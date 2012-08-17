@@ -29,65 +29,67 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <n_gram.h>
 
 
-void usage() {
-	std::cerr <<	"Usage: score-lm -lm <model> [-dub <dub>] [-mm 1]\n"
-			"       score sentences with a language model\n"
-			"       -lm      language model to use (must be specified)\n"
-			"       -dub     dictionary upper bound (default: 10000000)\n"
-			"       -level   max level to load from the language models (default: 1000, meaning the actual LM order)\n"
-			"       -mm 1    memory-mapped access to lm\n";
-	exit(1);
+void usage()
+{
+  std::cerr <<	"Usage: score-lm -lm <model> [-dub <dub>] [-mm 1]\n"
+            "       score sentences with a language model\n"
+            "       -lm      language model to use (must be specified)\n"
+            "       -dub     dictionary upper bound (default: 10000000)\n"
+            "       -level   max level to load from the language models (default: 1000, meaning the actual LM order)\n"
+            "       -mm 1    memory-mapped access to lm\n";
+  exit(1);
 }
 
-int main(int argc, char **argv) {
-	int mmap = 0;
-	int dub = 10000000;
-	int requiredMaxlev = 1000;
-	char *lm = NULL;
+int main(int argc, char **argv)
+{
+  int mmap = 0;
+  int dub = 10000000;
+  int requiredMaxlev = 1000;
+  char *lm = NULL;
 
-	for(int i = 1; i < argc; i++) {
-		if(!strcmp(argv[i], "-mm")) {
-			if(++i == argc)
-				usage();
-			mmap = atoi(argv[i]);
-		} else if(!strcmp(argv[i], "-dub")) {
-			if(++i == argc)
-				usage();
-			dub = atoi(argv[i]);
-                } else if(!strcmp(argv[i], "-lm")) {
-                        if(++i == argc)
-                                usage();
-                        lm = argv[i];
-		} else if(!strcmp(argv[i], "-level")) {
-			if(++i == argc)
-				usage();
-			requiredMaxlev = atoi(argv[i]);
-		} else
-			usage();
-	}
+  for(int i = 1; i < argc; i++) {
+    if(!strcmp(argv[i], "-mm")) {
+      if(++i == argc)
+        usage();
+      mmap = atoi(argv[i]);
+    } else if(!strcmp(argv[i], "-dub")) {
+      if(++i == argc)
+        usage();
+      dub = atoi(argv[i]);
+    } else if(!strcmp(argv[i], "-lm")) {
+      if(++i == argc)
+        usage();
+      lm = argv[i];
+    } else if(!strcmp(argv[i], "-level")) {
+      if(++i == argc)
+        usage();
+      requiredMaxlev = atoi(argv[i]);
+    } else
+      usage();
+  }
 
-	if(lm == NULL)
-		usage();
+  if(lm == NULL)
+    usage();
 
-	std::ifstream lmstr(lm);
-	lmtable lmt;
-	lmt.setMaxLoadedLevel(requiredMaxlev);
-	lmt.load(lmstr, lm, NULL, mmap);
-	lmt.setlogOOVpenalty(dub);
+  std::ifstream lmstr(lm);
+  lmtable lmt;
+  lmt.setMaxLoadedLevel(requiredMaxlev);
+  lmt.load(lmstr, lm, NULL, mmap);
+  lmt.setlogOOVpenalty(dub);
 
-	for(;;) {
-		std::string line;
-		std::getline(std::cin, line);
-		if(!std::cin.good())
-			return !std::cin.eof();
+  for(;;) {
+    std::string line;
+    std::getline(std::cin, line);
+    if(!std::cin.good())
+      return !std::cin.eof();
 
-		std::istringstream linestr(line);
-		ngram ng(lmt.dict);
+    std::istringstream linestr(line);
+    ngram ng(lmt.dict);
 
-		double logprob = .0;
-		while((linestr >> ng))
-			logprob += lmt.lprob(ng);
+    double logprob = .0;
+    while((linestr >> ng))
+      logprob += lmt.lprob(ng);
 
-		std::cout << logprob << std::endl;
-	}
+    std::cout << logprob << std::endl;
+  }
 }
