@@ -294,6 +294,10 @@ int main(int argc, const char **argv)
 		}
 		else
 		{
+			if (lmt->getLanguageModelType() == _IRSTLM_LMINTERPOLATION){
+				debug = (debug>4)?4:debug;
+				std::cerr << "Maximum debug value for this LM type: " << debug << std::endl;
+			}
 			std::cerr << "Start Eval" << std::endl;
 			std::cerr << "OOV code: " << lmt->getDict()->oovcode() << std::endl;
 			ngram ng(lmt->getDict());    
@@ -340,35 +344,40 @@ int main(int argc, const char **argv)
 						if (*ng.wordp(1)==eos) std::cout << std::endl;
 					}
 					if (debug==2){
-						std::cout << ng << " [" << ng.size-bol << "-gram]" << " " << Pr << std::endl; 
+						std::cout << ng << " [" << ng.size-bol << "-gram]" << " " << Pr;
+						std::cout << std::endl;	
 					}
 					if (debug==3){
-						std::cout << ng << " [" << ng.size-bol << "-gram]" << " " << Pr << " bow:" << bow << std::endl; 
+						std::cout << ng << " [" << ng.size-bol << "-gram]" << " " << Pr << " bow:" << bow;
+						std::cout << std::endl;	
 					}
 					if (debug==4){
-						std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "]" << " " << Pr << " bow:" << bow << std::endl;		
-						std::cout << ng << " [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << " state:" << (void*) msp << "]" << " " << Pr << " bow:" << bow << std::endl;		
+						std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
+						std::cout << std::endl;		
 					}
 					if (debug>4){
-						std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "]" << " " << Pr << " bow:" << bow << std::endl;
+						std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
 						double totp=0.0; int oldw=*ng.wordp(1);
 						double oovp=lmt->getlogOOVpenalty();
 						lmt->setlogOOVpenalty((double) 0);
 						for (int c=0;c<ng.dict->size();c++){
 							*ng.wordp(1)=c;
-							totp+=pow(10.0,lmt->clprob(ng)); //(using caches if available)  
+							totp+=pow(10.0,lmt->clprob(ng)); //using caches if available
 						}
 						*ng.wordp(1)=oldw;
 						
 						if ( totp < (1.0 - 1e-5) || totp > (1.0 + 1e-5))
-							std::cout << "  [t=" << totp << "] POSSIBLE ERROR\n";
-						else 
-							std::cout << "\n";
+							std::cout << "  [t=" << totp << "] POSSIBLE ERROR";
+						std::cout << std::endl;
 						
 						lmt->setlogOOVpenalty((double)oovp);
 					}
 					
-					if (lmt->is_OOV(*ng.wordp(1))){ Noov++; sent_Noov++; } 
+					
+					if (lmt->is_OOV(*ng.wordp(1))){
+						Noov++;
+						sent_Noov++;
+					} 
 					if (bol){  Nbo++; sent_Nbo++; }
 					Nw++;                 
 					sent_Nw++;
@@ -383,7 +392,7 @@ int main(int argc, const char **argv)
 						<< " sent_Noov=" << sent_Noov
 						<< " sent_OOV=" << (float)sent_Noov/sent_Nw * 100.0 << "%" << std::endl;
 						//reset statistics for sentence based Perplexity
-						sent_Nw=sent_Noov=0;
+						sent_Nw=sent_Noov=sent_Nbo=0;
 						sent_logPr=0.0; 
 					} 
 					

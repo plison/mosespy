@@ -128,20 +128,20 @@ VERBOSE(2,"i:" << i << " m_isinverted[i]:" << m_isinverted[i] << endl);
 }
 
 lmContainer* lmInterpolation::load_lm(int i,int memmap, float nlf, float dlf) {
-
-        //checking the language model type
-        lmContainer* lmt=NULL;
-
-        lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
-
-        //let know that table has inverted n-grams
-        lmt->is_inverted(m_isinverted[i]);  //set inverted flag for each LM
-
-        lmt->setMaxLoadedLevel(requiredMaxlev);
-
-        lmt->load(m_file[i], memmap);
-       
-        lmt->init_caches(lmt->maxlevel());
+	
+	//checking the language model type
+	lmContainer* lmt=NULL;
+	
+	lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
+	
+	//let know that table has inverted n-grams
+	lmt->is_inverted(m_isinverted[i]);  //set inverted flag for each LM
+	
+	lmt->setMaxLoadedLevel(requiredMaxlev);
+	
+	lmt->load(m_file[i], memmap);
+	
+	lmt->init_caches(lmt->maxlevel());
 	return lmt;
 }
 
@@ -155,17 +155,21 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
   unsigned int _statesize=0,actualstatesize=0;
   int _bol=0,actualbol=MAX_NGRAM;
   double _bow=0.0,actualbow=0.0;
-  bool _extendible=false,actualextendible=false;
-
+//  bool _extendible=false,actualextendible=false;
+	bool* _extendible=NULL,actualextendible=false;
+	
+	if (extendible){ _extendible=new bool; _extendible=false; }
+	
   for (size_t i=0;i<m_lm.size();i++){
     
     ngram _ng(m_lm[i]->getDict());
     _ng.trans(ng);
-    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,&_extendible);
+//    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,&_extendible);
+    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,_extendible);
     //    assert(_statesize != InvalidContextLength);
     
-    cerr.precision(10);
     /*
+		cerr.precision(10);
     std::cerr << " LM " << i << " weight:" << m_weight[i] << std::endl;    
     std::cerr << " LM " << i << " log10 logpr:" << _logpr<< std::endl;    
     std::cerr << " LM " << i << " pr:" << pow(10.0,_logpr) << std::endl;    
@@ -195,13 +199,13 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
     if (_extendible){
       actualextendible=true; //set extendible flag to true if the ngram is extendible for any LM
     }
-      
-    if (bol) *bol=actualbol;
-    if (bow) *bow=log(actualbow);
-    if (maxsuffptr) *maxsuffptr=actualmaxsuffptr;
-    if (statesize) *statesize=actualstatesize;
-    if (extendible) *extendible=actualextendible;
-  }
+	}
+  if (bol) *bol=actualbol;
+  if (bow) *bow=log(actualbow);
+  if (maxsuffptr) *maxsuffptr=actualmaxsuffptr;
+  if (statesize) *statesize=actualstatesize;
+  if (extendible){ *extendible=actualextendible; delete _extendible;}
+  
   /*
   if (statesize) std::cerr << " statesize:" << *statesize << std::endl;
   if (bow) std::cerr << " bow:" << *bow << std::endl;

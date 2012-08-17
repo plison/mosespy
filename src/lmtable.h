@@ -266,9 +266,8 @@ class lmtable: public lmContainer{
   void filter(const char* /* unused parameter: lmfile */){};
    
 	
-  virtual double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,
-					   bool* extendible=NULL, double* lastbow=NULL);
-  virtual double clprob(ngram ng,            double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
+  virtual double  lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL, bool* extendible=NULL, double* lastbow=NULL);
+  virtual double clprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
   virtual double clprob(int* ng, int ngsize, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL); 
   
   
