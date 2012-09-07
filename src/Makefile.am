@@ -63,12 +63,14 @@ libirstlm_la_LIBADD = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 LDADD = -lirstlm 
 DEPENDENCIES = libirstlm.la
 
-bin_PROGRAMS = dict ngt compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa
+bin_PROGRAMS = dict ngt dtsel compile-lm interpolate-lm prune-lm quantize-lm prune-lm score-lm tlm plsa
 
 dict_SOURCES = dict.cpp
 dict_DEPENDENCIES = $(DEPENDENCIES)
 ngt_SOURCES = ngt.cpp
 ngt_DEPENDENCIES = $(DEPENDENCIES)
+dtsel_SOURCES = dtsel.cpp
+dtsel_DEPENDENCIES = $(DEPENDENCIES)
 compile_lm_SOURCES = compile-lm.cpp
 compile_lm_DEPENDENCIES = $(DEPENDENCIES)
 interpolate_lm_SOURCES = interpolate-lm.cpp

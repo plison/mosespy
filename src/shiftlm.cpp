@@ -508,12 +508,14 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 
     int unigrtotfreq=(size<lmsize()?btotfreq():totfreq());
 
+	
+	
     if (get(ng,size,size))
       fstar=(double) mfreq(ng,size)/(double)unigrtotfreq;
     else {
-      cerr << "Missing probability for word: " << dict->decode(*ng.wordp(1)) << "\n";
-      exit(1);
-    }
+			 cerr << "Missing probability for word: " << dict->decode(*ng.wordp(1)) << "\n";					
+			 exit(1);
+		 }
   }
 
   return 1;

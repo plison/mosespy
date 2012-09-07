@@ -115,8 +115,9 @@ int main(int argc, char **argv)
 
   // sort dictionary
   if (prunefreq>0 || prunerank>0 || sortflag) {
-    dictionary *sortd=new dictionary(d,true);
-    delete d;
+	dictionary *sortd=new dictionary(d,false); 
+	sortd->sort();
+	delete d;
     d=sortd;
   }
 

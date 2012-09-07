@@ -61,7 +61,6 @@ int main(int argc, char **argv)
   char *filtertable=NULL;   // ngramtable filename
   char *iknfile=NULL;   //  filename to save IKN statistics
   double filter_hit_rate=1.0;  // minimum hit rate of filter
-  char *isym=NULL;      // interruption symbol
   char *aug=NULL;       // augmentation data
   char *hmask=NULL;        // historymask
   int inputgoogleformat=0;    //reads ngrams in Google format
@@ -79,8 +78,6 @@ int main(int argc, char **argv)
   DeclareParams((char*)
                 "Dictionary", CMDSTRINGTYPE, &dic,
                 "d", CMDSTRINGTYPE, &dic,
-                "IntSymb", CMDSTRINGTYPE, &isym,
-                "is", CMDSTRINGTYPE, &isym,
                 "NgramSize", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
                 "n", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
                 "InputFile", CMDSTRINGTYPE, &inp,
@@ -146,7 +143,7 @@ int main(int argc, char **argv)
   if (filtertable) {
 
     {
-      ngramtable ngt(filtertable,1,isym,NULL,NULL,0,0,NULL,0,table_type);
+      ngramtable ngt(filtertable,1,NULL,NULL,NULL,0,0,NULL,0,table_type);
       mfstream inpstream(inp,ios::in); //google input table
       mfstream outstream(out,ios::out); //google output table
 
@@ -200,13 +197,13 @@ int main(int argc, char **argv)
 
 
 
-  //ngramtable* ngt=new ngramtable(inp,ngsz,isym,dic,dstco,hmask,inplen,table_type);
-  ngramtable* ngt=new ngramtable(inp,ngsz,isym,dic,filterdict,inputgoogleformat,dstco,hmask,inplen,table_type);
+  //ngramtable* ngt=new ngramtable(inp,ngsz,NULL,dic,dstco,hmask,inplen,table_type);
+  ngramtable* ngt=new ngramtable(inp,ngsz,NULL,NULL,filterdict,inputgoogleformat,dstco,hmask,inplen,table_type);
 
   if (aug) {
     ngt->dict->incflag(1);
     //    ngramtable ngt2(aug,ngsz,isym,NULL,0,NULL,0,table_type);
-    ngramtable ngt2(aug,ngsz,isym,NULL,NULL,0,0,NULL,0,table_type);
+    ngramtable ngt2(aug,ngsz,NULL,NULL,NULL,0,0,NULL,0,table_type);
     ngt->augment(&ngt2);
     ngt->dict->incflag(0);
   }

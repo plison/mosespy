@@ -332,7 +332,8 @@ public:
   // do not insert the ngram
   dictionary     *filterdict;
 
-  ngramtable(char* filename,int maxl,char* is,char *oovlex,
+  ngramtable(char* filename,int maxl,char* is,
+			 dictionary* extdict,
              char* filterdictfile,
              int googletable=0,
              int dstco=0,char* hmask=NULL,int inplen=0,
@@ -403,7 +404,7 @@ public:
   void loadbinold(char *filename);
   void loadbinold(mfstream& inp,node nd,NODETYPE ndt,int lev);
 
-  void generate(char *filename);
+  void generate(char *filename,dictionary *extdict=NULL);
   void generate_dstco(char *filename,int dstco);
   void generate_hmask(char *filename,char* hmask,int inplen=0);
 

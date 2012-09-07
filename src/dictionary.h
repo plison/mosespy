@@ -192,7 +192,7 @@ public:
   void sort();
 
   dictionary(char *filename,int size=DICT_INITSIZE,float lf=DICTIONARY_LOAD_FACTOR);
-  dictionary(dictionary* d, bool sortflag=true); //flag for sorting wrt to frequency (default=1, i.e. sort)
+  dictionary(dictionary* d, bool prune=false,int prunethresh=0); //make a copy and eventually filter out unfrequent words
 
   ~dictionary();
   void generate(char *filename);

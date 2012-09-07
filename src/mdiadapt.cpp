@@ -161,6 +161,8 @@ int mdiadaptlm::scalefact(char *ngtfile)
   cache=new normcache(dict);
 
   forelm=new shiftbeta(ngtfile,1);
+  //try with a more appropriate LM
+  //forelm=new linearwb(ngtfile,1);
   forelm->train();
 
   //compute oov scalefact term
@@ -172,12 +174,13 @@ int mdiadaptlm::scalefact(char *ngtfile)
   for ((*w)=0; (*w)<forelm->dict->size(); (*w)++)
     if ((*w) != forelm->dict->oovcode()) {
       ng.trans(fng);
-      if (*ng.wordp(1)==dict->oovcode()) {
+      if (*ng.wordp(1)==dict->oovcode()){
+	  //forbidden situation
         cerr << "adaptation file contains new words: use -ao=yes option\n";
         exit(1);
-      }
-      //forbidden situation
+      }      
       oovscaling-=backunig(ng);
+		
     }
   *w=forelm->dict->oovcode();
   oovscaling=foreunig(fng)/oovscaling;

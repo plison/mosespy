@@ -1106,7 +1106,7 @@ void lmtable::cpsublm(lmtable* slmt, dictionary* subdict,bool keepunigr)
   //let slmt inherit all features of this lmtable
 
   slmt->configure(maxlev,isQtable);
-  slmt->dict=new dictionary((keepunigr?dict:subdict),false);
+  slmt->dict=new dictionary((keepunigr?dict:subdict));
 
   if (isQtable) {
     for (int i=1; i<=maxlev; i++)  {

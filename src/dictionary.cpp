@@ -370,48 +370,38 @@ int cmpdictentry(const void *a,const void *b)
 }
 
 
-dictionary::dictionary(dictionary* d, bool sortflag)
+dictionary::dictionary(dictionary* d,bool prune, int prunethresh)
 {
+	assert(d!=NULL);
+	//transfer values
+	n=0;        //total entries
+	N=0;        //total frequency
+	
+	load_factor=d->load_factor;        //load factor
+	lim=d->lim;    //limit of entries
+	oov_code=-1;   //code od oov must be re-defined	
+	ifl=0;         //increment flag=0;
+	dubv=d->dubv;  //dictionary upperbound transferred
+	
+	//creates a sorted copy of the table
+	tb  = new dict_entry[lim];
+	htb = new HASHTABLE_t((size_t) (lim/load_factor));
+	st  = new strstack(lim * 10);
+	
+	//copy in the entries with frequency > threshold
+	n=0;
+	for (int i=0; i<d->n; i++)
+		if (!prune || d->tb[i].freq>=prunethresh){
+			tb[n].code=n;
+			tb[n].freq=d->tb[i].freq;
+			tb[n].word=st->push(d->tb[i].word);
+			htb->insert((char*)&tb[n].word);
 
-  //transfer values
-
-  load_factor=d->load_factor;        //load factor
-  n=d->n;        //total entries
-  N=d->N;        //total frequency
-  lim=d->lim;    //limit of entries
-  oov_code=-1;   //code od oov must be re-defined
-  ifl=0;         //increment flag=0;
-  dubv=d->dubv;  //dictionary upperbound transferred
-
-  //creates a sorted copy of the table
-
-  tb  = new dict_entry[lim];
-  htb = new HASHTABLE_t((size_t) (lim/load_factor));
-  st  = new strstack(lim * 10);
-
-  for (int i=0; i<n; i++) {
-    tb[i].code=d->tb[i].code;
-    tb[i].freq=d->tb[i].freq;
-    tb[i].word=st->push(d->tb[i].word);
-  }
-
-  if (sortflag) {
-    //sort all entries according to frequency
-    cerr << "sorting dictionary ...";
-    qsort(tb,n,sizeof(dict_entry),cmpdictentry);
-    cerr << "done\n";
-  }
-
-  for (int i=0; i<n; i++) {
-
-    //eventually re-assign oov code
-    if (d->oov_code==tb[i].code) oov_code=i;
-
-    tb[i].code=i;
-    //always insert without checking whether the word is already in
-    htb->insert((char*)&tb[i].word);
-  };
-
+			if (d->oov_code==i) oov_code=n; //reassign oov_code
+			
+			N+=tb[n].freq;
+			n++;
+		}			
 };
 
 void dictionary::sort()

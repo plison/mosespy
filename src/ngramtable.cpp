@@ -30,7 +30,10 @@ using namespace std;
 #include "n_gram.h"
 #include "ngramtable.h"
 
-ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */, char* /* unused parameter: oovlex */,char* filterdictfile,int googletable,int dstco,char* hmask, int inplen,TABLETYPE ttype,int codesize): tabletype(ttype,codesize)
+ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */, 
+					   dictionary* extdict /* external dictionary */,char* filterdictfile,
+					   int googletable,int dstco,char* hmask, int inplen,TABLETYPE ttype,
+					   int codesize): tabletype(ttype,codesize)
 {
 
   cerr << "[codesize " << CODESIZE << "]\n";
@@ -153,7 +156,7 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
   else if (googletable)
     loadtxt(filename,googletable);
   else
-    generate(filename);
+    generate(filename,extdict);
 
 
 
@@ -452,7 +455,7 @@ void ngramtable::loadbin(const char *filename)
 }
 
 
-void ngramtable::generate(char *filename)
+void ngramtable::generate(char *filename, dictionary* extdict)
 {
   mfstream inp(filename,ios::in);
   int i,c=0;
@@ -464,7 +467,9 @@ void ngramtable::generate(char *filename)
 
   cerr << "load:";
 
-  ngram ng(dict);
+  ngram ng(extdict==NULL?dict:extdict); //use possible prescribed dictionary
+  if (extdict) dict->genoovcode();
+	
   ngram ng2(dict);
   dict->incflag(1);
 
@@ -489,11 +494,13 @@ void ngramtable::generate(char *filename)
       int code=filterdict->encode(dict->decode(*ng2.wordp(maxlev)));
       if (code!=filterdict->oovcode())	put(ng2);
     } else put(ng2);
-
+	  
     if (!(++c % 1000000)) cerr << ".";
 
   }
-
+  
+  
+	
   cerr << "adding some more n-grams to make table consistent\n";
   for (i=1; i<=maxlev; i++) {
     ng2.pushw(dict->BoS());
