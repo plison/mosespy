@@ -480,12 +480,14 @@ void ngramtable::generate(char *filename, dictionary* extdict)
   };
 
   while (inp >> ng) {
-
+	
+	if (ng.size>maxlev) ng.size=maxlev;  //speeds up 
+	  
     ng2.trans(ng); //reencode with new dictionary
 
     check_dictsize_bound();
 
-    if (ng.size) dict->incfreq(*ng2.wordp(1),1);
+    if (ng2.size) dict->incfreq(*ng2.wordp(1),1);
 
     // if filtering dictionary exists
     // and if the first word of the ngram does not belong to it
@@ -497,9 +499,7 @@ void ngramtable::generate(char *filename, dictionary* extdict)
 	  
     if (!(++c % 1000000)) cerr << ".";
 
-  }
-  
-  
+  }    
 	
   cerr << "adding some more n-grams to make table consistent\n";
   for (i=1; i<=maxlev; i++) {

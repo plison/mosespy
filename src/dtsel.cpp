@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 using namespace std;
 
 #include <cmath>
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -94,109 +95,128 @@ double prob(ngramtable* ngt,ngram ng,int size,int cv){
 
 int main(int argc, char **argv)
 {
-  char *idom=NULL;   //indomain data: one sentence per line
-  char *odom=NULL;   //domain data: one sentence per line
-  int  minfreq=2;    //frequency threshold for dictionary pruning (optional)
-  int ngsz=0;        // n-gram size 
-  int dub=10000000;  //upper bound of true vocabulary
-  char *out=NULL;    //output file with scores
-  int model=0;       //data selection model: 1 only in-domain cross-entropy, 
-					 //2 cross-entropy difference. 	
-  DeclareParams((char*)
-                "min-freq", CMDINTTYPE, &minfreq,
-                "mf", CMDINTTYPE, &minfreq,
-
-                "ngram-size", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
-                "n", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
-
-                "in-domain-file", CMDSTRINGTYPE, &idom,
-                "id", CMDSTRINGTYPE, &idom,
-
-                "out-domain-file", CMDSTRINGTYPE, &odom,
-                "od", CMDSTRINGTYPE, &odom,
-
-                "dub", CMDINTTYPE, &dub,
-                "dictionary-upper-bound", CMDINTTYPE, &dub,
-
-                "model", CMDSUBRANGETYPE, &model, 1 , 2,
-                "m", CMDSUBRANGETYPE, &model, 1 , 2,
-				
-				(char *)NULL
-               );
+	char *indom=NULL;   //indomain data: one sentence per line
+	char *outdom=NULL;   //domain data: one sentence per line
+	char *outfile=NULL;  //output file 
+	int  minfreq=2;    //frequency threshold for dictionary pruning (optional)
+	int ngsz=0;        // n-gram size 
+	int dub=10000000;  //upper bound of true vocabulary
+	char *out=NULL;    //output file with scores
+	int model=0;       //data selection model: 1 only in-domain cross-entropy, 
+	//2 cross-entropy difference. 	
+	int cv=1;       //cross-validation parameter: 1 only in-domain cross-entropy, 
+	
+	DeclareParams((char*)
+				  "min-word-freq", CMDINTTYPE, &minfreq,
+				  "f", CMDINTTYPE, &minfreq,
+				  
+				  "ngram-order", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
+				  "n", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
+				  
+				  "in-domain-file", CMDSTRINGTYPE, &indom,
+				  "i", CMDSTRINGTYPE, &indom,
+				  
+				  "out-domain-file", CMDSTRINGTYPE, &outdom,
+				  "o", CMDSTRINGTYPE, &outdom,
+				  
+				  "score-file", CMDSTRINGTYPE, &outfile,
+				  "s", CMDSTRINGTYPE, &outfile,
+				  
+				  "dub", CMDINTTYPE, &dub,
+				  "dictionary-upper-bound", CMDINTTYPE, &dub,
+				  
+				  "model", CMDSUBRANGETYPE, &model, 1 , 2,
+				  "m", CMDSUBRANGETYPE, &model, 1 , 2,
+				  
+				  "cv", CMDSUBRANGETYPE, &cv, 1 , 3,
+				  
+				  (char *)NULL
+				  );
 	
 	
 	
-  GetParams(&argc, &argv, (char*) NULL);
-
-  if (idom==NULL || odom==NULL){
+	GetParams(&argc, &argv, (char*) NULL);
+	
+	if (indom==NULL || outdom==NULL){
 		cerr <<"Must specify in-domain and out-domain data files\n";
-       exit(1);
-  };
-
+		exit(1);
+	};
+	
+	if (outfile==NULL){
+		cerr <<"Must specify output file\n";
+		exit(1);
+	};
+	
 	if (!model){
 		cerr <<"Must specify data selection model\n";
 		exit(1);
 	}
 	
-  TABLETYPE table_type=COUNT;
-  int cv; //cross validation
-
-  //computed dictionary on indomain data
-  dictionary *dict = new dictionary(idom,1000000,0);
-  dictionary *pd=new dictionary(dict,true,minfreq);
-  delete dict;dict=pd;
+	TABLETYPE table_type=COUNT;
+	int cv; //cross validation
 	
-  //build in-domain table restricted to the given dictionary
-  ngramtable *indngt=new ngramtable(idom,ngsz,NULL,dict,NULL,0,0,NULL,0,table_type);
-  double indoovpenalty=-log(dub-indngt->dict->size());
-  ngram indng(indngt->dict);
-  int indoovcode=indngt->dict->oovcode();
+	//computed dictionary on indomain data
+	dictionary *dict = new dictionary(indom,1000000,0);
+	dictionary *pd=new dictionary(dict,true,minfreq);
+	delete dict;dict=pd;
 	
-  //build out-domain table restricted to the in-domain dictionary
-  ngramtable *outdngt=new ngramtable(odom,ngsz,NULL,dict,NULL,0,0,NULL,0,table_type);
-  double outdoovpenalty=-log(dub-outdngt->dict->size());	
-  ngram outdng(outdngt->dict);
-  int outdoovcode=outdngt->dict->oovcode();
+	//build in-domain table restricted to the given dictionary
+	ngramtable *indngt=new ngramtable(indom,ngsz,NULL,dict,NULL,0,0,NULL,0,table_type);
+	double indoovpenalty=-log(dub-indngt->dict->size());
+	ngram indng(indngt->dict);
+	int indoovcode=indngt->dict->oovcode();
 	
-  cerr << "dict size idom: " << indngt->dict->size() << " odom: " << outdngt->dict->size() << "\n";
-  cerr << "oov penalty idom: " << indoovpenalty << " odom: " << outdoovpenalty << "\n";
-
-  //go through the odomain sentences 
-  int bos=dict->encode(dict->BoS());int eos=dict->encode(dict->EoS());
-  mfstream inp(odom,ios::in); ngram ng(dict);
-   int lenght=0;float deltaH=0; float deltaHoov=0; 
+	//build out-domain table restricted to the in-domain dictionary
+	ngramtable *outdngt=new ngramtable(outdom,ngsz,NULL,dict,NULL,0,0,NULL,0,table_type);
+	double outdoovpenalty=-log(dub-outdngt->dict->size());	
+	ngram outdng(outdngt->dict);
+	int outdoovcode=outdngt->dict->oovcode();
+	
+	cerr << "dict size idom: " << indngt->dict->size() << " odom: " << outdngt->dict->size() << "\n";
+	cerr << "oov penalty idom: " << indoovpenalty << " odom: " << outdoovpenalty << "\n";
+	
+	//go through the odomain sentences 
+	int bos=dict->encode(dict->BoS());int eos=dict->encode(dict->EoS());
+	mfstream inp(outdom,ios::in); ngram ng(dict);
+	mfstream txt(outdom,ios::in);
+	mfstream output(outfile,ios::out);
+	char line[MAX_LINE];
+	
+    int lenght=0;float deltaH=0; float deltaHoov=0; int words=0;
 	while(inp >> ng){
 		// reset ngram at begin of sentence
 		if (*ng.wordp(1)==bos){
 			ng.size=1;
-			lenght=0;
 			deltaH=0;deltaHoov=0;	
+			lenght=0;
 			continue;
 		}
+
 		
-		lenght=ng.size; 
+		lenght++; words++;
+
+		if ((words % 1000000)==0) cerr << ".";
+		
+		
 		if (ng.size>ngsz) ng.size=ngsz;
-		
 		indng.trans(ng);outdng.trans(ng);
- 		ng.size=lenght;
-			
+		
 		if (model==1){
 			deltaH-=log(prob(indngt,indng,indng.size,cv=0));	
 			deltaHoov-=(*indng.wordp(1)==indoovcode?indoovpenalty:0);
 		}
 		if (model==2){
-			deltaH+=log(prob(outdngt,outdng,outdng.size,cv=1))-log(prob(indngt,indng,indng.size,cv=0));	
+			deltaH+=log(prob(outdngt,outdng,outdng.size,cv=2))-log(prob(indngt,indng,indng.size,cv=0));	
 			deltaHoov+=(*outdng.wordp(1)==outdoovcode?outdoovpenalty:0)-(*indng.wordp(1)==indoovcode?indoovpenalty:0);
 		}
 		
 		if (*ng.wordp(1)==eos){
-			cout << (deltaH + deltaHoov)/lenght  << " " << ng << "\n";			
-		}
-		
-		
+			txt.getline(line,MAX_LINE);
+			output << (deltaH + deltaHoov)/lenght  << " " << line << "\n";			
+		}				
 		
 	}
-
+	
 }
 
 	

@@ -21,13 +21,9 @@
 		3D4F4DCF135C5BFF00E85480 /* prune-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA6FC90E62F00D002B3D41 /* prune-lm.cpp */; };
 		3D4F4DD0135C5C2500E85480 /* quantize-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D77D1C420B2F1FCA00D79D16 /* quantize-lm.cpp */; };
 		3D4F4DDD135C5C6300E85480 /* interpolate-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD9567B0FB42D07001B8680 /* interpolate-lm.cpp */; };
-		3D4F4DFC135C5DCB00E85480 /* ngt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* ngt.cpp */; };
+		3D4F4DFC135C5DCB00E85480 /* dtsel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* dtsel.cpp */; };
 		3DE5453915CBB2BC003869E0 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453715CBB2BC003869E0 /* lmContainer.cpp */; };
 		3DE5453A15CBB2BC003869E0 /* lmContainer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5453815CBB2BC003869E0 /* lmContainer.h */; };
-		3DE5454115CBB30A003869E0 /* lmclass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453D15CBB30A003869E0 /* lmclass.cpp */; };
-		3DE5454215CBB30A003869E0 /* lmclass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5453E15CBB30A003869E0 /* lmclass.h */; };
-		3DE5454315CBB30A003869E0 /* lmInterpolation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453F15CBB30A003869E0 /* lmInterpolation.cpp */; };
-		3DE5454415CBB30A003869E0 /* lmInterpolation.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5454015CBB30A003869E0 /* lmInterpolation.h */; };
 		AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0BD17113EC529000230F82 /* ngramtable.cpp */; };
 		AD2CE6AA112E80D900E05137 /* timer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD2CE6A8112E80D900E05137 /* timer.cpp */; };
 		AD2CE6AB112E80D900E05137 /* timer.h in Headers */ = {isa = PBXBuildFile; fileRef = AD2CE6A9112E80D900E05137 /* timer.h */; };
@@ -37,6 +33,10 @@
 		AD70DBD6115C1D4900F05491 /* linearlm.h in Headers */ = {isa = PBXBuildFile; fileRef = AD70DBD4115C1D4900F05491 /* linearlm.h */; settings = {ATTRIBUTES = (); }; };
 		AD8104AF1132B93300B0363D /* mdiadapt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD8104AD1132B93300B0363D /* mdiadapt.cpp */; };
 		AD8104B01132B93300B0363D /* mdiadapt.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8104AE1132B93300B0363D /* mdiadapt.h */; };
+		AD82E1AC15CEB55900CDF8E2 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */; };
+		AD82E1AD15CEB55900CDF8E2 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */; };
+		AD82E1AE15CEB55900CDF8E2 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */; };
+		ADDF0C6215F9130A00515443 /* ngt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDF0C6115F9130A00515443 /* ngt.cpp */; };
 		D701C7880B2EB27C007D2774 /* cmd.c in Sources */ = {isa = PBXBuildFile; fileRef = D701C7870B2EB27C007D2774 /* cmd.c */; };
 		D701C7940B2EB37D007D2774 /* dictionary.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D701C78D0B2EB37D007D2774 /* dictionary.cpp */; };
 		D701C7950B2EB37D007D2774 /* htable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D701C78E0B2EB37D007D2774 /* htable.cpp */; };
@@ -129,10 +129,6 @@
 		3D4F4DF6135C5D7300E85480 /* plsa */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = plsa; sourceTree = BUILT_PRODUCTS_DIR; };
 		3DE5453715CBB2BC003869E0 /* lmContainer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmContainer.cpp; path = src/lmContainer.cpp; sourceTree = "<group>"; };
 		3DE5453815CBB2BC003869E0 /* lmContainer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmContainer.h; path = src/lmContainer.h; sourceTree = "<group>"; };
-		3DE5453D15CBB30A003869E0 /* lmclass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmclass.cpp; path = src/lmclass.cpp; sourceTree = "<group>"; };
-		3DE5453E15CBB30A003869E0 /* lmclass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmclass.h; path = src/lmclass.h; sourceTree = "<group>"; };
-		3DE5453F15CBB30A003869E0 /* lmInterpolation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmInterpolation.cpp; path = src/lmInterpolation.cpp; sourceTree = "<group>"; };
-		3DE5454015CBB30A003869E0 /* lmInterpolation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmInterpolation.h; path = src/lmInterpolation.h; sourceTree = "<group>"; };
 		AD0BD17113EC529000230F82 /* ngramtable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngramtable.cpp; path = src/ngramtable.cpp; sourceTree = "<group>"; };
 		AD2CE53B1125B0D100E05137 /* sort-lm.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = "sort-lm.pl"; sourceTree = "<group>"; };
 		AD2CE6A8112E80D900E05137 /* timer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = timer.cpp; path = src/timer.cpp; sourceTree = "<group>"; };
@@ -154,10 +150,13 @@
 		AD70DBD4115C1D4900F05491 /* linearlm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = linearlm.h; path = src/linearlm.h; sourceTree = "<group>"; };
 		AD8104AD1132B93300B0363D /* mdiadapt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mdiadapt.cpp; path = src/mdiadapt.cpp; sourceTree = "<group>"; };
 		AD8104AE1132B93300B0363D /* mdiadapt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mdiadapt.h; path = src/mdiadapt.h; sourceTree = "<group>"; };
+		AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmContainer.cpp; path = src/lmContainer.cpp; sourceTree = "<group>"; };
+		AD82E1AB15CEB55900CDF8E2 /* lmContainer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmContainer.h; path = src/lmContainer.h; sourceTree = "<group>"; };
 		ADAA6FC90E62F00D002B3D41 /* prune-lm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "prune-lm.cpp"; path = "src/prune-lm.cpp"; sourceTree = "<group>"; };
 		ADCFA0280E4872FC00E351DB /* dict */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dict; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADCFA02A0E4872FC00E351DB /* libirstlm.dylib */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libirstlm.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADD9567B0FB42D07001B8680 /* interpolate-lm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "interpolate-lm.cpp"; path = "src/interpolate-lm.cpp"; sourceTree = "<group>"; };
+		ADDF0C6115F9130A00515443 /* ngt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngt.cpp; path = src/ngt.cpp; sourceTree = "<group>"; };
 		D701C7870B2EB27C007D2774 /* cmd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cmd.c; path = src/cmd.c; sourceTree = "<group>"; };
 		D701C78D0B2EB37D007D2774 /* dictionary.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dictionary.cpp; path = src/dictionary.cpp; sourceTree = "<group>"; };
 		D701C78E0B2EB37D007D2774 /* htable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = htable.cpp; path = src/htable.cpp; sourceTree = "<group>"; };
@@ -187,7 +186,7 @@
 		D7F00B550B382B8900A1FF7A /* ngram-split.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = "ngram-split.pl"; sourceTree = "<group>"; };
 		D7F00B560B382B8900A1FF7A /* split-dict.pl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.perl; path = "split-dict.pl"; sourceTree = "<group>"; };
 		D7F00B570B382B8900A1FF7A /* split-ngt.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = "split-ngt.sh"; sourceTree = "<group>"; };
-		D7F00B640B38508400A1FF7A /* ngt.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngt.cpp; path = src/ngt.cpp; sourceTree = "<group>"; };
+		D7F00B640B38508400A1FF7A /* dtsel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dtsel.cpp; path = src/dtsel.cpp; sourceTree = "<group>"; };
 		D7F00C710B3AF17800A1FF7A /* compile-lm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "compile-lm.cpp"; path = "src/compile-lm.cpp"; sourceTree = "<group>"; };
 		D7FFAE140BFC935500F7F904 /* add-start-end.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = "add-start-end.sh"; sourceTree = "<group>"; };
 		D7FFAE150BFC935500F7F904 /* rm-start-end.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; path = "rm-start-end.sh"; sourceTree = "<group>"; };
@@ -281,10 +280,9 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				3DE5453D15CBB30A003869E0 /* lmclass.cpp */,
-				3DE5453E15CBB30A003869E0 /* lmclass.h */,
-				3DE5453F15CBB30A003869E0 /* lmInterpolation.cpp */,
-				3DE5454015CBB30A003869E0 /* lmInterpolation.h */,
+				ADDF0C6115F9130A00515443 /* ngt.cpp */,
+				AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */,
+				AD82E1AB15CEB55900CDF8E2 /* lmContainer.h */,
 				AD0BD17113EC529000230F82 /* ngramtable.cpp */,
 				AD8104AD1132B93300B0363D /* mdiadapt.cpp */,
 				AD70DBD3115C1D4900F05491 /* linearlm.cpp */,
@@ -308,7 +306,7 @@
 				D7F00C710B3AF17800A1FF7A /* compile-lm.cpp */,
 				D77D1C630B3030E100D79D16 /* mfstream.h */,
 				D77D1C7C0B3032EC00D79D16 /* dict.cpp */,
-				D7F00B640B38508400A1FF7A /* ngt.cpp */,
+				D7F00B640B38508400A1FF7A /* dtsel.cpp */,
 				D77D1C620B3030E100D79D16 /* mfstream.cpp */,
 				3DE5453715CBB2BC003869E0 /* lmContainer.cpp */,
 				3DE5453815CBB2BC003869E0 /* lmContainer.h */,
@@ -390,8 +388,6 @@
 				3D45653A1164C9F100119984 /* interplm.h in Headers */,
 				3D4565621164CC3F00119984 /* mixture.h in Headers */,
 				3DE5453A15CBB2BC003869E0 /* lmContainer.h in Headers */,
-				3DE5454215CBB30A003869E0 /* lmclass.h in Headers */,
-				3DE5454415CBB30A003869E0 /* lmInterpolation.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -590,6 +586,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D4F4DA5135C497B00E85480 /* compile-lm.cpp in Sources */,
+				AD82E1AC15CEB55900CDF8E2 /* lmContainer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -597,7 +594,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3D4F4DFC135C5DCB00E85480 /* ngt.cpp in Sources */,
+				3D4F4DFC135C5DCB00E85480 /* dtsel.cpp in Sources */,
+				ADDF0C6215F9130A00515443 /* ngt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -606,6 +604,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D4F4DD0135C5C2500E85480 /* quantize-lm.cpp in Sources */,
+				AD82E1AD15CEB55900CDF8E2 /* lmContainer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -614,6 +613,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D4F4DCF135C5BFF00E85480 /* prune-lm.cpp in Sources */,
+				AD82E1AE15CEB55900CDF8E2 /* lmContainer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -663,8 +663,6 @@
 				3D4565611164CC3F00119984 /* mixture.cpp in Sources */,
 				AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */,
 				3DE5453915CBB2BC003869E0 /* lmContainer.cpp in Sources */,
-				3DE5454115CBB30A003869E0 /* lmclass.cpp in Sources */,
-				3DE5454315CBB30A003869E0 /* lmInterpolation.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
