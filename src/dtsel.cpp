@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 				if (verbose) cout << " " << totlines << " " << oovrate;			
 				cout << "\n";
 				
-				if ((oldPP-newPP)/oldPP < convergence_treshold) return 1; 
+				if (converge_threshold && (oldPP-newPP)/oldPP < convergence_treshold) return 1; 
 									
 				oldPP=newPP;
 				
