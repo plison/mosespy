@@ -119,13 +119,15 @@ int main(int argc, char **argv)
 	char *indom=NULL;   //indomain data: one sentence per line
 	char *outdom=NULL;   //domain data: one sentence per line
 	char *scorefile=NULL;  //score file 
+	char *evalset=NULL;        //evalset to measure performance
+
 	int  minfreq=2;    //frequency threshold for dictionary pruning (optional)
 	int ngsz=0;        // n-gram size 
 	int dub=10000000;  //upper bound of true vocabulary
 	int model=0;          //data selection model: 1 only in-domain cross-entropy, 
 	//2 cross-entropy difference. 	
 	int cv=1;             //cross-validation parameter: 1 only in-domain cross-entropy, 
-	char *evalset;        //evalset to measure performance
+
 	int blocksize=100000; //block-size in words
 	int verbose=0;
 	int index=0; //provided score file includes and index
@@ -146,9 +148,9 @@ int main(int argc, char **argv)
 				  
 				  "score-file", CMDSTRINGTYPE, &scorefile,
 				  "s", CMDSTRINGTYPE, &scorefile,
-				  
+
+				  "dictionary-upper-bound", CMDINTTYPE, &dub,				  
 				  "dub", CMDINTTYPE, &dub,
-				  "dictionary-upper-bound", CMDINTTYPE, &dub,
 				  
 				  "model", CMDSUBRANGETYPE, &model, 1 , 2,
 				  "m", CMDSUBRANGETYPE, &model, 1 , 2,
@@ -201,9 +203,7 @@ int main(int argc, char **argv)
 	}
 	
 	TABLETYPE table_type=COUNT;
-	
-	
-
+		
 	
 	if (!evalset){
 		
@@ -227,6 +227,7 @@ int main(int argc, char **argv)
 			sprintf(command,"cut -d \" \" -f 2- %s",outdom);
 		else
 			sprintf(command,"%s",outdom);
+		
 		
 		ngramtable *outdngt=new ngramtable(command,ngsz,NULL,dict,NULL,0,0,NULL,0,table_type);
 		double outdoovpenalty=-log(dub-outdngt->dict->size());	
