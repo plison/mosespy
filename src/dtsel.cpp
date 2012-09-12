@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 		int indoovcode=indngt->dict->oovcode();
 		
 		//build out-domain table restricted to the in-domain dictionary
-		char command[1000];
+		char command[1000]="";
 			
 		if (index)
 			sprintf(command,"cut -d \" \" -f 2- %s",outdom);

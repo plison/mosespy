@@ -19,6 +19,7 @@ OPTIONS:
    -i     In-domain corpus 
    -o     Out-domain corpus
    -s     Scores output file 
+   -x     Out-domain lines are indexed
    -w     Temporary work directory (default /tmp)
    -j     Number of jobs (default 6)
    -m     Data selection model (1 or 2, default 2)
@@ -60,9 +61,9 @@ cv=1
 dub=10000000
 
 verbose="";
+useindex=0;
 
-
-while getopts “hvi:o:s:l:w:j:m:f:n:c:d:” OPTION
+while getopts “hvi:o:s:l:w:j:m:f:n:c:d:x:” OPTION
 do
      case $OPTION in
          h)
@@ -105,6 +106,9 @@ do
 	     d)
 		     dub=$OPTARG;	
 			 ;;
+		 x)
+		     useindex=$OPTARG;	
+			 ;;
 
  		 ?)
              usage
@@ -116,7 +120,7 @@ done
 
 
 if [ $verbose ];then
-echo indfile=$indfile outdfile=$outdfile scorefile=$scorefile logfile=$logfile workdir=$workdir jobs=$jobs model=$model ngramorder=$ngramorder minfreq=$minfreq dub=$dub
+echo indfile=$indfile outdfile=$outdfile scorefile=$scorefile useindex=$useindex logfile=$logfile workdir=$workdir jobs=$jobs model=$model ngramorder=$ngramorder minfreq=$minfreq dub=$dub
 fi
 
 if [ ! $indfile -o ! $outdfile -o ! $scorefile ]; then
@@ -157,13 +161,14 @@ split -l $size $outdfile $workdir/dtsel${pid}-files-
 for file in $workdir/dtsel${pid}-files-*
 do
 echo $file  
-$bin/dtsel -id=$indfile -od=$outdfile -o=${file}.scores -n=$ngramorder -dub=$dub -mf=$minfreq -m=$model 2>&1 &
+($bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model;sort -n -o ${file}.scores ${file}.scores) 2>&1 &
+
 done
 
 # Wait for all parallel jobs to finish
 while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
-cat $workdir/dtsel${pid}-files-*.scores > $scorefile
+sort -n -m $workdir/dtsel${pid}-files-*.scores > $scorefile
 rm $workdir/dtsel${pid}-files-*
 if [ $workdir_created == 1 ]
 then
