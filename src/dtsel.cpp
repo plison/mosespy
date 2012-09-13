@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 
 	int blocksize=100000; //block-size in words
 	int verbose=0;
-	int index=0; //provided score file includes and index
+	int useindex=0; //provided score file includes and index
 	double convergence_treshold=0;
 	
 	DeclareParams((char*)
@@ -167,8 +167,8 @@ int main(int argc, char **argv)
 				  "convergence-threshold", CMDDOUBLETYPE , &convergence_treshold,
 				  "c", CMDDOUBLETYPE , &convergence_treshold,
 				  
-				  "index", CMDSUBRANGETYPE, &index,0,1,
-				  "x", CMDSUBRANGETYPE, &index,0,1,
+				  "index", CMDSUBRANGETYPE, &useindex,0,1,
+				  "x", CMDSUBRANGETYPE, &useindex,0,1,
 
 				  "verbose", CMDSUBRANGETYPE, &verbose,0,2,
 				  "v", CMDSUBRANGETYPE, &verbose,0,2,
@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 		//build out-domain table restricted to the in-domain dictionary
 		char command[1000]="";
 			
-		if (index)
+		if (useindex)
 			sprintf(command,"cut -d \" \" -f 2- %s",outdom);
 		else
 			sprintf(command,"%s",outdom);
@@ -324,8 +324,8 @@ int main(int argc, char **argv)
 		
 		if (!dict) outddict->incflag(1);
 		while (outd >> score){
-			
-			if (index) outd >> index;
+
+			if (useindex) outd >> index;
 			
 			outd >> ng; assert (*ng.wordp(1) == bos);
 
