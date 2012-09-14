@@ -15,7 +15,6 @@ a file of scores.
 OPTIONS:
    -h      Show this message
    -v      Verbose
-
    -i     In-domain corpus 
    -o     Out-domain corpus
    -s     Scores output file 
