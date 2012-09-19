@@ -1,5 +1,32 @@
 #! /bin/bash 
 
+/******************************************************************************
+IrstLM: IRST Language Model Toolkit
+Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+ 
+ 
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+
+******************************************************************************/
+
+// dtsel
+// by M. Federico
+// Copyright Marcello Federico, Fondazione Bruno Kessler, 2012
+
+
 set -m #enable job control
 
 usage()
@@ -13,8 +40,8 @@ a file of scores.
 
 
 OPTIONS:
-   -h      Show this message
-   -v      Verbose
+   -h     Show this message
+   -v     Verbose
    -i     In-domain corpus 
    -o     Out-domain corpus
    -s     Scores output file 
@@ -54,7 +81,7 @@ workdir=/tmp
 logfile="/dev/null"
 jobs=6
 model=2
-minfreq=1
+minfreq=2
 ngramorder=3
 cv=1
 dub=10000000
@@ -119,7 +146,9 @@ done
 
 
 if [ $verbose ];then
-echo indfile=$indfile outdfile=$outdfile scorefile=$scorefile useindex=$useindex logfile=$logfile workdir=$workdir jobs=$jobs model=$model ngramorder=$ngramorder minfreq=$minfreq dub=$dub
+echo indfile= $indfile outdfile= $outdfile scorefile= $scorefile useindex= $useindex 
+echo logfile= $logfile workdir= $workdir 
+echo jobs= $jobs model= $model ngramorder= $ngramorder minfreq= $minfreq dub=$dub
 fi
 
 if [ ! $indfile -o ! $outdfile -o ! $scorefile ]; then
@@ -160,7 +189,7 @@ split -l $size $outdfile $workdir/dtsel${pid}-files-
 for file in $workdir/dtsel${pid}-files-*
 do
 echo $file  
-($bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model;sort -n -o ${file}.scores ${file}.scores) 2>&1 &
+($bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model;sort -n -o ${file}.scores ${file}.scores) >>$logfile 2>&1 &
 
 done
 

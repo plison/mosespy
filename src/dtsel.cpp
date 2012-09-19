@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	int dub=10000000;      //upper bound of true vocabulary
 	int model=2;           //data selection model: 1 only in-domain cross-entropy, 
 	                       //2 cross-entropy difference. 	
-	int cv=2;              //cross-validation parameter: 1 only in-domain cross-entropy, 
+	int cv=1;              //cross-validation parameter: 1 only in-domain cross-entropy, 
 
 	int blocksize=100000; //block-size in words
 	int verbose=0;
