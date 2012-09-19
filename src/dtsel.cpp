@@ -105,7 +105,7 @@ double computePP(ngramtable* train,ngramtable* test,double oovpenalty,double& oo
  	while(test->scan(ng2,CONT,test->maxlevel())) {
 		
 		ng1.trans(ng2);
-		H-=log(prob(train,ng1,ng1.size,0));
+		H-=log(prob(train,ng1,ng1.size,cv));
 		if (*ng1.wordp(1)==train->dict->oovcode()){
 			H-=oovpenalty;
 			oovrate++;
