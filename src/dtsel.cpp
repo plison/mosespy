@@ -10,6 +10,8 @@ License as published by the Free Software Foundation; either
 version 2.1 of the License, or (at your option) any later version.
 
 This library is distributed in the hope that it will be useful,
+ 
+ 
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 Lesser General Public License for more details.
@@ -22,12 +24,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 // dtsel
 // by M. Federico
-// Copyright Marcello Federico, ITC-irst, 2012
+// Copyright Marcello Federico, Fondazione Bruno Kessler, 2012
 
 using namespace std;
 
 #include <cmath>
 #include "util.h"
+#include <sstream>
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -92,7 +95,7 @@ double prob(ngramtable* ngt,ngram ng,int size,int cv){
 }
 
 
-double computePP(ngramtable* train,ngramtable* test,double oovpenalty,double& oovrate){
+double computePP(ngramtable* train,ngramtable* test,double oovpenalty,double& oovrate,int cv=0){
 	
 	
 	ngram ng2(test->dict);ngram ng1(train->dict);
@@ -119,14 +122,14 @@ int main(int argc, char **argv)
 	char *indom=NULL;   //indomain data: one sentence per line
 	char *outdom=NULL;   //domain data: one sentence per line
 	char *scorefile=NULL;  //score file 
-	char *evalset=NULL;        //evalset to measure performance
+	char *evalset=NULL;    //evalset to measure performance
 
-	int  minfreq=2;    //frequency threshold for dictionary pruning (optional)
-	int ngsz=0;        // n-gram size 
-	int dub=10000000;  //upper bound of true vocabulary
-	int model=2;          //data selection model: 1 only in-domain cross-entropy, 
-	//2 cross-entropy difference. 	
-	int cv=1;             //cross-validation parameter: 1 only in-domain cross-entropy, 
+	int minfreq=2;          //frequency threshold for dictionary pruning (optional)
+	int ngsz=0;             // n-gram size 
+	int dub=10000000;      //upper bound of true vocabulary
+	int model=2;           //data selection model: 1 only in-domain cross-entropy, 
+	                       //2 cross-entropy difference. 	
+	int cv=2;              //cross-validation parameter: 1 only in-domain cross-entropy, 
 
 	int blocksize=100000; //block-size in words
 	int verbose=0;
@@ -210,9 +213,7 @@ int main(int argc, char **argv)
 		//computed dictionary on indomain data
 		dictionary *dict = new dictionary(indom,1000000,0);
 		dictionary *pd=new dictionary(dict,true,minfreq);
-		delete dict;dict=pd;
-		
-		int cv; //cross validation
+		delete dict;dict=pd;		
 		
 		//build in-domain table restricted to the given dictionary
 		ngramtable *indngt=new ngramtable(indom,ngsz,NULL,dict,NULL,0,0,NULL,0,table_type);
@@ -238,109 +239,121 @@ int main(int argc, char **argv)
 		cerr << "oov penalty idom: " << indoovpenalty << " odom: " << outdoovpenalty << "\n";
 		
 		//go through the odomain sentences 
-		int bos=dict->encode(dict->BoS());int eos=dict->encode(dict->EoS());
-		mfstream inp(command,ios::in); ngram ng(dict);
+		int bos=dict->encode(dict->BoS());
+		mfstream inp(outdom,ios::in); ngram ng(dict);
 		mfstream txt(outdom,ios::in);
 		mfstream output(scorefile,ios::out);
-		char line[MAX_LINE];
-		
+					
+
+		int linenumber=1; string line;	
 		int lenght=0;float deltaH=0; float deltaHoov=0; int words=0;long index;
 
-		while(inp>>ng){
+		while (getline(inp,line)){
+
+			istringstream lninp(line);
+	
+			linenumber++;
 			
-			assert(*ng.wordp(1)==bos);
+			if (useindex) lninp >> index;
 			
 			// reset ngram at begin of sentence
-			ng.size=1;
-			deltaH=0;deltaHoov=0;	
-			lenght=0;
+			ng.size=1; deltaH=0;deltaHoov=0; lenght=0;
 			
-			do{
-				inp >> ng;
+			while(lninp>>ng){
+			
+				if (*ng.wordp(1)==bos) continue;
+											
 				lenght++; words++;
 				
-				if ((words % 1000000)==0) cerr << ".";
-				
+				if ((words % 1000000)==0) cerr << ".";				
 				
 				if (ng.size>ngsz) ng.size=ngsz;
 				indng.trans(ng);outdng.trans(ng);
 				
-				if (model==1){
-					deltaH-=log(prob(indngt,indng,indng.size,cv=0));	
+				if (model==1){//compute cross-entropy
+					deltaH-=log(prob(indngt,indng,indng.size,0));	
 					deltaHoov-=(*indng.wordp(1)==indoovcode?indoovpenalty:0);
 				}
-				if (model==2){
-					deltaH+=log(prob(outdngt,outdng,outdng.size,cv=2))-log(prob(indngt,indng,indng.size,cv=0));	
+				
+				if (model==2){ //compute cross-entropy difference
+					deltaH+=log(prob(outdngt,outdng,outdng.size,cv))-log(prob(indngt,indng,indng.size,0));	
 					deltaHoov+=(*outdng.wordp(1)==outdoovcode?outdoovpenalty:0)-(*indng.wordp(1)==indoovcode?indoovpenalty:0);
 				}											
 			}
-			while (*ng.wordp(1) != eos);						
-			
-			// print score at the end of sentence
-			
-			txt.getline(line,MAX_LINE);
+
 			output << (deltaH + deltaHoov)/lenght  << " " << line << "\n";													
 		}
 	}
 	else{
 		
-		//build in-domain evaluation set table 
+		//build in-domain LM from evaluation set 
 		ngramtable *tstngt=new ngramtable(evalset,ngsz,NULL,NULL,NULL,0,0,NULL,0,table_type);
 		
-		//build empty out-domain table
+		//build empty out-domain LM
 		ngramtable *outdngt=new ngramtable(NULL,ngsz,NULL,NULL,NULL,0,0,NULL,0,table_type);		
 		
+		//if indomain data is passed then limit comparison to its dictionary
 		dictionary *dict = NULL;
 		if (indom){
-			cerr << "limit dictionary to indomain frequent words\n";
+			cerr << "dtsel: limit evaluation dict to indomain words with freq >=" <<  minfreq << "\n";
 			//computed dictionary on indomain data
 			dict = new dictionary(indom,1000000,0);
 			dictionary *pd=new dictionary(dict,true,minfreq);
 			delete dict;dict=pd;
 			outdngt->dict=dict;
 		}
-							
+								
 		dictionary* outddict=outdngt->dict;
 		
+		//get codes of <s>, </s> and UNK
 		outddict->incflag(1);
 		int bos=outddict->encode(outddict->BoS());
-		int eos=outddict->encode(outddict->EoS());
 		int oov=outddict->encode(outddict->OOV());
 		outddict->incflag(0);
 		outddict->oovcode(oov);
 		
-		cerr << "outdict size:" << outdngt->dict->size() << "\n";
 		
 		double oldPP=dub; double newPP=0; double oovrate=0;  
 			
-		long totwords=0; long nextstep=blocksize; long totlines=0;
+		long totwords=0; long totlines=0; long nextstep=blocksize; 
+
 		double score; long index;
 		
-		mfstream outd(scorefile,ios::in);		
-		//initial n-gram	
-		ngram ng(outdngt->dict);
-		for (int i=1; i<ngsz; i++) ng.pushc(bos);
-		ng.freq=1;
+		mfstream outd(scorefile,ios::in); string line;
+		
+		//initialize n-gram	
+		ngram ng(outdngt->dict); for (int i=1;i<ngsz;i++) ng.pushc(bos); ng.freq=1;
+
+		//check if to use open or closed voabulary
 		
 		if (!dict) outddict->incflag(1);
-		while (outd >> score){
-
-			if (useindex) outd >> index;
+		
+		while (getline(outd,line)){
 			
-			outd >> ng; assert (*ng.wordp(1) == bos);
+			istringstream lninp(line);
+			
+			//skip score and eventually the index
+			lninp >> score; if (useindex) lninp >> index;
 
-			do{
-				outd >> ng;
-				ng.size=ngsz; //ng.size >= ngsz
+			while (lninp >> ng){
+				
+				if (*ng.wordp(1) == bos) continue; 
+				
+				if (ng.size>ngsz) ng.size=ngsz;
+				
 				outdngt->put(ng);
+				
 				totwords++;
 			}
-			while (*ng.wordp(1) != eos);
+
 			totlines++;
 			
-			if (totwords>=nextstep){
+			if (totwords>=nextstep){ //if block is complete
+
 				if (!dict) outddict->incflag(0);
+				
 				newPP=computePP(outdngt,tstngt,-log(dub-outddict->size()),oovrate);
+				
 				if (!dict) outddict->incflag(1);
 				
 				cout << totwords << " " << newPP;				
@@ -354,6 +367,7 @@ int main(int argc, char **argv)
 				nextstep+=blocksize;
 			}
 		}
+		
 		if (!dict) outddict->incflag(0);
 		newPP=computePP(outdngt,tstngt,-log(dub-outddict->size()),oovrate);
 		cout << totwords << " " << newPP;
