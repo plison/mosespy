@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 					
 
 		int linenumber=1; string line;	
-		int lenght=0;float deltaH=0; float deltaHoov=0; int words=0;long index;
+		int lenght=0;float deltaH=0; float deltaHoov=0; int words=0;string index;
 
 		while (getline(inp,line)){
 
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 			
 		long totwords=0; long totlines=0; long nextstep=blocksize; 
 
-		double score; long index;
+		double score; string index;
 		
 		mfstream outd(scorefile,ios::in); string line;
 		

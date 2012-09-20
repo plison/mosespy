@@ -55,6 +55,7 @@ public:
   inline int dub() {
     return dict->dub();
   }
+	
   inline int dub(int value) {
     for (int i=0; i<numslm; i++) {
       //      cerr << "I'm setting dub: " << value << endl;
@@ -71,7 +72,16 @@ public:
 
 
 
-  ~mixture() {}
+  ~mixture(){
+	 
+	  for (int i=0;i<=lmsize();i++){
+		   for (int j=0; j<pmax; j++) free(l[i][j]);
+  		   free(l[i]);
+	  }
+	
+	 for (int i=0;i<numslm;i++) delete(sublm[i]);
+
+ }
 
   //this extension builds a commong ngramtable on demand
   int get(ngram& ng,int n,int lev);

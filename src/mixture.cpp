@@ -105,73 +105,75 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
 
   cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
 
-  for (int i=0; i<numslm; i++) {
-    int npar=4;
-    char **par=new char*[npar];
-    for (int j=0; j<4; j++) {
-      par[j]=new char[BUFSIZ];
-    }
-
-    par[0][0]='\0';
-    inp >> par[1] >> par[2] >> par[3];
-
-    subtrainfile=NULL;
-    slmtype=0;
-    subprunefreq=-1;
-    subprunesingletons=YES;
-    subprunetopsingletons=NO;
-    GetParams(&npar, &par, (char*) NULL);
-
-    if (!slmtype || !subtrainfile || !subprunefreq==-1) {
-      cerr << "slm incomplete parameters\n";
-      exit(1);
-    }
-
-    switch (slmtype) {
-
-    case LINEAR_WB:
-      sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-      break;
-
-    case SHIFT_BETA:
-      sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
-      break;
-
-    case SHIFT_ONE:
-      sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
-      break;
-
-    case MOD_SHIFT_BETA:
-      sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-      break;
-
-    case MIXTURE:
-      sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
-      break;
-
-    default:
-      cerr << "not implemented yet\n";
-      exit(1);
-    };
-
-    sublm[i]->prunesingletons(subprunesingletons==YES);
-    sublm[i]->prunetopsingletons(subprunetopsingletons==YES);
-
-    if (subprunetopsingletons==YES)
-      //apply most specific pruning method
-      sublm[i]->prunesingletons(NO);
-
-
-    cerr << "eventually generate OOV code ";
-    sublm[i]->dict->genoovcode();
-
-    //create super dictionary
-    dict->augment(sublm[i]->dict);
-
-    //creates the super n-gram table
-    if(usefulltable) augment(sublm[i]);
-
-  }
+	
+	
+	
+	for (int i=0; i<numslm; i++) {
+		int npar=4;
+		char **par=new char*[npar];
+		for (int j=0; j<4; j++) {
+			par[j]=new char[BUFSIZ];
+		}	
+		par[0][0]='\0';
+		inp >> par[1] >> par[2] >> par[3];
+		
+		subtrainfile=NULL;
+		slmtype=0;
+		subprunefreq=-1;
+		subprunesingletons=YES;
+		subprunetopsingletons=NO;
+		GetParams(&npar, &par, (char*) NULL);
+		
+		if (!slmtype || !subtrainfile || !subprunefreq==-1) {
+			cerr << "slm incomplete parameters\n";
+			exit(1);
+		}
+		
+		switch (slmtype) {
+				
+			case LINEAR_WB:
+				sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+				break;
+				
+			case SHIFT_BETA:
+				sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
+				break;
+				
+			case SHIFT_ONE:
+				sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
+				break;
+				
+			case MOD_SHIFT_BETA:
+				sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+				break;
+				
+			case MIXTURE:
+				sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
+				break;
+				
+			default:
+				cerr << "not implemented yet\n";
+				exit(1);
+		};
+		
+		sublm[i]->prunesingletons(subprunesingletons==YES);
+		sublm[i]->prunetopsingletons(subprunetopsingletons==YES);
+		
+		if (subprunetopsingletons==YES)
+			//apply most specific pruning method
+			sublm[i]->prunesingletons(NO);
+		
+		
+		cerr << "eventually generate OOV code ";
+		sublm[i]->dict->genoovcode();
+		
+		//create super dictionary
+		dict->augment(sublm[i]->dict);
+		
+		//creates the super n-gram table
+		if(usefulltable) augment(sublm[i]);
+		
+	}
 
   dict->genoovcode();
   cerr << "-------- dict size:" << dict->size() << "\n";

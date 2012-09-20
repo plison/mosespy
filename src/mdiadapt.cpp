@@ -479,13 +479,13 @@ double mdiadaptlm::prob2(ngram ng,int size,double& fstar)
 //inline double mdiadaptlm::prob(ngram ng,int size){
 double mdiadaptlm::prob(ngram ng,int size)
 {
-  double fstar,lambda,bo;
+  double fstar=0,lambda=0,bo=0;
   return prob(ng,size,fstar,lambda,bo);
 }
 
 double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& bo)
 {
-  double pr;
+  double pr=0;
 
 #ifdef MDIADAPTLM_CACHE_ENABLE
   //probcache hit
@@ -1332,7 +1332,7 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
   system("date");
 
   //subdict
-  dictionary* subdict;
+  dictionary* subdict=NULL;
 
   //accumulated unigram oov prob
 //CHECK why this is not used (differently from what happens in the other save functions
@@ -1362,7 +1362,7 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
 
   ngram sng(subdict,lmsize());
 
-  double fstar,lambda,bo,dummy,dummy2;
+  double fstar=0,lambda=0,bo=0,dummy=0,dummy2=0;
 
   //n-gram counters
   int num[lmsize()+1];
@@ -1521,7 +1521,7 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
   system("date");
 
   //subdict
-  dictionary* subdict;
+  dictionary* subdict=NULL;
 
   //accumulated unigram oov prob
   double oovprob=0;

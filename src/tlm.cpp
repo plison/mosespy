@@ -524,7 +524,7 @@ int main(int argc, char **argv)
   //	lm->cache_stat();
 
   cerr << "TLM: deleting lm ...";
-  //delete lm;
+  delete lm;
   cerr << "\n";
 
   exit(0);

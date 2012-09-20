@@ -992,7 +992,7 @@ char **ngramtable::grow(table *tb,NODETYPE ndt,int lev,
     }
 
     table ntb=(char *)mem->reallocate(*tb,n * sz,(n + inc) * sz);
-
+	  
     memory[lev]+= (inc * sz);
 
     *tb=ntb;
@@ -1342,16 +1342,14 @@ int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram&
 
 void ngramtable::freetree(node nd)
 {
-  int m=msucc(nd);
-  int msz=mtablesz(nd);
-  int truem=comptbsize(m);
-
-  if (mtflags(nd) & INODE) {
-    for (int i=0; i<m; i++)
-      freetree(mtable(nd) + i * msz);
-    mem->free(mtable(nd),msz*truem);
-  } else
-    mem->free(mtable(nd),truem*msz);
+	int m=msucc(nd);
+	int msz=mtablesz(nd);
+	int truem=comptbsize(m);
+	
+	if (mtflags(nd) & INODE)
+		for (int i=0; i<m; i++)
+			freetree(mtable(nd) + i * msz);
+	mem->free(mtable(nd),msz*truem);	
 }
 
 
