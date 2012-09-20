@@ -189,14 +189,14 @@ split -l $size $outdfile $workdir/dtsel${pid}-files-
 for file in $workdir/dtsel${pid}-files-*
 do
 echo $file  
-($bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model;sort -n -o ${file}.scores ${file}.scores) >>$logfile 2>&1 &
+($bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model;sort -g -o ${file}.scores ${file}.scores) >>$logfile 2>&1 &
 
 done
 
 # Wait for all parallel jobs to finish
 while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
-sort -n -m $workdir/dtsel${pid}-files-*.scores > $scorefile
+sort -g -m $workdir/dtsel${pid}-files-*.scores > $scorefile
 rm $workdir/dtsel${pid}-files-*
 if [ $workdir_created == 1 ]
 then
