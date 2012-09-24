@@ -316,95 +316,110 @@ mshiftbeta::mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
 
 int mshiftbeta::train()
 {
-
-  trainunigr();
-
-  gencorrcounts();
-  gensuccstat();
-
-  ngram ng(dict);
-  int n1,n2,n3,n4;
-  int unover3=0;
-
-  oovsum=0;
-
-  for (int l=1; l<=lmsize(); l++) {
-
-    cerr << "level " << l << "\n";
-
-    cerr << "computing statistics\n";
-
-    n1=0;
-    n2=0;
-    n3=0,n4=0;
-
-    scan(ng,INIT,l);
-
-    while(scan(ng,CONT,l)) {
-
-      //skip ngrams containing _OOV
-      if (l>1 && ng.containsWord(dict->OOV(),l)) {
-        //cerr << "skp ngram" << ng << "\n";
-        continue;
-      }
-
-      //skip n-grams containing </s> in context
-      if (l>1 && ng.containsWord(dict->EoS(),l-1)) {
-        //cerr << "skp ngram" << ng << "\n";
-        continue;
-      }
-
-      //skip 1-grams containing <s>
-      if (l==1 && ng.containsWord(dict->BoS(),l)) {
-        //cerr << "skp ngram" << ng << "\n";
-        continue;
-      }
-
-      ng.freq=mfreq(ng,l);
-
-      if (ng.freq==1) n1++;
-      else if (ng.freq==2) n2++;
-      else if (ng.freq==3) n3++;
-      else if (ng.freq==4) n4++;
-      if (l==1 && ng.freq >=3) unover3++;
-
-    }
-
-    if (l==1) {
-      cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << " unover3: " << unover3 << "\n";
-    } else {
-      cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << "\n";
-    }
-
-    if (n1 == 0 || n2 == 0 || n1 <= n2) {
-      cerr << "Error: lower order count-of-counts cannot be estimated properly\n";
-      cerr << "Hint: use another smoothing method with this corpus.\n";
-      exit(1);
-    }
-
-    double Y=(double)n1/(double)(n1 + 2 * n2);
-
-    if (n3 == 0 || n4 == 0 || n2 <= n3 || n3 <= n4) {
-      cerr << "Warning: higher order count-of-counts are wrong\n";
-      cerr << "Fixing this problem by resorting only on the lower order count-of-counts\n";
-
-      beta[0][l] = Y;
-      beta[1][l] = Y;
-      beta[2][l] = Y;
-
-    } else {
-      beta[0][l] = 1 - 2 * Y * n2 / n1;
-      beta[1][l] = 2 - 3 * Y * n3 / n2;
-      beta[2][l] = 3 - 4 * Y * n4 / n3;
-    }
-
-    if (l==1)
-      oovsum=beta[0][l] * (double) n1 + beta[1][l] * (double)n2 + beta[2][l] * (double)unover3;
-
-    cerr << beta[0][l] << " " << beta[1][l] << " " << beta[2][l] << "\n";
-  }
-
-  return 1;
+	
+	trainunigr();
+	
+	gencorrcounts();
+	gensuccstat();
+	
+	ngram ng(dict);
+	int n1,n2,n3,n4;
+	int unover3=0;
+	
+	oovsum=0;
+	
+	for (int l=1; l<=lmsize(); l++) {
+		
+		cerr << "level " << l << "\n";
+		
+		cerr << "computing statistics\n";
+		
+		n1=0;
+		n2=0;
+		n3=0,n4=0;
+		
+		scan(ng,INIT,l);
+		
+		while(scan(ng,CONT,l)) {
+			
+			//skip ngrams containing _OOV
+			if (l>1 && ng.containsWord(dict->OOV(),l)) {
+				//cerr << "skp ngram" << ng << "\n";
+				continue;
+			}
+			
+			//skip n-grams containing </s> in context
+			if (l>1 && ng.containsWord(dict->EoS(),l-1)) {
+				//cerr << "skp ngram" << ng << "\n";
+				continue;
+			}
+			
+			//skip 1-grams containing <s>
+			if (l==1 && ng.containsWord(dict->BoS(),l)) {
+				//cerr << "skp ngram" << ng << "\n";
+				continue;
+			}
+			
+			ng.freq=mfreq(ng,l);
+			
+			if (ng.freq==1) n1++;
+			else if (ng.freq==2) n2++;
+			else if (ng.freq==3) n3++;
+			else if (ng.freq==4) n4++;
+			if (l==1 && ng.freq >=3) unover3++;
+			
+		}
+		
+		if (l==1) {
+			cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << " unover3: " << unover3 << "\n";
+		} else {
+			cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << "\n";
+		}
+		
+		if (n1 == 0 || n2 == 0 ||  n1 <= n2) {
+			cerr << "Error: lower order count-of-counts cannot be estimated properly\n";
+			cerr << "Hint: use another smoothing method with this corpus.\n";
+			exit(1);
+		}
+		
+		double Y=(double)n1/(double)(n1 + 2 * n2);
+		beta[0][l] = Y; //equivalent to  1 - 2 * Y * n2 / n1
+		
+		if (n3 ==0 || n4 == 0 || n2 <= n3 || n3 <= n4 ){
+			cerr << "Warning: higher order count-of-counts cannot be estimated properly\n";
+			cerr << "Fixing this problem by resorting only on the lower order count-of-counts\n";
+			
+			beta[1][l] = Y;
+			beta[2][l] = Y;			
+		}
+		else{ 	  
+			beta[1][l] = 2 - 3 * Y * n3 / n2; 
+			beta[2][l] = 3 - 4 * Y * n4 / n3;  
+		}
+		
+		if (beta[1][l] < 0){
+			cerr << "Warning: discount coefficient is negative \n";
+			cerr << "Fixing this problem by setting beta to 0 \n";			
+			beta[1][l] = 0;
+			
+		}		
+		
+		
+		if (beta[2][l] < 0){
+			cerr << "Warning: discount coefficient is negative \n";
+			cerr << "Fixing this problem by setting beta to 0 \n";			
+			beta[2][l] = 0;
+			
+		}
+				
+		
+		if (l==1)
+			oovsum=beta[0][l] * (double) n1 + beta[1][l] * (double)n2 + beta[2][l] * (double)unover3;
+		
+		cerr << beta[0][l] << " " << beta[1][l] << " " << beta[2][l] << "\n";
+	}
+	
+	return 1;
 };
 
 
