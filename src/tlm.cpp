@@ -92,442 +92,447 @@ static Enum_T InteractiveModeEnum [] = {
 
 int main(int argc, char **argv)
 {
-
-  char *dictfile=NULL;
-  char *trainfile=NULL;
-  char *testfile=NULL;
-  char *adaptfile=NULL;
-  char *slminfo=NULL;
-
-  char *imixpar=NULL;
-  char *omixpar=NULL;
-
-  char *BINfile=NULL;
-  char *ARPAfile=NULL;
-  char *ARPAfile2=NULL;
-
-  char *ASRfile=NULL;
-
-  char* scalefactorfile=NULL;
-
-  int backoff=0; //back-off or interpolation
-  int lmtype=0;
-  int dub=0; //dictionary upper bound
-  int size=0;   //lm size
-
-  int interactive=0;
-  int statistics=0;
-
-  int prunefreq=NO;
-  int prunesingletons=YES;
-  int prunetopsingletons=NO;
-
-  double beta=-1;
-
-  int compsize=NO;
-  int checkpr=NO;
-  double oovrate=0;
-  int max_caching_level=0;
-
-  char *outpr=NULL;
-
-  int memmap = 0; //write binary format with/without memory map, default is 0
-
-  int adaptlevel=0;   //adaptation level
-  double adaptrate=1.0;
-  int adaptoov=0; //do not increment the dictionary
-
-  DeclareParams(
-
-    "Back-off",CMDENUMTYPE, &backoff, BooleanEnum,
-    "bo",CMDENUMTYPE, &backoff, BooleanEnum,
-
-    "Dictionary", CMDSTRINGTYPE, &dictfile,
-    "d", CMDSTRINGTYPE, &dictfile,
-
-    "DictionaryUpperBound", CMDINTTYPE, &dub,
-    "dub", CMDINTTYPE, &dub,
-
-    "NgramSize", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
-    "n", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
-
-    "Ngram", CMDSTRINGTYPE, &trainfile,
-    "TrainOn", CMDSTRINGTYPE, &trainfile,
-    "tr", CMDSTRINGTYPE, &trainfile,
-
-    "oASR", CMDSTRINGTYPE, &ASRfile,
-    "oasr", CMDSTRINGTYPE, &ASRfile,
-
-    "o", CMDSTRINGTYPE, &ARPAfile,
-    "oARPA", CMDSTRINGTYPE, &ARPAfile,
-    "oarpa", CMDSTRINGTYPE, &ARPAfile,
-
-    "o2", CMDSTRINGTYPE, &ARPAfile2,
-
-    "oBIN", CMDSTRINGTYPE, &BINfile,
-    "obin", CMDSTRINGTYPE, &BINfile,
-
-    "TestOn", CMDSTRINGTYPE, &testfile,
-    "te", CMDSTRINGTYPE, &testfile,
-
-    "AdaptOn", CMDSTRINGTYPE, &adaptfile,
-    "ad", CMDSTRINGTYPE, &adaptfile,
-
-    "AdaptRate",CMDDOUBLETYPE , &adaptrate,
-    "ar", CMDDOUBLETYPE, &adaptrate,
-
-    "AdaptLevel", CMDSUBRANGETYPE, &adaptlevel, 1 , MAX_NGRAM,
-    "al",CMDSUBRANGETYPE , &adaptlevel, 1, MAX_NGRAM,
-
-    "AdaptOOV", CMDENUMTYPE, &adaptoov, BooleanEnum,
-    "ao", CMDENUMTYPE, &adaptoov, BooleanEnum,
-
-    "SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile,
-    "ssf", CMDSTRINGTYPE, &scalefactorfile,
-
-    "LanguageModelType",CMDENUMTYPE, &lmtype, LmTypeEnum,
-    "lm",CMDENUMTYPE, &lmtype, LmTypeEnum,
-
-    "Interactive",CMDENUMTYPE, &interactive, InteractiveModeEnum,
-    "i",CMDENUMTYPE, &interactive, InteractiveModeEnum,
-
-    "Statistics",CMDSUBRANGETYPE, &statistics, 1 , 3,
-    "s",CMDSUBRANGETYPE, &statistics, 1 , 3,
-
-    "PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1 , 1000,
-    "p",CMDSUBRANGETYPE, &prunefreq, 1 , 1000,
-
-    "PruneSingletons",CMDENUMTYPE, &prunesingletons, BooleanEnum,
-    "ps",CMDENUMTYPE, &prunesingletons, BooleanEnum,
-
-    "PruneTopSingletons",CMDENUMTYPE, &prunetopsingletons, BooleanEnum,
-    "pts",CMDENUMTYPE, &prunetopsingletons, BooleanEnum,
-
-    "ComputeLMSize",CMDENUMTYPE, &compsize, BooleanEnum,
-    "sz",CMDENUMTYPE, &compsize, BooleanEnum,
-
-    "MaximumCachingLevel", CMDINTTYPE , &max_caching_level,
-    "mcl", CMDINTTYPE, &max_caching_level,
-
-    "MemoryMap", CMDENUMTYPE, &memmap, BooleanEnum,
-    "memmap", CMDENUMTYPE, &memmap, BooleanEnum,
-    "mm", CMDENUMTYPE, &memmap, BooleanEnum,
-
-    "CheckProb",CMDENUMTYPE, &checkpr, BooleanEnum,
-    "cp",CMDENUMTYPE, &checkpr, BooleanEnum,
-
-    "OutProb",CMDSTRINGTYPE, &outpr,
-    "op",CMDSTRINGTYPE, &outpr,
-
-    "SubLMInfo", CMDSTRINGTYPE, &slminfo,
-    "slmi", CMDSTRINGTYPE, &slminfo,
-
-    "SaveMixParam", CMDSTRINGTYPE, &omixpar,
-    "smp", CMDSTRINGTYPE, &omixpar,
-
-    "LoadMixParam", CMDSTRINGTYPE, &imixpar,
-    "lmp", CMDSTRINGTYPE, &imixpar,
-
-    "SetOovRate", CMDDOUBLETYPE, &oovrate,
-    "or", CMDDOUBLETYPE, &oovrate,
-
-    "Beta", CMDDOUBLETYPE, &beta,
-    "beta", CMDDOUBLETYPE, &beta,
-
-    (char *)NULL
-  );
-
-  GetParams(&argc, &argv, (char*) NULL);
-
-  if (!lmtype || (!trainfile && lmtype!=MIXTURE)) {
-    cerr <<"Missing parameters\n";
-    exit(1);
-  };
-
-
-
-
-  mdiadaptlm *lm=NULL;
-
-  switch (lmtype) {
-
-  case SHIFT_BETA:
-    if (beta==-1 || (beta<1.0 && beta>0))
-      lm=new shiftbeta(trainfile,size,prunefreq,beta,(backoff?SHIFTBETA_B:SHIFTBETA_I));
-    else {
-      cerr << "ShiftBeta: beta must be >0 and <1\n";
-      exit(1);
-    }
-    break;
-
-  case MOD_SHIFT_BETA:
-    if (size>1)
-      lm=new mshiftbeta(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
-    else {
-      cerr << "Modified Shift Beta requires size > 1!\n";
-      exit(1);
-    }
-
-    break;
-
-  case SHIFT_ONE:
-    lm=new shiftone(trainfile,size,prunefreq,(backoff?SIMPLE_B:SIMPLE_I));
-    break;
-
-  case LINEAR_WB:
-    lm=new linearwb(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
-    break;
-
-  case LINEAR_GT:
-    cerr << "This LM is no more supported\n";
-    break;
-
-  case MIXTURE:
-    //temporary check: so far unable to proper handle this flag in sub LMs
-    //no ngramtable is created
-    if (BINfile)
-      lm=new mixture(true,slminfo,size,prunefreq,imixpar,omixpar);
-    else
-      lm=new mixture(false,slminfo,size,prunefreq,imixpar,omixpar);
-    break;
-
-  default:
-    cerr << "not implemented yet\n";
-    return 1;
-  };
-
-  if (dub)      lm->dub(dub);
-  lm->create_caches(max_caching_level);
-
-  cerr << "eventually generate OOV code\n";
-  lm->dict->genoovcode();
-
-  if (oovrate) lm->dict->setoovrate(oovrate);
-
-
-  lm->train();
-
-//it never occurs that both prunetopsingletons and prunesingletons  are YES
-  if (prunetopsingletons==YES) { //keep most specific
-    lm->prunetopsingletons(YES);
-    lm->prunesingletons(NO);
-  } else {
-    lm->prunetopsingletons(NO);
-    if (prunesingletons==YES) {
-      lm->prunesingletons(YES);
-    } else {
-      lm->prunesingletons(NO);
-    }
-  }
-
-  if (adaptoov) lm->dict->incflag(1);
-
-  if (adaptfile)
-    lm->adapt(adaptfile,adaptlevel,adaptrate);
-
-  if (adaptoov) lm->dict->incflag(0);
-
-  if (scalefactorfile) lm->savescalefactor(scalefactorfile);
-
-  if (backoff) lm->compute_backoff();
-
-  if (size>lm->maxlevel()) {
-    cerr << "lm size is too large\n";
-    exit(1);
-  }
-
-  if (!size) size=lm->maxlevel();
-
-  if (testfile) {
-    cerr << "TLM: test ...";
-    lm->test(testfile,size,backoff,checkpr,outpr);
-
-    if (adaptfile)
-      ((mdiadaptlm *)lm)->get_zetacache()->stat();
-    //		((mdiadaptlm *)lm)->cache->stat();
-
-    //for (int s=1;s<=size;s++){
-    //lm->test(*lm,s);
-    //lm->test(test,s);
-    //}
-    cerr << "\n";
-  };
-
-  if (compsize)
-    cout << "LM size " << (int)lm->netsize() << "\n";
-
-  if (interactive) {
-
-    ngram ng(lm->dict);
-    int nsize=0;
-
-    cout.setf(ios::scientific);
-
-    switch (interactive) {
-
-    case NGRAM:
-      cout << "> ";
-      while(cin >> ng) {
-        if (ng.wordp(size)) {
-          cout << ng << " p=" << (double)log(lm->prob(ng,size)) << "\n";
-          ng.size=0;
-          cout << "> ";
-        }
-      }
-      break;
-
-    case SEQUENCE: {
-      char c;
-      double p=0;
-      cout << "> ";
-
-      while(cin >> ng) {
-        nsize=ng.size<size?ng.size:size;
-        p=log(lm->prob(ng,nsize));
-        cout << ng << " p=" << p << "\n";
-
-        while((c=cin.get())==' ') {
-          cout << c;
-        }
-        cin.putback(c);
-        //cout << "-" << c << "-";
-        if (c=='\n') {
-          ng.size=0;
-          cout << "> ";
-          p=0;
-        }
-      }
-    }
-
-    break;
-
-    case TURN: {
-      int n=0;
-      double lp=0;
-      double oov=0;
-
-      while(cin >> ng) {
-
-        if (ng.size>0) {
-          nsize=ng.size<size?ng.size:size;
-          lp-=log(lm->prob(ng,nsize));
-          n++;
-          if (*ng.wordp(1) == lm->dict->oovcode())
-            oov++;
-        } else {
-          if (n>0) cout << n << " " << lp/(log(2.0) * n) << " " << oov/n << "\n";
-          n=0;
-          lp=0;
-          oov=0;
-        }
-      }
-
-      break;
-    }
-
-    case  TEXT: {
-      int order;
-
-      int n=0;
-      double lp=0;
-      double oov=0;
-
-      while (!cin.eof()) {
-        cin >> order;
-        if (order>size)
-          cerr << "Warning: order > lm size\n";
-
-        order=order>size?size:order;
-
-        while (cin >> ng) {
-          if (ng.size>0) {
-            nsize=ng.size<order?ng.size:order;
-            lp-=log(lm->prob(ng,nsize));
-            n++;
-            if (*ng.wordp(1) == lm->dict->oovcode())
-              oov++;
-          } else {
-            if (n>0) cout << n << " " << lp/(log(2.0)*n) << " " << oov/n << "\n";
-            n=0;
-            lp=0;
-            oov=0;
-            if (ng.isym>0) break;
-          }
-        }
-      }
-    }
-    break;
-
-    case ADAPT: {
-
-      if (backoff) {
-        cerr << "This modality is not supported with backoff LMs\n";
-        exit(1);
-      }
-
-      char afile[50],tfile[50];
-      while (!cin.eof()) {
-        cin >> afile >> tfile;
-        system("echo > .tlmlock");
-
-        cerr << "interactive adaptation: "
-             << afile << " " << tfile << "\n";
-
-        if (adaptoov) lm->dict->incflag(1);
-        lm->adapt(afile,adaptlevel,adaptrate);
-        if (adaptoov) lm->dict->incflag(0);
-        if (scalefactorfile) lm->savescalefactor(scalefactorfile);
-        if (ASRfile) lm->saveASR(ASRfile,backoff,dictfile);
-        if (ARPAfile) lm->saveARPA(ARPAfile,backoff,dictfile);
-        if (BINfile) lm->saveBIN(BINfile,backoff,dictfile,memmap);
-        lm->test(tfile,size,checkpr);
-        cout.flush();
-        system("rm .tlmlock");
-      }
-    }
-    break;
-    }
-
-    exit(1);
-  }
-
-  if (ASRfile) {
-    cerr << "TLM: save lm (ASR)...";
-    lm->saveASR(ASRfile,backoff,dictfile);
-    cerr << "\n";
-  }
-
-  if (ARPAfile) {
-    cerr << "TLM: save lm (ARPA)...";
-    lm->saveARPA(ARPAfile,backoff,dictfile);
-    cerr << "\n";
-  }
-
-  if (ARPAfile2) {
-    cerr << "TLM: save lm (ARPA2)...";
-    lm->saveARPA2(ARPAfile2,backoff,dictfile);
-    cerr << "\n";
-  }
-
-  if (BINfile) {
-    cerr << "TLM: save lm (binary)...";
-    lm->saveBIN(BINfile,backoff,dictfile,memmap);
-    cerr << "\n";
-  }
-
-  if (statistics) {
-    cerr << "TLM: lm stat ...";
-    lm->lmstat(statistics);
-    cerr << "\n";
-  }
-
-  //	lm->cache_stat();
-
-  cerr << "TLM: deleting lm ...";
-  delete lm;
-  cerr << "\n";
-
-  exit(0);
+	
+	char *dictfile=NULL;
+	char *trainfile=NULL;
+	char *testfile=NULL;
+	char *adaptfile=NULL;
+	char *slminfo=NULL;
+	
+	char *imixpar=NULL;
+	char *omixpar=NULL;
+	
+	char *BINfile=NULL;
+	char *ARPAfile=NULL;
+	char *ARPAfile2=NULL;
+	
+	char *ASRfile=NULL;
+	
+	char* scalefactorfile=NULL;
+	
+	int backoff=0; //back-off or interpolation
+	int lmtype=0;
+	int dub=0; //dictionary upper bound
+	int size=0;   //lm size
+	
+	int interactive=0;
+	int statistics=0;
+	
+	int prunefreq=NO;
+	int prunesingletons=YES;
+	int prunetopsingletons=NO;
+	
+	double beta=-1;
+	
+	int compsize=NO;
+	int checkpr=NO;
+	double oovrate=0;
+	int max_caching_level=0;
+	
+	char *outpr=NULL;
+	
+	int memmap = 0; //write binary format with/without memory map, default is 0
+	
+	int adaptlevel=0;   //adaptation level
+	double adaptrate=1.0;
+	int adaptoov=0; //do not increment the dictionary
+	
+	DeclareParams(
+				  
+				  "Back-off",CMDENUMTYPE, &backoff, BooleanEnum,
+				  "bo",CMDENUMTYPE, &backoff, BooleanEnum,
+				  
+				  "Dictionary", CMDSTRINGTYPE, &dictfile,
+				  "d", CMDSTRINGTYPE, &dictfile,
+				  
+				  "DictionaryUpperBound", CMDINTTYPE, &dub,
+				  "dub", CMDINTTYPE, &dub,
+				  
+				  "NgramSize", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
+				  "n", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
+				  
+				  "Ngram", CMDSTRINGTYPE, &trainfile,
+				  "TrainOn", CMDSTRINGTYPE, &trainfile,
+				  "tr", CMDSTRINGTYPE, &trainfile,
+				  
+				  "oASR", CMDSTRINGTYPE, &ASRfile,
+				  "oasr", CMDSTRINGTYPE, &ASRfile,
+				  
+				  "o", CMDSTRINGTYPE, &ARPAfile,
+				  "oARPA", CMDSTRINGTYPE, &ARPAfile,
+				  "oarpa", CMDSTRINGTYPE, &ARPAfile,
+				  
+				  "o2", CMDSTRINGTYPE, &ARPAfile2,
+				  
+				  "oBIN", CMDSTRINGTYPE, &BINfile,
+				  "obin", CMDSTRINGTYPE, &BINfile,
+				  
+				  "TestOn", CMDSTRINGTYPE, &testfile,
+				  "te", CMDSTRINGTYPE, &testfile,
+				  
+				  "AdaptOn", CMDSTRINGTYPE, &adaptfile,
+				  "ad", CMDSTRINGTYPE, &adaptfile,
+				  
+				  "AdaptRate",CMDDOUBLETYPE , &adaptrate,
+				  "ar", CMDDOUBLETYPE, &adaptrate,
+				  
+				  "AdaptLevel", CMDSUBRANGETYPE, &adaptlevel, 1 , MAX_NGRAM,
+				  "al",CMDSUBRANGETYPE , &adaptlevel, 1, MAX_NGRAM,
+				  
+				  "AdaptOOV", CMDENUMTYPE, &adaptoov, BooleanEnum,
+				  "ao", CMDENUMTYPE, &adaptoov, BooleanEnum,
+				  
+				  "SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile,
+				  "ssf", CMDSTRINGTYPE, &scalefactorfile,
+				  
+				  "LanguageModelType",CMDENUMTYPE, &lmtype, LmTypeEnum,
+				  "lm",CMDENUMTYPE, &lmtype, LmTypeEnum,
+				  
+				  "Interactive",CMDENUMTYPE, &interactive, InteractiveModeEnum,
+				  "i",CMDENUMTYPE, &interactive, InteractiveModeEnum,
+				  
+				  "Statistics",CMDSUBRANGETYPE, &statistics, 1 , 3,
+				  "s",CMDSUBRANGETYPE, &statistics, 1 , 3,
+				  
+				  "PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1 , 1000,
+				  "p",CMDSUBRANGETYPE, &prunefreq, 1 , 1000,
+				  
+				  "PruneSingletons",CMDENUMTYPE, &prunesingletons, BooleanEnum,
+				  "ps",CMDENUMTYPE, &prunesingletons, BooleanEnum,
+				  
+				  "PruneTopSingletons",CMDENUMTYPE, &prunetopsingletons, BooleanEnum,
+				  "pts",CMDENUMTYPE, &prunetopsingletons, BooleanEnum,
+				  
+				  "ComputeLMSize",CMDENUMTYPE, &compsize, BooleanEnum,
+				  "sz",CMDENUMTYPE, &compsize, BooleanEnum,
+				  
+				  "MaximumCachingLevel", CMDINTTYPE , &max_caching_level,
+				  "mcl", CMDINTTYPE, &max_caching_level,
+				  
+				  "MemoryMap", CMDENUMTYPE, &memmap, BooleanEnum,
+				  "memmap", CMDENUMTYPE, &memmap, BooleanEnum,
+				  "mm", CMDENUMTYPE, &memmap, BooleanEnum,
+				  
+				  "CheckProb",CMDENUMTYPE, &checkpr, BooleanEnum,
+				  "cp",CMDENUMTYPE, &checkpr, BooleanEnum,
+				  
+				  "OutProb",CMDSTRINGTYPE, &outpr,
+				  "op",CMDSTRINGTYPE, &outpr,
+				  
+				  "SubLMInfo", CMDSTRINGTYPE, &slminfo,
+				  "slmi", CMDSTRINGTYPE, &slminfo,
+				  
+				  "SaveMixParam", CMDSTRINGTYPE, &omixpar,
+				  "smp", CMDSTRINGTYPE, &omixpar,
+				  
+				  "LoadMixParam", CMDSTRINGTYPE, &imixpar,
+				  "lmp", CMDSTRINGTYPE, &imixpar,
+				  
+				  "SetOovRate", CMDDOUBLETYPE, &oovrate,
+				  "or", CMDDOUBLETYPE, &oovrate,
+				  
+				  "Beta", CMDDOUBLETYPE, &beta,
+				  "beta", CMDDOUBLETYPE, &beta,
+				  
+				  (char *)NULL
+				  );
+	
+	GetParams(&argc, &argv, (char*) NULL);
+	
+	if (!lmtype || (!trainfile && lmtype!=MIXTURE)) {
+		cerr <<"Missing parameters\n";
+		exit(1);
+	};
+	
+	
+	
+	
+	mdiadaptlm *lm=NULL;
+	
+	switch (lmtype) {
+			
+		case SHIFT_BETA:
+			if (beta==-1 || (beta<1.0 && beta>0))
+				lm=new shiftbeta(trainfile,size,prunefreq,beta,(backoff?SHIFTBETA_B:SHIFTBETA_I));
+			else {
+				cerr << "ShiftBeta: beta must be >0 and <1\n";
+				exit(1);
+			}
+			break;
+			
+		case MOD_SHIFT_BETA:
+			if (size>1)
+				lm=new mshiftbeta(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
+			else {
+				cerr << "Modified Shift Beta requires size > 1!\n";
+				exit(1);
+			}
+			
+			break;
+			
+		case SHIFT_ONE:
+			lm=new shiftone(trainfile,size,prunefreq,(backoff?SIMPLE_B:SIMPLE_I));
+			break;
+			
+		case LINEAR_WB:
+			lm=new linearwb(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
+			break;
+			
+		case LINEAR_GT:
+			cerr << "This LM is no more supported\n";
+			break;
+			
+		case MIXTURE:
+			//temporary check: so far unable to proper handle this flag in sub LMs
+			//no ngramtable is created
+			
+			if (backoff){
+				cerr << "Mixture LM does not support back-off\n";
+				backoff=false;	
+			}
+			if (BINfile)
+				lm=new mixture(true,slminfo,size,prunefreq,imixpar,omixpar);
+			else
+				lm=new mixture(false,slminfo,size,prunefreq,imixpar,omixpar);
+			break;
+			
+		default:
+			cerr << "not implemented yet\n";
+			return 1;
+	};
+	
+	if (dub)      lm->dub(dub);
+	lm->create_caches(max_caching_level);
+	
+	cerr << "eventually generate OOV code\n";
+	lm->dict->genoovcode();
+	
+	if (oovrate) lm->dict->setoovrate(oovrate);
+	
+	
+	lm->train();
+	
+	//it never occurs that both prunetopsingletons and prunesingletons  are YES
+	if (prunetopsingletons==YES) { //keep most specific
+		lm->prunetopsingletons(YES);
+		lm->prunesingletons(NO);
+	} else {
+		lm->prunetopsingletons(NO);
+		if (prunesingletons==YES) {
+			lm->prunesingletons(YES);
+		} else {
+			lm->prunesingletons(NO);
+		}
+	}
+	
+	if (adaptoov) lm->dict->incflag(1);
+	
+	if (adaptfile)
+		lm->adapt(adaptfile,adaptlevel,adaptrate);
+	
+	if (adaptoov) lm->dict->incflag(0);
+	
+	if (scalefactorfile) lm->savescalefactor(scalefactorfile);
+	
+	if (backoff) lm->compute_backoff();
+	
+	if (size>lm->maxlevel()) {
+		cerr << "lm size is too large\n";
+		exit(1);
+	}
+	
+	if (!size) size=lm->maxlevel();
+	
+	if (testfile) {
+		cerr << "TLM: test ...";
+		lm->test(testfile,size,backoff,checkpr,outpr);
+		
+		if (adaptfile)
+			((mdiadaptlm *)lm)->get_zetacache()->stat();
+		//		((mdiadaptlm *)lm)->cache->stat();
+		
+		//for (int s=1;s<=size;s++){
+		//lm->test(*lm,s);
+		//lm->test(test,s);
+		//}
+		cerr << "\n";
+	};
+	
+	if (compsize)
+		cout << "LM size " << (int)lm->netsize() << "\n";
+	
+	if (interactive) {
+		
+		ngram ng(lm->dict);
+		int nsize=0;
+		
+		cout.setf(ios::scientific);
+		
+		switch (interactive) {
+				
+			case NGRAM:
+				cout << "> ";
+				while(cin >> ng) {
+					if (ng.wordp(size)) {
+						cout << ng << " p=" << (double)log(lm->prob(ng,size)) << "\n";
+						ng.size=0;
+						cout << "> ";
+					}
+				}
+				break;
+				
+			case SEQUENCE: {
+				char c;
+				double p=0;
+				cout << "> ";
+				
+				while(cin >> ng) {
+					nsize=ng.size<size?ng.size:size;
+					p=log(lm->prob(ng,nsize));
+					cout << ng << " p=" << p << "\n";
+					
+					while((c=cin.get())==' ') {
+						cout << c;
+					}
+					cin.putback(c);
+					//cout << "-" << c << "-";
+					if (c=='\n') {
+						ng.size=0;
+						cout << "> ";
+						p=0;
+					}
+				}
+			}
+				
+				break;
+				
+			case TURN: {
+				int n=0;
+				double lp=0;
+				double oov=0;
+				
+				while(cin >> ng) {
+					
+					if (ng.size>0) {
+						nsize=ng.size<size?ng.size:size;
+						lp-=log(lm->prob(ng,nsize));
+						n++;
+						if (*ng.wordp(1) == lm->dict->oovcode())
+							oov++;
+					} else {
+						if (n>0) cout << n << " " << lp/(log(2.0) * n) << " " << oov/n << "\n";
+						n=0;
+						lp=0;
+						oov=0;
+					}
+				}
+				
+				break;
+			}
+				
+			case  TEXT: {
+				int order;
+				
+				int n=0;
+				double lp=0;
+				double oov=0;
+				
+				while (!cin.eof()) {
+					cin >> order;
+					if (order>size)
+						cerr << "Warning: order > lm size\n";
+					
+					order=order>size?size:order;
+					
+					while (cin >> ng) {
+						if (ng.size>0) {
+							nsize=ng.size<order?ng.size:order;
+							lp-=log(lm->prob(ng,nsize));
+							n++;
+							if (*ng.wordp(1) == lm->dict->oovcode())
+								oov++;
+						} else {
+							if (n>0) cout << n << " " << lp/(log(2.0)*n) << " " << oov/n << "\n";
+							n=0;
+							lp=0;
+							oov=0;
+							if (ng.isym>0) break;
+						}
+					}
+				}
+			}
+				break;
+				
+			case ADAPT: {
+				
+				if (backoff) {
+					cerr << "This modality is not supported with backoff LMs\n";
+					exit(1);
+				}
+				
+				char afile[50],tfile[50];
+				while (!cin.eof()) {
+					cin >> afile >> tfile;
+					system("echo > .tlmlock");
+					
+					cerr << "interactive adaptation: "
+					<< afile << " " << tfile << "\n";
+					
+					if (adaptoov) lm->dict->incflag(1);
+					lm->adapt(afile,adaptlevel,adaptrate);
+					if (adaptoov) lm->dict->incflag(0);
+					if (scalefactorfile) lm->savescalefactor(scalefactorfile);
+					if (ASRfile) lm->saveASR(ASRfile,backoff,dictfile);
+					if (ARPAfile) lm->saveARPA(ARPAfile,backoff,dictfile);
+					if (BINfile) lm->saveBIN(BINfile,backoff,dictfile,memmap);
+					lm->test(tfile,size,checkpr);
+					cout.flush();
+					system("rm .tlmlock");
+				}
+			}
+				break;
+		}
+		
+		exit(1);
+	}
+	
+	if (ASRfile) {
+		cerr << "TLM: save lm (ASR)...";
+		lm->saveASR(ASRfile,backoff,dictfile);
+		cerr << "\n";
+	}
+	
+	if (ARPAfile) {
+		cerr << "TLM: save lm (ARPA)...";
+		lm->saveARPA(ARPAfile,backoff,dictfile);
+		cerr << "\n";
+	}
+	
+	if (ARPAfile2) {
+		cerr << "TLM: save lm (ARPA2)...";
+		lm->saveARPA2(ARPAfile2,backoff,dictfile);
+		cerr << "\n";
+	}
+	
+	if (BINfile) {
+		cerr << "TLM: save lm (binary)...";
+		lm->saveBIN(BINfile,backoff,dictfile,memmap);
+		cerr << "\n";
+	}
+	
+	if (statistics) {
+		cerr << "TLM: lm stat ...";
+		lm->lmstat(statistics);
+		cerr << "\n";
+	}
+	
+	//	lm->cache_stat();
+	
+	cerr << "TLM: deleting lm ...";
+	delete lm;
+	cerr << "\n";
+	
+	exit(0);
 }
 
 

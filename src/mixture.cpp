@@ -103,7 +103,9 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
     (char *)NULL
   );
 
-  cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
+  cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into ";
+  cerr << "account for this type of LM (mixture); please specify the singleton pruning policy for each ";
+  cerr << "submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
 
 	
 	
@@ -144,7 +146,12 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
 				break;
 				
 			case MOD_SHIFT_BETA:
+				if (depth>1)
 				sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+				else{
+					cerr << "SUBLM: Modified Shift Beta requires size > 1! Using Witten Bell instead!\n";
+					sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+				}				
 				break;
 				
 			case MIXTURE:
