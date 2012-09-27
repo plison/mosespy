@@ -6,6 +6,28 @@
 	objectVersion = 42;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		3DE04907161047DD00A26D29 /* ALL */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 3DE049121610481400A26D29 /* Build configuration list for PBXAggregateTarget "ALL" */;
+			buildPhases = (
+			);
+			dependencies = (
+				3DE049241610483D00A26D29 /* PBXTargetDependency */,
+				3DE049141610481700A26D29 /* PBXTargetDependency */,
+				3DE049161610481C00A26D29 /* PBXTargetDependency */,
+				3DE049181610482000A26D29 /* PBXTargetDependency */,
+				3DE0491A1610482400A26D29 /* PBXTargetDependency */,
+				3DE0491C1610482800A26D29 /* PBXTargetDependency */,
+				3DE0491E1610482C00A26D29 /* PBXTargetDependency */,
+				3DE049201610483000A26D29 /* PBXTargetDependency */,
+				3DE049221610483300A26D29 /* PBXTargetDependency */,
+			);
+			name = ALL;
+			productName = ALL;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		3D4565341164C94E00119984 /* shiftlm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD58865D11256D3700BDFA30 /* shiftlm.cpp */; };
 		3D4565351164C95800119984 /* shiftlm.h in Headers */ = {isa = PBXBuildFile; fileRef = AD58865E11256D3700BDFA30 /* shiftlm.h */; };
@@ -21,7 +43,15 @@
 		3D4F4DCF135C5BFF00E85480 /* prune-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA6FC90E62F00D002B3D41 /* prune-lm.cpp */; };
 		3D4F4DD0135C5C2500E85480 /* quantize-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D77D1C420B2F1FCA00D79D16 /* quantize-lm.cpp */; };
 		3D4F4DDD135C5C6300E85480 /* interpolate-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD9567B0FB42D07001B8680 /* interpolate-lm.cpp */; };
-		3D4F4DFC135C5DCB00E85480 /* dtsel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* dtsel.cpp */; };
+		3D86C79E16104E2600205CAE /* plsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C79D16104E2600205CAE /* plsa.cpp */; };
+		3D86C7A516104E6600205CAE /* cplsa.h in Headers */ = {isa = PBXBuildFile; fileRef = 3D86C7A316104E6600205CAE /* cplsa.h */; };
+		3D86C7A616104E6600205CAE /* doc.h in Headers */ = {isa = PBXBuildFile; fileRef = 3D86C7A416104E6600205CAE /* doc.h */; };
+		3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A716104E7B00205CAE /* cplsa.cpp */; };
+		3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A816104E7B00205CAE /* doc.cpp */; };
+		3DE048EA161046FC00A26D29 /* lmclass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE048E8161046FC00A26D29 /* lmclass.cpp */; };
+		3DE048EB161046FC00A26D29 /* lmclass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE048E9161046FC00A26D29 /* lmclass.h */; };
+		3DE048F61610478800A26D29 /* lmInterpolation.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE048F51610478800A26D29 /* lmInterpolation.h */; };
+		3DE048FA161047A000A26D29 /* lmInterpolation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE048F9161047A000A26D29 /* lmInterpolation.cpp */; };
 		3DE5453915CBB2BC003869E0 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE5453715CBB2BC003869E0 /* lmContainer.cpp */; };
 		3DE5453A15CBB2BC003869E0 /* lmContainer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE5453815CBB2BC003869E0 /* lmContainer.h */; };
 		AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0BD17113EC529000230F82 /* ngramtable.cpp */; };
@@ -33,9 +63,6 @@
 		AD70DBD6115C1D4900F05491 /* linearlm.h in Headers */ = {isa = PBXBuildFile; fileRef = AD70DBD4115C1D4900F05491 /* linearlm.h */; settings = {ATTRIBUTES = (); }; };
 		AD8104AF1132B93300B0363D /* mdiadapt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD8104AD1132B93300B0363D /* mdiadapt.cpp */; };
 		AD8104B01132B93300B0363D /* mdiadapt.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8104AE1132B93300B0363D /* mdiadapt.h */; };
-		AD82E1AC15CEB55900CDF8E2 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */; };
-		AD82E1AD15CEB55900CDF8E2 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */; };
-		AD82E1AE15CEB55900CDF8E2 /* lmContainer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */; };
 		ADDF0C6215F9130A00515443 /* ngt.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDF0C6115F9130A00515443 /* ngt.cpp */; };
 		D701C7880B2EB27C007D2774 /* cmd.c in Sources */ = {isa = PBXBuildFile; fileRef = D701C7870B2EB27C007D2774 /* cmd.c */; };
 		D701C7940B2EB37D007D2774 /* dictionary.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D701C78D0B2EB37D007D2774 /* dictionary.cpp */; };
@@ -110,6 +137,69 @@
 			remoteGlobalIDString = D733D3F30B1F3B0800565249;
 			remoteInfo = irstlm;
 		};
+		3DE049131610481700A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D77D1C700B30325000D79D16;
+			remoteInfo = dict;
+		};
+		3DE049151610481C00A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4D67135C481600E85480;
+			remoteInfo = "compile-lm";
+		};
+		3DE049171610482000A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4D82135C48E800E85480;
+			remoteInfo = ngt;
+		};
+		3DE049191610482400A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4D8D135C48EC00E85480;
+			remoteInfo = "quantize-lm";
+		};
+		3DE0491B1610482800A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4D98135C48F100E85480;
+			remoteInfo = "prune-lm";
+		};
+		3DE0491D1610482C00A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4DBC135C5B8800E85480;
+			remoteInfo = tlm;
+		};
+		3DE0491F1610483000A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4DD2135C5C4C00E85480;
+			remoteInfo = "interpolate-lm";
+		};
+		3DE049211610483300A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D4F4DED135C5D7300E85480;
+			remoteInfo = plsa;
+		};
+		3DE049231610483D00A26D29 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D733D3F30B1F3B0800565249;
+			remoteInfo = irstlm;
+		};
 		D77D1C730B30325900D79D16 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
@@ -127,6 +217,15 @@
 		3D4F4DC5135C5B8800E85480 /* tlm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = tlm; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4DDB135C5C4C00E85480 /* interpolate-lm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "interpolate-lm"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4DF6135C5D7300E85480 /* plsa */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = plsa; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D86C79D16104E2600205CAE /* plsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = plsa.cpp; path = src/plsa.cpp; sourceTree = "<group>"; };
+		3D86C7A316104E6600205CAE /* cplsa.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cplsa.h; path = src/cplsa.h; sourceTree = "<group>"; };
+		3D86C7A416104E6600205CAE /* doc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = doc.h; path = src/doc.h; sourceTree = "<group>"; };
+		3D86C7A716104E7B00205CAE /* cplsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cplsa.cpp; path = src/cplsa.cpp; sourceTree = "<group>"; };
+		3D86C7A816104E7B00205CAE /* doc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = doc.cpp; path = src/doc.cpp; sourceTree = "<group>"; };
+		3DE048E8161046FC00A26D29 /* lmclass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmclass.cpp; path = src/lmclass.cpp; sourceTree = "<group>"; };
+		3DE048E9161046FC00A26D29 /* lmclass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmclass.h; path = src/lmclass.h; sourceTree = "<group>"; };
+		3DE048F51610478800A26D29 /* lmInterpolation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmInterpolation.h; path = src/lmInterpolation.h; sourceTree = "<group>"; };
+		3DE048F9161047A000A26D29 /* lmInterpolation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmInterpolation.cpp; path = src/lmInterpolation.cpp; sourceTree = "<group>"; };
 		3DE5453715CBB2BC003869E0 /* lmContainer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmContainer.cpp; path = src/lmContainer.cpp; sourceTree = "<group>"; };
 		3DE5453815CBB2BC003869E0 /* lmContainer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmContainer.h; path = src/lmContainer.h; sourceTree = "<group>"; };
 		AD0BD17113EC529000230F82 /* ngramtable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngramtable.cpp; path = src/ngramtable.cpp; sourceTree = "<group>"; };
@@ -262,6 +361,7 @@
 		08FB7794FE84155DC02AAC07 /* irstlm */ = {
 			isa = PBXGroup;
 			children = (
+				3D86C79D16104E2600205CAE /* plsa.cpp */,
 				D77D1C7F0B3032FB00D79D16 /* other */,
 				D701C78C0B2EB333007D2774 /* src */,
 				ADCFA02A0E4872FC00E351DB /* libirstlm.dylib */,
@@ -280,6 +380,12 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3D86C7A716104E7B00205CAE /* cplsa.cpp */,
+				3D86C7A816104E7B00205CAE /* doc.cpp */,
+				3D86C7A316104E6600205CAE /* cplsa.h */,
+				3D86C7A416104E6600205CAE /* doc.h */,
+				3DE048F9161047A000A26D29 /* lmInterpolation.cpp */,
+				3DE048F51610478800A26D29 /* lmInterpolation.h */,
 				ADDF0C6115F9130A00515443 /* ngt.cpp */,
 				AD82E1AA15CEB55900CDF8E2 /* lmContainer.cpp */,
 				AD82E1AB15CEB55900CDF8E2 /* lmContainer.h */,
@@ -317,6 +423,8 @@
 				D701C78D0B2EB37D007D2774 /* dictionary.cpp */,
 				D701C79C0B2EB472007D2774 /* cmd.h */,
 				D701C79D0B2EB472007D2774 /* dictionary.h */,
+				3DE048E8161046FC00A26D29 /* lmclass.cpp */,
+				3DE048E9161046FC00A26D29 /* lmclass.h */,
 				D701C79E0B2EB472007D2774 /* gzfilebuf.h */,
 				D701C79F0B2EB472007D2774 /* htable.h */,
 				D701C7A00B2EB472007D2774 /* index.h */,
@@ -388,6 +496,10 @@
 				3D45653A1164C9F100119984 /* interplm.h in Headers */,
 				3D4565621164CC3F00119984 /* mixture.h in Headers */,
 				3DE5453A15CBB2BC003869E0 /* lmContainer.h in Headers */,
+				3DE048EB161046FC00A26D29 /* lmclass.h in Headers */,
+				3DE048F61610478800A26D29 /* lmInterpolation.h in Headers */,
+				3D86C7A516104E6600205CAE /* cplsa.h in Headers */,
+				3D86C7A616104E6600205CAE /* doc.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -576,6 +688,7 @@
 				3D4F4DBC135C5B8800E85480 /* tlm */,
 				3D4F4DD2135C5C4C00E85480 /* interpolate-lm */,
 				3D4F4DED135C5D7300E85480 /* plsa */,
+				3DE04907161047DD00A26D29 /* ALL */,
 			);
 		};
 /* End PBXProject section */
@@ -586,7 +699,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D4F4DA5135C497B00E85480 /* compile-lm.cpp in Sources */,
-				AD82E1AC15CEB55900CDF8E2 /* lmContainer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -594,7 +706,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3D4F4DFC135C5DCB00E85480 /* dtsel.cpp in Sources */,
 				ADDF0C6215F9130A00515443 /* ngt.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -604,7 +715,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D4F4DD0135C5C2500E85480 /* quantize-lm.cpp in Sources */,
-				AD82E1AD15CEB55900CDF8E2 /* lmContainer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -613,7 +723,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D4F4DCF135C5BFF00E85480 /* prune-lm.cpp in Sources */,
-				AD82E1AE15CEB55900CDF8E2 /* lmContainer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -637,6 +746,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3D86C79E16104E2600205CAE /* plsa.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -663,6 +773,10 @@
 				3D4565611164CC3F00119984 /* mixture.cpp in Sources */,
 				AD0BD17213EC529000230F82 /* ngramtable.cpp in Sources */,
 				3DE5453915CBB2BC003869E0 /* lmContainer.cpp in Sources */,
+				3DE048EA161046FC00A26D29 /* lmclass.cpp in Sources */,
+				3DE048FA161047A000A26D29 /* lmInterpolation.cpp in Sources */,
+				3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */,
+				3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -712,6 +826,51 @@
 			target = D733D3F30B1F3B0800565249 /* irstlm */;
 			targetProxy = 3D4F4DEF135C5D7300E85480 /* PBXContainerItemProxy */;
 		};
+		3DE049141610481700A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D77D1C700B30325000D79D16 /* dict */;
+			targetProxy = 3DE049131610481700A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE049161610481C00A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4D67135C481600E85480 /* compile-lm */;
+			targetProxy = 3DE049151610481C00A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE049181610482000A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4D82135C48E800E85480 /* ngt */;
+			targetProxy = 3DE049171610482000A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE0491A1610482400A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4D8D135C48EC00E85480 /* quantize-lm */;
+			targetProxy = 3DE049191610482400A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE0491C1610482800A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4D98135C48F100E85480 /* prune-lm */;
+			targetProxy = 3DE0491B1610482800A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE0491E1610482C00A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4DBC135C5B8800E85480 /* tlm */;
+			targetProxy = 3DE0491D1610482C00A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE049201610483000A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4DD2135C5C4C00E85480 /* interpolate-lm */;
+			targetProxy = 3DE0491F1610483000A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE049221610483300A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D4F4DED135C5D7300E85480 /* plsa */;
+			targetProxy = 3DE049211610483300A26D29 /* PBXContainerItemProxy */;
+		};
+		3DE049241610483D00A26D29 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D733D3F30B1F3B0800565249 /* irstlm */;
+			targetProxy = 3DE049231610483D00A26D29 /* PBXContainerItemProxy */;
+		};
 		D77D1C740B30325900D79D16 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D733D3F30B1F3B0800565249 /* irstlm */;
@@ -724,6 +883,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
+				COPY_PHASE_STRIP = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
@@ -740,7 +900,11 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
+				GENERATE_PROFILING_CODE = YES;
 				PREBINDING = NO;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
+				RUN_CLANG_STATIC_ANALYZER = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
 				WARNING_CFLAGS = (
 					"$(inherited)",
 					"-Wall",
@@ -1054,6 +1218,27 @@
 			};
 			name = Release;
 		};
+		3DE04908161047DD00A26D29 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = ALL;
+			};
+			name = Debug;
+		};
+		3DE04909161047DD00A26D29 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				PRODUCT_NAME = ALL;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 		D733D3F60B1F3B2600565249 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1210,6 +1395,15 @@
 			buildConfigurations = (
 				3D4F4DF4135C5D7300E85480 /* Debug */,
 				3D4F4DF5135C5D7300E85480 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3DE049121610481400A26D29 /* Build configuration list for PBXAggregateTarget "ALL" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DE04908161047DD00A26D29 /* Debug */,
+				3DE04909161047DD00A26D29 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
