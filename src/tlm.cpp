@@ -301,7 +301,13 @@ int main(int argc, char **argv)
 			return 1;
 	};
 	
-	if (dub)      lm->dub(dub);
+	if (dub < lm->dict->size()){
+		cerr << "dub (" << dub << ") is not set or too small. dub is re-set to the dictionary size (" << lm->dict->size() << ")" << endl;
+		dub = lm->dict->size();
+	}
+
+	lm->dub(dub);
+
 	lm->create_caches(max_caching_level);
 	
 	cerr << "eventually generate OOV code\n";
