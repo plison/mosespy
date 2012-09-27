@@ -101,24 +101,29 @@ public:
   inline int dub() {
     return dubv;
   }
+
   inline int dub(int value) {
-    return (dubv=value);
-  }
+		return dubv=value;
+	}
 
   inline const char *OOV() {
-    return ((char*)OOV_);
+    return (char*) OOV_;
   }
+	
   inline const char *BoS() {
-    return ((char*)BOS_);
+    return (char*) BOS_;
   }
+	
   inline const char *EoS() {
-    return ((char*)EOS_);
+    return (char*) EOS_;
   }
+	
   inline const char *BoD() {
-    return ((char*)BOD_);
+    return (char*) BOD_;
   }
+	
   inline const char *EoD() {
-    return ((char*)EOD_);
+    return (char*) EOD_;
   }
 
   inline int oovcode(int v=-1) {

@@ -31,8 +31,6 @@ using namespace std;
 #include "math.h"
 #include "util.h"
 
-#define MAX_LINE 100000
-
 //----------------------------------------------------------------------
 //  Special type and global variable for the BIN CLUSTERING algorithm
 //

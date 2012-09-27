@@ -58,10 +58,9 @@ public:
 	
   inline int dub(int value) {
     for (int i=0; i<numslm; i++) {
-      //      cerr << "I'm setting dub: " << value << endl;
       sublm[i]->dub(value);
     }
-    return (dict->dub(value));
+    return dict->dub(value);
   }
 
   void settying(int a,int b) {

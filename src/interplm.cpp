@@ -409,8 +409,7 @@ void interplm::test_txt(char* filename,int size,int /* unused parameter: backoff
         }
         *ng.wordp(1)=oldw;
 
-        if ( totp < (1.0 - 1e-5) ||
-             totp > (1.0 + 1e-5))
+        if ( totp < (1.0 - 1e-5) || totp > (1.0 + 1e-5))
           cout << ng << " " << pr << " [t="<< totp << "] ***\n";
       }
 

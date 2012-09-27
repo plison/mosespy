@@ -24,9 +24,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
+#include "util.h"
 #include "dictionary.h"
 #include "n_gram.h"
-#include "mempool.h"
 #include "ngramcache.h"
 #include "ngramtable.h"
 #include "normcache.h"
@@ -496,7 +496,7 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
   //probcache miss
   mdiadaptlm::bodiscount(ng,size,fstar,lambda,bo);
 
-  if (fstar >1.0000001 || lambda >1.0000001) {
+  if (fstar > UPPER_SINGLE_PRECISION_OF_1 || lambda > UPPER_SINGLE_PRECISION_OF_1) {
     cerr << "wrong probability: " << ng
          << " , size " << size
          << " , fstar " << fstar
@@ -508,10 +508,9 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
     if (size>1) {
       if (fstar>0) pr=fstar;
       else {
-        if (lambda<1)
+        if (lambda < UPPER_SINGLE_PRECISION_OF_1)
           pr = lambda/bo * prob(ng,size-1);
         else {
-          assert(lambda < 1.00000001);
           pr = prob(ng,size-1);
         }
       }
@@ -1237,9 +1236,9 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
           //cerr << ng2 << "\n";
 
           mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-          assert(!backoff || ((lambda<1.00000001 && lambda>0.99999999) || bo< 1.0000001 ));
+          assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 
-          if (lmsize()> 1 && lambda < 1.0000001) //output back-off prob
+          if (lmsize()> 1 && lambda < UPPER_SINGLE_PRECISION_OF_1) //output back-off prob
             ibow=log10(lambda) -log10(bo);
           else
             ibow=0.0; //value for backoff weight at the highest level
@@ -1329,6 +1328,7 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
 {
 
+	cerr << "int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )\n";
   system("date");
 
   //subdict
@@ -1396,9 +1396,9 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
       mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
       ung.shift();//shrink by one
 
-      assert(!backoff || ((lambda<1.00000001 && lambda>0.99999999) || bo< 1.0000001 ));
+      assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 
-      if (lambda < 0.99999999) //output back-off prob
+      if (lambda < LOWER_SINGLE_PRECISION_OF_1) //output back-off prob
         *tout[1] << "\t" << (float) (log10(lambda) -log10(bo));
 
     }
@@ -1601,9 +1601,9 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
             //cerr << ng2 << "\n";
 
             mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-            assert(!backoff || ((lambda<1.00000001 && lambda>0.99999999) || bo< 1.0000001 ));
+            assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 
-            if (lmsize()> 1 && lambda < 1.0000001) //output back-off prob
+            if (lmsize()>1 && lambda<UPPER_SINGLE_PRECISION_OF_1) //output back-off prob
               out << "\t" << (float) (log10(lambda) -log10(bo));
           }
           out << "\n";

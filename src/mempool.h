@@ -29,8 +29,9 @@
 
 #ifndef NULL
 const int NULL=0;
-//#define NULL=0;
 #endif
+
+#define MP_BLOCK_SIZE 1000000
 
 #include <iostream>  // std::ostream
 
@@ -69,7 +70,7 @@ class mempool
 public:
 
   //! Creates a memory pool
-  mempool(int is, int bs);
+  mempool(int is, int bs=MP_BLOCK_SIZE);
 
   //! Destroys memory pool
   ~mempool();

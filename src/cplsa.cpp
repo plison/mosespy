@@ -24,8 +24,9 @@ using namespace std;
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
-#include "dictionary.h"
 #include "n_gram.h"
+#include "util.h"
+#include "dictionary.h"
 #include "ngramtable.h"
 #include "doc.h"
 #include "cplsa.h"
@@ -345,7 +346,7 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
           totH+=H[t];
         }
 
-        if(totH>1.000001 || totH<0.999999999) {
+        if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
           cerr << "totH=" << totH << "\n";
           exit(1);
         }

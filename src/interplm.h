@@ -66,7 +66,7 @@ public:
   }
 
   virtual int dub(int value) {
-    return (dict->dub(value));
+    return dict->dub(value);
   }
 
   int setusmooth(int v=0) {

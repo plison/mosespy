@@ -42,19 +42,6 @@ using namespace std;
 #define YES   1
 #define NO    0
 
-#define END_ENUM    {   (char*)0,  0 }
-
-static Enum_T BooleanEnum [] = {
-  {    (char*)"Yes",    YES },
-  {    (char*)"No",     NO},
-  {    (char*)"yes",    YES },
-  {    (char*)"no",     NO},
-  {    (char*)"y",    YES },
-  {    (char*)"n",     NO},
-  END_ENUM
-};
-
-
 double prob(ngramtable* ngt,ngram ng,int size,int cv){
 	double fstar,lambda;
 	

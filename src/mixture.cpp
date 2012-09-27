@@ -23,8 +23,9 @@ using namespace std;
 #include <cmath>
 #include "mfstream.h"
 #include "mempool.h"
-#include "dictionary.h"
 #include "n_gram.h"
+#include "util.h"
+#include "dictionary.h"
 #include "ngramtable.h"
 #include "interplm.h"
 #include "normcache.h"
@@ -477,7 +478,7 @@ int mixture::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unu
       fstar*=(double)(dict->dub() - dict->size()+1);
     }
 
-  assert((lsum>0.999999999999) && (lsum <=1.000000000001));
+  assert(lsum>LOWER_DOUBLE_PRECISION_OF_1 && lsum<UPPER_DOUBLE_PRECISION_OF_1);
   return 1;
 }
 

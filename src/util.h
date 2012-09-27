@@ -8,6 +8,10 @@
 #include "gzfilebuf.h"
 #include "n_gram.h"
 
+
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
 #define UNUSED(x) { (void) x; }
 
 #define _DEBUG_LEVEL 2
@@ -28,6 +32,19 @@
 
 #define LMTMAXLEV  20
 #define MAX_LINE  100000
+
+//0.000001 = 10^(-6)
+//0.000000000001 = 10^(-12)
+//1.000001 = 1+10^(-6)
+//1.000000000001 = 1+10^(-12)
+//0.999999 = 1-10^(-6)
+//0.999999999999 = 1-10^(-12)
+#define UPPER_SINGLE_PRECISION_OF_0 0.000001
+#define UPPER_DOUBLE_PRECISION_OF_0 0.000000000001
+#define UPPER_SINGLE_PRECISION_OF_1 1.000001
+#define LOWER_SINGLE_PRECISION_OF_1 0.999999
+#define UPPER_DOUBLE_PRECISION_OF_1 1.000000000001
+#define LOWER_DOUBLE_PRECISION_OF_1 0.999999999999
 
 std::string gettempfolder();
 void createtempfile(std::ofstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
