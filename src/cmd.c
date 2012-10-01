@@ -1,260 +1,403 @@
 /******************************************************************************
  IrstLM: IRST Language Model Toolkit
  Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
-
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
-
+ 
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
-
+ 
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ 
+ ******************************************************************************/
 
-******************************************************************************/
-
+#ifndef _WIN32_WCE
 #include	<stdio.h>
+#endif
+
 #include	<stdlib.h>
 #include	<ctype.h>
 #include	<string.h>
+#include	<stdarg.h>
+#if defined(_WIN32)
+#include	<windows.h>
+#else
+#include	<unistd.h>
+#endif
+
+#ifdef USE_UPIO
+#include	"missing.h"
+#include	"updef.h"
+#endif
 
 #include	"cmd.h"
 
-static Enum_T	BoolEnum[] = {
-	{	"FALSE",	0	},
-	{	"TRUE",		1	},
-	{	0,		0	}
-};
-
-#ifdef	NEEDSTRDUP
-char	*strdup();
-#endif
 
 #define	FALSE	0
 #define	TRUE	1
 
-#define	LINSIZ		10240
-#define	MAXPARAM	256
 
-static char	*GetLine(),
-		**str2array();
-static int	Scan(),
-		SetParam(),
-		SetEnum(),
-		SetSubrange(),
-		SetStrArray(),
-		SetGte(),
-		SetLte(),
-		CmdError(),
-		EnumError(),
-		SubrangeError(),
-		GteError(),
-		LteError(),
-		PrintParam(),
-		PrintEnum(),
-		PrintStrArray();
+static Enum_T	BoolEnum[] = {
+	{	(char*)"FALSE",	FALSE},
+	{	(char*)"TRUE",   TRUE},
+	{	(char*)"false",	FALSE},
+	{	(char*)"true",   TRUE},
+	{	(char*)"0",	    FALSE},
+	{	(char*)"1",	     TRUE},
+  { (char*)"NO",    FALSE},
+  { (char*)"YES",    TRUE},
+  { (char*)"No",    FALSE},
+  { (char*)"Yes",    TRUE},
+  { (char*)"no",    FALSE},
+  { (char*)"yes",    TRUE},
+  { (char*)"N",     FALSE},
+  { (char*)"Y",      TRUE},
+  { (char*)"n",     FALSE},
+  { (char*)"y",      TRUE},
+	{	0,		0	}
+};
 
-static Cmd_T	cmds[MAXPARAM+1];
-static char	*SepString = " \t\n";
-
-#if defined(__STDC__)
-#include	<stdarg.h>
-int DeclareParams(const char *ParName, ...)
-#else
-#include	<varargs.h>
-int DeclareParams(ParName, va_alist)
-char	*ParName;
-va_dcl
+#ifdef	NEEDSTRDUP
+char	*strdup(const char *s);
 #endif
+
+#define	LINSIZ		10240
+
+static char
+*GetLine(FILE	*fp,
+				 int	n,
+				 char	*Line),
+**str2array(char	*s,
+						char	*sep);
+static int
+str2narray(int	type,
+					 char	*s,
+					 char	*sep,
+					 void	**a);
+
+static int
+Scan(char	*ProgName,
+		 Cmd_T	*cmds,
+		 char	*Line),
+SetParam(Cmd_T	*cmd,
+				 char	*s),
+SetEnum(Cmd_T	*cmd,
+				char	*s),
+SetFlag(Cmd_T	*cmd,
+				char	*s),
+SetSubrange(Cmd_T	*cmd,
+						char	*s),
+SetStrArray(Cmd_T	*cmd,
+						char	*s),
+SetNumArray(Cmd_T	*cmd,
+						char	*s),
+SetGte(Cmd_T	*cmd,
+			 char	*s),
+SetLte(Cmd_T	*cmd,
+			 char	*s),
+CmdError(char	*opt),
+EnumError(Cmd_T	*cmd,
+					char	*s),
+SubrangeError(Cmd_T	*cmd,
+							int	n),
+GteError(Cmd_T	*cmd,
+				 int	n),
+LteError(Cmd_T	*cmd,
+				 int	n),
+PrintParam(Cmd_T	*cmd,
+					 int		TypeFlag,
+					 int		ValFlag,
+					 FILE		*fp),
+PrintParams4(int	TypeFlag,
+						 int	ValFlag,
+						 int	MsgFlag,
+						 FILE	*fp),
+FreeParam(Cmd_T	*cmd),
+PrintEnum(Cmd_T	*cmd,
+					int	TypeFlag,
+					int	ValFlag,
+					FILE	*fp),
+PrintFlag(Cmd_T	*cmd,
+					int	TypeFlag,
+					int	ValFlag,
+					FILE	*fp),
+PrintStrArray(Cmd_T	*cmd,
+							int	TypeFlag,
+							int	ValFlag,
+							FILE	*fp),
+PrintIntArray(Cmd_T	*cmd,
+							int	TypeFlag,
+							int	ValFlag,
+							FILE	*fp),
+PrintDblArray(Cmd_T	*cmd,
+							int	TypeFlag,
+							int	ValFlag,
+							FILE	*fp),
+BuildCmdList(Cmd_T	**cmdp,
+						 int	*cmdSz,
+						 char	*ParName,
+						 va_list	args),
+StoreCmdLine(char	*s);
+
+static Cmd_T	*pgcmds = 0;
+static int	pgcmdN = 0;
+static int	pgcmdSz = 0;
+static char	*SepString = " \t\r\n";
+static char	*ProgName = 0;
+static char	**CmdLines = 0;
+static int	CmdLinesSz = 0,
+CmdLinesL = 0;
+
+int 
+DeclareParams(char	*ParName,
+							...)
 {
 	va_list		args;
-	static int	ParamN = 0;
-	int		j,
-			c;
-	char		*s;
-
-#if defined(__STDC__)
+	
 	va_start(args, ParName);
-#else
-	va_start(args);
-#endif
-	for(;ParName;) {
-		if(ParamN==MAXPARAM) {
-			fprintf(stderr, "Too many parameters !!\n");
-			break;
-		}
-		for(j=0,c=1; j<ParamN&&(c=strcmp(cmds[j].Name,ParName))<0; j++)
-			;
-		if(!c) {
-			fprintf(stderr,
-				"Warning: parameter \"%s\" declared twice.\n",
-				ParName);
-		}
-		for(c=ParamN; c>j; c--) {
-			cmds[c] = cmds[c-1];
-		}
-		cmds[j].Name = ParName;
-		cmds[j].Type = va_arg(args, int);
-		cmds[j].Val = va_arg(args, void *);
-		switch(cmds[j].Type) {
-		case CMDENUMTYPE:	/* get the pointer to Enum_T struct  */
-			cmds[j].p = va_arg(args, void *);
-			break;
-		case CMDSUBRANGETYPE:	/* get the two extremes		     */
-			cmds[j].p = (void*) calloc(2, sizeof(int));
-			((int*)cmds[j].p)[0] = va_arg(args, int);
-			((int*)cmds[j].p)[1] = va_arg(args, int);
-			break;
-		case CMDGTETYPE:	/* get lower or upper bound	     */
-		case CMDLTETYPE:
-			cmds[j].p = (void*) calloc(1, sizeof(int));
-			((int*)cmds[j].p)[0] = va_arg(args, int);
-			break;
-		case CMDSTRARRAYTYPE:	/* get the separators string	     */
-			cmds[j].p = (s=va_arg(args, char*))
-				    ? (void*)strdup(s) : 0;
-			break;
-		case CMDBOOLTYPE:
-			cmds[j].Type = CMDENUMTYPE;
-			cmds[j].p = BoolEnum;
-			break;
-		case CMDDOUBLETYPE:	/* nothing else is needed	     */
-		case CMDFLOATTYPE:	/* nothing else is needed	     */
-		case CMDINTTYPE:
-		case CMDSTRINGTYPE:
-			break;
-		default:
-			fprintf(stderr, "%s: %s %d %s \"%s\"\n",
-				"DeclareParam()", "Unknown Type",
-				cmds[j].Type, "for parameter", cmds[j].Name);
-			exit(1);
-		}
-		ParamN++;
-		ParName = va_arg(args, char *);
-	}
-	cmds[ParamN].Name = NULL;
+	pgcmdN = BuildCmdList(&pgcmds, &pgcmdSz, ParName, args);
 	va_end(args);
 	return 0;
 }
 
-int GetParams(n, a, CmdFileName)
-int	*n;
-char	***a;
-char	*CmdFileName;
+int 
+GetParams(int	*n,
+					char	***a,
+					char	*DefCmd)
 {
-	char	*Line,
-		*ProgName;
-	int	argc = *n;
+	char	*Line;
+	int	i,
+	argc = *n;
 	char	**argv = *a,
-		*s;
+	*s,
+	*p,
+	*CmdFile,
+	*defCmd;
 	FILE	*fp;
 	int	IsPipe;
-
-#ifdef	MSDOS
-#define	PATHSEP '\\'
-	char	*dot = NULL;
-#else
-#define	PATHSEP '/'
+	
+#if defined(MSDOS)||defined(_WIN32)
+	char	*dot = 0;
 #endif
-
+	extern char	**environ;
+	
 	if(!(Line=malloc(LINSIZ))) {
 		fprintf(stderr, "GetParams(): Unable to alloc %d bytes\n",
-			LINSIZ);
+						LINSIZ);
 		exit(1);
 	}
-	if((ProgName=strrchr(*argv, PATHSEP))) {
-		++ProgName;
-	} else {
-		ProgName = *argv;
-	}
-#ifdef	MSDOS
-	if(dot=strchr(ProgName, '.')) *dot = 0;
+	for(ProgName=*argv+strlen(*argv);
+	    ProgName-->*argv && *ProgName!='/' && *ProgName!='\\';);
+	++ProgName;
+#if defined(MSDOS)||defined(_WIN32)
+	if((dot=strchr(ProgName, '.'))) *dot=0;
 #endif
 	--argc;
 	++argv;
+	for(i=0; environ[i]; i++) {
+		if(strncmp(environ[i], "cmd_", 4)) continue;
+		strcpy(Line, environ[i]+4);
+		if(!(p=strchr(Line, '='))) continue;
+		*p=' ';
+		StoreCmdLine(Line);
+		if(Scan(ProgName, pgcmds, Line)) CmdError(environ[i]);
+	}
+	if((defCmd=DefCmd?(DefCmd=strdup(DefCmd)):0)) {
+		defCmd += strspn(defCmd, "\n\r");
+	}
 	for(;;) {
+		CmdFile=0;
 		if(argc && argv[0][0]=='-' && argv[0][1]=='=') {
-			CmdFileName = argv[0]+2;
+			CmdFile = argv[0]+2;
 			++argv;
 			--argc;
+			defCmd = 0;
 		}
-		if(!CmdFileName) {
-			break;
+		if(!CmdFile) {
+			int	i;
+			char	ch;
+			
+			if(!defCmd||!(i=strcspn(defCmd, "\n\r"))) break;
+			ch = defCmd[i];
+			defCmd[i] = 0;
+			CmdFile = defCmd;
+			defCmd += i+!!ch;
+			defCmd += strspn(defCmd, "\n\r");
 		}
-		IsPipe = !strncmp(CmdFileName, "@@", 2);
+		
+		IsPipe = !strncmp(CmdFile, "@@", 2);
 		fp = IsPipe
-		     ? popen(CmdFileName+2, "r")
-		     : strcmp(CmdFileName, "-")
-		       ? fopen(CmdFileName, "r")
-		       : stdin;
+		? popen(CmdFile+2, "r")
+		: strcmp(CmdFile, "-")
+		? fopen(CmdFile, "r")
+		: stdin;
+		
+		
 		if(!fp) {
+			if(defCmd) continue;
 			fprintf(stderr, "Unable to open command file %s\n",
-				CmdFileName);
+							CmdFile);
 			exit(1);
 		}
 		while(GetLine(fp, LINSIZ, Line) && strcmp(Line, "\\End")) {
-			if(Scan(ProgName, cmds, Line)) {
-				CmdError(Line);
-			}
+			StoreCmdLine(Line);
+			if(Scan(ProgName, pgcmds, Line)) CmdError(Line);
 		}
+		
 		if(fp!=stdin) {
-			if(IsPipe) pclose(fp); else fclose(fp);
+			if(IsPipe)
+				pclose(fp);
+			else
+				fclose(fp);
 		}
-		CmdFileName = NULL;
+		CmdFile = NULL;
 	}
-	while(argc && **argv=='-' && (s=strchr(*argv, '='))) {
-		*s = ' ';
-		sprintf(Line, "%s/%s", ProgName, *argv+1);
-		*s = '=';
-		if(Scan(ProgName, cmds, Line)) CmdError(*argv);
+	if(DefCmd) free(DefCmd);
+	while(argc && **argv=='-'){
+		s=strchr(*argv, '=');
+		if (s){	
+			*s = ' ';
+			if((p=strchr(*argv+1, '.'))&&p<s) {
+				strcpy(Line, *argv+1);
+			} else {
+				sprintf(Line, "%s/%s", ProgName, *argv+1);
+			}
+			*s = '=';
+		}else{ //force the true value for the parameters without a value
+			sprintf(Line, "%s/%s", ProgName, *argv+1);
+		}
+		
+		StoreCmdLine(Line);
+		if(Scan(ProgName, pgcmds, Line)) CmdError(*argv);
 		--argc;
 		++argv;
 	}
 	*n = argc;
 	*a = argv;
-#ifdef MSDOS
+#if defined(MSDOS)||defined(_WIN32)
 	if(dot) *dot = '.';
 #endif
 	free(Line);
 	return 0;
 }
 
-int PrintParams(ValFlag, fp)
-int	ValFlag;
-FILE	*fp;
+int 
+GetDotParams(char	*ParName,
+						 ...)
+{
+	va_list		args;
+	int		j,
+	cmdN,
+	cmdSz = 0;
+	Cmd_T		*cmds = 0;
+	
+	va_start(args, ParName);
+	cmdN = BuildCmdList(&cmds, &cmdSz, ParName, args);
+	va_end(args);
+	for(j=0; j<CmdLinesL; j++) Scan(ProgName, cmds, CmdLines[j]);
+	for(j=0; j<cmdN; j++) FreeParam(cmds+j);
+	if(cmds) free(cmds);
+	return 0;
+}
+
+int 
+GetStrParams(char	**lines,
+						 int	n,
+						 char	*parName,
+						 ...)
+{
+	va_list		args;
+	int		j,
+	cmdN,
+	cmdSz = 0;
+	Cmd_T		*cmds = 0;
+	
+	va_start(args, parName);
+	cmdN = BuildCmdList(&cmds, &cmdSz, parName, args);
+	va_end(args);
+	for(j=0; j<n; j++) Scan((char*)0, cmds, lines[j]);
+	for(j=0; j<cmdN; j++) FreeParam(cmds+j);
+	if(cmds) free(cmds);
+	return 0;
+}
+
+int 
+PrintParams(int		ValFlag,
+						FILE	*fp)
+{
+	int TypeFlag=0;
+	int MsgFlag=1;
+	return PrintParams4(TypeFlag, ValFlag, MsgFlag, fp);
+}
+
+int 
+FullPrintParams(int	TypeFlag,
+								int	ValFlag,
+								int	MsgFlag,
+								FILE	*fp)
+{
+	return PrintParams4(TypeFlag, ValFlag, MsgFlag, fp);
+}
+/*
+ int 
+ PrintParams(int		ValFlag,
+ FILE	*fp, int MsgFlag)
+ {
+ return PrintParams4(MsgFlag, ValFlag, 0, fp);
+ }
+ */
+
+static int 
+PrintParams4(int	TypeFlag,
+						 int	ValFlag,
+						 int	MsgFlag,
+						 FILE	*fp)
 {
 	int	i;
-
+	
 	fflush(fp);
 	if(ValFlag) {
 		fprintf(fp, "Parameters Values:\n");
 	} else {
 		fprintf(fp, "Parameters:\n");
 	}
-	for(i=0; cmds[i].Name; i++) PrintParam(cmds+i, ValFlag, fp);
+	for(i=0; pgcmds[i].Name; i++) {
+		PrintParam(pgcmds+i, TypeFlag, ValFlag, fp);
+		if(MsgFlag&&pgcmds[i].Msg) {
+			char	*s=pgcmds[i].Msg,
+			*p;
+			for(;(p=strchr(s, '\n')); s=++p) {
+				fprintf(fp, "%6s%*.*s\n", "", (int)(p-s), (int)(p-s), s);
+			}
+			if(s) fprintf(fp, "%6s%s\n", "", s);
+			else fprintf(fp, "\n");
+		}
+	}
 	fprintf(fp, "\n");
 	fflush(fp);
 	return 0;
 }
 
-int SPrintParams(a, pfx)
-char	***a,
-	*pfx;
+int 
+SPrintParams(char	***a,
+						 char	*pfx)
 {
 	int	l,
-		n;
+	n;
 	Cmd_T	*cmd;
-
+	
 	if(!pfx) pfx="";
 	l = strlen(pfx);
-	for(n=0, cmd=cmds; cmd->Name; cmd++) n += !!cmd->ArgStr;
+	for(n=0, cmd=pgcmds; cmd->Name; cmd++) n += !!cmd->ArgStr;
 	a[0] = calloc(n, sizeof(char*));
-	for(n=0, cmd=cmds; cmd->Name; cmd++) {
+	for(n=0, cmd=pgcmds; cmd->Name; cmd++) {
 		if(!cmd->ArgStr) continue;
 		a[0][n] = malloc(strlen(cmd->Name)+strlen(cmd->ArgStr)+l+2);
 		sprintf(a[0][n], "%s%s=%s", pfx, cmd->Name, cmd->ArgStr);
@@ -263,92 +406,228 @@ char	***a,
 	return n;
 }
 
-static int CmdError(opt)
-char	*opt;
+static int 
+BuildCmdList(Cmd_T	**cmdp,
+						 int	*cmdSz,
+						 char	*ParName,
+						 va_list	args)
 {
-	fprintf(stderr, "Invalid option \"%s\"\n", opt);
-	fprintf(stderr, "This program expectes the following parameters:\n");
-	PrintParams(FALSE, stderr);
-	exit(0);
-}
-
-static int PrintParam(cmd, ValFlag, fp)
-Cmd_T	*cmd;
-int	ValFlag;
-FILE	*fp;
-{
-	fprintf(fp, "%4s", "");
-	switch(cmd->Type) {
-	case CMDDOUBLETYPE:
-		fprintf(fp, "%s", cmd->Name);
-		if(ValFlag) fprintf(fp, ": %22.15e", *(double *)cmd->Val);
-		fprintf(fp, "\n");
-		break;
-        case CMDFLOATTYPE:
-                fprintf(fp, "%s", cmd->Name);
-                if(ValFlag) fprintf(fp, ": %22.15e", *(float *)cmd->Val);
-                fprintf(fp, "\n");
-                break;
-	case CMDENUMTYPE:
-		PrintEnum(cmd, ValFlag, fp);
-		break;
-	case CMDINTTYPE:
-	case CMDSUBRANGETYPE:
-	case CMDGTETYPE:
-	case CMDLTETYPE:
-		fprintf(fp, "%s", cmd->Name);
-		if(ValFlag) fprintf(fp, ": %d", *(int *)cmd->Val);
-		fprintf(fp, "\n");
-		break;
-	case CMDSTRINGTYPE:
-		fprintf(fp, "%s", cmd->Name);
-		if(ValFlag) {
-			if(*(char **)cmd->Val) {
-				fprintf(fp, ": \"%s\"", *(char **)cmd->Val);
-			} else {
-				fprintf(fp, ": %s", "NULL");
+	int	j,
+	c,
+	cmdN=0;
+	char	*s;
+	Cmd_T	*cmd,
+	*cmds;
+	
+	if(!*cmdSz) {
+		if(!(cmds=*cmdp=malloc((1+(*cmdSz=BUFSIZ))*sizeof(Cmd_T)))) {
+			fprintf(stderr, "BuildCmdList(): malloc() failed\n");
+			exit(-1);
+		}
+	} else {
+		for(cmds=*cmdp; cmds[cmdN].Name; ++cmdN);
+	}
+	while(ParName) {
+		if(cmdN==*cmdSz) {
+			cmds=*cmdp=realloc(cmds,
+												 (1+(*cmdSz+=BUFSIZ))*sizeof(Cmd_T));
+			if(!cmds) {
+				fprintf(stderr,
+								"BuildCmdList(): realloc() failed\n");
+				exit(-1);
 			}
 		}
-		fprintf(fp, "\n");
-		break;
-	case CMDSTRARRAYTYPE:
-		PrintStrArray(cmd, ValFlag, fp);
-		break;
-	default:
-		fprintf(stderr, "%s: %s %d %s \"%s\"\n",
-			"PrintParam",
-			"Unknown Type",
-			cmd->Type,
-			"for parameter",
-			cmd->Name);
-		exit(1);
+		for(j=0; j<cmdN&&strcmp(cmds[j].Name, ParName)<0; j++);
+		for(c=cmdN; c>j; c--) cmds[c] = cmds[c-1];
+		cmd = cmds+j;
+		cmd->Name = ParName;
+		cmd->Type = va_arg(args, int);
+		cmd->Val = va_arg(args, void*);
+		cmd->Msg = 0;
+		cmd->Flag = 0;
+		switch(cmd->Type&~CMDMSG) {
+			case CMDENUMTYPE:	/* get the pointer to Enum_T struct */
+			case CMDFLAGTYPE:
+				cmd->p = va_arg(args, void*);
+				break;
+			case CMDSUBRANGETYPE:	/* get the two limits		 */
+				cmd->p = (void*)calloc(2, sizeof(int));
+				((int*)cmd->p)[0] = va_arg(args, int);
+				((int*)cmd->p)[1] = va_arg(args, int);
+				break;
+			case CMDGTETYPE:	/* lower or upper bound	 	*/
+			case CMDLTETYPE:
+				cmd->p = (void*)calloc(1, sizeof(int));
+				((int*)cmd->p)[0] = va_arg(args, int);
+				break;
+			case CMDSTRARRAYTYPE:	/* separator string	 	*/
+				cmd->p = (s=va_arg(args, char*)) ? (void*)strdup(s) : 0;
+				break;
+			case CMDDBLARRAYTYPE:
+			case CMDINTARRAYTYPE: /* separator & pointer to length	*/
+				cmd->p = (void*)calloc(2, sizeof(void*));
+				s = va_arg(args, char*);
+				((char**)cmd->p)[0] = s ? strdup(s) : 0;
+				((int**)cmd->p)[1] = va_arg(args, int*);
+				*((int**)cmd->p)[1] = 0;
+				break;
+			case CMDBOOLTYPE:
+				cmd->Type = CMDENUMTYPE|(cmd->Type&CMDMSG);
+				cmd->p = BoolEnum;
+				cmd->Flag = 1;
+				break;
+			case CMDDOUBLETYPE:	/* nothing else is needed	 */
+			case CMDFLOATTYPE:
+			case CMDINTTYPE:
+			case CMDSTRINGTYPE:
+				break;
+			default:
+				fprintf(stderr, "%s: %s %d %s \"%s\"\n",
+								"BuildCmdList()", "Unknown Type",
+								cmd->Type&~CMDMSG, "for parameter", cmd->Name);
+				exit(1);
+		}
+		if(cmd->Type&CMDMSG) {
+			cmd->Type&=~CMDMSG;
+			cmd->Msg = va_arg(args, char*);
+		}
+		cmdN++;
+		ParName = va_arg(args, char*);
+	}
+	cmds[cmdN].Name = 0;
+	return cmdN;
+}
+
+static int 
+CmdError(char	*opt)
+{
+	fprintf(stderr, "Invalid option \"%s\"\n", opt);
+	fprintf(stderr, "This program expects the following parameters:\n");
+	PrintParams4(TRUE, FALSE, TRUE, stderr);
+	exit(0);
+	return 0;
+}
+
+static int 
+FreeParam(Cmd_T	*cmd)
+{
+	switch(cmd->Type) {
+		case CMDSUBRANGETYPE:
+		case CMDGTETYPE:
+		case CMDLTETYPE:
+		case CMDSTRARRAYTYPE:
+			if(cmd->p) free(cmd->p);
+			break;
+		case CMDINTARRAYTYPE:
+		case CMDDBLARRAYTYPE:
+			if(!cmd->p) break;
+			if(*(char**)cmd->p) free(*(char**)cmd->p);
+			free(cmd->p);
+			break;
 	}
 	return 0;
 }
 
-static char *GetLine(fp, n, Line)
-FILE	*fp;
-int	n;
-char	*Line;
+static int 
+PrintParam(Cmd_T	*cmd,
+					 int		TypeFlag,
+					 int		ValFlag,
+					 FILE		*fp)
+{
+	char	ts[128];
+	
+	*ts=0;
+	fprintf(fp, "%4s", "");
+	switch(cmd->Type) {
+		case CMDDOUBLETYPE:
+			fprintf(fp, "%s", cmd->Name);
+			if(TypeFlag) fprintf(fp, " [double]");
+			if(ValFlag) fprintf(fp, ": %22.15e", *(double*)cmd->Val);
+			break;
+		case CMDFLOATTYPE:
+			fprintf(fp, "%s", cmd->Name);
+			if(TypeFlag) fprintf(fp, " [float]");
+			if(ValFlag) fprintf(fp, ": %22.15e", *(float *)cmd->Val);
+			break;
+		case CMDENUMTYPE:
+			PrintEnum(cmd, TypeFlag, ValFlag, fp);
+			break;
+		case CMDFLAGTYPE:
+			PrintFlag(cmd, TypeFlag, ValFlag, fp);
+			break;
+		case CMDINTTYPE:
+			if(TypeFlag) sprintf(ts, " [int]");
+		case CMDSUBRANGETYPE:
+			if(TypeFlag&&!*ts) sprintf(ts, " [int %d ... %d]",
+																 ((int*)cmd->p)[0],
+																 ((int*)cmd->p)[1]);
+		case CMDGTETYPE:
+			if(TypeFlag&&!*ts) sprintf(ts, " [int >= %d]",
+																 ((int*)cmd->p)[0]);
+		case CMDLTETYPE:
+			if(TypeFlag&&!*ts) sprintf(ts, " [int <= %d]",
+																 ((int*)cmd->p)[0]);
+			fprintf(fp, "%s", cmd->Name);
+			if(*ts) fprintf(fp, " %s", ts);
+			if(ValFlag) fprintf(fp, ": %d", *(int*)cmd->Val);
+			break;
+		case CMDSTRINGTYPE:
+			fprintf(fp, "%s", cmd->Name);
+			if(TypeFlag) fprintf(fp, " [string]");
+			if(ValFlag) {
+				if(*(char **)cmd->Val) {
+					fprintf(fp, ": \"%s\"", *(char**)cmd->Val);
+				} else {
+					fprintf(fp, ": %s", "NULL");
+				}
+			}
+			break;
+		case CMDSTRARRAYTYPE:
+			PrintStrArray(cmd, TypeFlag, ValFlag, fp);
+			break;
+		case CMDINTARRAYTYPE:
+			PrintIntArray(cmd, TypeFlag, ValFlag, fp);
+			break;
+		case CMDDBLARRAYTYPE:
+			PrintDblArray(cmd, TypeFlag, ValFlag, fp);
+			break;
+		default:
+			fprintf(stderr, "%s: %s %d %s \"%s\"\n",
+							"PrintParam",
+							"Unknown Type",
+							cmd->Type,
+							"for parameter",
+							cmd->Name);
+			exit(1);
+	}
+	fprintf(fp, ":");
+	//	fprintf(fp, "\n");
+	fflush(fp);
+	return 0;
+}
+
+static char *
+GetLine(FILE	*fp,
+				int	n,
+				char	*Line)
 {
 	int	j,
-		l,
-		offs=0;
-
+	l,
+	offs=0;
+	
 	for(;;) {
 		if(!fgets(Line+offs, n-offs, fp)) {
-			return NULL;
+			return 0;
 		}
 		if(Line[offs]=='#') continue;
 		l = strlen(Line+offs)-1;
 		Line[offs+l] = 0;
-		for(j=offs; Line[j] && isspace(Line[j]); j++, l--)
-			;
+		for(j=offs; Line[j]&&isspace((unsigned char)Line[j]); j++,l--);
 		if(l<1) continue;
 		if(j > offs) {
 			char	*s = Line+offs,
-				*q = Line+j;
-
+			*q = Line+j;
+			
 			while((*s++=*q++))
 				;
 		}
@@ -362,24 +641,22 @@ char	*Line;
 	return Line;
 }
 
-static int Scan(ProgName, cmds, Line)
-char	*ProgName,
-	*Line;
-Cmd_T	*cmds;
+static int 
+Scan(char	*ProgName,
+     Cmd_T	*cmds,
+     char	*Line)
 {
 	char	*q,
-		*p;
+	*p;
 	int	i,
-		hl,
-		HasToMatch = FALSE,
-		c0,
-		c;
-
+	hl,
+	HasToMatch = FALSE,
+	c0,
+	c;
+	
 	p = Line+strspn(Line, SepString);
-	if(!(hl=strcspn(p, SepString))) {
-		return 0;
-	}
-	if((q=strchr(p, '/')) && q-p<hl) {
+	if(!(hl=strcspn(p, SepString))) return 0;
+	if(ProgName&&(q=strchr(p, '/')) && q-p<hl) {
 		*q = 0;
 		if(strcmp(p, ProgName)) {
 			*q = '/';
@@ -389,9 +666,7 @@ Cmd_T	*cmds;
 		HasToMatch=TRUE;
 		p = q+1;
 	}
-	if(!(hl = strcspn(p, SepString))) {
-		return 0;
-	}
+	if(!(hl=strcspn(p, SepString))) return 0;
 	c0 = p[hl];
 	p[hl] = 0;
 	for(i=0, c=1; cmds[i].Name&&(c=strcmp(cmds[i].Name, p))<0; i++)
@@ -401,217 +676,330 @@ Cmd_T	*cmds;
 	return HasToMatch && c;
 }
 
-static int SetParam(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+static int 
+SetParam(Cmd_T	*cmd,
+				 char	*_s)
 {
-	if(!*s && cmd->Type != CMDSTRINGTYPE) {
+	char *s;
+	
+	if(!*_s && cmd->Type==CMDENUMTYPE && cmd->Flag==1){
+		s=(char*) malloc(5);
+		strcpy(s,"TRUE");
+	}else{
+		s=_s;
+	}
+	
+	if (!*s || (s=='\0' && cmd->Flag==0)){
 		fprintf(stderr,
-			"WARNING: No value specified for parameter \"%s\"\n",
-			cmd->Name);
+						"WARNING: No value specified for parameter \"%s\"\n",
+						cmd->Name);
 		return 0;
 	}
+	
 	switch(cmd->Type) {
-	case CMDDOUBLETYPE:
-		if(sscanf(s, "%lf", (double*)cmd->Val)!=1) {
-			fprintf(stderr,
-				"Float value required for parameter \"%s\"\n",
-				cmd->Name);
+		case CMDDOUBLETYPE:
+			if(sscanf(s, "%lf", (double*)cmd->Val)!=1) {
+				fprintf(stderr,
+								"Float value required for parameter \"%s\"\n",
+								cmd->Name);
+				exit(1);
+			}
+			break;
+		case CMDFLOATTYPE:
+			if(sscanf(s, "%f", (float*)cmd->Val)!=1) {
+				fprintf(stderr,
+								"Float value required for parameter \"%s\"\n",
+								cmd->Name);
+				exit(1);
+			}
+			break;
+		case CMDENUMTYPE:
+			SetEnum(cmd, s);
+			break;
+		case CMDFLAGTYPE:
+			SetFlag(cmd, s);
+			break;
+		case CMDINTTYPE:
+			if(sscanf(s, "%i", (int*)cmd->Val)!=1) {
+				fprintf(stderr,
+								"Integer value required for parameter \"%s\"\n",
+								cmd->Name);
+				exit(1);
+			}
+			break;
+		case CMDSTRINGTYPE:
+			*(char **)cmd->Val = (strcmp(s, "<NULL>") && strcmp(s, "NULL"))
+			? strdup(s)
+			: 0;
+			break;
+		case CMDSTRARRAYTYPE:
+			SetStrArray(cmd, s);
+			break;
+		case CMDINTARRAYTYPE:
+		case CMDDBLARRAYTYPE:
+			SetNumArray(cmd, s);
+			break;
+		case CMDGTETYPE:
+			SetGte(cmd, s);
+			break;
+		case CMDLTETYPE:
+			SetLte(cmd, s);
+			break;
+		case CMDSUBRANGETYPE:
+			SetSubrange(cmd, s);
+			break;
+		default:
+			fprintf(stderr, "%s: %s %d %s \"%s\"\n",
+							"SetParam",
+							"Unknown Type",
+							cmd->Type,
+							"for parameter",
+							cmd->Name);
 			exit(1);
-		}
-		break;
-        case CMDFLOATTYPE:
-                if(sscanf(s, "%f", (float*)cmd->Val)!=1) {
-                        fprintf(stderr,
-                                "Float value required for parameter \"%s\"\n",
-                                cmd->Name);
-                        exit(1);
-                }
-                break;
-	case CMDENUMTYPE:
-		SetEnum(cmd, s);
-		break;
-	case CMDINTTYPE:
-		if(sscanf(s, "%d", (int*)cmd->Val)!=1) {
-			fprintf(stderr,
-				"Integer value required for parameter \"%s\"\n",
-				cmd->Name);
-			exit(1);
-		}
-		break;
-	case CMDSTRINGTYPE:
-		*(char **)cmd->Val = (strcmp(s, "<NULL>") && strcmp(s, "NULL"))
-				     ? strdup(s)
-				     : 0;
-		break;
-	case CMDSTRARRAYTYPE:
-		SetStrArray(cmd, s);
-		break;
-	case CMDGTETYPE:
-		SetGte(cmd, s);
-		break;
-	case CMDLTETYPE:
-		SetLte(cmd, s);
-		break;
-	case CMDSUBRANGETYPE:
-		SetSubrange(cmd, s);
-		break;
-	default:
-		fprintf(stderr, "%s: %s %d %s \"%s\"\n",
-			"SetParam",
-			"Unknown Type",
-			cmd->Type,
-			"for parameter",
-			cmd->Name);
-		exit(1);
 	}
 	cmd->ArgStr = strdup(s);
+	
+	if(!*_s && cmd->Type==CMDENUMTYPE && cmd->Flag==1){
+		free (s);
+	}
+	
 	return 0;
 }
 
-static int SetEnum(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+static int 
+SetEnum(Cmd_T	*cmd,
+				char	*s)
 {
 	Enum_T	*en;
-
-	for(en=(Enum_T *)cmd->p; en->Name; en++) {
+	
+	for(en=(Enum_T*)cmd->p; en->Name; en++) {
 		if(*en->Name && !strcmp(s, en->Name)) {
-			*(int *) cmd->Val = en->Idx;
+			*(int*)cmd->Val = en->Idx;
 			return 0;
 		}
 	}
 	return EnumError(cmd, s);
 }
 
-static int SetSubrange(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+int
+EnumIdx(Enum_T	*en,
+				char	*s)
+{
+	if(en) for(; en->Name; en++) {
+		if(*en->Name && !strcmp(s, en->Name)) return en->Idx;
+	}
+	return -1;
+}
+
+char *
+EnumStr(Enum_T	*en,
+				int	i)
+{
+	if(en) for(; en->Name; en++) if(en->Idx==i) return en->Name;
+	return 0;
+}
+
+static int 
+SetFlag(Cmd_T	*cmd,
+				char	*s)
+{
+	Enum_T	*en;
+	int	l;
+	
+	for(; (l=strcspn(s, "+"))>0; s+=l,s+=!!*s) {
+		for(en=(Enum_T*)cmd->p;
+		    en->Name&&(l!=strlen(en->Name)||strncmp(s, en->Name, l));
+		    en++);
+		if(!en->Name) return EnumError(cmd, s);
+		*(int*)cmd->Val |= en->Idx;
+	}
+	return 0;
+}
+
+static int 
+SetSubrange(Cmd_T	*cmd,
+						char	*s)
 {
 	int	n;
-
-	if(sscanf(s, "%d", &n)!=1) {
+	
+	if(sscanf(s, "%i", &n)!=1) {
 		fprintf(stderr,
-			"Integer value required for parameter \"%s\"\n",
-			cmd->Name);
+						"Integer value required for parameter \"%s\"\n",
+						cmd->Name);
 		exit(1);
 	}
-	if(n < *(int *)cmd->p || n > *((int *)cmd->p+1)) {
+	if(n < *(int*)cmd->p || n > *((int*)cmd->p+1)) {
 		return SubrangeError(cmd, n);
 	}
-	*(int *)cmd->Val = n;
+	*(int*)cmd->Val = n;
 	return 0;
 }
 
-static int SetGte(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+static int 
+SetGte(Cmd_T	*cmd,
+       char	*s)
 {
 	int	n;
-
-	if(sscanf(s, "%d", &n)!=1) {
+	
+	if(sscanf(s, "%i", &n)!=1) {
 		fprintf(stderr,
-			"Integer value required for parameter \"%s\"\n",
-			cmd->Name);
+						"Integer value required for parameter \"%s\"\n",
+						cmd->Name);
 		exit(1);
 	}
-	if(n<*(int *)cmd->p) {
+	if(n<*(int*)cmd->p) {
 		return GteError(cmd, n);
 	}
-	*(int *)cmd->Val = n;
+	*(int*)cmd->Val = n;
 	return 0;
 }
 
-static int SetStrArray(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+static int 
+SetStrArray(Cmd_T	*cmd,
+						char	*s)
 {
 	*(char***)cmd->Val = str2array(s, (char*)cmd->p);
 	return 0;
 }
 
-static int SetLte(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+static int 
+SetNumArray(Cmd_T	*cmd,
+						char	*s)
 {
-	int	n;
-
-	if(sscanf(s, "%d", &n)!=1) {
-		fprintf(stderr,
-			"Integer value required for parameter \"%s\"\n",
-			cmd->Name);
-		exit(1);
-	}
-	if(n > *(int *)cmd->p) {
-		return LteError(cmd, n);
-	}
-	*(int *)cmd->Val = n;
+	*((int**)cmd->p)[1] = str2narray(cmd->Type, s,
+																	 *((char**)cmd->p), cmd->Val);
 	return 0;
 }
 
-static int EnumError(cmd, s)
-Cmd_T	*cmd;
-char	*s;
+static int 
+SetLte(Cmd_T	*cmd,
+       char	*s)
+{
+	int	n;
+	
+	if(sscanf(s, "%i", &n)!=1) {
+		fprintf(stderr,
+						"Integer value required for parameter \"%s\"\n",
+						cmd->Name);
+		exit(1);
+	}
+	if(n > *(int*)cmd->p) {
+		return LteError(cmd, n);
+	}
+	*(int*)cmd->Val = n;
+	return 0;
+}
+
+static int 
+EnumError(Cmd_T	*cmd,
+					char	*s)
 {
 	Enum_T	*en;
-
+	
 	fprintf(stderr,
-		"Invalid value \"%s\" for parameter \"%s\"\n", s, cmd->Name);
+					"Invalid value \"%s\" for parameter \"%s\"\n", s, cmd->Name);
 	fprintf(stderr, "Valid values are:\n");
-	for(en=(Enum_T *)cmd->p; en->Name; en++) {
-		if(*en->Name) {
-			fprintf(stderr, "    %s\n", en->Name);
-		}
+	for(en=(Enum_T*)cmd->p; en->Name; en++) {
+		if(*en->Name) fprintf(stderr, " %s\n", en->Name);
 	}
 	fprintf(stderr, "\n");
 	exit(1);
+	return 0;
 }
 
-static int GteError(cmd, n)
-Cmd_T	*cmd;
-int	n;
+static int 
+GteError(Cmd_T	*cmd,
+				 int	n)
 {
 	fprintf(stderr,
-		"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
-	fprintf(stderr, "Valid values must be greater than or equal to  %d\n",
-		*(int *)cmd->p);
+					"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
+	fprintf(stderr, "Valid values must be greater than or equal to %d\n",
+					*(int*)cmd->p);
 	exit(1);
+	return 0;
 }
 
-static int LteError(cmd, n)
-Cmd_T	*cmd;
-int	n;
+static int 
+LteError(Cmd_T	*cmd,
+				 int	n)
 {
 	fprintf(stderr,
-		"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
-	fprintf(stderr, "Valid values must be less than or equal to  %d\n",
-		*(int *)cmd->p);
+					"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
+	fprintf(stderr, "Valid values must be less than or equal to %d\n",
+					*(int*)cmd->p);
 	exit(1);
+	return 0;
 }
 
-static int SubrangeError(cmd, n)
-Cmd_T	*cmd;
-int	n;
+static int 
+SubrangeError(Cmd_T	*cmd,
+							int	n)
 {
 	fprintf(stderr,
-		"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
+					"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
 	fprintf(stderr, "Valid values range from %d to %d\n",
-		*(int *)cmd->p, *((int *)cmd->p+1));
+					*(int*)cmd->p, *((int*)cmd->p+1));
 	exit(1);
+	return 0;
 }
 
-static int PrintEnum(cmd, ValFlag, fp)
-Cmd_T	*cmd;
-int	ValFlag;
-FILE	*fp;
+static int 
+PrintEnum(Cmd_T	*cmd,
+					int	TypeFlag,
+					int	ValFlag,
+					FILE	*fp)
 {
 	Enum_T	*en;
-
+	char	*sep="";
+	
 	fprintf(fp, "%s", cmd->Name);
+	if(TypeFlag) {
+		fprintf(fp, " [enum { ");
+		for(en=(Enum_T*)cmd->p; en->Name; en++) {
+			if(*en->Name) {
+				fprintf(fp, "%s%s", sep, en->Name);
+				sep=", ";
+			}
+		}
+		fprintf(fp, " }]");
+	}
 	if(ValFlag) {
-		for(en=(Enum_T *)cmd->p; en->Name; en++) {
-			if(*en->Name && en->Idx==*(int *)cmd->Val) {
+		for(en=(Enum_T*)cmd->p; en->Name; en++) {
+			if(*en->Name && en->Idx==*(int*)cmd->Val) {
 				fprintf(fp, ": %s", en->Name);
+			}
+		}
+	}
+	//	fprintf(fp, "\n");
+	return 0;
+}
+
+static int 
+PrintFlag(Cmd_T	*cmd,
+					int	TypeFlag,
+					int	ValFlag,
+					FILE	*fp)
+{
+	Enum_T	*en;
+	char	*sep="";
+	
+	fprintf(fp, "%s", cmd->Name);
+	if(TypeFlag) {
+		fprintf(fp, ": flag { ");
+		for(en=(Enum_T*)cmd->p; en->Name; en++) {
+			if(*en->Name) {
+				fprintf(fp, "%s%s", sep, en->Name);
+				sep=", ";
+			}
+		}
+		fprintf(fp, " }");
+	}
+	if(ValFlag) {
+		fprintf(fp, ": ");
+		for(en=(Enum_T*)cmd->p; en->Name; en++) {
+			if(*en->Name && (en->Idx&*(int*)cmd->Val)==en->Idx) {
+				fprintf(fp, "%s%s", sep, en->Name);
+				sep="+";
 			}
 		}
 	}
@@ -619,16 +1007,21 @@ FILE	*fp;
 	return 0;
 }
 
-static int PrintStrArray(cmd, ValFlag, fp)
-Cmd_T	*cmd;
-int	ValFlag;
-FILE	*fp;
+static int 
+PrintStrArray(Cmd_T	*cmd,
+							int	TypeFlag,
+							int	ValFlag,
+							FILE	*fp)
 {
 	char	*indent,
-		**s = *(char***)cmd->Val;
+	**s = *(char***)cmd->Val;
 	int	l = 4+strlen(cmd->Name);
-
+	
 	fprintf(fp, "%s", cmd->Name);
+	if(TypeFlag) {
+		fprintf(fp, ": string array, separator \"%s\"",
+						cmd->p?(char*)cmd->p:"");
+	}
 	indent = malloc(l+2);
 	memset(indent, ' ', l+1);
 	indent[l+1] = 0;
@@ -643,23 +1036,88 @@ FILE	*fp;
 	return 0;
 }
 
-static char **str2array(s, sep)
-char	*s,
-	*sep;
+static int 
+PrintIntArray(Cmd_T	*cmd,
+							int	TypeFlag,
+							int	ValFlag,
+							FILE	*fp)
+{
+	char	*indent;
+	int	l = 4+strlen(cmd->Name),
+	n,
+	*i = *(int**)cmd->Val;
+	
+	fprintf(fp, "%s", cmd->Name);
+	if(TypeFlag) {
+		fprintf(fp, ": int array, separator \"%s\"",
+						*(char**)cmd->p?*(char**)cmd->p:"");
+	}
+	n = *((int**)cmd->p)[1];
+	indent = malloc(l+2);
+	memset(indent, ' ', l+1);
+	indent[l+1] = 0;
+	if(ValFlag) {
+		fprintf(fp, ":");
+		if(i&&n>0) {
+			fprintf(fp, " %d", *i++);
+			while(--n) fprintf(fp, "\n%s %d", indent, *i++);
+		}
+	}
+	free(indent);
+	fprintf(fp, "\n");
+	return 0;
+}
+
+static int 
+PrintDblArray(Cmd_T	*cmd,
+							int	TypeFlag,
+							int	ValFlag,
+							FILE	*fp)
+{
+	char	*indent;
+	int	l = 4+strlen(cmd->Name),
+	n;
+	double	*x = *(double**)cmd->Val;
+	
+	fprintf(fp, "%s", cmd->Name);
+	if(TypeFlag) {
+		fprintf(fp, ": double array, separator \"%s\"",
+						*(char**)cmd->p?*(char**)cmd->p:"");
+	}
+	n = *((int**)cmd->p)[1];
+	indent = malloc(l+2);
+	memset(indent, ' ', l+1);
+	indent[l+1] = 0;
+	if(ValFlag) {
+		fprintf(fp, ":");
+		if(x&&n>0) {
+			fprintf(fp, " %e", *x++);
+			while(--n) fprintf(fp, "\n%s %e", indent, *x++);
+		}
+	}
+	free(indent);
+	fprintf(fp, "\n");
+	return 0;
+}
+
+static char **
+str2array(char	*s,
+					char	*sep)
 {
 	char	*p,
-		**a;
+	**a;
 	int	n = 0,
-		l;
-
+	l;
+	
 	if(!sep) sep = SepString;
 	p = s += strspn(s, sep);
+	if(!*p) return 0;
 	while(*p) {
 		p += strcspn(p, sep);
 		p += strspn(p, sep);
 		++n;
 	}
-	a = calloc(n+1, sizeof(char *));
+	a = calloc(n+1, sizeof(char*));
 	p = s;
 	n = 0;
 	while(*p) {
@@ -672,4 +1130,64 @@ char	*s,
 		p += strspn(p, sep);
 	}
 	return a;
+}
+
+int
+str2narray(int	type,
+					 char	*s,
+					 char	*sep,
+					 void	**a)
+{
+	char	*p;
+	double	*x;
+	int	*i;
+	int	n = 0;
+	
+	if(!sep) sep=SepString;
+	for(p=s; *p; ) {
+		p += strcspn(p, sep);
+		p += !!*p;
+		++n;
+	}
+	*a = 0;
+	if(!n) return 0;
+	*a = calloc(n, (type==CMDINTARRAYTYPE)?sizeof(int):sizeof(double));
+	i = (int*)*a;
+	x = (double*)*a;
+	p = s;
+	n = 0;
+	while(*p) {
+		switch(type) {
+			case CMDINTARRAYTYPE:
+				*i++ = atoi(p);
+				break;
+			case CMDDBLARRAYTYPE:
+				*x++ = atof(p);
+				break;
+		}
+		++n;
+		p += strcspn(p, sep);
+		p += !!*p;
+	}
+	return n;
+}
+
+static int 
+StoreCmdLine(char	*s)
+{
+	s += strspn(s, SepString);
+	if(!*s) return 0;
+	if(CmdLinesL>=CmdLinesSz) {
+		CmdLines=CmdLinesSz
+		? (char**)realloc(CmdLines,
+											(CmdLinesSz+=BUFSIZ)*sizeof(char**))
+		: (char**)malloc((CmdLinesSz=BUFSIZ)*sizeof(char**));
+		if(!CmdLines) {
+			fprintf(stderr, "%s\n",
+							"StoreCmdLine(): malloc() failed");
+			exit(-1);
+		}
+	}
+	CmdLines[CmdLinesL++] = strdup(s);
+	return 0;
 }
