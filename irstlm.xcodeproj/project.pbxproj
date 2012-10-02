@@ -22,6 +22,7 @@
 				3DE0491E1610482C00A26D29 /* PBXTargetDependency */,
 				3DE049201610483000A26D29 /* PBXTargetDependency */,
 				3DE049221610483300A26D29 /* PBXTargetDependency */,
+				3D90F198161ACA85005EF654 /* PBXTargetDependency */,
 			);
 			name = ALL;
 			productName = ALL;
@@ -48,6 +49,7 @@
 		3D86C7A616104E6600205CAE /* doc.h in Headers */ = {isa = PBXBuildFile; fileRef = 3D86C7A416104E6600205CAE /* doc.h */; };
 		3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A716104E7B00205CAE /* cplsa.cpp */; };
 		3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A816104E7B00205CAE /* doc.cpp */; };
+		3D90F199161ACAAB005EF654 /* dtsel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* dtsel.cpp */; };
 		3DE048EA161046FC00A26D29 /* lmclass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE048E8161046FC00A26D29 /* lmclass.cpp */; };
 		3DE048EB161046FC00A26D29 /* lmclass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE048E9161046FC00A26D29 /* lmclass.h */; };
 		3DE048F61610478800A26D29 /* lmInterpolation.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE048F51610478800A26D29 /* lmInterpolation.h */; };
@@ -137,6 +139,27 @@
 			remoteGlobalIDString = D733D3F30B1F3B0800565249;
 			remoteInfo = irstlm;
 		};
+		3D90F184161ACA12005EF654 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D733D3F30B1F3B0800565249;
+			remoteInfo = irstlm;
+		};
+		3D90F197161ACA85005EF654 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D90F182161ACA12005EF654 /* dtsel */;
+			remoteInfo = dtsel;
+		};
+		3D90F19E161ACB2B005EF654 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D90F182161ACA12005EF654 /* dtsel */;
+			remoteInfo = dtsel;
+		};
 		3DE049131610481700A26D29 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
@@ -222,6 +245,7 @@
 		3D86C7A416104E6600205CAE /* doc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = doc.h; path = src/doc.h; sourceTree = "<group>"; };
 		3D86C7A716104E7B00205CAE /* cplsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cplsa.cpp; path = src/cplsa.cpp; sourceTree = "<group>"; };
 		3D86C7A816104E7B00205CAE /* doc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = doc.cpp; path = src/doc.cpp; sourceTree = "<group>"; };
+		3D90F1A2161ACC07005EF654 /* dtsel */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = dtsel; path = build/Debug/dtsel; sourceTree = "<group>"; };
 		3DE048E8161046FC00A26D29 /* lmclass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmclass.cpp; path = src/lmclass.cpp; sourceTree = "<group>"; };
 		3DE048E9161046FC00A26D29 /* lmclass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmclass.h; path = src/lmclass.h; sourceTree = "<group>"; };
 		3DE048F51610478800A26D29 /* lmInterpolation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmInterpolation.h; path = src/lmInterpolation.h; sourceTree = "<group>"; };
@@ -341,6 +365,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3D90F187161ACA12005EF654 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D733D3F20B1F3B0800565249 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -361,18 +392,18 @@
 		08FB7794FE84155DC02AAC07 /* irstlm */ = {
 			isa = PBXGroup;
 			children = (
-				3D86C79D16104E2600205CAE /* plsa.cpp */,
 				D77D1C7F0B3032FB00D79D16 /* other */,
 				D701C78C0B2EB333007D2774 /* src */,
 				ADCFA02A0E4872FC00E351DB /* libirstlm.dylib */,
 				ADCFA0280E4872FC00E351DB /* dict */,
-				3D4F4D70135C481600E85480 /* compile-lm */,
 				3D4F4D8B135C48E800E85480 /* ngt */,
-				3D4F4D96135C48EC00E85480 /* quantize-lm */,
-				3D4F4DA1135C48F100E85480 /* prune-lm */,
 				3D4F4DC5135C5B8800E85480 /* tlm */,
+				3D4F4D70135C481600E85480 /* compile-lm */,
+				3D4F4DA1135C48F100E85480 /* prune-lm */,
+				3D4F4D96135C48EC00E85480 /* quantize-lm */,
 				3D4F4DDB135C5C4C00E85480 /* interpolate-lm */,
 				3D4F4DF6135C5D7300E85480 /* plsa */,
+				3D90F1A2161ACC07005EF654 /* dtsel */,
 			);
 			name = irstlm;
 			sourceTree = "<group>";
@@ -380,6 +411,7 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3D86C79D16104E2600205CAE /* plsa.cpp */,
 				3D86C7A716104E7B00205CAE /* cplsa.cpp */,
 				3D86C7A816104E7B00205CAE /* doc.cpp */,
 				3D86C7A316104E6600205CAE /* cplsa.h */,
@@ -618,11 +650,29 @@
 			buildRules = (
 			);
 			dependencies = (
+				3D90F19F161ACB2B005EF654 /* PBXTargetDependency */,
 				3D4F4DEE135C5D7300E85480 /* PBXTargetDependency */,
 			);
 			name = plsa;
 			productName = dict;
 			productReference = 3D4F4DF6135C5D7300E85480 /* plsa */;
+			productType = "com.apple.product-type.tool";
+		};
+		3D90F182161ACA12005EF654 /* dtsel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3D90F188161ACA12005EF654 /* Build configuration list for PBXNativeTarget "dtsel" */;
+			buildPhases = (
+				3D90F185161ACA12005EF654 /* Sources */,
+				3D90F187161ACA12005EF654 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3D90F183161ACA12005EF654 /* PBXTargetDependency */,
+			);
+			name = dtsel;
+			productName = dict;
+			productReference = 3D90F1A2161ACC07005EF654 /* dtsel */;
 			productType = "com.apple.product-type.tool";
 		};
 		D733D3F30B1F3B0800565249 /* irstlm */ = {
@@ -681,13 +731,14 @@
 			targets = (
 				D733D3F30B1F3B0800565249 /* irstlm */,
 				D77D1C700B30325000D79D16 /* dict */,
-				3D4F4D67135C481600E85480 /* compile-lm */,
 				3D4F4D82135C48E800E85480 /* ngt */,
-				3D4F4D8D135C48EC00E85480 /* quantize-lm */,
-				3D4F4D98135C48F100E85480 /* prune-lm */,
 				3D4F4DBC135C5B8800E85480 /* tlm */,
+				3D4F4D67135C481600E85480 /* compile-lm */,
+				3D4F4D98135C48F100E85480 /* prune-lm */,
+				3D4F4D8D135C48EC00E85480 /* quantize-lm */,
 				3D4F4DD2135C5C4C00E85480 /* interpolate-lm */,
 				3D4F4DED135C5D7300E85480 /* plsa */,
+				3D90F182161ACA12005EF654 /* dtsel */,
 				3DE04907161047DD00A26D29 /* ALL */,
 			);
 		};
@@ -747,6 +798,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				3D86C79E16104E2600205CAE /* plsa.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3D90F185161ACA12005EF654 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D90F199161ACAAB005EF654 /* dtsel.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -825,6 +884,21 @@
 			isa = PBXTargetDependency;
 			target = D733D3F30B1F3B0800565249 /* irstlm */;
 			targetProxy = 3D4F4DEF135C5D7300E85480 /* PBXContainerItemProxy */;
+		};
+		3D90F183161ACA12005EF654 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D733D3F30B1F3B0800565249 /* irstlm */;
+			targetProxy = 3D90F184161ACA12005EF654 /* PBXContainerItemProxy */;
+		};
+		3D90F198161ACA85005EF654 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D90F182161ACA12005EF654 /* dtsel */;
+			targetProxy = 3D90F197161ACA85005EF654 /* PBXContainerItemProxy */;
+		};
+		3D90F19F161ACB2B005EF654 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D90F182161ACA12005EF654 /* dtsel */;
+			targetProxy = 3D90F19E161ACB2B005EF654 /* PBXContainerItemProxy */;
 		};
 		3DE049141610481700A26D29 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1218,6 +1292,46 @@
 			};
 			name = Release;
 		};
+		3D90F189161ACA12005EF654 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = dtsel;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		3D90F18A161ACA12005EF654 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = dict;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 		3DE04908161047DD00A26D29 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1395,6 +1509,15 @@
 			buildConfigurations = (
 				3D4F4DF4135C5D7300E85480 /* Debug */,
 				3D4F4DF5135C5D7300E85480 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3D90F188161ACA12005EF654 /* Build configuration list for PBXNativeTarget "dtsel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3D90F189161ACA12005EF654 /* Debug */,
+				3D90F18A161ACA12005EF654 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
