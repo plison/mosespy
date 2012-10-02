@@ -43,7 +43,6 @@
 #define	FALSE	0
 #define	TRUE	1
 
-
 static Enum_T	BoolEnum[] = {
 	{	(char*)"FALSE",	FALSE},
 	{	(char*)"TRUE",   TRUE},
@@ -262,18 +261,23 @@ GetParams(int	*n,
 	if(DefCmd) free(DefCmd);
 	while(argc && **argv=='-'){
 		s=strchr(*argv, '=');
+
+		//allows double dash for parameters
+		int dash_number=1;
+		if (*(*argv+1) == '-') dash_number++; 
 		if (s){	
 			*s = ' ';
-			if((p=strchr(*argv+1, '.'))&&p<s) {
-				strcpy(Line, *argv+1);
+			if((p=strchr(*argv+dash_number, '.'))&&p<s) {
+				strcpy(Line, *argv+dash_number);
 			} else {
-				sprintf(Line, "%s/%s", ProgName, *argv+1);
+				sprintf(Line, "%s/%s", ProgName, *argv+dash_number);
 			}
 			*s = '=';
 		}else{ //force the true value for the parameters without a value
-			sprintf(Line, "%s/%s", ProgName, *argv+1);
+			sprintf(Line, "%s/%s", ProgName, *argv+dash_number);
 		}
 		
+//		fprintf(stderr,"Line:|%s|\n",Line);
 		StoreCmdLine(Line);
 		if(Scan(ProgName, pgcmds, Line)) CmdError(*argv);
 		--argc;
