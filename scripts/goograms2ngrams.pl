@@ -44,18 +44,24 @@ $help=1 unless
 			'startfrom=i' => \$from,
 			'googledir=s' => \$googledir,
 			'ngramdir=s' => \$ngramdir,
-			'help' => \$help,
+			'h|help' => \$help,
 			'verbose' => \$verbose);
 
 
-if ($help || !$maxsize || !$googledir || !$ngramdir ){
-  print "goograms2ngrams.pl <options>\n",
-        "--maxsize <int>       maximum n-gram level of conversion\n",
-        "--startfrom <int>     skip initial levels if already available (default 2)\n",
-        "--googledir <string>  directory containing the google-grams dirs (1gms,2gms, ...)\n",
-        "--ngramdir <string>   directory where to write the n-grams \n",
-        "--verbose            (optional) very talktive output\n",
-        "--help               (optional) print these instructions\n";    
+if ($help || !$maxsize || !$googledir || !$ngramdir ) {
+	my $cmnd = "goograms2ngrams.pl";
+  print "\n$cmnd - transforms google n-grams into real n-grams so that\n",
+	"       counts are consistent with respect to lower order n-grams\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options]\n",
+	"\nOPTIONS:\n",
+    "       --maxsize <int>       maximum n-gram level of conversion\n",
+    "       --startfrom <int>     skip initial levels if already available (default 2)\n",
+    "       --googledir <string>  directory containing the google-grams dirs (1gms,2gms,...)\n",
+    "       --ngramdir <string>   directory where to write the n-grams \n",
+    "       --verbose             (optional) very talktive output\n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
 
   exit(1);
 }

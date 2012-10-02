@@ -25,6 +25,7 @@
 
 use strict;
 use Getopt::Long "GetOptions";
+use File::Basename;
 
 my ($help,$ilm,$olm,$inv)=();
 $help=1 unless
@@ -35,14 +36,24 @@ $olm="/dev/stdout";
 &GetOptions('ilm=s' => \$ilm,
 			'olm=s' => \$olm,
             'inv' => \$inv,
-            'help' => \$help,);
+            'h|help' => \$help,);
 
-if ($help || !$ilm || !$olm){
-  print "sort-lm.pl [--ilm <fname>]  [--olm <fname>] [--inv]   \n",
-  "-ilm  <fname>   input ARPA LM filename (default /dev/stdin) \n",
-  "-olm <fname>    output ARPA LM filename (default /dev/stdout)\n",
-  "-inv            inverted n-gram sort for compile-lm \n",
-  "-help           print these instructions\n";    
+if ($help || !$ilm || !$olm) {
+	my $cmnd = basename($0);
+  print "\n$cmnd - sorts n-grams according to lexicographic order\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options]\n",
+	"\nDESCRIPTION:\n",
+	"       $cmnd sorts n-grams of an ARPA file according to lexicographic order.\n",
+	"       Inverted sorting option is propedeutic to building a binary\n",
+	"       lmtable with compile-lm with n-grams stored in reverted order.\n",
+	"\nOPTIONS:\n",
+    "       -ilm  <fname>         input ARPA LM filename (default /dev/stdin) \n",
+    "       -olm <fname>          output ARPA LM filename (default /dev/stdout)\n",
+    "       -inv                  inverted n-gram sort for compile-lm \n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
+
   exit(1);
 }
 

@@ -24,6 +24,29 @@
 #n-grams starting with a given word (prefix) are all 
 #contained in one file.
 
+use Getopt::Long "GetOptions";
+use File::Basename;
+
+my ($help,$lm,$size,$sublm)=();
+$help=1 unless
+&GetOptions('h|help' => \$help);
+
+if ($help) {
+	my $cmnd = basename($0);
+  print "\n$cmnd - re-segment google n-gram count files so that n-grams\n",
+    "       starting with a given word (prefix) are all contained in one file\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options] [<output_prefix>]\n",
+	"\nDESCRIPTION:\n",
+	"       Input is expected on STDIN.\n",
+	"       <output_prefix>       prefix of files to be created\n",
+	"\nOPTIONS:\n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
+
+  exit(1);
+}
+
 
 $max_pref=10000;   #number of prefixes to be put in one file 
 $max_ngram=5000000;#number of n-grams to be put in one file

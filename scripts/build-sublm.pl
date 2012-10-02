@@ -36,6 +36,7 @@
 
 use strict;
 use Getopt::Long "GetOptions";
+use File::Basename;
 
 my $gzip=`which gzip 2> /dev/null`;
 my $gunzip=`which gunzip 2> /dev/null`;
@@ -62,24 +63,29 @@ $help = 1 unless
 	      'improved-kneser-ney=s' => \$improved_kneser_ney,
 	      'prune-singletons' => \$prune_singletons,
 	      'cross-sentence' => \$cross_sentence,
-	      'help' => \$help,
+	      'h|help' => \$help,
 	      'verbose' => \$verbose);
 
 
 if ($help || !$size || !$ngrams || !$sublm) {
-  print "build-sublm.pl <options>\n",
-    "--size <int>          maximum n-gram size for the language model\n",
-    "--ngrams <string>     input file or command to read the ngram table\n",
-    "--sublm <string>      output file prefix to write the sublm statistics \n",
-    "--freq-shift <int>    (optional) value to be subtracted from all frequencies\n",
-    "--witten-bell        (optional) use witten bell linear smoothing (default)\n",
-    "--kneser-ney <string> (optional) use kneser-ney smoothing with statistics in <string> \n",
-    "--improved-kneser-ney <string> (optional) use improved kneser-ney smoothing with statistics in <string> \n",
-    "--good-turing        (optional) use good-turing linear smoothing\n",
-    "--prune-singletons   (optional) remove n-grams occurring once, for n=3,4,5,... (disabled by default)\n",
-    "--cross-sentence     (optional) include cross-sentence bounds (disabled by default)\n",
-    "--verbose            (optional) print debugging info\n",
-    "--help               (optional) print these instructions\n";    
+	my $cmnd = basename($0);
+  print "\n$cmnd - estimates single LMs\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options]\n",
+	"\nOPTIONS:\n",
+    "       --size <int>          maximum n-gram size for the language model\n",
+    "       --ngrams <string>     input file or command to read the ngram table\n",
+    "       --sublm <string>      output file prefix to write the sublm statistics \n",
+    "       --freq-shift <int>    (optional) value to be subtracted from all frequencies\n",
+    "       --witten-bell         (optional) use witten bell linear smoothing (default)\n",
+    "       --kneser-ney <string> (optional) use kneser-ney smoothing with statistics in <string> \n",
+    "       --improved-kneser-ney <string> (optional) use improved kneser-ney smoothing with statistics in <string> \n",
+    "       --good-turing         (optional) use good-turing linear smoothing\n",
+    "       --prune-singletons    (optional) remove n-grams occurring once, for n=3,4,5,... (disabled by default)\n",
+    "       --cross-sentence      (optional) include cross-sentence bounds (disabled by default)\n",
+    "       --verbose             (optional) print debugging info\n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
 
   exit(1);
 }

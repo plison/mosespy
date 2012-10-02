@@ -1,5 +1,37 @@
 #! /bin/bash
 
+function usage()
+{
+    cmnd=$(basename $0);
+    cat<<EOF
+
+$cmnd - creates partition files with ngram statistics in Google format
+
+USAGE:
+       $cmnd [options] <input> <output> <order> <parts>
+
+DESCRIPTION:
+       <input>   Input file name
+       <output>  Partition files name prefix
+       <order>   Order of the ngrams
+       <parts>   Number of partitions
+
+OPTIONS:
+       -h        Show this message
+
+EOF
+}
+
+# Parse options
+while getopts h OPT; do
+    case "$OPT" in
+        h)
+            usage >&2;
+            exit 0;
+            ;;
+    esac
+done
+
 #usage:
 #ngt-split.sh <input> <output> <size> <parts>
 #It creates <parts> files (named <output.000>, ... <output.999>)

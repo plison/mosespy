@@ -29,6 +29,7 @@
 
 use strict;
 use Getopt::Long "GetOptions";
+use File::Basename;
 
 my ($help,$input,$output,$parts)=();
 
@@ -36,18 +37,24 @@ $help=1 unless
 &GetOptions('input=s' => \$input,
             'output=s' => \$output, 
              'parts=i' => \$parts,           
-             'help' => \$help,);
+             'h|help' => \$help,);
 
-if ($help || !$input || !$output || !$parts){
-
-  print "split-dict.pl <options>\n",
-        "--input <string>    input dictionary with frequencies\n",
-        "--output <string>   prefix of output dictionaries\n",
-        "--parts <int>       number of parts to split dictionary into \n",
-        "--help              (optional) print these instructions\n",
-        "Remarks: dictionary must be generated with IRSTLM command dict\n",
-        "         if dictionary does not contain frequencies, then a\n",
-        "         frequency 1 is assumed for all words.\n";
+if ($help || !$input || !$output || !$parts) {
+	my $cmnd = basename($0);
+  print "\n$cmnd - splits a dictionary into frequency-balanced partitions\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options]\n",
+	"\nDESCRIPTION:\n",
+	"       $cmnd splits a dictionary into frequency-balanced partitions.\n",
+	"       The dictionary must be generated with IRSTLM command dict.\n",
+	"       If dictionary does not contain frequencies, then a frequency 1 is\n",
+	"       assumed for all words.\n",
+	"\nOPTIONS:\n",
+    "       --input <string>      input dictionary with frequencies\n",
+    "       --output <string>     prefix of output dictionaries\n",
+    "       --parts <int>         number of partitions to create\n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
 
   exit(1);
 }

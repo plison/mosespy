@@ -1,26 +1,29 @@
 #! /bin/bash
 
-usage()
+function usage()
 {
-cat << EOF
-usage: $0 options
+    cmnd=$(basename $0);
+    cat<<EOF
 
-This script estimates a language model file. 
+$cmnd - estimates a language model file
+
+USAGE:
+       $cmnd [options]
 
 OPTIONS:
-   -h      Show this message
-   -i      Input training file e.g. 'gunzip -c train.gz'
-   -o      Output gzipped LM, e.g. lm.gz
-   -k      Number of splits (default 5)
-   -n      Order of language model (default 3)
-   -t      Directory for temporary files (default ./stat_PID)
-   -p      Prune singleton n-grams (default false)
-   -u      Use uniform word frequency for dictionary splitting (default false)
-   -q      parameters for qsub ("-q <queue>", and any other)
-   -s      Smoothing methods: witten-bell (default), kneser-ney (approximated kneser-ney), improved-kneser-ney
-   -b      Include sentence boundary n-grams (optional)
-   -d      Define subdictionary for n-grams (optional)
-   -v      Verbose
+       -h        Show this message
+       -i        Input training file e.g. 'gunzip -c train.gz'
+       -o        Output gzipped LM, e.g. lm.gz
+       -k        Number of splits (default 5)
+       -n        Order of language model (default 3)
+       -t        Directory for temporary files (default ./stat_PID)
+       -p        Prune singleton n-grams (default false)
+       -u        Use uniform word frequency for dictionary splitting (default false)
+       -q        Parameters for qsub ("-q <queue>", and any other)
+       -s        Smoothing methods: witten-bell (default), kneser-ney (approximated kneser-ney), improved-kneser-ney
+       -b        Include sentence boundary n-grams (optional)
+       -d        Define subdictionary for n-grams (optional)
+       -v        Verbose
 
 EOF
 }
@@ -69,7 +72,7 @@ do
      case $OPTION in
          h)
              usage
-             exit 1
+             exit 0
              ;;
          v)
              verbose="--verbose";

@@ -23,19 +23,26 @@
 
 use strict;
 use Getopt::Long "GetOptions";
+use File::Basename;
 
 my ($help,$lm,$txt)=();
 $help=1 unless
 
 &GetOptions('lm=s' => \$lm,
             'txt=s' => \$txt,
-            'help' => \$help,);
+            'h|help' => \$help,);
 
-if ($help || !$lm || !$txt){
-  print "lm-stat.pl <options>\n",
-  "--lm  <string>    language model file \n",
-  "--txt <string>    text file\n",
-  "--help            print these instructions\n";    
+if ($help || !$lm || !$txt) {
+	my $cmnd = basename($0);
+  print "\n$cmnd - computes LM statistics over a string\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options]\n",
+	"\nOPTIONS:\n",
+    "       --lm  <string>        language model file \n",
+    "       --txt <string>        text file\n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
+
   exit(1);
 }
 

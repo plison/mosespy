@@ -23,21 +23,28 @@
 
 use strict;
 use Getopt::Long "GetOptions";
+use File::Basename;
 
 my ($help,$lm,$size,$sublm)=();
 $help=1 unless
 &GetOptions('size=i' => \$size,
             'lm=s' => \$lm,
             'sublm=s' => \$sublm,
-            'help' => \$help,);
+            'h|help' => \$help,);
 
 
-if ($help || !$size || !$lm || !$sublm){
-  print "merge-sublm.pl <options>\n",
-  "--size <int>        maximum n-gram size for the language model\n",
-  "--sublm <string>    path identifying  all prefix sub LMs \n",
-  "--lm <string>       name of final LM file (will be gzipped)\n",
-  "--help              (optional) print these instructions\n";    
+if ($help || !$size || !$lm || !$sublm) {
+	my $cmnd = basename($0);
+  print "\n$cmnd - merge single LMs\n",
+	"\nUSAGE:\n",
+	"       $cmnd [options]\n",
+	"\nOPTIONS:\n",
+    "       --size <int>          maximum n-gram size for the language model\n",
+    "       --sublm <string>      path identifying all input prefix sub LMs\n",
+    "       --lm <string>         name of the output LM file (will be gzipped)\n",
+    "       -h, --help            (optional) print these instructions\n",
+    "\n";
+
   exit(1);
 }
 
