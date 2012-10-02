@@ -311,7 +311,7 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
         int m=trset.m;
         /* unused parameter       int n=trset.n;   */
         int j=trset.cd; //current document
-        int N=0; // doc lenght
+        int N=0; // doc length
 
         //resume H
         hindf.read((char *)H,topics * sizeof(double));

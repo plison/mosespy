@@ -28,6 +28,7 @@ using namespace std;
 #include <string>
 #include <stdlib.h>
 #include <assert.h>
+#include "cmd.h"
 #include "math.h"
 #include "util.h"
 
@@ -36,6 +37,7 @@ using namespace std;
 //
 //
 //----------------------------------------------------------------------
+
 
 typedef struct {
   float pt;
@@ -71,46 +73,68 @@ const int MAXLEV = 11;    //maximum n-gram size
 //  Main program
 //----------------------------------------------------------------------
 
-void usage(const char *msg = 0)
-{
-  if (msg) {
-    std::cerr << msg << std::endl;
-  }
-  std::cerr << "Usage: quantize-lm input-file.lm [output-file.qlm [tmpfile]] " << std::endl;
-  if (!msg) std::cerr << std::endl
-                        << "  quantize-lm reads a standard LM file in ARPA format and produces" << std::endl
-                        << "  a version of it with quantized probabilities and back-off weights"<< std::endl
-                        << "  that the IRST LMtoolkit can compile. Accepts LMs with .gz suffix." << std::endl
-                        << "  You can specify the output file to be created and also the pathname " << std::endl
-                        << "  of a temporary file used by the program. As default, the temporary "  << std::endl
-                        << "  file is created in the /tmp directory. Output file can be " << std::endl
-                        << "  written to standard output by using the special name -. "  << std::endl;
+void print_help(int TypeFlag=0){
+  std::cerr << std::endl << "quantize-lm - quantizes probabilities and back-off weights" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       quantize-lm <input-file.lm> [<output-file.qlm> [<tmpfile>]]" << std::endl;
+  std::cerr << std::endl << "DESCRIPTION:" << std::endl;
+	std::cerr << "       quantize-lm reads a standard LM file in ARPA format and produces" << std::endl;
+	std::cerr << "       a version of it with quantized probabilities and back-off weights"<< std::endl;
+	std::cerr << "       that the IRST LM toolkit can compile. Accepts LMs with .gz suffix." << std::endl;
+	std::cerr << "       You can specify the output file to be created and also the pathname" << std::endl;
+	std::cerr << "       of a temporary file used by the program. As default, the temporary "  << std::endl;
+	std::cerr << "       file is created in the /tmp directory. Output file can be" << std::endl;
+	std::cerr << "       written to standard output by using the special name -."  << std::endl;
+  std::cerr << std::endl << "OPTIONS:" << std::endl;
+	
+	FullPrintParams(TypeFlag, 0, 1, stderr);
 }
 
+void usage(const char *msg = 0)
+{
+  if (msg){
+    std::cerr << msg << std::endl;
+	}
+  else{
+		print_help();
+	}
+	exit(1);
+}
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
 
-  //Process Parameters
-
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
   std::vector<std::string> files;
-  for (int i=1; i < argc; i++) {
-    std::string opt = argv[i];
-    files.push_back(opt);
-  }
+	
+	bool help=false;
+	
+	DeclareParams((char*)
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
+								(char *)NULL
+								);
+	
+	if (argc == 1){
+		usage();
+	}
+	
+	for(int i=1; i < argc; i++) {
+		if(argv[i][0] != '-') files.push_back(argv[i]);
+	}
+	
+	GetParams(&argc, &argv, (char*) NULL);
+	
+	if (help){
+		usage();
+	}
   if (files.size() > 3) {
-    usage("Too many arguments");
-    exit(1);
-  }
-  if (files.size() < 1) {
-    usage("Please specify a LM file to read from");
-    exit(1);
+    usage("Warning: Too many arguments");
   }
 
+  if (files.size() < 1) {
+    usage("Warning: Please specify a LM file to read from");
+  }
 
   std::string infile = files[0];
   std::string outfile="";
@@ -153,7 +177,6 @@ int main(int argc, const char **argv)
     std::cerr << "Failed to open " << infile << "!\n";
     exit(1);
   }
-
 
   std::ofstream* out;
   if (outfile == "-")

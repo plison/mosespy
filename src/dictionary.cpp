@@ -95,7 +95,7 @@ int dictionary::getword(fstream& inp , char* buffer)
 
     //skip words of length zero chars: why should this happen?
     if (strlen(buffer)==0) {
-      cerr << "zero lenght word!\n";
+      cerr << "zero length word!\n";
       continue;
     }
 

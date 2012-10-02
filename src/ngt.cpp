@@ -26,30 +26,35 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
+#include <iostream>
 #include <cmath>
+#include "cmd.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
 #include "dictionary.h"
 #include "n_gram.h"
 #include "ngramtable.h"
-#include "cmd.h"
 
-#define YES   1
-#define NO    0
+void print_help(int TypeFlag=0){
+	std::cerr << std::endl << "ngt - collects n-grams" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       ngt -i=<inputfile> [options]" << std::endl;
+  std::cerr << std::endl << "OPTIONS:" << std::endl;
+	
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+}
 
-#define END_ENUM    {   (char*)0,  0 }
-
-static Enum_T BooleanEnum [] = {
-  {    (char*)"Yes",    YES },
-  {    (char*)"No",     NO},
-  {    (char*)"yes",    YES },
-  {    (char*)"no",     NO},
-  {    (char*)"y",    YES },
-  {    (char*)"n",     NO},
-  END_ENUM
-};
-
+void usage(const char *msg = 0)
+{
+  if (msg){
+    std::cerr << msg << std::endl;
+	}
+  else{
+		print_help();
+	}
+	exit(1);
+}
 
 int main(int argc, char **argv)
 {
@@ -63,72 +68,88 @@ int main(int argc, char **argv)
   double filter_hit_rate=1.0;  // minimum hit rate of filter
   char *aug=NULL;       // augmentation data
   char *hmask=NULL;        // historymask
-  int inputgoogleformat=0;    //reads ngrams in Google format
-  int outputgoogleformat=0;    //print ngrams in Google format
+  bool inputgoogleformat=false;    //reads ngrams in Google format
+  bool outputgoogleformat=false;    //print ngrams in Google format
   int ngsz=0;           // n-gram default size
   int dstco=0;          // compute distance co-occurrences
-  int bin=NO;
-  int ss=NO;            //generate single table
-  int LMflag=NO;        //work with LM table
+  bool bin=false;
+  bool ss=false;            //generate single table
+  bool LMflag=false;        //work with LM table
   int inplen=0;         //input length for mask generation
-  int tlm=0;           //test lm table
+  bool tlm=false;           //test lm table
   char* ftlm=NULL;     //file to test LM table
-  int memuse=NO;
+  bool memuse=false;
+	
+	bool help=false;
+
 
   DeclareParams((char*)
-                "Dictionary", CMDSTRINGTYPE, &dic,
-                "d", CMDSTRINGTYPE, &dic,
-                "NgramSize", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
-                "n", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
-                "InputFile", CMDSTRINGTYPE, &inp,
-                "i", CMDSTRINGTYPE, &inp,
-                "OutputFile", CMDSTRINGTYPE, &out,
-                "o", CMDSTRINGTYPE, &out,
-                "InputGoogleFormat", CMDENUMTYPE, &inputgoogleformat, BooleanEnum,
-                "gooinp", CMDENUMTYPE, &inputgoogleformat, BooleanEnum,
-                "OutputGoogleFormat", CMDENUMTYPE, &outputgoogleformat, BooleanEnum,
-                "gooout", CMDENUMTYPE, &outputgoogleformat, BooleanEnum,
-                "SaveBinaryTable", CMDENUMTYPE, &bin, BooleanEnum,
-                "b", CMDENUMTYPE, &bin, BooleanEnum,
-                "LmTable", CMDENUMTYPE, &LMflag, BooleanEnum,
-                "lm", CMDENUMTYPE, &LMflag, BooleanEnum,
-                "DistCo", CMDINTTYPE, &dstco,
-                "dc", CMDINTTYPE, &dstco,
-                "AugmentFile", CMDSTRINGTYPE, &aug,
-                "aug", CMDSTRINGTYPE, &aug,
-                "SaveSingle", CMDENUMTYPE, &ss, BooleanEnum,
-                "ss", CMDENUMTYPE, &ss, BooleanEnum,
-                "SubDict", CMDSTRINGTYPE, &subdic,
-                "sd", CMDSTRINGTYPE, &subdic,
-                "FilterDict", CMDSTRINGTYPE, &filterdict,
-                "fd", CMDSTRINGTYPE, &filterdict,
-                "ConvDict", CMDSTRINGTYPE, &subdic,
-                "cd", CMDSTRINGTYPE, &subdic,
-                "FilterTable", CMDSTRINGTYPE, &filtertable,
-                "ftr", CMDDOUBLETYPE, &filter_hit_rate,
-                "FilterTableRate", CMDDOUBLETYPE, &filter_hit_rate,
-                "ft", CMDSTRINGTYPE, &filtertable,
-                "HistoMask",CMDSTRINGTYPE, &hmask,
-                "hm",CMDSTRINGTYPE, &hmask,
-                "InpLen",CMDINTTYPE, &inplen,
-                "il",CMDINTTYPE, &inplen,
-                "tlm", CMDENUMTYPE, &tlm, BooleanEnum,
-                "ftlm", CMDSTRINGTYPE, &ftlm,
-                "memuse", CMDENUMTYPE, &memuse, BooleanEnum,
-                "iknstat", CMDSTRINGTYPE, &iknfile,
+                "Dictionary", CMDSTRINGTYPE|CMDMSG, &dic, "dictionary filename",
+                "d", CMDSTRINGTYPE|CMDMSG, &dic, "dictionary filename",
+
+                "NgramSize", CMDSUBRANGETYPE|CMDMSG, &ngsz, 1, MAX_NGRAM, "n-gram default size; default is 0",
+                "n", CMDSUBRANGETYPE|CMDMSG, &ngsz, 1, MAX_NGRAM, "n-gram default size; default is 0",
+                "InputFile", CMDSTRINGTYPE|CMDMSG, &inp, "input file",
+                "i", CMDSTRINGTYPE|CMDMSG, &inp, "input file",
+                "OutputFile", CMDSTRINGTYPE|CMDMSG, &out, "output file",
+                "o", CMDSTRINGTYPE|CMDMSG, &out, "output file",
+                "InputGoogleFormat", CMDBOOLTYPE|CMDMSG, &inputgoogleformat, "the input file contains data in the n-gram Google format; default is false",
+                "gooinp", CMDBOOLTYPE|CMDMSG, &inputgoogleformat, "the input file contains data in the n-gram Google format; default is false",
+                "OutputGoogleFormat", CMDBOOLTYPE|CMDMSG, &outputgoogleformat,  "the output file contains data in the n-gram Google format; default is false",
+                "gooout", CMDBOOLTYPE|CMDMSG, &outputgoogleformat,  "the output file contains data in the n-gram Google format; default is false",
+                "SaveBinaryTable", CMDBOOLTYPE|CMDMSG, &bin, "saves into binary format; default is false",
+                "b", CMDBOOLTYPE|CMDMSG, &bin, "saves into binary format; default is false",
+                "LmTable", CMDBOOLTYPE|CMDMSG, &LMflag, "works with LM table; default is false",
+                "lm", CMDBOOLTYPE|CMDMSG, &LMflag,  "works with LM table; default is false",
+                "DistCo", CMDINTTYPE|CMDMSG, &dstco, "computes distance co-occurrences at the specified distance; default is 0",
+                "dc", CMDINTTYPE|CMDMSG, &dstco, "computes distance co-occurrences at the specified distance; default is 0",
+                "AugmentFile", CMDSTRINGTYPE|CMDMSG, &aug, "augmentation data",
+                "aug", CMDSTRINGTYPE|CMDMSG, &aug, "augmentation data",
+                "SaveSingle", CMDBOOLTYPE|CMDMSG, &ss, "generates single table; default is false",
+                "ss", CMDBOOLTYPE|CMDMSG, &ss, "generates single table; default is false",
+                "SubDict", CMDSTRINGTYPE|CMDMSG, &subdic, "subdictionary",
+                "sd", CMDSTRINGTYPE|CMDMSG, &subdic, "subdictionary",
+                "FilterDict", CMDSTRINGTYPE|CMDMSG, &filterdict, "filter dictionary",
+                "fd", CMDSTRINGTYPE|CMDMSG, &filterdict, "filter dictionary",
+                "ConvDict", CMDSTRINGTYPE|CMDMSG, &subdic, "subdictionary",
+                "cd", CMDSTRINGTYPE|CMDMSG, &subdic, "subdictionary",
+                "FilterTable", CMDSTRINGTYPE|CMDMSG, &filtertable, "ngramtable filename",
+                "ftr", CMDDOUBLETYPE|CMDMSG, &filter_hit_rate, "ngramtable filename",
+                "FilterTableRate", CMDDOUBLETYPE|CMDMSG, &filter_hit_rate, "minimum hit rate of filter; default is 1.0",
+                "ft", CMDSTRINGTYPE|CMDMSG, &filtertable, "minimum hit rate of filter; default is 1.0",
+                "HistoMask",CMDSTRINGTYPE|CMDMSG, &hmask, "history mask",
+                "hm",CMDSTRINGTYPE|CMDMSG, &hmask, "history mask",
+                "InpLen",CMDINTTYPE|CMDMSG, &inplen, "input length for mask generation; default is 0",
+                "il",CMDINTTYPE|CMDMSG, &inplen, "input length for mask generation; default is 0",
+                "tlm", CMDBOOLTYPE|CMDMSG, &tlm, "test LM table; default is false",
+                "ftlm", CMDSTRINGTYPE|CMDMSG, &ftlm, "file to test LM table",
+                "memuse", CMDBOOLTYPE|CMDMSG, &memuse, "default is false",
+                "iknstat", CMDSTRINGTYPE|CMDMSG, &iknfile, "filename to save IKN statistics",
+
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
                 (char *)NULL
                );
 
+	
+	if (argc == 1){
+		usage();
+	}
+	
   GetParams(&argc, &argv, (char*) NULL);
 
+	if (help){
+		usage();
+	}
+	
   if (inp==NULL) {
-    cerr <<"No input was specified\n";
-    exit(1);
+		usage("Warning: no input file specified\n");
   };
 
-  if (out==NULL)
+  if (out==NULL) {
     cerr << "Warning: no output file specified!\n";
-
+  }
 
   TABLETYPE table_type=COUNT;
 

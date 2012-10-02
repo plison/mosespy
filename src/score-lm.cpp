@@ -31,13 +31,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 void usage()
 {
-  std::cerr <<	"Usage: score-lm -lm <model> [-dub <dub>] [-mm 1]\n"
-            "       score sentences with a language model\n"
-            "       -lm      language model to use (must be specified)\n"
-            "       -dub     dictionary upper bound (default: 10000000)\n"
-            "       -level   max level to load from the language models (default: 1000, meaning the actual LM order)\n"
-            "       -mm 1    memory-mapped access to lm\n";
-  exit(1);
+  std::cerr << std::endl << "score-lm - scores sentences with a language model" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl
+	    << "       score-lm -lm <model>  [options]" << std::endl;
+  std::cerr << std::endl << "OPTIONS:" << std::endl;
+  std::cerr << "       -lm      language model to use (must be specified)" << std::endl;
+  std::cerr << "       -dub     dictionary upper bound (default: 10000000" << std::endl;
+  std::cerr << "       -level   max level to load from the language models (default: 1000," << std::endl;
+  std::cerr << "           meaning the actual LM order)" << std::endl;
+  std::cerr << "       -mm 1    memory-mapped access to lm (default: 0)" << std::endl;
+  std::cerr << std::endl;
+	exit(1);
 }
 
 int main(int argc, char **argv)

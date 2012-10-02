@@ -27,176 +27,125 @@ using namespace std;
 #include <vector>
 #include <string>
 #include <stdlib.h>
+#include "cmd.h"
 #include "util.h"
 #include "math.h"
 #include "lmContainer.h"
 
-
-/* GLOBAL OPTIONS ***************/
-std::string sinvert = "no";
-std::string stxt = "no";
-std::string sscore = "no";
-std::string seval = "";
-std::string srandcalls = "0";
-std::string sfilter = "";
-std::string sdebug = "0";
-std::string smemmap = "0";
-std::string sdub = "10000000";//10^7
-std::string skeepunigrams = "yes";
-std::string tmpdir = "";
-std::string ssent_PP_flag = "no";
-std::string sdictionary_load_factor = "0.0";
-std::string sngramcache_load_factor = "0.0";
-
-std::string slevel = "1000";
-
 /********************************/
+void print_help(int TypeFlag=0){
+  std::cerr << std::endl << "compile-lm - compiles an ARPA format LM into an IRSTLM format one" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       compile-lm [options] <input-file.lm> [output-file.blm]" << std::endl;
+	std::cerr << std::endl << "DESCRIPTION:" << std::endl;
+	std::cerr << "       compile-lm reads a standard LM file in ARPA format and produces" << std::endl;
+	std::cerr << "       a compiled representation that the IRST LM toolkit can quickly" << std::endl;
+	std::cerr << "       read and process. LM file can be compressed with gzip." << std::endl;
+	std::cerr << std::endl << "OPTIONS:" << std::endl;
+	
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+}
 
 void usage(const char *msg = 0)
 {
-
   if (msg) {
     std::cerr << msg << std::endl;
   }
-  std::cerr << "Usage: compile-lm [options] input-file.lm [output-file.blm]" << std::endl;
-  if (!msg) std::cerr << std::endl
-                        << "  compile-lm reads a standard LM file in ARPA format and produces" << std::endl
-                        << "  a compiled representation that the IRST LM toolkit can quickly" << std::endl
-                        << "  read and process. LM file can be compressed with gzip." << std::endl << std::endl;
-  std::cerr << "Options:\n"
-            << "--text|-t [yes|no]  (output is again in text format)" << std::endl
-            << "--invert|-i [yes|no]  (build an inverted n-gram binary table for fast access: default no)" << std::endl
-            << "--filter|-f wordlist (filter a binary language model with a word list)"<< std::endl
-            << "--keepunigrams|-ku [yes|no] (filter by keeping all unigrams in the table: default yes)"<< std::endl
-            << "--eval|-e text-file (computes perplexity of text-file and returns)"<< std::endl
-            << "--randcalls|-r N (computes N random calls on the eval text-file)"<< std::endl
-            << "--dub dict-size (dictionary upperbound to compute OOV word penalty: default 10^7)"<< std::endl
-            << "--score|-s [yes|no]  (computes log-prob scores from standard input)"<< std::endl
-            << "--debug|-d 1 (verbose output for --eval option)"<< std::endl
-            << "--sentence [yes|no] (compute pperplexity at sentence level (identified through the end symbol)"<< std::endl
-            << "--memmap|-mm 1 (uses memory map to read a binary LM)"<< std::endl
-            << "--ngram_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-            << "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-            << "--level|l <value> (set the maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken)" << std::endl
-            << "--tmpdir <directory> (directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")" << std::endl;
+	if (!msg){
+		print_help();
+	}
+	exit(1);
 }
 
-bool starts_with(const std::string &s, const std::string &pre)
-{
-  if (pre.size() > s.size()) return false;
-
-  if (pre == s) return true;
-  std::string pre_equals(pre+'=');
-  if (pre_equals.size() > s.size()) return false;
-  return (s.substr(0,pre_equals.size()) == pre_equals);
-}
-
-std::string get_param(const std::string& opt, int argc, const char **argv, int& argi)
-{
-  std::string::size_type equals = opt.find_first_of('=');
-  if (equals != std::string::npos && equals < opt.size()-1) {
-    return opt.substr(equals+1);
-  }
-  std::string nexto;
-  if (argi + 1 < argc) {
-    nexto = argv[++argi];
-  } else {
-    usage((opt + " requires a value!").c_str());
-    exit(1);
-  }
-  return nexto;
-}
-
-void handle_option(const std::string& opt, int argc, const char **argv, int& argi)
-{
-  if (opt == "--help" || opt == "-h") {
-    usage();
-    exit(1);
-  }
-
-  if (starts_with(opt, "--text") || starts_with(opt, "-t"))
-    stxt = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--filter") || starts_with(opt, "-f"))
-    sfilter = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--keepunigrams") || starts_with(opt, "-ku"))
-    skeepunigrams = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--eval") || starts_with(opt, "-e"))
-    seval = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--randcalls") || starts_with(opt, "-r"))
-    srandcalls = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--score") || starts_with(opt, "-s"))
-    sscore = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--debug") || starts_with(opt, "-d"))
-    sdebug = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--level") || starts_with(opt, "-l"))
-    slevel = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--memmap") || starts_with(opt, "-mm"))
-    smemmap = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--dub") || starts_with(opt, "-dub"))
-    sdub = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--tmpdir") || starts_with(opt, "-tmpdir"))
-    tmpdir = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--invert") || starts_with(opt, "-i"))
-    sinvert = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--sentence"))
-    ssent_PP_flag = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--dict_load_factor"))
-    sdictionary_load_factor = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--ngram_load_factor"))
-    sngramcache_load_factor = get_param(opt, argc, argv, argi);
-  else {
-    usage(("Don't understand option " + opt).c_str());
-    exit(1);
-  }
-}
-
-int main(int argc, const char **argv)
-{
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
+int main(int argc, char **argv)
+{	
+  char *seval=NULL;
+	char *tmpdir=NULL;
+	char *sfilter=NULL;
+	
+	bool textoutput = false;
+	bool sent_PP_flag = false;
+	bool invert = false;
+	bool sscore = false;
+	bool skeepunigrams = false;
+	
+	int debug = 0;
+  int memmap = 0;
+  int requiredMaxlev = 1000;
+  int dub = 10000000;
+  int randcalls = 0;
+  float ngramcache_load_factor = 0.0;
+  float dictionary_load_factor = 0.0;
+	
+	bool help=false;
   std::vector<std::string> files;
-  for (int i=1; i < argc; i++) {
-    std::string opt = argv[i];
-    if (opt[0] == '-') {
-      handle_option(opt, argc, argv, i);
-    } else files.push_back(opt);
-  }
+	
+	DeclareParams((char*)
+                "text", CMDBOOLTYPE|CMDMSG, &textoutput, "output is again in text format; default is false",
+                "t", CMDBOOLTYPE|CMDMSG, &textoutput, "output is again in text format; default is false",
+                "filter", CMDSTRINGTYPE|CMDMSG, &sfilter, "filter a binary language model with a word list",
+                "f", CMDSTRINGTYPE|CMDMSG, &sfilter, "filter a binary language model with a word list",
+                "keepunigrams", CMDBOOLTYPE|CMDMSG, &skeepunigrams, "filter by keeping all unigrams in the table, default  is true",
+                "ku", CMDBOOLTYPE|CMDMSG, &skeepunigrams, "filter by keeping all unigrams in the table, default  is true",
+                "eval", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
+								"e", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
+                "randcalls", CMDINTTYPE|CMDMSG, &randcalls, "computes N random calls on the specified text file",
+								"r", CMDINTTYPE|CMDMSG, &randcalls, "computes N random calls on the specified text file",
+                "score", CMDBOOLTYPE|CMDMSG, &sscore, "computes log-prob scores of n-grams from standard input",
+								"s", CMDBOOLTYPE|CMDMSG, &sscore, "computes log-prob scores of n-grams from standard input",
+                "debug", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
+								"d", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
+                "level", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+								"l", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+                "memmap", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+								"mm", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+                "dub", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
+                "tmpdir", CMDSTRINGTYPE|CMDMSG, &tmpdir, "directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")",
+                "invert", CMDBOOLTYPE|CMDMSG, &invert, "builds an inverted n-gram binary table for fast access; default if false",
+								"i", CMDBOOLTYPE|CMDMSG, &invert, "builds an inverted n-gram binary table for fast access; default if false",
+                "sentence", CMDBOOLTYPE|CMDMSG, &sent_PP_flag, "computes perplexity at sentence level (identified through the end symbol)",
+                "dict_load_factor", CMDFLOATTYPE|CMDMSG, &dictionary_load_factor, "sets the load factor for ngram cache; it should be a positive real value; default is 0",
+                "ngram_load_factor", CMDFLOATTYPE|CMDMSG, &ngramcache_load_factor, "sets the load factor for ngram cache; it should be a positive real value; default is false",
+
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
+                (char*)NULL
+								);
+	
+	if (argc == 1){
+		usage();
+	}
+	
+	for(int i=1; i < argc; i++) {
+		if(argv[i][0] != '-') files.push_back(argv[i]);
+	}
+	
+	GetParams(&argc, &argv, (char*) NULL);
+	
+	if (argc == 1 || help){
+		usage();
+	}	
 
   if (files.size() > 2) {
-    usage("Too many arguments");
-    exit(1);
-  }
-  if (files.size() < 1) {
-    usage("Please specify a LM file to read from");
-    exit(1);
+    usage("Warning: Too many arguments");
   }
 
-  bool textoutput = (stxt == "yes"? true : false);
-  bool sent_PP_flag = (ssent_PP_flag == "yes"? true : false);
-  bool invert = (sinvert == "yes"? true : false);
+  if (files.size() < 1) {
+    usage("Warning: Please specify a LM file to read from");
+  }
 
   //Define output type of table
-  OUTFILE_TYPE outtype;
+	OUTFILE_TYPE outtype;
   if (textoutput)
     outtype=TEXT;
-  else if (seval != "" || sscore == "yes")
+  else if (seval != NULL || sscore)
     outtype=NONE;
   else
     outtype=BINARY;
 
-
-  int debug = atoi(sdebug.c_str());
-  int memmap = atoi(smemmap.c_str());
-  int requiredMaxlev = atoi(slevel.c_str());
-  int dub = atoi(sdub.c_str());
-  int randcalls = atoi(srandcalls.c_str());
-  float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
-  float dictionary_load_factor = (float) atof(sdictionary_load_factor.c_str());
-
   std::string infile = files[0];
-  std::string outfile="";
+  std::string outfile = "";
 
   if (files.size() == 1) {
     outfile=infile;
@@ -215,13 +164,14 @@ int main(int argc, const char **argv)
     outfile = files[1];
 
   std::cerr << "inpfile: " << infile << std::endl;
-  if (sscore=="" && seval=="") std::cerr << "outfile: " << outfile << std::endl;
-  if (sscore=="") std::cerr << "interactive: " << sscore << std::endl;
+	std::cerr << "outfile: " << outfile << std::endl;
+  if (seval!=NULL) std::cerr << "evalfile: " << seval << std::endl;
+  if (sscore==true) std::cerr << "interactive: " << sscore << std::endl;
   if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
   std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
   std::cerr << "dub: " << dub<< std::endl;
-  if (tmpdir != "") {
-    if (setenv("TMP",tmpdir.c_str(),1))
+  if (tmpdir != NULL) {
+    if (setenv("TMP",tmpdir,1))
       std::cerr << "temporary directory has not been set" << std::endl;
     std::cerr << "tmpdir: " << tmpdir << std::endl;
   }
@@ -240,12 +190,12 @@ int main(int argc, const char **argv)
   lmt->load(infile);
 
   //CHECK this part for sfilter to make it possible only for LMTABLE
-  if (sfilter != "") {
+  if (sfilter != NULL) {
     lmContainer* filtered_lmt = NULL;
     std::cerr << "BEFORE sublmC (" << (void*) filtered_lmt <<  ") (" << (void*) &filtered_lmt << ")\n";
 
     // the function filter performs the filtering and returns true, only for specific lm type
-    if (((lmContainer*) lmt)->filter(sfilter,filtered_lmt,skeepunigrams)) {
+    if (((lmContainer*) lmt)->filter(sfilter,filtered_lmt,skeepunigrams?"yes":"no")) {
       std::cerr << "BFR filtered_lmt (" << (void*) filtered_lmt << ") (" << (void*) &filtered_lmt << ")\n";
       filtered_lmt->stat();
       delete lmt;
@@ -262,12 +212,12 @@ int main(int argc, const char **argv)
   //use caches to save time (only if PS_CACHE_ENABLE is defined through compilation flags)
   lmt->init_caches(lmt->maxlevel());
 
-  if (seval != "") {
+  if (seval != NULL) {
     if (randcalls>0) {
 
       cerr << "perform random " << randcalls << " using dictionary of test set\n";
       dictionary *dict;
-      dict=new dictionary((char *)seval.c_str());
+      dict=new dictionary(seval);
 
       //build extensive histogram
       int histo[dict->totfreq()]; //total frequency
@@ -321,7 +271,7 @@ int main(int argc, const char **argv)
       std::cout.precision(2);
 
       //			if (debug>0) std::cout.precision(8);
-      std::fstream inptxt(seval.c_str(),std::ios::in);
+      std::fstream inptxt(seval,std::ios::in);
 
       int Nbo=0, Nw=0,Noov=0;
       double logPr=0,PP=0,PPwp=0,Pr;
@@ -450,7 +400,7 @@ int main(int argc, const char **argv)
     };
   }
 
-  if (sscore == "yes") {
+  if (sscore == true) {
 
     ngram ng(lmt->getDict());
     int bos=ng.dict->encode(ng.dict->BoS());

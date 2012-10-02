@@ -2,28 +2,32 @@
 
 using namespace std;
 
+#include <iostream>
+#include "cmd.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "dictionary.h"
-#include "cmd.h"
 
-#define YES   1
-#define NO    0
+void print_help(int TypeFlag=0){
+	std::cerr << std::endl << "dict - extracts a dictionary" << std::endl;
+	std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       dict -i=<inputfile> [options]" << std::endl;
+	std::cerr << std::endl << "DESCRIPTION:" << std::endl;
+	std::cerr << "       dict extracts a dictionary from a corpus or a dictionary." << std::endl;
+	std::cerr << std::endl << "OPTIONS:" << std::endl;
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+}
 
-#define END_ENUM    {   (const char*)0,  0 }
-
-
-
-static Enum_T BooleanEnum [] = {
-  {    (char*)"Yes",    YES },
-  {    (char*)"No",     NO},
-  {    (char*)"yes",    YES },
-  {    (char*)"no",     NO},
-  {    (char*)"y",    YES },
-  {    (char*)"n",     NO},
-  END_ENUM
-};
-
+void usage(const char *msg = 0)
+{
+  if (msg){
+    std::cerr << msg << std::endl;
+	}
+  else{
+		print_help();
+	}
+	exit(1);
+}
 
 int main(int argc, char **argv)
 {
@@ -41,59 +45,57 @@ int main(int argc, char **argv)
 
   int prunefreq=0;    //pruning according to freq value
   int prunerank=0;    //pruning according to freq rank
+	
+	bool help=false;
+  
+	DeclareParams((char*)
+                "InputFile", CMDSTRINGTYPE|CMDMSG, &inp, "input file (Mandatory)",
+                "i", CMDSTRINGTYPE|CMDMSG, &inp, "input file (Mandatory)",
+                "OutputFile", CMDSTRINGTYPE|CMDMSG, &out, "output file",
+                "o", CMDSTRINGTYPE|CMDMSG, &out, "output file",
+                "f", CMDBOOLTYPE|CMDMSG, &freqflag,"output word frequencies; default is false",
+                "Freq", CMDBOOLTYPE|CMDMSG, &freqflag,"output word frequencies; default is false",
+                "sort", CMDBOOLTYPE|CMDMSG, &sortflag,"sort dictionary by frequency; default is false",
+                "Size", CMDINTTYPE|CMDMSG, &size, "Initial dictionary size; default is 1000000",
+                "s", CMDINTTYPE|CMDMSG, &size, "Initial dictionary size; default is 1000000",
+                "LoadFactor", CMDFLOATTYPE|CMDMSG, &load_factor, "set the load factor for cache; it should be a positive real value; default is 0",
+                "lf", CMDFLOATTYPE|CMDMSG, &load_factor, "set the load factor for cache; it should be a positive real value; default is 0",
+                "IntSymb", CMDSTRINGTYPE|CMDMSG, &intsymb, "interruption symbol",
+                "is", CMDSTRINGTYPE|CMDMSG, &intsymb, "interruption symbol",
 
-  DeclareParams((char*)
-                "InputFile", CMDSTRINGTYPE, &inp,
-                "i", CMDSTRINGTYPE, &inp,
-                "OutputFile", CMDSTRINGTYPE, &out,
-                "o", CMDSTRINGTYPE, &out,
-                "f", CMDENUMTYPE, &freqflag,BooleanEnum,
-                "Freq", CMDENUMTYPE, &freqflag,BooleanEnum,
-                "sort", CMDENUMTYPE, &sortflag,BooleanEnum,
-                "Size", CMDINTTYPE, &size,
-                "s", CMDINTTYPE, &size,
-                "LoadFactor", CMDFLOATTYPE, &load_factor,
-                "lf", CMDFLOATTYPE, &load_factor,
-                "IntSymb", CMDSTRINGTYPE, &intsymb,
-                "is", CMDSTRINGTYPE, &intsymb,
+                "PruneFreq", CMDINTTYPE|CMDMSG, &prunefreq, "prune words with frequency below the specified value",
+                "pf", CMDINTTYPE|CMDMSG, &prunefreq, "prune words with frequency below the specified value",
+                "PruneRank", CMDINTTYPE|CMDMSG, &prunerank, "prune words with frequency rank above the specified value",
+                "pr", CMDINTTYPE|CMDMSG, &prunerank, "prune words with frequency rank above the specified value",
 
-                "PruneFreq", CMDINTTYPE, &prunefreq,
-                "PruneRank", CMDINTTYPE, &prunerank,
-                "pf", CMDINTTYPE, &prunefreq,
-                "pr", CMDINTTYPE, &prunerank,
+                "Curve", CMDBOOLTYPE|CMDMSG, &curveflag,"show dictionary growth curve; default is false",
+                "c", CMDBOOLTYPE|CMDMSG, &curveflag,"show dictionary growth curve; default is false",
+                "CurveSize", CMDINTTYPE|CMDMSG, &curvesize, "default 10",
+                "cs", CMDINTTYPE|CMDMSG, &curvesize, "default 10",
 
-                "Curve", CMDENUMTYPE, &curveflag,BooleanEnum,
-                "c", CMDENUMTYPE, &curveflag,BooleanEnum,
-                "CurveSize", CMDINTTYPE, &curvesize,
-                "cs", CMDINTTYPE, &curvesize,
+                "TestFile", CMDSTRINGTYPE|CMDMSG, &testfile, "compute OOV rates on the specified test corpus",
+                "t", CMDSTRINGTYPE|CMDMSG, &testfile, "compute OOV rates on the specified test corpus",
+                "ListOOV", CMDBOOLTYPE|CMDMSG, &listflag, "print OOV words to stderr; default is false",
+                "oov", CMDBOOLTYPE|CMDMSG, &listflag, "print OOV words to stderr; default is false",
 
-                "TestFile", CMDSTRINGTYPE, &testfile,
-                "t", CMDSTRINGTYPE, &testfile,
-                "ListOOV", CMDENUMTYPE, &listflag,BooleanEnum,
-                "oov", CMDENUMTYPE, &listflag,BooleanEnum,
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
                 (char*)NULL
                );
+	
+	if (argc == 1){
+		usage();
+	}
 
   GetParams(&argc, &argv, (char*) NULL);
-
+	
+	if (help){
+		usage();
+	}
+	
   if (inp==NULL) {
-    std::cerr << "\nUsage: \ndict -i=inputfile [options]\n";
-    std::cerr << "(inputfile can be a corpus or a dictionary)\n\n";
-    std::cerr << "Options:\n";
-    std::cerr << "-o=outputfile\n";
-    std::cerr << "-f=[yes|no] (output word frequencies, default is false)\n";
-    std::cerr << "-sort=[yes|no] (sort dictionary by frequency, default is false)\n";
-    std::cerr << "-pf=<freq>  (prune words with frequency below <freq>\n";
-    std::cerr << "-pr=<rank>  (prune words with frequency rank above <rank>\n";
-    std::cerr << "-is= (interruption symbol) \n";
-    std::cerr << "-c=[yes|no] (show dictionary growth curve)\n";
-    std::cerr << "-cs=curvesize (default 10)\n";
-    std::cerr << "-t=testfile (compute OOV rates on test corpus)\n";
-    std::cerr << "-LoadFactor=<value> (set the load factor for cache; it should be a positive real value; if not defined a default value is used)\n";
-    std::cerr << "-listOOV=[yes|no] (print OOV words to stderr, default is false)\n\n";
-
-
-    exit(1);
+		usage("Warning: no input file specified");
   };
 
   // options compatibility issues:
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
     freqflag=1;
     mfstream test(testfile,ios::in);
     if (!test) {
-      cerr << "cannot open testfile: " << testfile << "\n";
+			usage(strcat((char*) "Warning: cannot open testfile: ", testfile));
       exit(1);
     }
     test.close();

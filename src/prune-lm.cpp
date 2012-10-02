@@ -27,78 +27,37 @@ using namespace std;
 #include <vector>
 #include <string>
 #include <stdlib.h>
+#include "cmd.h"
 #include "util.h"
 #include "math.h"
 #include "lmtable.h"
 
 
-/* GLOBAL OPTIONS ***************/
-std::string	spthr = "0";
-int		aflag=0;
-
-
 /********************************/
+
+void print_help(int TypeFlag=0){
+  std::cerr << std::endl << "prune-lm - prunes language models" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       prune-lm [options] <inputfile> [<outputfile>]" << std::endl;
+  std::cerr << std::endl << "DESCRIPTION:" << std::endl;
+	std::cerr << "       prune-lm reads a LM in either ARPA or compiled format and" << std::endl;
+	std::cerr << "       prunes out n-grams (n=2,3,..) for which backing-off to the" << std::endl;
+	std::cerr << "       lower order n-gram results in a small difference in probability." << std::endl;
+	std::cerr << "       The pruned LM is saved in ARPA format" << std::endl;
+  std::cerr << std::endl << "OPTIONS:" << std::endl;
+	
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+}
 
 void usage(const char *msg = 0)
 {
-  if (msg) {
+  if (msg){
     std::cerr << msg << std::endl;
-  }
-  std::cerr << "Usage: prune-lm [--threshold=th2,th3,...] [--abs=1|0] input-file [output-file]" << std::endl << std::endl;
-  std::cerr << "    prune-lm reads a LM in either ARPA or compiled format and" << std::endl;
-  std::cerr << "    prunes out n-grams (n=2,3,..) for which backing-off to the" << std::endl;
-  std::cerr << "    lower order n-gram results in a small difference in probability." << std::endl;
-  std::cerr << "    The pruned LM is saved in ARPA format" << std::endl << std::endl;
-  std::cerr << "    Options:" << std::endl;
-  std::cerr << "    --threshold=th2,th3,th4,... (pruning threshods for 2-grams, 3-grams, 4-grams,..." << std::endl;
-  std::cerr << "                                 If less thresholds are specified, the last one is  " << std::endl;
-  std::cerr << "                                 applied to all following n-gram levels.            " << std::endl << std::endl;
-  std::cerr << "    --abs=1|0 	if 1, use absolute value of weighted difference"<< std::endl;
-
-}
-
-bool starts_with(const std::string &s, const std::string &pre)
-{
-  if (pre.size() > s.size()) return false;
-
-  if (pre == s) return true;
-  std::string pre_equals(pre+'=');
-  if (pre_equals.size() > s.size()) return false;
-  return (s.substr(0,pre_equals.size()) == pre_equals);
-}
-
-std::string get_param(const std::string& opt, int argc, const char **argv, int& argi)
-{
-  std::string::size_type equals = opt.find_first_of('=');
-  if (equals != std::string::npos && equals < opt.size()-1) {
-    return opt.substr(equals+1);
-  }
-  std::string nexto;
-  if (argi + 1 < argc) {
-    nexto = argv[++argi];
-  } else {
-    usage((opt + " requires a value!").c_str());
-    exit(1);
-  }
-  return nexto;
-}
-
-void handle_option(const std::string& opt, int argc, const char **argv, int& argi)
-{
-  if (opt == "--help" || opt == "-h") {
-    usage();
-    exit(1);
-  }
-
-  if (starts_with(opt, "--threshold") || starts_with(opt, "-t"))
-    spthr = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--abs"))
-    aflag = atoi(get_param(opt, argc, argv, argi).c_str());
-
-  else {
-    usage(("Don't understand option " + opt).c_str());
-    exit(1);
-  }
+	}
+	if (!msg){
+		print_help();
+	}
+	exit(1);
 }
 
 void s2t(string	cps, float *thr)
@@ -111,33 +70,53 @@ void s2t(string	cps, float *thr)
   for(; i<MAX_NGRAM; i++) thr[i]=thr[i-1];
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char **argv)
 {
   float thr[MAX_NGRAM];
-
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
+  char *spthr=NULL;
+	int	aflag=0;
   std::vector<std::string> files;
-  for(int i=1; i < argc; i++) {
-    std::string opt = argv[i];
-    if(opt[0] == '-') handle_option(opt, argc, argv, i);
-    else files.push_back(opt);
+	
+	bool help=false;
+	
+	DeclareParams((char*)								
+								"threshold", CMDSTRINGTYPE|CMDMSG, &spthr,  "pruning thresholds for 2-grams, 3-grams, 4-grams,...; if less thresholds are specified, the last one is applied to all following n-gram levels; default is 0",
+								"t", CMDSTRINGTYPE|CMDMSG, &spthr, "pruning thresholds for 2-grams, 3-grams, 4-grams,...; if less thresholds are specified, the last one is applied to all following n-gram levels; default is 0",
+								
+								"abs", CMDBOOLTYPE|CMDMSG, &aflag, "uses absolute value of weighted difference; default is 0",
+
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
+								(char *)NULL
+								);
+	if (argc == 1){
+		usage();
+	}
+	
+	for(int i=1; i < argc; i++) {
+		if(argv[i][0] != '-') files.push_back(argv[i]);
+	}
+	
+	GetParams(&argc, &argv, (char*) NULL);
+	
+	if (help){
+		usage();
+	}
+	
+	if (files.size() > 2) {
+    usage("Warning: Too many arguments");
   }
-  if (files.size() > 2) {
-    usage("Too many arguments");
-    exit(1);
-  }
+
   if (files.size() < 1) {
-    usage("Please specify a LM file to read from");
-    exit(1);
+    usage("Warning: Specify a LM file to read from");
   }
+
   memset(thr, 0, sizeof(thr));
-  if(spthr != "") s2t(spthr, thr);
+  if(spthr != NULL) s2t(spthr, thr);
   std::string infile = files[0];
   std::string outfile= "";
-
+	
   if (files.size() == 1) {
     outfile=infile;
 
@@ -153,8 +132,7 @@ int main(int argc, const char **argv)
     outfile+=".plm";
   } else
     outfile = files[1];
-
-
+	
   lmtable lmt;
   inputfilestream inp(infile.c_str());
   if (!inp.good()) {

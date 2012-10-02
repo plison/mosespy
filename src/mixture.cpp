@@ -43,29 +43,30 @@ using namespace std;
 #define YES   1
 #define NO    0
 
+#define END_ENUM    {   (char*)0,  0 }
 
 static Enum_T BooleanEnum [] = {
-  {    "Yes",    YES },
-  {    "No",     NO},
-  {    "yes",    YES },
-  {    "no",     NO},
-  {    "y",     YES },
-  {    "n",     NO},
+  {    (char*)"Yes",    YES },
+  {    (char*)"No",     NO},
+  {    (char*)"yes",    YES },
+  {    (char*)"no",     NO},
+  {    (char*)"y",     YES },
+  {    (char*)"n",     NO},
   END_ENUM
 };
 
 static Enum_T SLmTypeEnum [] = {
-  {    "ModifiedShiftBeta",  MOD_SHIFT_BETA },
-  {    "msb",                MOD_SHIFT_BETA },
-  {    "InterpShiftBeta",    SHIFT_BETA },
-  {    "sb",                 SHIFT_BETA },
-  {    "InterpShiftOne",     SHIFT_ONE },
-  {    "s1",                 SHIFT_ONE },
-  {    "InterpShiftZero",    SHIFT_ZERO },
-  {    "s0",                 SHIFT_ZERO },
-  {    "LinearWittenBell",   LINEAR_WB },
-  {    "wb",                 LINEAR_WB },
-  {    "Mixture",            MIXTURE},
+  {    (char*)"ModifiedShiftBeta",  MOD_SHIFT_BETA },
+  {    (char*)"msb",                MOD_SHIFT_BETA },
+  {    (char*)"InterpShiftBeta",    SHIFT_BETA },
+  {    (char*)"sb",                 SHIFT_BETA },
+  {    (char*)"InterpShiftOne",     SHIFT_ONE },
+  {    (char*)"s1",                 SHIFT_ONE },
+  {    (char*)"InterpShiftZero",    SHIFT_ZERO },
+  {    (char*)"s0",                 SHIFT_ZERO },
+  {    (char*)"LinearWittenBell",   LINEAR_WB },
+  {    (char*)"wb",                 LINEAR_WB },
+  {    (char*)"Mixture",            MIXTURE},
   END_ENUM
 };
 
@@ -88,14 +89,14 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
   inp >> numslm;
 
   sublm=new interplm* [numslm];
-  int slmtype;
-  int subprunesingletons;
-  int subprunetopsingletons;
+	int slmtype;
+  bool subprunesingletons;
+  bool subprunetopsingletons;
   int subprunefreq;
 
-  char *subtrainfile;
+  char *subtrainfile=NULL;
 
-  DeclareParams(
+  DeclareParams((char*)
     "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
     "str",CMDSTRINGTYPE, &subtrainfile,
     "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,

@@ -27,25 +27,10 @@ using namespace std;
 #include <vector>
 #include <string>
 #include <stdlib.h>
+#include "cmd.h"
 #include "util.h"
 #include "math.h"
 #include "lmContainer.h"
-
-/* GLOBAL OPTIONS ***************/
-
-std::string slearn = "";
-std::string seval = "";
-std::string sorder = "0";
-std::string sscore = "no";
-std::string sdebug = "0";
-std::string smemmap = "0";
-std::string sdub = "10000000"; // 10^7
-std::string ssent_PP_flag = "no";
-std::string sdictionary_load_factor = "0.0";
-std::string sngramcache_load_factor = "0.0";
-
-std::string slevel = "1000";
-
 /********************************/
 
 
@@ -57,134 +42,106 @@ inline void error(const char* message)
 
 lmContainer* load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf);
 
+void print_help(int TypeFlag=0){
+  std::cerr << std::endl << "interpolate-lm - interpolates language models" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       interpolate-lm [options] <lm-list-file> [lm-list-file.out]" << std::endl;
+	
+	std::cerr << std::endl << "DESCRIPTION:" << std::endl;
+	std::cerr << "       interpolate-lm reads a LM list file including interpolation weights " << std::endl;
+	std::cerr << "       with the format: N\\n w1 lm1 \\n w2 lm2 ...\\n wN lmN\n" << std::endl;
+	std::cerr << "       It estimates new weights on a development text, " << std::endl;
+	std::cerr << "       computes the perplexity on an evaluation text, " << std::endl;
+	std::cerr << "       computes probabilities of n-grams read from stdin." << std::endl;
+	std::cerr << "       It reads LMs in ARPA and IRSTLM binary format." << std::endl;
+	
+  std::cerr << std::endl << "OPTIONS:" << std::endl;
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+	
+}
+
 void usage(const char *msg = 0)
 {
-  if (msg) {
+  if (msg){
     std::cerr << msg << std::endl;
-  }
-  std::cerr << "Usage: interpolate-lm [options] lm-list-file [lm-list-file.out]" << std::endl;
-  if (!msg) std::cerr << std::endl
-                        << "  interpolate-lm reads a LM list file including interpolation weights " << std::endl
-                        << "  with the format: N\\n w1 lm1 \\n w2 lm2 ...\\n wN lmN\n" << std::endl
-                        << "  It estimates new weights on a development text, " << std::endl
-                        << "  computes the perplexity on an evaluation text, " << std::endl
-                        << "  computes probabilities of n-grams read from stdin." << std::endl
-                        << "  It reads LMs in ARPA and IRSTLM binary format." << std::endl  << std::endl;
-
-  std::cerr << "Options:\n"
-            << "--learn|-l text-file learn optimal interpolation for text-file"<< std::endl
-            << "--order|-o n         order of n-grams used in --learn (optional)"<< std::endl
-            << "--eval|-e text-file  computes perplexity on text-file"<< std::endl
-            << "--dub dict-size      dictionary upperbound (default 10^7)"<< std::endl
-            << "--score|-s [yes|no]  compute log-probs of n-grams from stdin"<< std::endl
-            << "--debug|-d [1-3]     verbose output for --eval option (see compile-lm)"<< std::endl
-            << "--sentence [yes|no] (compute pperplexity at sentence level (identified through the end symbol)"<< std::endl
-            << "--memmap| -mm 1      use memory map to read a binary LM" << std::endl
-            << "--ngram_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-            << "--dict_load_factor <value> (set the load factor for ngram cache ; it should be a positive real value; if not defined a default value is used)" << std::endl
-            << "--level|lev <value> (set the maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken)" << std::endl;
+	}
+  else{
+		print_help();
+	}
+	exit(1);
 }
 
-
-bool starts_with(const std::string &s, const std::string &pre)
-{
-  if (pre.size() > s.size()) return false;
-
-  if (pre == s) return true;
-  std::string pre_equals(pre+'=');
-  if (pre_equals.size() > s.size()) return false;
-  return (s.substr(0,pre_equals.size()) == pre_equals);
-}
-
-std::string get_param(const std::string& opt, int argc, const char **argv, int& argi)
-{
-  std::string::size_type equals = opt.find_first_of('=');
-  if (equals != std::string::npos && equals < opt.size()-1) {
-    return opt.substr(equals+1);
-  }
-  std::string nexto;
-  if (argi + 1 < argc) {
-    nexto = argv[++argi];
-  } else {
-    usage((opt + " requires a value!").c_str());
-    exit(1);
-  }
-  return nexto;
-}
-
-void handle_option(const std::string& opt, int argc, const char **argv, int& argi)
-{
-  if (opt == "--help" || opt == "-h") {
-    usage();
-    exit(1);
-  }
-
-  if (starts_with(opt, "--learn") || starts_with(opt, "-l"))
-    slearn = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--order") || starts_with(opt, "-o"))
-    sorder = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--eval") || starts_with(opt, "-e"))
-    seval = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--score") || starts_with(opt, "-s"))
-    sscore = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--debug") || starts_with(opt, "-d"))
-    sdebug = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--memmap") || starts_with(opt, "-mm") || starts_with(opt, "-m") )
-    smemmap = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--level") || starts_with(opt, "-lev"))
-    slevel = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--dub") || starts_with(opt, "-dub"))
-    sdub = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--sentence"))
-    ssent_PP_flag = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--dict_load_factor"))
-    sdictionary_load_factor = get_param(opt, argc, argv, argi);
-  else if (starts_with(opt, "--ngram_load_factor"))
-    sngramcache_load_factor = get_param(opt, argc, argv, argi);
-  else {
-    usage(("Don't understand option " + opt).c_str());
-    exit(1);
-  }
-}
-
-int main(int argc, const char **argv)
-{
-
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
+int main(int argc, char **argv)
+{		
+	char *slearn = NULL;
+	char *seval = NULL;
+	bool learn=false;
+	bool score=false;
+	bool sent_PP_flag = false;
+	
+	int order = 0;
+	int debug = 0;
+  int memmap = 0;
+  int requiredMaxlev = 1000;
+  int dub = 10000000;
+  float ngramcache_load_factor = 0.0;
+  float dictionary_load_factor = 0.0;
+	
+	bool help=false;
   std::vector<std::string> files;
-  for (int i=1; i < argc; i++) {
-    std::string opt = argv[i];
-    if (opt[0] == '-') {
-      handle_option(opt, argc, argv, i);
-    } else files.push_back(opt);
-  }
+	
+	DeclareParams((char*)
+								
+								"learn", CMDSTRINGTYPE|CMDMSG, &slearn, "learn optimal interpolation for text-file; default is false",
+								"l", CMDSTRINGTYPE|CMDMSG, &slearn, "learn optimal interpolation for text-file; default is false",
+								
+								"order", CMDINTTYPE|CMDMSG, &order, "order of n-grams used in --learn (optional)",
+								"o", CMDINTTYPE|CMDMSG, &order, "order of n-grams used in --learn (optional)",
+								
+                "eval", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
+								"e", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
+								
+                "dub", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
 
-  bool learn = ((slearn != "")? true : false);
-  bool score = ((sscore != "")? true : false);
-  int order=atoi(sorder.c_str());
-  int debug = atoi(sdebug.c_str());
-  int memmap = atoi(smemmap.c_str());
-  int requiredMaxlev = atoi(slevel.c_str());
-  int dub = atoi(sdub.c_str()); //dictionary upper bound
-
-  float ngramcache_load_factor = (float) atof(sngramcache_load_factor.c_str());
-  float dictionary_load_factor = (float) atof(sdictionary_load_factor.c_str());
+                "score", CMDBOOLTYPE|CMDMSG, &score, "computes log-prob scores of n-grams from standard input",
+								"s", CMDBOOLTYPE|CMDMSG, &score, "computes log-prob scores of n-grams from standard input",
+								
+                "debug", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
+								"d", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
+                "memmap", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+								"mm", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+								"sentence", CMDBOOLTYPE|CMDMSG, &sent_PP_flag, "computes perplexity at sentence level (identified through the end symbol)",
+                "dict_load_factor", CMDFLOATTYPE|CMDMSG, &dictionary_load_factor, "sets the load factor for ngram cache; it should be a positive real value; default is 0",
+                "ngram_load_factor", CMDFLOATTYPE|CMDMSG, &ngramcache_load_factor, "sets the load factor for ngram cache; it should be a positive real value; default is false",
+                "level", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+								"lev", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+								
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
+								(char *)NULL
+								);
+	
+	if (argc == 1){
+		usage();
+	}
+	
+	for(int i=1; i < argc; i++) {
+		if(argv[i][0] != '-') files.push_back(argv[i]);
+	}
+	
+  GetParams(&argc, &argv, (char*) NULL);
+	
+	if (help){
+		usage();
+	}
 
   if (files.size() > 2) {
-    usage("Too many arguments");
-    exit(1);
+    usage("Warning: Too many arguments");
   }
+	
   if (files.size() < 1) {
-    usage("Please specify a LM list file to read from");
-    exit(1);
-  }
-
-  bool sent_PP_flag = false;
-  if ((ssent_PP_flag == "yes") || (ssent_PP_flag == "y") | (ssent_PP_flag == "YES") || (ssent_PP_flag == "Y")) {
-    sent_PP_flag = true;
+    usage("Warning: specify a LM list file to read from");
   }
 
   std::string infile = files[0];
@@ -201,9 +158,10 @@ int main(int argc, const char **argv)
     outfile = files[1];
 
   std::cerr << "inpfile: " << infile << std::endl;
-
+  learn = ((slearn != NULL)? true : false);
+	
   if (learn) std::cerr << "outfile: " << outfile << std::endl;
-  if (score) std::cerr << "interactive: " << sscore << std::endl;
+  if (score) std::cerr << "interactive: " << score << std::endl;
   if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
   std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
   std::cerr << "order: " << order << std::endl;
@@ -277,13 +235,10 @@ int main(int argc, const char **argv)
     float den,norm; //inner denominator, normalization term
     float variation=1.0; // global variation between new old params
 
-    dictionary* dict=new dictionary((char*)slearn.c_str(),1000000,dictionary_load_factor);
+    dictionary* dict=new dictionary(slearn,1000000,dictionary_load_factor);
     ngram ng(dict);
     int bos=ng.dict->encode(ng.dict->BoS());
-    std::ifstream dev(slearn.c_str(),std::ios::in);
-
-    std::cerr << "slearn.c_str" << slearn.c_str() << std::endl;
-
+    std::ifstream dev(slearn,std::ios::in);
 
     for(;;) {
       std::string line;
@@ -292,7 +247,7 @@ int main(int argc, const char **argv)
         break;
       if(dev.fail()) {
         std::cerr << "Problem reading input file " << seval << std::endl;
-        return 1;
+        exit(1);
       }
       std::istringstream lstream(line);
       if(line.substr(0, 29) == "###interpolate-lm:replace-lm ") {
@@ -371,7 +326,7 @@ int main(int argc, const char **argv)
       lmt[i] = start_lmt[i];
     }
 
-  if (seval != "") {
+  if (seval != NULL) {
     std::cerr << "Start Eval" << std::endl;
 
     std::cout.setf(ios::fixed);
@@ -395,7 +350,7 @@ int main(int argc, const char **argv)
     int bos=ng.dict->encode(ng.dict->BoS());
     int eos=ng.dict->encode(ng.dict->EoS());
 
-    std::fstream inptxt(seval.c_str(),std::ios::in);
+    std::fstream inptxt(seval,std::ios::in);
 
     for(;;) {
       std::string line;
@@ -531,7 +486,7 @@ int main(int argc, const char **argv)
   };
 
 
-  if (sscore == "yes") {
+  if (score == true) {
 
 
     dictionary* dict=new dictionary(NULL,1000000,dictionary_load_factor);

@@ -20,8 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
+#include <iostream>
 #include <cmath>
 #include <math.h>
+#include "cmd.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -36,11 +38,7 @@ using namespace std;
 #include "shiftlm.h"
 #include "linearlm.h"
 #include "mixture.h"
-#include "cmd.h"
 #include "lmtable.h"
-
-#define YES   1
-#define NO    0
 
 
 #define NGRAM 1
@@ -49,46 +47,57 @@ using namespace std;
 #define TURN 4
 #define TEXT 5
 
-#define END_ENUM    {   (char*)0,  0 }
-
-static Enum_T BooleanEnum [] = {
-  {    "Yes",    YES },
-  {    "No",     NO},
-  {    "yes",    YES },
-  {    "no",     NO},
-  {    "y",     YES },
-  {    "n",     NO},
-  END_ENUM
-};
-
 static Enum_T LmTypeEnum [] = {
-  {    "ModifiedShiftBeta",  MOD_SHIFT_BETA },
-  {    "msb",                MOD_SHIFT_BETA },
-  {    "InterpShiftBeta",    SHIFT_BETA },
-  {    "ShiftBeta",          SHIFT_BETA },
-  {    "sb",                 SHIFT_BETA },
-  {    "InterpShiftOne",     SHIFT_ONE },
-  {    "ShiftOne",           SHIFT_ONE },
-  {    "s1",                 SHIFT_ONE },
-  {    "LinearWittenBell",   LINEAR_WB },
-  {    "wb",                 LINEAR_WB },
-  {    "LinearGoodTuring",   LINEAR_GT },
-  {    "Mixture",            MIXTURE },
-  {    "mix",                MIXTURE },
+  {    (char*)"ModifiedShiftBeta",  MOD_SHIFT_BETA },
+  {    (char*)"msb",                MOD_SHIFT_BETA },
+  {    (char*)"InterpShiftBeta",    SHIFT_BETA },
+  {    (char*)"ShiftBeta",          SHIFT_BETA },
+  {    (char*)"sb",                 SHIFT_BETA },
+  {    (char*)"InterpShiftOne",     SHIFT_ONE },
+  {    (char*)"ShiftOne",           SHIFT_ONE },
+  {    (char*)"s1",                 SHIFT_ONE },
+  {    (char*)"LinearWittenBell",   LINEAR_WB },
+  {    (char*)"wb",                 LINEAR_WB },
+  {    (char*)"LinearGoodTuring",   LINEAR_GT },
+  {    (char*)"Mixture",            MIXTURE },
+  {    (char*)"mix",                MIXTURE },
   END_ENUM
 };
 
 
 static Enum_T InteractiveModeEnum [] = {
-  {    "Ngram",       NGRAM },
-  {    "Sequence",    SEQUENCE },
-  {    "Adapt",       ADAPT },
-  {    "Turn",        TURN },
-  {    "Text",        TEXT },
-  {    "Yes",         NGRAM },
+  {    (char*)"Ngram",       NGRAM },
+  {    (char*)"Sequence",    SEQUENCE },
+  {    (char*)"Adapt",       ADAPT },
+  {    (char*)"Turn",        TURN },
+  {    (char*)"Text",        TEXT },
+  {    (char*)"Yes",         NGRAM },
   END_ENUM
 };
 
+void print_help(int TypeFlag=0){
+	std::cerr << std::endl << "tlm - estimates a language model" << std::endl;
+  std::cerr << std::endl << "USAGE:"  << std::endl;
+	std::cerr << "       not yet available" << std::endl;
+  std::cerr << std::endl << "DESCRIPTION:" << std::endl;
+  std::cerr << "       tlm is a tool for the estimation of language model" << std::endl;
+  std::cerr << std::endl << "OPTIONS:" << std::endl;
+	std::cerr << "       -Help|-h this help" << std::endl;
+  std::cerr << std::endl;
+	
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+}
+
+void usage(const char *msg = 0)
+{
+  if (msg){
+    std::cerr << msg << std::endl;
+	}
+  else{
+		print_help();
+	}
+	exit(1);
+}
 
 int main(int argc, char **argv)
 {
@@ -118,14 +127,14 @@ int main(int argc, char **argv)
 	int interactive=0;
 	int statistics=0;
 	
-	int prunefreq=NO;
-	int prunesingletons=YES;
-	int prunetopsingletons=NO;
+	bool prunefreq=false;
+	bool prunesingletons=true;
+	bool prunetopsingletons=false;
 	
 	double beta=-1;
 	
-	int compsize=NO;
-	int checkpr=NO;
+	bool compsize=false;
+	bool checkpr=false;
 	double oovrate=0;
 	int max_caching_level=0;
 	
@@ -135,12 +144,14 @@ int main(int argc, char **argv)
 	
 	int adaptlevel=0;   //adaptation level
 	double adaptrate=1.0;
-	int adaptoov=0; //do not increment the dictionary
+	bool adaptoov=false; //do not increment the dictionary
 	
-	DeclareParams(
+	bool help=false;
+	
+	DeclareParams((char*)
 				  
-				  "Back-off",CMDENUMTYPE, &backoff, BooleanEnum,
-				  "bo",CMDENUMTYPE, &backoff, BooleanEnum,
+				  "Back-off",CMDBOOLTYPE, &backoff,
+				  "bo",CMDBOOLTYPE, &backoff,
 				  
 				  "Dictionary", CMDSTRINGTYPE, &dictfile,
 				  "d", CMDSTRINGTYPE, &dictfile,
@@ -148,8 +159,8 @@ int main(int argc, char **argv)
 				  "DictionaryUpperBound", CMDINTTYPE, &dub,
 				  "dub", CMDINTTYPE, &dub,
 				  
-				  "NgramSize", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
-				  "n", CMDSUBRANGETYPE, &size, 1 , MAX_NGRAM,
+				  "NgramSize", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
+				  "n", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
 				  
 				  "Ngram", CMDSTRINGTYPE, &trainfile,
 				  "TrainOn", CMDSTRINGTYPE, &trainfile,
@@ -179,8 +190,8 @@ int main(int argc, char **argv)
 				  "AdaptLevel", CMDSUBRANGETYPE, &adaptlevel, 1 , MAX_NGRAM,
 				  "al",CMDSUBRANGETYPE , &adaptlevel, 1, MAX_NGRAM,
 				  
-				  "AdaptOOV", CMDENUMTYPE, &adaptoov, BooleanEnum,
-				  "ao", CMDENUMTYPE, &adaptoov, BooleanEnum,
+				  "AdaptOOV", CMDBOOLTYPE, &adaptoov,
+				  "ao", CMDBOOLTYPE, &adaptoov,
 				  
 				  "SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile,
 				  "ssf", CMDSTRINGTYPE, &scalefactorfile,
@@ -191,30 +202,30 @@ int main(int argc, char **argv)
 				  "Interactive",CMDENUMTYPE, &interactive, InteractiveModeEnum,
 				  "i",CMDENUMTYPE, &interactive, InteractiveModeEnum,
 				  
-				  "Statistics",CMDSUBRANGETYPE, &statistics, 1 , 3,
-				  "s",CMDSUBRANGETYPE, &statistics, 1 , 3,
+				  "Statistics",CMDSUBRANGETYPE, &statistics, 1, 3,
+				  "s",CMDSUBRANGETYPE, &statistics, 1, 3,
 				  
-				  "PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1 , 1000,
-				  "p",CMDSUBRANGETYPE, &prunefreq, 1 , 1000,
+				  "PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
+				  "p",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
 				  
-				  "PruneSingletons",CMDENUMTYPE, &prunesingletons, BooleanEnum,
-				  "ps",CMDENUMTYPE, &prunesingletons, BooleanEnum,
+				  "PruneSingletons",CMDBOOLTYPE, &prunesingletons,
+				  "ps",CMDBOOLTYPE, &prunesingletons,
 				  
-				  "PruneTopSingletons",CMDENUMTYPE, &prunetopsingletons, BooleanEnum,
-				  "pts",CMDENUMTYPE, &prunetopsingletons, BooleanEnum,
+				  "PruneTopSingletons",CMDBOOLTYPE, &prunetopsingletons,
+				  "pts",CMDBOOLTYPE, &prunetopsingletons,
 				  
-				  "ComputeLMSize",CMDENUMTYPE, &compsize, BooleanEnum,
-				  "sz",CMDENUMTYPE, &compsize, BooleanEnum,
+				  "ComputeLMSize",CMDBOOLTYPE, &compsize,
+				  "sz",CMDBOOLTYPE, &compsize,
 				  
 				  "MaximumCachingLevel", CMDINTTYPE , &max_caching_level,
 				  "mcl", CMDINTTYPE, &max_caching_level,
 				  
-				  "MemoryMap", CMDENUMTYPE, &memmap, BooleanEnum,
-				  "memmap", CMDENUMTYPE, &memmap, BooleanEnum,
-				  "mm", CMDENUMTYPE, &memmap, BooleanEnum,
+				  "MemoryMap", CMDBOOLTYPE, &memmap,
+				  "memmap", CMDBOOLTYPE, &memmap,
+				  "mm", CMDBOOLTYPE, &memmap,
 				  
-				  "CheckProb",CMDENUMTYPE, &checkpr, BooleanEnum,
-				  "cp",CMDENUMTYPE, &checkpr, BooleanEnum,
+				  "CheckProb",CMDBOOLTYPE, &checkpr,
+				  "cp",CMDBOOLTYPE, &checkpr,
 				  
 				  "OutProb",CMDSTRINGTYPE, &outpr,
 				  "op",CMDSTRINGTYPE, &outpr,
@@ -233,18 +244,26 @@ int main(int argc, char **argv)
 				  
 				  "Beta", CMDDOUBLETYPE, &beta,
 				  "beta", CMDDOUBLETYPE, &beta,
+								
+					"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+					"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 				  
 				  (char *)NULL
 				  );
 	
+	if (argc == 1){
+		usage();
+	}
+	
 	GetParams(&argc, &argv, (char*) NULL);
 	
+	if (help){
+		usage();
+	}
+	
 	if (!lmtype || (!trainfile && lmtype!=MIXTURE)) {
-		cerr <<"Missing parameters\n";
-		exit(1);
+		usage("Warning: Missing parameters");
 	};
-	
-	
 	
 	
 	mdiadaptlm *lm=NULL;
@@ -319,15 +338,15 @@ int main(int argc, char **argv)
 	lm->train();
 	
 	//it never occurs that both prunetopsingletons and prunesingletons  are YES
-	if (prunetopsingletons==YES) { //keep most specific
-		lm->prunetopsingletons(YES);
-		lm->prunesingletons(NO);
+	if (prunetopsingletons==true) { //keep most specific
+		lm->prunetopsingletons(true);
+		lm->prunesingletons(false);
 	} else {
-		lm->prunetopsingletons(NO);
-		if (prunesingletons==YES) {
-			lm->prunesingletons(YES);
+		lm->prunetopsingletons(false);
+		if (prunesingletons==true) {
+			lm->prunesingletons(true);
 		} else {
-			lm->prunesingletons(NO);
+			lm->prunesingletons(false);
 		}
 	}
 	
