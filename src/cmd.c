@@ -380,9 +380,9 @@ PrintParams4(int	TypeFlag,
 			for(;(p=strchr(s, '\n')); s=++p) {
 				fprintf(fp, "%6s%*.*s\n", "", (int)(p-s), (int)(p-s), s);
 			}
-			if(s) fprintf(fp, "%6s%s\n", "", s);
-			else fprintf(fp, "\n");
+			if(s) fprintf(fp, "%6s%s", "", s);
 		}
+		fprintf(fp, "\n");
 	}
 	fprintf(fp, "\n");
 	fflush(fp);
