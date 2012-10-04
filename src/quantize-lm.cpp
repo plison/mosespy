@@ -83,8 +83,8 @@ void print_help(int TypeFlag=0){
 	std::cerr << "       that the IRST LM toolkit can compile. Accepts LMs with .gz suffix." << std::endl;
 	std::cerr << "       You can specify the output file to be created and also the pathname" << std::endl;
 	std::cerr << "       of a temporary file used by the program. As default, the temporary "  << std::endl;
-	std::cerr << "       file is created in the /tmp directory. Output file can be" << std::endl;
-	std::cerr << "       written to standard output by using the special name -."  << std::endl;
+	std::cerr << "       file is created in the /tmp directory." << std::endl;
+	std::cerr << "       Output file can be written to standard output by using the special name -."  << std::endl;
   std::cerr << std::endl << "OPTIONS:" << std::endl;
 	
 	FullPrintParams(TypeFlag, 0, 1, stderr);
@@ -119,10 +119,23 @@ int main(int argc, char **argv)
 		usage();
 	}
 	
-	for(int i=1; i < argc; i++) {
-		if(argv[i][0] != '-') files.push_back(argv[i]);
+	int first_file=1;
+	for (int i=1; i < argc; i++) {
+		if (strcmp(argv[i],"-") == 0){ //handles /dev/stdin or /dev/stdout
+			if (first_file == 1){
+				files.push_back("/dev/stdin");
+			}else if (first_file == 2){
+				files.push_back("/dev/stdout");
+			}else{
+				usage("Warning: You can use the value for the input and/or output file only");
+			}
+			first_file++;
+		}else if(argv[i][0] != '-'){
+			files.push_back(argv[i]);
+			first_file++;
+		}
 	}
-	
+			 
 	GetParams(&argc, &argv, (char*) NULL);
 	
 	if (help){
@@ -173,17 +186,21 @@ int main(int argc, char **argv)
   std::cerr << "Reading " << infile << "..." << std::endl;
 
   inputfilestream inp(infile.c_str());
-  if (!inp.good()) {
+	if (!inp.good()) {
     std::cerr << "Failed to open " << infile << "!\n";
     exit(1);
   }
-
+	
   std::ofstream* out;
   if (outfile == "-")
     out = (ofstream *)&std::cout;
   else {
     out=new std::ofstream;
     out->open(outfile.c_str());
+  }
+	if (!out->good()) {
+    std::cerr << "Failed to open " << outfile << "!\n";
+    exit(1);
   }
 
   std::cerr << "Writing " << outfile << "..." << std::endl;

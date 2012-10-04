@@ -94,9 +94,23 @@ int main(int argc, char **argv)
 		usage();
 	}
 	
-	for(int i=1; i < argc; i++) {
-		if(argv[i][0] != '-') files.push_back(argv[i]);
+	int first_file=1;
+	for (int i=1; i < argc; i++) {
+		if (strcmp(argv[i],"-") == 0){ //handles /dev/stdin or /dev/stdout
+			if (first_file == 1){
+				files.push_back("/dev/stdin");
+			}else if (first_file == 2){
+				files.push_back("/dev/stdout");
+			}else{
+				usage("Warning: You can use the value for the input or output file only");
+			}
+			first_file++;
+		}else if(argv[i][0] != '-'){
+			files.push_back(argv[i]);
+			first_file++;
+		}
 	}
+	
 	
 	GetParams(&argc, &argv, (char*) NULL);
 	

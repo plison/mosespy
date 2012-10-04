@@ -40,7 +40,7 @@ void print_help(int TypeFlag=0){
 	std::cerr << std::endl << "DESCRIPTION:" << std::endl;
 	std::cerr << "       compile-lm reads a standard LM file in ARPA format and produces" << std::endl;
 	std::cerr << "       a compiled representation that the IRST LM toolkit can quickly" << std::endl;
-	std::cerr << "       read and process. LM file can be compressed with gzip." << std::endl;
+	std::cerr << "       read and process. LM file can be compressed." << std::endl;
 	std::cerr << std::endl << "OPTIONS:" << std::endl;
 	
 	FullPrintParams(TypeFlag, 0, 1, stderr);
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	bool skeepunigrams = false;
 	
 	int debug = 0;
-  int memmap = 0;
+  bool memmap = false;
   int requiredMaxlev = 1000;
   int dub = 10000000;
   int randcalls = 0;
@@ -97,8 +97,8 @@ int main(int argc, char **argv)
 								"d", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
                 "level", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
 								"l", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
-                "memmap", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
-								"mm", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+                "memmap", CMDBOOLTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+								"mm", CMDBOOLTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
                 "dub", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
                 "tmpdir", CMDSTRINGTYPE|CMDMSG, &tmpdir, "directory for temporary computation, default is either the environment variable TMP if defined or \"/tmp\")",
                 "invert", CMDBOOLTYPE|CMDMSG, &invert, "builds an inverted n-gram binary table for fast access; default if false",
@@ -118,12 +118,15 @@ int main(int argc, char **argv)
 	}
 	
 	for(int i=1; i < argc; i++) {
-		if(argv[i][0] != '-') files.push_back(argv[i]);
+		if(argv[i][0] != '-'){
+			files.push_back(argv[i]);
+		}
 	}
+	
 	
 	GetParams(&argc, &argv, (char*) NULL);
 	
-	if (argc == 1 || help){
+	if (help){
 		usage();
 	}	
 
@@ -160,9 +163,10 @@ int main(int argc, char **argv)
       outfile.erase(outfile.size()-3,3);
 
     outfile+=(textoutput?".lm":".blm");
-  } else
+  } else{
     outfile = files[1];
-
+	}
+	
   std::cerr << "inpfile: " << infile << std::endl;
 	std::cerr << "outfile: " << outfile << std::endl;
   if (seval!=NULL) std::cerr << "evalfile: " << seval << std::endl;
@@ -443,12 +447,9 @@ int main(int argc, char **argv)
     return 0;
   }
 
-  if (textoutput) {
+  if (textoutput == true) {
     std::cerr << "Saving in txt format to " << outfile << std::endl;
     lmt->savetxt(outfile.c_str());
-    //	} else if (sfilter != "") {
-    //		std::cerr << "Saving in bin format to " << outfile << std::endl;
-    //		lmt->savebin(outfile.c_str());
   } else if (!memmap) {
     std::cerr << "Saving in bin format to " << outfile << std::endl;
     lmt->savebin(outfile.c_str());
