@@ -1126,7 +1126,7 @@ int mdiadaptlm::saveMT(char *filename,int backoff,
 
         if (lambda<1) {
           if (resolution<10000000) {
-            sng.freq=resolution-(int)(log(lambda/bo)/logalpha)-1;
+            sng.freq=resolution-(int)((log(lambda) - log(bo))/logalpha)-1;
             sng.freq=(sng.freq>=0?sng.freq:0);
           } else
             sng.freq=(int)ceil(lambda/bo * (double)10000000)-1;
@@ -1238,10 +1238,15 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
           mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
           assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 
-          if (lmsize()> 1 && lambda < UPPER_SINGLE_PRECISION_OF_1) //output back-off prob
-            ibow=log10(lambda) -log10(bo);
-          else
-            ibow=0.0; //value for backoff weight at the highest level
+					if (backoff){
+						ibow=log10(lambda) - log10(bo);
+					}else{
+						if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+							ibow = log10(lambda);
+						}else { //force to be 0.0
+							ibow = 0.0;
+						}
+					}
         } else {
           ibow=0.0; //default value for backoff weight at the lowest level
         }
@@ -1397,10 +1402,14 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
       ung.shift();//shrink by one
 
       assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-
-      if (lambda < LOWER_SINGLE_PRECISION_OF_1) //output back-off prob
-        *tout[1] << "\t" << (float) (log10(lambda) -log10(bo));
-
+			
+			if (backoff){
+				*tout[1] << "\t" << (float) (log10(lambda) - log10(bo));
+			}else{
+				if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+					*tout[1] << "\t" << (float) log10(lambda);
+				} //no output if log10(lambda)==0
+			}
     }
     *tout[1] << "\n";
 
@@ -1602,9 +1611,13 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
 
             mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
             assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-
-            if (lmsize()>1 && lambda<UPPER_SINGLE_PRECISION_OF_1) //output back-off prob
-              out << "\t" << (float) (log10(lambda) -log10(bo));
+						if (backoff){
+							out << "\t" << (float) (log10(lambda) - log10(bo));
+						}else{
+							if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+								out << "\t" << (float) log10(lambda);
+							} //no output if log10(lambda)==0
+						}
           }
           out << "\n";
         }
