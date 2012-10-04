@@ -170,7 +170,7 @@ int
 GetParams(int	*n,
 					char	***a,
 					char	*DefCmd)
-{
+{	
 	char	*Line;
 	int	i,
 	argc = *n;
@@ -259,32 +259,39 @@ GetParams(int	*n,
 		CmdFile = NULL;
 	}
 	if(DefCmd) free(DefCmd);
-	while(argc && **argv=='-'){
-		s=strchr(*argv, '=');
-
-		//allows double dash for parameters
-		int dash_number=1;
-		if (*(*argv+1) == '-') dash_number++; 
-		if (s){	
-			*s = ' ';
-			if((p=strchr(*argv+dash_number, '.'))&&p<s) {
-				strcpy(Line, *argv+dash_number);
-			} else {
+	
+//	while(argc && **argv=='-'){
+	while(argc){
+		if (**argv=='-'){
+			s=strchr(*argv, '=');
+			
+			//allows double dash for parameters
+			int dash_number=1;
+			if (*(*argv+1) == '-') dash_number++; 
+			if (s){	
+				*s = ' ';
+				if((p=strchr(*argv+dash_number, '.'))&&p<s) {
+					strcpy(Line, *argv+dash_number);
+				} else {
+					sprintf(Line, "%s/%s", ProgName, *argv+dash_number);
+				}
+				*s = '=';
+			}else{ //force the true value for the parameters without a value
 				sprintf(Line, "%s/%s", ProgName, *argv+dash_number);
 			}
-			*s = '=';
-		}else{ //force the true value for the parameters without a value
-			sprintf(Line, "%s/%s", ProgName, *argv+dash_number);
+			
+			StoreCmdLine(Line);
+			if(Scan(ProgName, pgcmds, Line)) CmdError(*argv);
+			--argc;
+			++argv;
+		}else{ //skip tokens not starting with '-'
+			--argc;
+			++argv;
 		}
-		
-//		fprintf(stderr,"Line:|%s|\n",Line);
-		StoreCmdLine(Line);
-		if(Scan(ProgName, pgcmds, Line)) CmdError(*argv);
-		--argc;
-		++argv;
 	}
 	*n = argc;
 	*a = argv;
+	
 #if defined(MSDOS)||defined(_WIN32)
 	if(dot) *dot = '.';
 #endif
@@ -657,7 +664,7 @@ Scan(char	*ProgName,
 	HasToMatch = FALSE,
 	c0,
 	c;
-	
+
 	p = Line+strspn(Line, SepString);
 	if(!(hl=strcspn(p, SepString))) return 0;
 	if(ProgName&&(q=strchr(p, '/')) && q-p<hl) {
