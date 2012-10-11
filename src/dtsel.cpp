@@ -42,6 +42,25 @@ using namespace std;
 #define YES   1
 #define NO    0
 
+void print_help(int TypeFlag=0){
+		std::cerr << std::endl << "dtsel - performs data selection" << std::endl;
+		std::cerr << std::endl << "USAGE:"  << std::endl
+			  << "       dtsel -s=<outfile> [options]" << std::endl;
+		std::cerr << std::endl << "OPTIONS:" << std::endl;
+	FullPrintParams(TypeFlag, 0, 1, stderr);
+}
+
+void usage(const char *msg = 0)
+{
+  if (msg){
+    std::cerr << msg << std::endl;
+	}
+  else{
+		print_help();
+	}
+	exit(1);
+}
+
 double prob(ngramtable* ngt,ngram ng,int size,int cv){
 	double fstar,lambda;
 	
@@ -123,45 +142,49 @@ int main(int argc, char **argv)
 	int useindex=0; //provided score file includes and index
 	double convergence_treshold=0;
 	
+	bool help=false;
+	
 	DeclareParams((char*)
-				  "min-word-freq", CMDINTTYPE, &minfreq,
-				  "f", CMDINTTYPE, &minfreq,
+				  "min-word-freq", CMDINTTYPE|CMDMSG, &minfreq, "frequency threshold for dictionary pruning, default: 2",
+				  "f", CMDINTTYPE|CMDMSG, &minfreq, "frequency threshold for dictionary pruning, default: 2",
 				  
-				  "ngram-order", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
-				  "n", CMDSUBRANGETYPE, &ngsz, 1 , MAX_NGRAM,
+		      "ngram-order", CMDSUBRANGETYPE|CMDMSG, &ngsz, 1 , MAX_NGRAM, "n-gram default size, default: 0",
+				  "n", CMDSUBRANGETYPE|CMDMSG, &ngsz, 1 , MAX_NGRAM, "n-gram default size, default: 0",
 				  
-				  "in-domain-file", CMDSTRINGTYPE, &indom,
-				  "i", CMDSTRINGTYPE, &indom,
+				  "in-domain-file", CMDSTRINGTYPE|CMDMSG, &indom, "indomain data file: one sentence per line",
+				  "i", CMDSTRINGTYPE|CMDMSG, &indom, "indomain data file: one sentence per line",
 				  
-				  "out-domain-file", CMDSTRINGTYPE, &outdom,
-				  "o", CMDSTRINGTYPE, &outdom,
+				  "out-domain-file", CMDSTRINGTYPE|CMDMSG, &outdom, "domain data file: one sentence per line",
+				  "o", CMDSTRINGTYPE|CMDMSG, &outdom, "domain data file: one sentence per line",
 				  
-				  "score-file", CMDSTRINGTYPE, &scorefile,
-				  "s", CMDSTRINGTYPE, &scorefile,
+				  "score-file", CMDSTRINGTYPE|CMDMSG, &scorefile, "score output file",
+				  "s", CMDSTRINGTYPE|CMDMSG, &scorefile, "score output file",
 
-				  "dictionary-upper-bound", CMDINTTYPE, &dub,				  
-				  "dub", CMDINTTYPE, &dub,
+				  "dictionary-upper-bound", CMDINTTYPE|CMDMSG, &dub, "upper bound of true vocabulary, default: 10000000",
+				  "dub", CMDINTTYPE|CMDMSG, &dub, "upper bound of true vocabulary, default: 10000000",
 				  
-				  "model", CMDSUBRANGETYPE, &model, 1 , 2,
-				  "m", CMDSUBRANGETYPE, &model, 1 , 2,
+				  "model", CMDSUBRANGETYPE|CMDMSG, &model, 1 , 2, "data selection model: 1 only in-domain cross-entropy, 2 cross-entropy difference; default: 2",
+				  "m", CMDSUBRANGETYPE|CMDMSG, &model, 1 , 2, "data selection model: 1 only in-domain cross-entropy, 2 cross-entropy difference; default: 2",
 				  
-				  "cross-validation", CMDSUBRANGETYPE, &cv, 1 , 3,
-  				  "cv", CMDSUBRANGETYPE, &cv, 1 , 3,
+				  "cross-validation", CMDSUBRANGETYPE|CMDMSG, &cv, 1 , 3, "cross-validation parameter: 1 only in-domain cross-entropy; default: 1",
+  				  "cv", CMDSUBRANGETYPE|CMDMSG, &cv, 1 , 3, "cross-validation parameter: 1 only in-domain cross-entropy; default: 1",
 				  
-				  "test", CMDSTRINGTYPE, &evalset,
-				  "t", CMDSTRINGTYPE, &evalset,
+				  "test", CMDSTRINGTYPE|CMDMSG, &evalset, "evaluation set file to measure performance",
+				  "t", CMDSTRINGTYPE|CMDMSG, &evalset, "evaluation set file to measure performance",
 				  
-				  "block-size", CMDINTTYPE, &blocksize,
-				  "bs", CMDINTTYPE, &blocksize,
+				  "block-size", CMDINTTYPE|CMDMSG, &blocksize, "block-size in words, default: 100000",
+				  "bs", CMDINTTYPE|CMDMSG, &blocksize, "block-size in words, default: 100000",
 				  
-				  "convergence-threshold", CMDDOUBLETYPE , &convergence_treshold,
-				  "c", CMDDOUBLETYPE , &convergence_treshold,
+				  "convergence-threshold", CMDDOUBLETYPE|CMDMSG, &convergence_treshold, "convergence threshold, default: 0",
+				  "c", CMDDOUBLETYPE|CMDMSG, &convergence_treshold, "convergence threshold, default: 0",
 				  
-				  "index", CMDSUBRANGETYPE, &useindex,0,1,
-				  "x", CMDSUBRANGETYPE, &useindex,0,1,
+				  "index", CMDSUBRANGETYPE|CMDMSG, &useindex,0,1, "provided score file includes and index, default: 0",
+				  "x", CMDSUBRANGETYPE|CMDMSG, &useindex,0,1, "provided score file includes and index, default: 0",
 
-				  "verbose", CMDSUBRANGETYPE, &verbose,0,2,
-				  "v", CMDSUBRANGETYPE, &verbose,0,2,
+				  "verbose", CMDSUBRANGETYPE|CMDMSG, &verbose,0,2, "verbose level, default: 0",
+				  "v", CMDSUBRANGETYPE|CMDMSG, &verbose,0,2, "verbose level, default: 0",
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 
 				  (char *)NULL
 				  );
@@ -169,7 +192,13 @@ int main(int argc, char **argv)
 	
 	
 	GetParams(&argc, &argv, (char*) NULL);
-	
+
+	if (help){
+		usage();
+	}
+	if (scorefile==NULL) {
+		usage();
+	}
 	
 	if (!evalset && (!indom || !outdom)){
 		cerr <<"Must specify in-domain and out-domain data files\n";

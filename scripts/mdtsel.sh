@@ -31,28 +31,36 @@ set -m #enable job control
 
 usage()
 {
-cat << EOF
-usage: $0 options
+    cmnd=$(basename $0);
+    cat << EOF
 
-This script performs data selection assuming an indomain corpus and a very large out of domain corpus.
-Both corpora must contain one sentence in each line delimited with <s> and </s>. The process produces
-a file of scores.
+$cmnd - performs data selection assuming an indomain corpus and
+        a very large out of domain corpus.
+
+USAGE:
+       $cmnd [options]
+
+DESCRIPTION.
+       This command performs data selection assuming an indomain
+       corpus and a very large out of domain corpus.
+       Both corpora must contain one sentence in each line delimited
+       with <s> and </s>. The process produces a file of scores.
 
 
 OPTIONS:
-   -h     Show this message
-   -v     Verbose
-   -i     In-domain corpus 
-   -o     Out-domain corpus
-   -s     Scores output file 
-   -x     Out-domain lines are indexed
-   -w     Temporary work directory (default /tmp)
-   -j     Number of jobs (default 6)
-   -m     Data selection model (1 or 2, default 2)
-   -f     Word frequency threshold (default 1)
-   -n     Ngram order to use (n>=1 default 3)
-   -d     Vocabulary size upper bound (default 10000000)   
-   -c     Cross-validation parameter (cv>=1, default 1)
+       -h        Show this message
+       -v        Verbose
+       -i        In-domain corpus 
+       -o        Out-domain corpus
+       -s        Scores output file 
+       -x        Out-domain lines are indexed
+       -w        Temporary work directory (default /tmp)
+       -j        Number of jobs (default 6)
+       -m        Data selection model (1 or 2, default 2)
+       -f        Word frequency threshold (default 2)
+       -n        Ngram order to use (n>=1 default 3)
+       -d        Vocabulary size upper bound (default 10000000)   
+       -c        Cross-validation parameter (cv>=1, default 1)
 
 EOF
 }
