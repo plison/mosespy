@@ -4,8 +4,11 @@ prefixdir=$1
 PACKAGE_NAME=irstlm
 PACKAGE_VERSION=`cat ${prefixdir}/RELEASE`
 
-bininstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-bin
-libinstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-lib
+uname_cmd="uname -mrs"
+OS_VERSION=`${uname_cmd} | tr ' ' '_'`
+
+bininstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-bin-${OS_VERSION}
+libinstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-lib-${OS_VERSION}
 srcinstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}
 
 cwd=`pwd`
@@ -20,18 +23,30 @@ echo "directory $tmpdir already exists. Please check!"
 exit 1;
 fi
 
+### Get the most recent version in the repository
 svn export https://irstlm.svn.sourceforge.net/svnroot/irstlm/trunk $tmpdir
+
+### remove files which should not be included in the release
+pushd $tmpdir
+rm -r m4/ scripts/other/ irstlm.xcodeproj/ make-release
+popd
 
 tar czf ${cwd}/${srcinstallname}.tgz $tmpdir
 zip -r ${cwd}/${srcinstallname}.zip $tmpdir
 
-cp -r ${prefixdir}/bin ${prefixdir}/lib ${prefixdir}/include $tmpdir/
+### Prepare distribution of executables only and libraries only for the actual OS
+pushd $tmpdir
+./regenerate-makefiles.sh
+./configure --prefix=`pwd`
+make install
+echo "This library has been compiled on "`${uname_cmd}` > Compilation.info
+popd
 
-tar czf ${cwd}/${bininstallname}.tgz $tmpdir/bin
-zip -r -y ${cwd}/${bininstallname}.zip $tmpdir/bin
+tar czf ${cwd}/${bininstallname}.tgz $tmpdir/bin $tmpdir/Compilation.info
+zip -r -y ${cwd}/${bininstallname}.zip $tmpdir/bin $tmpdir/Compilation.info
 
-tar czf ${cwd}/${libinstallname}.tgz $tmpdir/lib $tmpdir/include
-zip -r -y ${cwd}/${libinstallname}.zip $tmpdir/lib $tmpdir/include
+tar czf ${cwd}/${libinstallname}.tgz $tmpdir/lib $tmpdir/include $tmpdir/Compilation.info
+zip -r -y ${cwd}/${libinstallname}.zip $tmpdir/lib $tmpdir/include $tmpdir/Compilation.info
 
 \rm -r $tmpdir
 
