@@ -28,7 +28,7 @@ svn export https://irstlm.svn.sourceforge.net/svnroot/irstlm/trunk $tmpdir
 
 ### remove files which should not be included in the release
 pushd $tmpdir
-rm -r m4/ scripts/other/ irstlm.xcodeproj/ make-release
+rm -r m4/ scripts/other/ irstlm.xcodeproj/ make-release make-release-dev
 popd
 
 tar czf ${cwd}/${srcinstallname}.tgz $tmpdir
