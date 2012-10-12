@@ -1,0 +1,31 @@
+#! /bin/sh
+
+prefixdir=$1
+PACKAGE_NAME=irstlm
+PACKAGE_VERSION=`cat ${prefixdir}/RELEASE`
+
+srcinstallname=${PACKAGE_NAME}-${PACKAGE_VERSION}-dev
+
+cwd=`pwd`
+echo $cwd
+
+tmpdir=${PACKAGE_NAME}-${PACKAGE_VERSION}
+
+if [ -d $tmpdir ] ; then
+echo "directory $tmpdir already exists. Please check!"
+exit 1;
+fi
+
+### Get the most recent version in the repository
+svn export https://irstlm.svn.sourceforge.net/svnroot/irstlm/trunk $tmpdir
+
+### remove files which should not be included in the release
+pushd $tmpdir
+rm -r m4/
+popd
+
+tar czf ${cwd}/${srcinstallname}.tgz $tmpdir
+zip -r ${cwd}/${srcinstallname}.zip $tmpdir
+
+\rm -r $tmpdir
+
