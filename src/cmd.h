@@ -40,6 +40,8 @@
 
 #define CMDMSG		(1<<31)
 
+#include <stdio.h>
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
