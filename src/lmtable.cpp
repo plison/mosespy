@@ -77,16 +77,18 @@ lmtable::lmtable(float nlf, float dlf):lmContainer()
   configure(1,false);
 
   dict=new dictionary((char *)NULL,1000000,dictionary_load_factor);
+	delete_dict=true;
 
   memset(table, 0, sizeof(table));
   memset(tableGaps, 0, sizeof(tableGaps));
   memset(cursize, 0, sizeof(cursize));
   memset(tbltype, 0, sizeof(tbltype));
   memset(maxsize, 0, sizeof(maxsize));
+  memset(tb_offset, 0, sizeof(maxsize));
   memset(info, 0, sizeof(info));
-  memset(NumCenters, 0, sizeof(NumCenters));
-
-  max_cache_lev=0;
+  memset(NumCenters, 0, sizeof(NumCenters));  
+	
+	max_cache_lev=0;
   for (int i=0; i<LMTMAXLEV+1; i++) lmtcache[i]=NULL;
   prob_and_state_cache=NULL;
 
@@ -134,7 +136,7 @@ lmtable::~lmtable()
     }
   }
 
-  delete dict;
+  if (delete_dict) delete dict;
 };
 
 void lmtable::init_prob_and_state_cache()
@@ -496,8 +498,6 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
         strcpy(nameNgrams,outfilename);
         strcat(nameNgrams, "-ngrams");
 
-        cerr << "saving ngrams probs in " << nameNgrams << "\n";
-
         fd = fopen(nameNgrams, "w+");
 
         // compute the size of file (only for tables and - possibly - centroids; no header nor dictionary)
@@ -508,7 +508,6 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
             filesize +=  (table_pos_t) maxsize[l] * nodesize(tbltype[l]) + NumCenters[l] * sizeof(float);
         }
 
-        cerr << "global filesize = " << filesize << "\n";
         // set the file to the proper size:
         ftruncate(fileno(fd),filesize);
         table[0]=(char *)(MMap(fileno(fd),PROT_READ|PROT_WRITE,0,filesize,&tableGaps[0]));
@@ -586,7 +585,7 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
 
   strcpy(nameHeader,outfilename);
   strcat(nameHeader, "-header");
-  cerr << "saving header+dictionary in " << nameHeader << "\n";
+  VERBOSE(2,"saving header+dictionary in " << nameHeader << "\n");
   fstream out(nameHeader,ios::out);
 
   // print header
@@ -618,10 +617,8 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
   sprintf(cmd,"mv %s %s", nameHeader, outfilename);
   cerr << "run cmd <" << cmd << ">\n";
   system(cmd);
-
-  sprintf(cmd,"rm %s", nameNgrams);
-  cerr << "run cmd <" << cmd << ">\n";
-  system(cmd);
+	
+	removefile(nameNgrams);
 
   //no more operations are available, the file must be saved!
   exit(0);
@@ -679,11 +676,20 @@ void lmtable::loadtxt_ram(istream& inp,const char* header)
       }
 
       loadtxt_level(inp,Order);
+//			cerr << "START print_table_stat level" << Order << "\n";
+//			printTable(Order);
+//			cerr << "END print_table_stat level" << Order << "\n";
 
-      // now we can fix table at level Order -1
+      // now we can fix table at level Order - 1
       if (maxlev>1 && Order>1) {
+//				cerr << "before checkbounds START print_table_stat level" << Order-1 << "\n";
+//				printTable(Order-1);
+//				cerr << "before checkbounds END print_table_stat level" << Order-1 << "\n";
         checkbounds(Order-1);
-        delete startpos[Order-1];
+//				cerr << "after checkbounds START print_table_stat level" << Order-1 << "\n";
+//				printTable(Order-1);
+//				cerr << "after checkbounds END print_table_stat level" << Order-1 << "\n";
+//        delete startpos[Order-1];
       }
     }
   }
@@ -749,13 +755,13 @@ void lmtable::loadtxt_level(istream& inp, int level)
       else add(ng, prob, bow);
     }
   }
-  cerr << "done level" << level << "\n";
+  cerr << "done level " << level << "\n";
 }
 
 
 void lmtable::expand_level(int level, table_entry_pos_t size, const char* outfilename, int mmap)
 {
-  cerr << "expanding level: " << level << " with " << size << " entries ...\n";
+//  cerr << "expanding level: " << level << " with " << size << " entries ...\n";
   if (mmap>0)
     expand_level_mmap(level, size, outfilename);
   else {
@@ -771,7 +777,7 @@ void lmtable::expand_level_mmap(int level, table_entry_pos_t size, const char* o
   char nameNgrams[BUFSIZ];
   sprintf(nameNgrams,"%s-%dgrams",outfilename,level);
 
-  cerr << level << "-grams: creating level of size " << maxsize[level] << " in memory map on "<< nameNgrams << std::endl;
+//  cerr << level << "-grams: creating level of size " << maxsize[level] << " in memory map on "<< nameNgrams << std::endl;
 
   //opening output file
   FILE *fd = NULL;
@@ -795,23 +801,35 @@ void lmtable::expand_level_mmap(int level, table_entry_pos_t size, const char* o
 
   if (maxlev>1 && level<maxlev) {
     startpos[level]=new table_entry_pos_t[maxsize[level]];
+		LMT_TYPE ndt=tbltype[level];
+		int ndsz=nodesize(ndt);
+		char *found = table[level];
     for (table_entry_pos_t c=0; c<maxsize[level]; c++) {
       startpos[level][c]=BOUND_EMPTY1;
+			found += ndsz;
+//			bound(found,ndt,BOUND_EMPTY2);
     }
   }
 }
 
 void lmtable::expand_level_nommap(int level, table_entry_pos_t size)
 {
+	VERBOSE(2,"lmtable::expand_level_nommap START Level:" << level << endl);
   maxsize[level]=size;
-  cerr << level << "-grams: creating level of size " << maxsize[level] << std::endl;
+//  cerr << level << "-grams: creating level of size " << maxsize[level] << std::endl;
   table[level] = new char[(table_pos_t) maxsize[level] * nodesize(tbltype[level])];
   if (maxlev>1 && level<maxlev) {
     startpos[level]=new table_entry_pos_t[maxsize[level]];
+		LMT_TYPE ndt=tbltype[level];
+		int ndsz=nodesize(ndt);
+		char *found = table[level];
     for (table_entry_pos_t c=0; c<maxsize[level]; c++) {
       startpos[level][c]=BOUND_EMPTY1;
+			found += ndsz;
+//			bound(found,ndt,BOUND_EMPTY2);
     }
   }
+	VERBOSE(2,"lmtable::expand_level_nommap END Level:" << level << endl);
 }
 
 void lmtable::printTable(int level)
@@ -819,122 +837,175 @@ void lmtable::printTable(int level)
   char*  tbl=table[level];
   LMT_TYPE ndt=tbltype[level];
   int ndsz=nodesize(ndt);
-  table_entry_pos_t printEntryN=1000;
-  if (cursize[level]>0)
-    printEntryN=(printEntryN<cursize[level])?printEntryN:cursize[level];
+  table_entry_pos_t printEntryN=getCurrentSize(level);
+//  if (cursize[level]>0)
+//    printEntryN=(printEntryN<cursize[level])?printEntryN:cursize[level];
 
-  cout << "level = " << level << "\n";
-
+  cout << "level = " << level << " of size:" << printEntryN <<" ndsz:" << ndsz << " \n";
+	
   //TOCHECK: Nicola, 18 dicembre 2009
-  float p;
-  for (table_entry_pos_t c=0; c<printEntryN; c++) {
-    p=prob(tbl,ndt);
-    cout << p << " " << word(tbl) << "\n";
-    //cout << *(float *)&p << " " << word(tbl) << "\n";
-    tbl+=ndsz;
-  }
+  float p,bw;
+	table_entry_pos_t bnd, start;
+	
+	if (level<maxlev){
+		for (table_entry_pos_t c=0; c<printEntryN; c++) {
+			p=prob(tbl,ndt);
+			bw=bow(tbl,ndt);
+			bnd=bound(tbl,ndt);
+			start=startpos[level][c];
+//			cout << p << " " << word(tbl) << " " << bw << " " << bnd << "\n";
+			cerr << p << " " << word(tbl) << " -> " << dict->decode(word(tbl)) << " bw:" << bw << " bnd:" << bnd << " " << start << " tb_offset:" << tb_offset[level+1] << "\n";
+			//cout << *(float *)&p << " " << word(tbl) << "\n";
+			tbl+=ndsz;
+		}
+	}else{
+		for (table_entry_pos_t c=0; c<printEntryN; c++) {
+			p=prob(tbl,ndt);
+//			cout << p << " " << word(tbl) << "\n";
+			cerr << p << " " << word(tbl) << " -> " << dict->decode(word(tbl)) << "\n";
+			//cout << *(float *)&p << " " << word(tbl) << "\n";
+			tbl+=ndsz;
+		}
+	}
   return;
 }
 
 //Checkbound with sorting of n-gram table on disk
-
 void lmtable::checkbounds(int level)
 {
-
-  char*  tbl=table[level];
-  char*  succtbl=table[level+1];
-
-  LMT_TYPE ndt=tbltype[level], succndt=tbltype[level+1];
-  int ndsz=nodesize(ndt), succndsz=nodesize(succndt);
-
-  //re-order table at level+1 on disk
-  //generate random filename to avoid collisions
-  ofstream out;
-  string filePath;
-  createtempfile(out,filePath,ios::out|ios::binary);
-
-  table_entry_pos_t start,end,newstart;
-
-  //re-order table at level l+1
-  newstart=0;
-  //	cerr << "BOUND_EMPTY1:" << BOUND_EMPTY1 << " BOUND_EMPTY2:" << BOUND_EMPTY2 << std::endl;
-  for (table_entry_pos_t c=0; c<cursize[level]; c++) {
-    start=startpos[level][c];
-    end=bound(tbl+ (table_pos_t) c*ndsz,ndt);
-    //    start=startpos[level][c]; end=bound(tbl+c*ndsz,ndt);
-
-    //is start==BOUND_EMPTY1 there are no successors for this entry and end==BOUND_EMPTY2
-    if (start==BOUND_EMPTY1) end=BOUND_EMPTY2;
-    if (end==BOUND_EMPTY2) end=start;
-
-    assert(start<=end);
-    assert(newstart+(end-start)<=cursize[level+1]);
-    assert(end == BOUND_EMPTY1 || end<=cursize[level+1]);
-
-
-    if (start<end) {
-      out.write((char*)(succtbl + (table_pos_t) start * succndsz),(table_pos_t) (end-start) * succndsz);
-      if (!out.good()) {
-        std::cerr << " Something went wrong while writing temporary file " << filePath
-                  << " Maybe there is not enough space on this filesystem\n";
-
-        out.close();
-        removefile(filePath);
-        exit(2);
-      }
-    }
-
-    bound(tbl+(table_pos_t) c*ndsz,ndt,newstart+(end-start));
-    newstart+=(end-start);
-  }
-
-  out.close();
-
-  fstream inp(filePath.c_str(),ios::in|ios::binary);
-  inp.read(succtbl,(table_pos_t) cursize[level+1]*succndsz);
-  inp.close();
-
-  removefile(filePath);
+  VERBOSE(2,"lmtable::checkbounds START Level:" << level << endl);
+	
+	if (getCurrentSize(level) > 0 ){
+		
+		char*  tbl=table[level];
+		char*  succtbl=table[level+1];
+		
+		LMT_TYPE ndt=tbltype[level];
+		LMT_TYPE succndt=tbltype[level+1];
+		int ndsz=nodesize(ndt);
+		int succndsz=nodesize(succndt);
+		
+		//re-order table at level+1 on disk
+		//generate random filename to avoid collisions
+		
+		std::string filePath;
+		//  ofstream out;
+		mfstream out;
+		createtempfile(out, filePath, ios::out|ios::binary);
+		
+		if (out.fail())
+		{
+			perror("checkbound creating out on filePath");
+			exit(4);
+		}
+		
+		table_entry_pos_t start,end,newend;
+		table_entry_pos_t succ;
+		
+		//re-order table at level l+1
+		char* found;
+		for (table_entry_pos_t c=0; c<cursize[level]; c++) {
+			found=tbl+(table_pos_t) c*ndsz;
+			start=startpos[level][c];
+			end=boundwithoffset(found,ndt,level);
+			
+			if (c>0) newend=boundwithoffset(found-ndsz,ndt,level);
+			else 		newend=0;
+			
+			//if start==BOUND_EMPTY1 there are no successors for this entry
+			if (start==BOUND_EMPTY1){
+				succ=0;
+			}
+			else{
+				assert(end>start);
+				succ=end-start;
+			}
+			
+			startpos[level][c]=newend;
+			newend += succ;
+			
+			assert(newend<=cursize[level+1]);
+			
+			//		cerr << "checkbound HERE c:" << c << endl;
+			if (succ>0) {
+				//		cerr << "checkbound HERE2 c:" << c << endl;
+				out.write((char*)(succtbl + (table_pos_t) start * succndsz),(table_pos_t) succ * succndsz);
+				if (!out.good()) {
+					std::cerr << " Something went wrong while writing temporary file " << filePath
+					<< " Maybe there is not enough space on this filesystem\n";
+					
+					out.close();
+					exit(2);
+					removefile(filePath);
+				}
+			}
+			
+			boundwithoffset(found,ndt,newend,level);
+		}
+		out.close();	
+		if (out.fail())
+		{
+			perror("error closing out");
+			exit(4);
+		}
+		
+		fstream inp(filePath.c_str(),ios::in|ios::binary);
+		if (inp.fail())
+		{
+			perror("error opening inp");
+			exit(4);
+		}
+		
+		inp.read(succtbl,(table_pos_t) cursize[level+1]*succndsz);
+		inp.close();
+		if (inp.fail())
+		{
+			perror("error closing inp");
+			exit(4);
+		}
+		
+		removefile(filePath);
+	}
+  VERBOSE(2,"lmtable::checkbounds END Level:" << level << endl);
 }
 
 //Add method inserts n-grams in the table structure. It is ONLY used during
 //loading of LMs in text format. It searches for the prefix, then it adds the
 //suffix to the last level and updates the start-end positions.
-
-//int lmtable::add(ngram& ng,int iprob,int ibow){
-template<typename TA, typename TB>
-int lmtable::add(ngram& ng, TA iprob,TB ibow)
+int lmtable::addwithoffset(ngram& ng, float iprob, float ibow)
 {
-
   char *found;
   LMT_TYPE ndt=tbltype[1]; //default initialization
   int ndsz=nodesize(ndt); //default initialization
   static int no_more_msg = 0;
 
-  //cerr << "add(): ng.size: " << ng.size << " ng: |" << ng << "| cursize[ng.size]: " << cursize[ng.size] << " maxsize[ng.size]: " << maxsize[ng.size];
   if (ng.size>1) {
 
     // find the prefix starting from the first level
-    table_entry_pos_t start=0, end=cursize[1];
-
-
+    table_entry_pos_t start=0;
+    table_entry_pos_t end=cursize[1];		
+		table_entry_pos_t position;
+		
     for (int l=1; l<ng.size; l++) {
-
-      ndt=tbltype[l];
+			
+			ndt=tbltype[l];
       ndsz=nodesize(ndt);
 
-      if (search(l,start,(end-start),ndsz,
-                 ng.wordp(ng.size-l+1),LMT_FIND, &found)) {
-
-        //update start-end positions for next step
-        if (l< (ng.size-1)) {
+      if (search(l,start,(end-start),ndsz, ng.wordp(ng.size-l+1),LMT_FIND, &found)) {
+				
+        //update start and end positions for next step
+        if (l < (ng.size-1)) {
           //set start position
-          if (found==table[l]) start=0; //first pos in table
-          else start=bound(found - ndsz,ndt); //end of previous entry
+          if (found==table[l]){
+							start=0; //first pos in table
+					}
+					else {
+						position=(table_entry_pos_t) (((table_pos_t) (found)-(table_pos_t) table[l])/ndsz);
+						start=startpos[l][position];
+					}
 
-          //set end position
-          end=bound(found,ndt);
-        }
+          end=boundwithoffset(found,ndt,l);
+				}
       } else {
         if (!no_more_msg)
           cerr << "warning: missing back-off (at level " << l << ") for ngram " << ng << " (and possibly for others)\n";
@@ -946,17 +1017,16 @@ int lmtable::add(ngram& ng, TA iprob,TB ibow)
         return 0;
       }
     }
-
+		
     // update book keeping information about level ng-size -1.
-    // if this is the first successor update start position
-    table_entry_pos_t position=(table_entry_pos_t) (((table_pos_t) found-(table_pos_t) table[ng.size-1])/ndsz);
-    //table_entry_pos_t position=((table_entry_pos_t)((table_pos_t) found-(table_pos_t) table[ng.size-1])/ndsz);
+    position=(table_entry_pos_t) (((table_pos_t) found-(table_pos_t) table[ng.size-1])/ndsz);
 
+		// if this is the first successor update start position in the previous level
     if (startpos[ng.size-1][position]==BOUND_EMPTY1)
       startpos[ng.size-1][position]=cursize[ng.size];
 
     //always update ending position
-    bound(found,ndt,cursize[ng.size]+1);
+    boundwithoffset(found,ndt,cursize[ng.size]+1,ng.size-1);
   }
 
   // just add at the end of table[ng.size]
@@ -969,20 +1039,112 @@ int lmtable::add(ngram& ng, TA iprob,TB ibow)
   word(found,*ng.wordp(1));
   prob(found,ndt,iprob);
   if (ng.size<maxlev) {
+		//find the bound of the previous entry
+		table_entry_pos_t newend;
+		if (found==table[ng.size])			newend=0; //first pos in table
+		else 			newend=boundwithoffset(found - ndsz,ndt,ng.size);
+		
     bow(found,ndt,ibow);
-    bound(found,ndt,BOUND_EMPTY2);
-  }
-
-  //	cerr << " found: " << (void*) found << " table[ng.size]: " << (void*) table[ng.size] << "\n";
-
+    boundwithoffset(found,ndt,newend,ng.size);
+	}
   cursize[ng.size]++;
 
   if (!(cursize[ng.size]%5000000))
     cerr << ".";
+  
+	return 1;
 
-  return 1;
+};
 
-}
+
+//template<typename TA, typename TB>
+//int lmtable::add(ngram& ng, TA iprob,TB ibow)
+
+int lmtable::add(ngram& ng, float iprob, float ibow)
+{
+  char *found;
+  LMT_TYPE ndt=tbltype[1]; //default initialization
+  int ndsz=nodesize(ndt); //default initialization
+  static int no_more_msg = 0;
+	
+  if (ng.size>1) {
+		
+    // find the prefix starting from the first level
+    table_entry_pos_t start=0;
+    table_entry_pos_t end=cursize[1];		
+		table_entry_pos_t position;
+
+    for (int l=1; l<ng.size; l++) {
+			
+			ndt=tbltype[l];
+      ndsz=nodesize(ndt);
+			
+      if (search(l,start,(end-start),ndsz, ng.wordp(ng.size-l+1),LMT_FIND, &found)) {
+				
+				//update start and end positions for next step
+        if (l < (ng.size-1)) {
+          //set start position
+          if (found==table[l]){
+						start=0; //first pos in table
+					}
+          else {
+						position=(table_entry_pos_t) (((table_pos_t) (found)-(table_pos_t) table[l])/ndsz);
+						start=startpos[l][position];
+					}
+					
+          end=bound(found,ndt);
+				}
+      }
+			else {
+        if (!no_more_msg)
+          cerr << "warning: missing back-off (at level " << l << ") for ngram " << ng << " (and possibly for others)\n";
+				
+        no_more_msg++;
+        if (!(no_more_msg % 5000000))
+          cerr << "!";
+				
+        return 0;
+      }
+		}
+		
+    // update book keeping information about level ng-size -1.
+    position=(table_entry_pos_t) (((table_pos_t) found-(table_pos_t) table[ng.size-1])/ndsz);
+		
+		// if this is the first successor update start position in the previous level
+    if (startpos[ng.size-1][position]==BOUND_EMPTY1)
+      startpos[ng.size-1][position]=cursize[ng.size];
+		
+    //always update ending position
+    bound(found,ndt,cursize[ng.size]+1);
+  }
+	
+  // just add at the end of table[ng.size]
+	
+  assert(cursize[ng.size]< maxsize[ng.size]); // is there enough space?
+  ndt=tbltype[ng.size];
+  ndsz=nodesize(ndt);
+	
+  found=table[ng.size] + ((table_pos_t) cursize[ng.size] * ndsz);
+  word(found,*ng.wordp(1));
+  prob(found,ndt,iprob);
+  if (ng.size<maxlev) {
+		//find the bound of the previous entry
+		table_entry_pos_t newend;
+		if (found==table[ng.size])			newend=0; //first pos in table
+		else 		newend=bound(found - ndsz,ndt);
+
+    bow(found,ndt,ibow);
+    bound(found,ndt,newend);
+	}
+
+  cursize[ng.size]++;
+	
+  if (!(cursize[ng.size]%5000000))
+    cerr << ".";
+  
+	return 1;
+	
+};
 
 
 void *lmtable::search(int lev,
@@ -998,7 +1160,7 @@ void *lmtable::search(int lev,
       if (n >=2)
       cout << "searching entry for codeword: " << ngp[0] << "...";
   ***/
-
+	
   //assume 1-grams is a 1-1 map of the vocabulary
   //CHECK: explicit cast of n into float because table_pos_t could be unsigned and larger than MAXINT
   if (lev==1) return *found=(*ngp < (float) n ? table[1] + (table_pos_t)*ngp * sz:NULL);
@@ -1050,7 +1212,12 @@ int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table
 
 #endif
 
-
+	for (unsigned int i=0;i<n;i++){
+		
+		unsigned char* tmp = (unsigned char *) (ar + (i * size));
+		
+		result=codecmp((char *)key,(char *)tmp);
+	}
   while (low < high) {
 
 #ifdef INTERP_SEARCH
@@ -1106,7 +1273,7 @@ void lmtable::cpsublm(lmtable* slmt, dictionary* subdict,bool keepunigr)
   //let slmt inherit all features of this lmtable
 
   slmt->configure(maxlev,isQtable);
-  slmt->dict=new dictionary((keepunigr?dict:subdict));
+  slmt->dict=new dictionary((keepunigr?dict:subdict),false);
 
   if (isQtable) {
     for (int i=1; i<=maxlev; i++)  {
@@ -1247,9 +1414,13 @@ void lmtable::savetxt(const char *filename)
   if (isPruned) ngcnt(cnt); //check size of table by considering pruned n-grams
 
   out << "\n\\data\\\n";
+  char buff[100];
   for (l=1; l<=maxlev; l++) {
-    out << "ngram " << l << "= " << (isPruned?cnt[l]:cursize[l]) << "\n";
+    sprintf(buff,"ngram %2d=%10d\n",l,(isPruned?cnt[l]:cursize[l]));
+    out << buff;
+//out << "ngram " << l << "= " << (isPruned?cnt[l]:cursize[l]) << "\n";
   }
+  out << "\n";
 
   for (l=1; l<=maxlev; l++) {
 
@@ -1277,15 +1448,15 @@ void lmtable::savetxt(const char *filename)
 
 void lmtable::savebin(const char *filename)
 {
-
+  VERBOSE(2,"lmtable::savebin START " << filename << "\n");
+	
   if (isPruned) {
-    cerr << "savebin: pruned LM cannot be saved in binary form\n";
+    VERBOSE(2,"lmtable::savebin: pruned LM cannot be saved in binary form\n");
     exit(0);
   }
 
 
   fstream out(filename,ios::out);
-  cerr << "savebin: " << filename << "\n";
 
   // print header
   if (isQtable) {
@@ -1297,14 +1468,17 @@ void lmtable::savebin(const char *filename)
 
   } else {
     out << "blmt" << (isInverted?"I":"") << " " << maxlev;
-    for (int i=1; i<=maxlev; i++) out << " " << cursize[i] ;
+    char buff[100];
+    for (int i=1; i<=maxlev; i++){
+        sprintf(buff," %10d",cursize[i]);
+  	out << buff;
+    }
     out << "\n";
   }
 
   lmtable::getDict()->save(out);
 
   for (int i=1; i<=maxlev; i++) {
-    cerr << "saving " << cursize[i] << " " << i << "-grams\n";
     if (isQtable) {
       out.write((char*)Pcenters[i],NumCenters[i] * sizeof(float));
       if (i<maxlev)
@@ -1312,8 +1486,8 @@ void lmtable::savebin(const char *filename)
     }
     out.write(table[i],(table_pos_t) cursize[i]*nodesize(tbltype[i]));
   }
-
-  cerr << "done\n";
+	
+  VERBOSE(2,"lmtable::savebin: END\n");
 }
 
 void lmtable::savebin_dict(std::fstream& out)
@@ -1331,6 +1505,61 @@ void lmtable::savebin_dict(std::fstream& out)
 
 
 
+void lmtable::appendbin_level(int level, fstream &out, int mmap)
+{
+	if (getCurrentSize(level) > 0 ){
+		if (mmap>0)
+			appendbin_level_mmap(level, out);
+		else {
+			appendbin_level_nommap(level, out);
+		}
+	}
+}
+
+void lmtable::appendbin_level_nommap(int level, fstream &out)
+{
+  VERBOSE(2,"lmtable:appendbin_level_nommap START Level:" << level << std::endl);
+	
+  /*
+	 if (isPruned){
+	 cerr << "savebin_level (level " << level << "):  pruned LM cannot be saved in binary form\n";
+	 exit(0);
+	 }
+	 */
+
+  assert(level<=maxlev);	
+	
+  // print header
+  if (isQtable) {
+    //NOT IMPLEMENTED
+  } else {
+    //do nothing
+  }
+	
+  VERBOSE(3,"appending " << cursize[level] << " (maxsize:" << maxsize[level] << ") " << level << "-grams" << "   table " << (void*) table << "  table[level] " << (void*) table[level] << " out:" << (void*) out << endl);
+
+  if (isQtable) {
+    //NOT IMPLEMENTED
+  }
+	
+  out.write(table[level],(table_pos_t) cursize[level]*nodesize(tbltype[level]));
+	
+	if (!out.good()) {
+		perror("Something went wrong while writing");
+		out.close();
+		exit(2);
+	}
+	
+  VERBOSE(2,"lmtable:appendbin_level_nommap END Level:" << level << std::endl);
+}
+
+
+void lmtable::appendbin_level_mmap(int level, fstream &out)
+{
+	UNUSED(out);
+  cerr << "appending " << level << " (Actually do nothing)" <<std::endl;
+}
+
 void lmtable::savebin_level(int level, const char* outfilename, int mmap)
 {
   if (mmap>0)
@@ -1342,11 +1571,12 @@ void lmtable::savebin_level(int level, const char* outfilename, int mmap)
 
 void lmtable::savebin_level_nommap(int level, const char* outfilename)
 {
+  VERBOSE(2,"lmtable:savebin_level_nommap START" << requiredMaxlev << std::endl);
 
   /*
     if (isPruned){
     cerr << "savebin_level (level " << level << "):  pruned LM cannot be saved in binary form\n";
-    exit(0);
+	 exit(0);
     }
   */
 
@@ -1354,8 +1584,17 @@ void lmtable::savebin_level_nommap(int level, const char* outfilename)
 
   char nameNgrams[BUFSIZ];
   sprintf(nameNgrams,"%s-%dgrams",outfilename,level);
-  fstream out(nameNgrams, ios::out);
 
+
+//  mfstream out(nameNgrams, ios::out|ios::binary);
+	  fstream out(nameNgrams, ios::out|ios::binary);
+	
+	if (out.fail()){
+//		cerr << " out:" << (void*) *out << " cannot be opened" << endl;
+		perror("cannot be opened");
+		exit(3);
+	}
+	
   // print header
   if (isQtable) {
     //NOT IMPLEMENTED
@@ -1363,23 +1602,34 @@ void lmtable::savebin_level_nommap(int level, const char* outfilename)
     //do nothing
   }
 
-  cerr << "saving " << cursize[level] << " " << level << "-grams in " << nameNgrams << std::endl;
-
+  VERBOSE(3,"saving " << cursize[level] << "(maxsize:" << maxsize[level] << ") " << level << "-grams in " << nameNgrams << "   table " << (void*) table << "  table[level] " << (void*) table[level] << " out:" << (void*) out << endl);
   if (isQtable) {
     //NOT IMPLEMENTED
   }
+	
   out.write(table[level],(table_pos_t) cursize[level]*nodesize(tbltype[level]));
-  out.close();
 
-  cerr << "done\n";
+	if (!out.good()) {
+		std::cerr << " Something went wrong while writing temporary file " << nameNgrams << "\n";
+		out.close();
+		removefile(nameNgrams);
+		exit(2);
+	}
+	out.close();
+	if (out.fail()){
+		//		cerr << " out:" << (void*) *out << " cannot be opened" << endl;
+		perror("cannot be closed");
+		exit(3);
+	}
+	
+  VERBOSE(2,"lmtable:savebin_level_nommap END" << requiredMaxlev << std::endl);
 }
 
 void lmtable::savebin_level_mmap(int level, const char* outfilename)
 {
   char nameNgrams[BUFSIZ];
   sprintf(nameNgrams,"%s-%dgrams",outfilename,level);
-
-  cerr << "saving " << level << "-grams probs in " << nameNgrams << " (Actually do nothing)" <<std::endl;
+	VERBOSE(2,"saving " << level << "-grams probs in " << nameNgrams << " (Actually do nothing)" <<std::endl);
 }
 
 
@@ -1394,41 +1644,125 @@ void lmtable::print_table_stat()
 void lmtable::print_table_stat(int level)
 {
   cerr << " level: " << level
-       << " maxsize[level]:" << maxsize[level]
-       << " cursize[level]:" << cursize[level]
-       << " table[level]:" << (void*) table[level]
-       << " tableGaps[level]:" << (void*) tableGaps[level]
-       << std::endl;
+	<< " maxsize[level]:" << maxsize[level]
+	<< " cursize[level]:" << cursize[level]
+	<< " tb_offset[level]:" << tb_offset[level]
+	<< " table:" << (void*) table
+	<< " table[level]:" << (void*) table[level]
+	<< " tableGaps[level]:" << (void*) tableGaps[level]
+	<< std::endl;
+}
+
+//concatenate corresponding single level files of two different tables for each level
+void lmtable::concatenate_all_levels(const char* fromfilename, const char* tofilename){
+	//single level files should have a name derived from "filename"
+	//there no control that the tables have the same size
+	for (int i=1; i<=maxlevel(); i++) {
+		concatenate_single_level(i, fromfilename, tofilename);
+	}
+}
+
+//concatenate corresponding single level files of two different tables
+void lmtable::concatenate_single_level(int level, const char* fromfilename, const char* tofilename){
+	//single level files should have a name derived from "fromfilename" and "tofilename"
+  char fromnameNgrams[BUFSIZ];
+  char tonameNgrams[BUFSIZ];
+  sprintf(fromnameNgrams,"%s-%dgrams",fromfilename,level);
+  sprintf(tonameNgrams,"%s-%dgrams",tofilename,level);
+	
+  VERBOSE(2,"concatenating " << level << "-grams probs from " << fromnameNgrams << " to " << tonameNgrams<< std::endl);
+	
+	
+  //concatenating of new table to the existing data
+  char cmd[BUFSIZ];
+  sprintf(cmd,"cat %s >> %s", fromnameNgrams, tonameNgrams);
+  system(cmd);
+}
+
+//remove all single level files
+void lmtable::remove_all_levels(const char* filename){
+	//single level files should have a name derived from "filename"
+	for (int i=1; i<=maxlevel(); i++) {
+		remove_single_level(i,filename);
+	}
+}
+
+//remove a single level file
+void lmtable::remove_single_level(int level, const char* filename){
+	//single level files should have a name derived from "filename"
+  char nameNgrams[BUFSIZ];
+  sprintf(nameNgrams,"%s-%dgrams",filename,level);
+  
+	//removing temporary files
+	removefile(nameNgrams);
 }
 
 
-void lmtable::compact_level(int level, const char* outfilename)
+
+//delete the table of a single level
+void lmtable::delete_level(int level, const char* outfilename, int mmap){
+  if (mmap>0)
+    delete_level_mmap(level, outfilename);
+  else {
+		delete_level_nommap(level);
+  }
+}
+
+void lmtable::delete_level_mmap(int level, const char* outfilename)
 {
+  //getting the level-dependent filename
   char nameNgrams[BUFSIZ];
   sprintf(nameNgrams,"%s-%dgrams",outfilename,level);
+	
+  //compute exact filesize
+  table_pos_t filesize=(table_pos_t) cursize[level] * nodesize(tbltype[level]);
 
-  cerr << "concatenating " << level << "-grams probs from " << nameNgrams << " to " << outfilename<< std::endl;
+  // set the file to the proper size:
+  Munmap(table[level]-tableGaps[level],(table_pos_t) filesize+tableGaps[level],0);
+	
+  maxsize[level]=cursize[level]=0;
+}
+
+void lmtable::delete_level_nommap(int level)
+{
+  delete table[level];
+  maxsize[level]=cursize[level]=0;
+}
+
+void lmtable::compact_all_levels(const char* filename){
+	//single level files should have a name derived from "filename"
+	for (int i=1; i<=maxlevel(); i++) {
+		compact_single_level(i,filename);
+	}
+}
+
+void lmtable::compact_single_level(int level, const char* filename)
+{
+  char nameNgrams[BUFSIZ];
+  sprintf(nameNgrams,"%s-%dgrams",filename,level);
+
+  VERBOSE(2,"concatenating " << level << "-grams probs from " << nameNgrams << " to " << filename<< std::endl);
 
 
   //concatenating of new table to the existing data
   char cmd[BUFSIZ];
-  sprintf(cmd,"cat %s >> %s", nameNgrams, outfilename);
+  sprintf(cmd,"cat %s >> %s", nameNgrams, filename);
   system(cmd);
 
   //removing temporary files
-  cerr << "removing " << nameNgrams << std::endl;
-  sprintf(cmd,"rm %s", nameNgrams);
-  system(cmd);
+	removefile(nameNgrams);
 }
 
 void lmtable::resize_level(int level, const char* outfilename, int mmap)
 {
-  if (mmap>0)
-    resize_level_mmap(level, outfilename);
-  else {
-    if (level<maxlev) // (apart from last level maxlev, because is useless), resizing is done when saving
-      resize_level_nommap(level);
-  }
+	if (getCurrentSize(level) > 0 ){
+		if (mmap>0)
+			resize_level_mmap(level, outfilename);
+		else {
+			if (level<maxlev) // (apart from last level maxlev, because is useless), resizing is done when saving
+				resize_level_nommap(level);
+		}
+	}
 }
 
 void lmtable::resize_level_mmap(int level, const char* outfilename)
@@ -1439,7 +1773,6 @@ void lmtable::resize_level_mmap(int level, const char* outfilename)
 
   //recompute exact filesize
   table_pos_t filesize=(table_pos_t) cursize[level] * nodesize(tbltype[level]);
-  cerr << level << "-grams: resizing table from " << maxsize[level] << " to " << cursize[level] << " entries (" << filesize << " bytes)" << std::endl;
 
   //opening output file
   FILE *fd = NULL;
@@ -1454,15 +1787,20 @@ void lmtable::resize_level_mmap(int level, const char* outfilename)
 
 void lmtable::resize_level_nommap(int level)
 {
-  //recompute exact filesize
+	VERBOSE(2,"lmtable::resize_level_nommap START Level " << level << "\n");
+  
+	//recompute exact filesize
   table_pos_t filesize=(table_pos_t) cursize[level] * nodesize(tbltype[level]);
-  cerr << level << "-grams: resizing table from " << maxsize[level] << " to " << cursize[level] << " entries (" << filesize << " bytes)" << std::endl;
+
   char* ptr = new char[filesize];
   memcpy(ptr,table[level],filesize);
   delete table[level];
   table[level]=ptr;
   maxsize[level]=cursize[level];
+	
+	VERBOSE(2,"lmtable::resize_level_nommap END Level " << level << "\n");
 }
+
 
 //manages the long header of a bin file
 //and allocates table for each n-gram level
@@ -1524,11 +1862,10 @@ void lmtable::loadbin(istream& inp, const char* header, const char* filename,int
   loadbin_header(inp,header);
   loadbin_dict(inp);
 
-
-  VERBOSE(2,"maxlev" << maxlev << std::endl);
+  VERBOSE(3,"lmtable::maxlev" << maxlev << std::endl);
   if (maxlev>requiredMaxlev) maxlev=requiredMaxlev;
-  VERBOSE(2,"maxlev" << maxlev << std::endl);
-  VERBOSE(2,"lmtable:requiredMaxlev" << requiredMaxlev << std::endl);
+  VERBOSE(3,"lmtable::maxlev:" << maxlev << std::endl);
+  VERBOSE(3,"lmtable::requiredMaxlev" << requiredMaxlev << std::endl);
 
   //if MMAP is used, then open the file
   if (filename && mmap>0) {
@@ -1593,15 +1930,11 @@ void lmtable::loadbin_level(istream& inp, int level)
     inp.seekg((table_pos_t) cursize[level]*nodesize(tbltype[level]),ios_base::cur);
 #endif
   }
-  cerr << "done (level" << level <<")\n";
+  cerr << "done (level " << level <<")\n";
 }
 
 int lmtable::get(ngram& ng,int n,int lev)
 {
-  //if (debug) std::cout << "lmtable::get ng:|" << ng << "|" << std::endl;
-  /***
-      std::cout << "lmtable::get ng:|" << ng << "|" << std::endl;
-  ***/
   totget[lev]++;
 
   if (lev > maxlev) error((char*)"get: lev exceeds maxlevel");
@@ -1707,15 +2040,18 @@ void lmtable::dumplm(fstream& out,ngram ng, int ilev, int elev, table_entry_pos_
   ngram ing(ng.dict);
   int ndsz=nodesize(ndt);
 
-  assert(ng.size==ilev-1);
+	assert(ng.size==ilev-1);
+
   //Note that ipos and epos are always larger than or equal to 0 because they are unsigned int
-  assert(epos<=cursize[ilev] && ipos<epos);
-  ng.pushc(0);
+  assert(epos<=cursize[ilev]);
+	assert(ipos<epos);
+	ng.pushc(0);
 
   for (table_entry_pos_t i=ipos; i<epos; i++) {
-    *ng.wordp(1)=word(table[ilev]+(table_pos_t) i*ndsz);
+		char* found=table[ilev]+ (table_pos_t) i * ndsz;
+    *ng.wordp(1)=word(found);
 
-    float ipr=prob(table[ilev]+(table_pos_t) i*ndsz,ndt);
+    float ipr=prob(found,ndt);
 
     //skip pruned n-grams
     if(isPruned && ipr==NOPROB) continue;
@@ -1723,11 +2059,11 @@ void lmtable::dumplm(fstream& out,ngram ng, int ilev, int elev, table_entry_pos_
     if (ilev<elev) {
       //get first and last successor position
       table_entry_pos_t isucc=(i>0?bound(table[ilev]+ (table_pos_t) (i-1) * ndsz,ndt):0);
-      table_entry_pos_t esucc=bound(table[ilev]+ (table_pos_t) i * ndsz,ndt);
-      if (isucc < esucc) //there are successors!
+      table_entry_pos_t esucc=bound(found,ndt);
+//			cerr << "looking for successors for ng:" << ng << " cursize[ilev]:" << cursize[ilev] << " isucc:" << isucc << " esucc:" << esucc << endl;
+
+			if (isucc < esucc) //there are successors!
         dumplm(out,ng,ilev+1,elev,isucc,esucc);
-      //else
-      //cout << "no successors for " << ng << "\n";
     } else {
       out << ipr <<"\t";
 
@@ -1747,8 +2083,12 @@ void lmtable::dumplm(fstream& out,ngram ng, int ilev, int elev, table_entry_pos_
 
       if (ilev<maxlev) {
         float ibo=bow(table[ilev]+ (table_pos_t)i * ndsz,ndt);
-        if (isQtable) out << "\t" << ibo;
-        else if (ibo < -1.0e-10) out << "\t" << ibo;
+        if (isQtable){
+           out << "\t" << ibo;
+        }
+        else{
+	  if ((ibo>UPPER_SINGLE_PRECISION_OF_0 || ibo<-UPPER_SINGLE_PRECISION_OF_0)) out << "\t" << ibo;
+        }
       }
       out << "\n";
     }

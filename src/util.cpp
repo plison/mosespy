@@ -55,22 +55,33 @@ string gettempfolder()
 #endif
 }
 
-
-void createtempfile(ofstream  &fileStream, string &filePath, std::ios_base::openmode flags)
-{
+string createtempName()
+{       
+  string tmpfolder = gettempfolder();
 #ifdef _WIN32
   char buffer[BUFSIZ];
-  ::GetTempFileNameA(gettempfolder().c_str(), "", 0, buffer);
-  filePath = buffer;
+  //To check whether the following function open the stream as well
+  //In this case it is mandatory to close it immediately
+  ::GetTempFileNameA(tmpfolder.c_str(), "", 0, buffer);
 #else
-  string tmpfolder = gettempfolder();
   char buffer[tmpfolder.size() + 16];
   strcpy(buffer, tmpfolder.c_str());
   strcat(buffer, "dskbuff--XXXXXX");
-  mkstemp(buffer);
-  filePath = buffer;
+  int fd=mkstemp(buffer);
+  close(fd);
 #endif
+  return (string) buffer;
+}
+
+void createtempfile(mfstream  &fileStream, string &filePath, std::ios_base::openmode flags)
+{       
+  filePath = createtempName();
   fileStream.open(filePath.c_str(), flags);
+  if (fileStream == 0)
+  {
+    perror("error creating file");
+    exit(4);
+  }
 }
 
 void removefile(const std::string &filePath)
@@ -79,11 +90,12 @@ void removefile(const std::string &filePath)
   ::DeleteFileA(filePath.c_str());
 #else
   if (remove(filePath.c_str()) != 0)
+  {
     perror("Error deleting file" );
+    exit(2);
+  }
 #endif
 }
-
-
 
 inputfilestream::inputfilestream(const std::string &filePath)
   : std::istream(0),
@@ -169,7 +181,8 @@ void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap)
   p = mmap((void*)0, len+g, access,
            MAP_SHARED|MAP_FILE,
            fd, offset-g);
-  if((long)p==-1L) {
+  if((long)p==-1L)
+	{
     perror("mmap failed");
     p=0;
   }
@@ -194,7 +207,10 @@ int Munmap(void	*p,size_t	len,int	sync)
   cerr << "running msync..." << endl;
   if(sync) msync(p, len, MS_SYNC);
   cerr << "done. Running munmap..." << endl;
-  if((r=munmap((void*)p, len))) perror("munmap() failed");
+  if((r=munmap((void*)p, len)))
+	{
+		perror("munmap() failed");
+	}
   cerr << "done" << endl;
 
 #endif

@@ -160,7 +160,11 @@ protected:
 public:
 
   char _cmdname[500];
-
+	
+  //! Creates and opens a file/command stream without a specified nmode
+  mfstream () : std::fstream(), _cmd(0) {
+  }
+	
   //! Creates and opens a  file/command stream in a specified nmode
   mfstream (const char* name,openmode mode) : std::fstream() {
     _cmdname[0]='\0';

@@ -96,6 +96,13 @@ void ngram::shift ()
   size--;
 }
 
+void ngram::shift (int sz)
+{
+	if (sz>size) sz=size;	
+  memmove((void *)&word[MAX_NGRAM-size+sz],(void *)&word[MAX_NGRAM-size],(size-sz) * sizeof(int));
+  size-=sz;
+}
+
 
 ifstream& operator>> ( ifstream& fi , ngram& ng)
 {

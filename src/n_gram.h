@@ -45,12 +45,12 @@ class ngram
 {
   int  word[MAX_NGRAM];  //encoded ngram
 public:
-  dictionary *dict;      //dictionary
+  dictionary *dict;      // dictionary
   char* link;            // ngram-tree pointer
   char* succlink;        // pointer to the first successor
-  int  midx[MAX_NGRAM];  // ngram-tree scan pointer
+  int   midx[MAX_NGRAM]; // ngram-tree scan pointer
   char* path[MAX_NGRAM]; // path in the ngram-trie
-  float bowv[MAX_NGRAM]; //vector of bow found in the trie
+  float bowv[MAX_NGRAM]; // vector of bow found in the trie
 
   int    lev;            // ngram-tree level
   int   size;            // ngram size
@@ -96,6 +96,7 @@ public:
   void trans(const ngram& ng);
   void invert (const ngram& ng);
   void shift ();
+  void shift (int sz);
 
   friend std::ifstream& operator>> (std::ifstream& fi,ngram& ng);
   friend std::ofstream& operator<< (std::ofstream& fi,ngram& ng);

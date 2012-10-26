@@ -30,6 +30,7 @@ class mdiadaptlm:public interplm
   interplm* forelm;
   double zeta0;
   double oovscaling;
+	bool m_save_per_level;
 
 protected:
   normcache *cache;
@@ -38,7 +39,11 @@ protected:
   NGRAMCACHE_t** probcache;
   NGRAMCACHE_t** backoffcache;
   int max_caching_level;
-
+	
+  int saveARPA_per_word(char *filename,int backoff=0,char* subdictfile=NULL);
+  int saveARPA_per_level(char *filename,int backoff=0,char* subdictfile=NULL);
+  int saveBIN_per_word(char *filename,int backoff=0,char* subdictfile=NULL,int mmap=0);
+  int saveBIN_per_level(char *filename,int backoff=0,char* subdictfile=NULL,int mmap=0);
 public:
 
   mdiadaptlm(char* ngtfile,int depth=0,TABLETYPE tt=FULL);
@@ -69,8 +74,21 @@ public:
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 
   int bodiscount(ngram ng,int size,double& fstar,double& lambda,double& bo);
-
-  int compute_backoff();
+	
+  int compute_backoff()
+	{
+		cerr << "compute backoff probabilities ...";
+		
+		if (m_save_per_level){
+			cerr << " per level ...";
+			return compute_backoff_per_level();
+		}else{
+			cerr << " per word ...";
+			return compute_backoff_per_word();
+		}	
+	}
+  int compute_backoff_per_level();
+  int compute_backoff_per_word();
 
   double backunig(ngram ng);
 
@@ -93,10 +111,29 @@ public:
 
   int saveASR(char *filename,int backoff,char* subdictfile=NULL);
   int saveMT(char *filename,int backoff,char* subdictfile=NULL,int resolution=10000000,double decay=0.999900);
-  int saveARPA(char *filename,int backoff=0,char* subdictfile=NULL);
-  int saveARPA2(char *filename,int backoff=0,char* subdictfile=NULL);
-  int saveBIN(char *filename,int backoff=0,char* subdictfile=NULL,int mmap=0);
-
+	
+  int saveARPA(char *filename,int backoff=0,char* subdictfile=NULL){
+		if (m_save_per_level){
+			cerr << " per level ...";
+			return saveARPA_per_level(filename, backoff, subdictfile);
+		}else{
+			cerr << " per word ...";
+			return saveARPA_per_word(filename, backoff, subdictfile);
+		}
+	}
+  int saveBIN(char *filename,int backoff=0,char* subdictfile=NULL,int mmap=0){
+		if (m_save_per_level){
+			cerr << " per level ...";
+			return saveBIN_per_level(filename, backoff, subdictfile, mmap);
+		}else{
+			cerr << " per word ...";
+			return saveBIN_per_word(filename, backoff, subdictfile, mmap);
+		}
+	}
+	
+  inline void save_per_level(bool value){ m_save_per_level=value; }
+	inline bool save_per_level(){ return m_save_per_level; }
+	
   int netsize();
 
   ~mdiadaptlm();

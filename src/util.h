@@ -47,7 +47,9 @@
 #define LOWER_DOUBLE_PRECISION_OF_1 0.999999999999
 
 std::string gettempfolder();
-void createtempfile(std::ofstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
+std::string createtempName();
+void createtempfile(mfstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
+
 void removefile(const std::string &filePath);
 
 class inputfilestream : public std::istream

@@ -21,12 +21,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <cmath>
 #include <string>
 #include <assert.h>
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
-#include "util.h"
 #include "dictionary.h"
 #include "n_gram.h"
+#include "mempool.h"
 #include "ngramcache.h"
 #include "ngramtable.h"
 #include "normcache.h"
@@ -46,6 +47,7 @@ mdiadaptlm::mdiadaptlm(char* ngtfile,int depth,TABLETYPE tbtype):
   adaptlev=0;
   forelm=NULL;
   cache=NULL;
+	m_save_per_level=true;
 };
 
 mdiadaptlm::~mdiadaptlm()
@@ -161,8 +163,6 @@ int mdiadaptlm::scalefact(char *ngtfile)
   cache=new normcache(dict);
 
   forelm=new shiftbeta(ngtfile,1);
-  //try with a more appropriate LM
-  //forelm=new linearwb(ngtfile,1);
   forelm->train();
 
   //compute oov scalefact term
@@ -174,13 +174,12 @@ int mdiadaptlm::scalefact(char *ngtfile)
   for ((*w)=0; (*w)<forelm->dict->size(); (*w)++)
     if ((*w) != forelm->dict->oovcode()) {
       ng.trans(fng);
-      if (*ng.wordp(1)==dict->oovcode()){
-	  //forbidden situation
+      if (*ng.wordp(1)==dict->oovcode()) {
         cerr << "adaptation file contains new words: use -ao=yes option\n";
         exit(1);
-      }      
+      }
+      //forbidden situation
       oovscaling-=backunig(ng);
-		
     }
   *w=forelm->dict->oovcode();
   oovscaling=foreunig(fng)/oovscaling;
@@ -352,7 +351,7 @@ int mdiadaptlm::discount(ngram ng_,int size,double& fstar,double& lambda,int /* 
 
   ngram ng(dict);
   ng.trans(ng_);
-
+	
   double __fstar, __lambda;
   bool lambda_cached=0;
   int size_lambda=size-1;
@@ -407,12 +406,10 @@ int mdiadaptlm::discount(ngram ng_,int size,double& fstar,double& lambda,int /* 
 }
 
 
-int mdiadaptlm::compute_backoff()
+int mdiadaptlm::compute_backoff_per_level()
 {
 
   double fstar,lambda;
-
-  cerr << "compute backoff probabilities ...";
 
   this->backoff=1;
 
@@ -420,46 +417,46 @@ int mdiadaptlm::compute_backoff()
 
     ngram hg(dict,size);
 
-    //cerr << "size " << size << "\n";
-
     scan(hg,INIT,size);
 
     while(scan(hg,CONT,size)) {
 
-      //cerr << hg << "\n" << "successors:\n";
-
       ngram ng=hg;
-      ng.pushc(0);
+      ng.pushc(0); //ng.size is now hg.size+1
 
       double pr=1.0;
 
       succscan(hg,ng,INIT,size+1);
-
       while(succscan(hg,ng,CONT,size+1)) {
-
-        mdiadaptlm::discount(ng,size+1,fstar,lambda);
-
-        if (fstar>0)
-
-          pr-=mdiadaptlm::prob(ng,size);
-
+				
+        mdiadaptlm::discount(ng,ng.size,fstar,lambda);
+				
+        if (fstar>0){
+					ng.size=ng.size-1;
+          pr -= mdiadaptlm::prob(ng,size);
+				}
       }
-
+			
       assert(pr>0 && pr<=1);
 
       boff(hg.link,pr);
-
     }
 
   }
-
-
 
   cerr << "done\n";
 
   return 1;
 }
 
+
+int mdiadaptlm::compute_backoff_per_word()
+{	
+	cerr << "Current implementation does not support the usage of backoff (-bo=yes) mixture models (-lm=mix) combined with the per-word saving (-saveperllevel=no)." << endl;
+	cerr << "Please, either choose a per-level saving (-saveperllevel=yes) or do not use backoff (-bo=no) " << endl;
+
+	exit(1);
+}	
 
 
 double mdiadaptlm::prob2(ngram ng,int size,double& fstar)
@@ -479,13 +476,13 @@ double mdiadaptlm::prob2(ngram ng,int size,double& fstar)
 //inline double mdiadaptlm::prob(ngram ng,int size){
 double mdiadaptlm::prob(ngram ng,int size)
 {
-  double fstar=0,lambda=0,bo=0;
+  double fstar,lambda,bo;
   return prob(ng,size,fstar,lambda,bo);
 }
 
 double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& bo)
 {
-  double pr=0;
+  double pr;
 
 #ifdef MDIADAPTLM_CACHE_ENABLE
   //probcache hit
@@ -496,7 +493,7 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
   //probcache miss
   mdiadaptlm::bodiscount(ng,size,fstar,lambda,bo);
 
-  if (fstar > UPPER_SINGLE_PRECISION_OF_1 || lambda > UPPER_SINGLE_PRECISION_OF_1) {
+  if (fstar>UPPER_SINGLE_PRECISION_OF_1 || lambda>UPPER_SINGLE_PRECISION_OF_1) {
     cerr << "wrong probability: " << ng
          << " , size " << size
          << " , fstar " << fstar
@@ -506,11 +503,13 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
   if (backoff) {
 
     if (size>1) {
-      if (fstar>0) pr=fstar;
-      else {
-        if (lambda < UPPER_SINGLE_PRECISION_OF_1)
+      if (fstar>0){
+				pr=fstar;
+      }else {
+        if (lambda<1){
           pr = lambda/bo * prob(ng,size-1);
-        else {
+        }else {
+          assert(lambda<UPPER_SINGLE_PRECISION_OF_1);
           pr = prob(ng,size-1);
         }
       }
@@ -536,8 +535,6 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
 }
 
 
-
-
 int mdiadaptlm::bodiscount(ngram ng_,int size,double& fstar,double& lambda,double& bo)
 {
   ngram ng(dict);
@@ -552,11 +549,19 @@ int mdiadaptlm::bodiscount(ngram ng_,int size,double& fstar,double& lambda,doubl
     if (size>1 && lambda<1) {
 
       ngram hg=ng;
-
+			
+//			cerr<< "hg:|" << hg << "| size:|" << size << "|" <<  endl;
+			if (! get(hg,size,size-1)){
+				cerr << "ERROR: int mdiadaptlm::bodiscount(ngram ng_,int size,double& fstar,double& lambda,double& bo)   -> get(hg,size,size-1) returns NULL\n";
+			}
       assert(get(hg,size,size-1));
 
       bo=boff(hg.link);
 
+//			if (lambda > bo){
+//				cerr << " mdiadaptlm::bodiscount ERROR: " << " lambda:" << lambda << " bo:" << bo << "\n";
+//				exit(1);
+//			}
     }
   }
 
@@ -1140,10 +1145,264 @@ int mdiadaptlm::saveMT(char *filename,int backoff,
   return 1;
 };
 
+///// Save in binary format forbackoff N-gram models
+
+int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,int mmap)
+{
+	VERBOSE(2,"mdiadaptlm::saveBIN_per_word START\n");	
+  system("date");
+	
+  //subdict
+  dictionary* subdict;
+	
+  //accumulated unigram oov prob
+	//CHECK why this is not used (differently from what happens in the other save functions
+	//	double oovprob=0;
+	
+	
+  if (subdictfile) subdict=new dictionary(subdictfile);
+  else   subdict=dict; // default is subdict=dict
+	
+	if (mmap) {
+    VERBOSE(2,"savebin with memory map: " << filename << "\n");
+  } else {
+    VERBOSE(2,"savebin: " << filename << "\n");
+  }
+	
+	
+  streampos pos[lmsize()+1];
+  int maxlev=lmsize();
+  char buff[100];
+  int isQuant=0; //savebin for quantized LM is not yet implemented
+	
+	//temporary filename to save the LM related to a single term
+  char tmpfilename[BUFSIZ];
+
+	//create temporary output file stream to store single levels for all terms
+  assert(strlen(filename)<1000);
+  char tfilename[MAX_NGRAM][1000];
+  mfstream *tout[MAX_NGRAM];
+
+	for (int i=1; i<=lmsize(); i++) {
+    sprintf(tfilename[i],"%s-%dgrams",filename,i);
+    tout[i]=new mfstream(tfilename[i],ios::out);
+  }
+
+	// print header in the main output file
+  mfstream out(filename,ios::out);
+  out << "blmt " << maxlev;
+	
+  for (int i=1; i<=maxlev; i++) { //reserve space for ngram statistics (which are not yet avalable)
+    pos[i]=out.tellp();
+    sprintf(buff," %10d",0);
+    out << buff;
+  }
+  out << "\n";
+	subdict->save(out);
+	out.flush();
+	
+  ngram ng(dict,lmsize());
+  ngram oldng(dict,lmsize());
+  ngram locng(dict,lmsize());
+	
+  ngram sng(subdict,lmsize());
+	
+  double fstar,lambda,bo,dummy,dummy2,pr,ibow;
+	
+  //n-gram counters
+  table_entry_pos_t num[lmsize()+1];
+  for (int i=1; i<=lmsize(); i++) num[i]=0;
+	
+	lmtable* lmt = new lmtable();
+	
+	lmt->configure(maxlev,isQuant);
+	lmt->setDict(subdict);
+	lmt->expand_level(1,dict->size(),filename,mmap);
+	
+  //main loop
+  for (int w=0; w<dict->size(); w++) {
+		sprintf(tmpfilename,"%s_tmp_%d",filename,w);
+
+    if (!w % 10000) cerr << ".";
+		
+    //1-gram
+    ngram ung(dict,1);
+    *ung.wordp(1)=w;
+    sng.trans(ung);
+		
+    //exclude words not occurring in the subdictionary
+    if (sng.containsWord(subdict->OOV(),1) && !ung.containsWord(dict->OOV(),1))	continue;
+			
+		
+		pr=mdiadaptlm::prob(ung,1);
+		pr=(pr?log10(pr):-99);
+		
+		if (lmsize()>1) { //compute back-off
+			ung.pushc(0); //extend by one
+			mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
+			ung.shift();//shrink by one
+			
+			assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
+			
+			if (backoff){
+				ibow=log10(lambda) - log10(bo);
+			}else{
+				if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+					ibow = log10(lambda);
+				}else { //force to be 0.0
+					ibow = 0.0;
+				}
+			}
+		}
+		else {
+			ibow=0.0; //default value for backoff weight at the lowest level
+		}
+		
+		lmt->addwithoffset(ung,(float)pr,(float)ibow);
+		num[1]++;
+
+    //manage n-grams
+    if (get(ung,1,1)) {
+			
+      //create n-gram with history w
+      *ng.wordp(lmsize())=w;
+			
+      //create sentinel n-gram
+      for (int i=1; i<=lmsize(); i++) *oldng.wordp(i)=-1;
+			
+      //create the table for all levels but the level 1, with the maximum number of possible entries
+      for (int i=2; i<=lmsize(); i++) 
+				lmt->expand_level(i,entries(i),tmpfilename,mmap);
+			
+      scan(ung.link,ung.info,1,ng,INIT,lmsize());
+      while(scan(ung.link,ung.info,1,ng,CONT,lmsize())) {
+        sng.trans(ng); // convert to subdictionary
+				locng=ng;      // make a local copy
+				
+				//find first internal level that changed
+				int f=lmsize()-1; //unigrams have been already covered
+				while (f>1 && (*oldng.wordp(f)==*ng.wordp(f))){ f--; }
+
+				for (int l=lmsize()-(f-1); l<=lmsize(); l++){
+					
+					locng=ng;      // make a local copy
+					if (l<lmsize()) locng.shift(lmsize()-l); //reduce the ngram, which has size level
+					
+					if (sng.containsWord(subdict->OOV(),l)) continue;
+					
+          // skip also eos symbols not at the final
+          if (sng.containsWord(dict->EoS(),l-1)) continue;
+					
+          pr=mdiadaptlm::prob(locng,l,fstar,dummy,dummy2);
+					
+          //PATCH by Nicola (16-04-2008)
+					
+          if (!(pr<=1.0 && pr > 1e-10)) {
+            cerr << ng << " " << pr << "\n";
+            assert(pr<=1.0);
+            cerr << "prob modified to 1e-10\n";
+            pr=1e-10;
+          }
+					
+          if (l<lmsize()) {
+						
+            locng.pushc(0); //extend by one
+						
+            mdiadaptlm::bodiscount(locng,l+1,dummy,lambda,bo);
+						
+            locng.shift();
+						
+            if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
+							ibow=log10(lambda) - log10(bo);
+							if (lmt->addwithoffset(locng,(float)log10(pr),(float)ibow)){
+								num[l]++;
+							}else{
+								continue;
+							}
+            }
+						else{
+							continue; //skip n-grams with too small fstar
+						}
+          } else {
+            if (fstar>=UPPER_SINGLE_PRECISION_OF_0) {
+							ibow=0.0; //value for backoff weight at the highest level
+							if (lmt->addwithoffset(locng,(float)log10(pr),(float)ibow)){
+								num[l]++;
+							}else{
+								continue;
+							}
+            }
+						else{
+							continue; //skip n-grams with too small fstar
+						}
+          }
+        }
+        oldng=ng;
+      }
+		}
+		else{
+      //create empty tables for all levels but the level 1, to keep consistency with the rest of the code
+      for (int i=2; i<=lmsize(); i++) 
+				lmt->expand_level(i,0,tmpfilename,mmap);
+		}
+		
+		
+		//level 1 is not modified until everything is done
+		//because it has to contain the full dictionary
+		//which provides the direct access to the second level
+		for (int i=2; i<=lmsize(); i++){
+			
+			if (i>2) {
+				lmt->checkbounds(i-1);
+				lmt->appendbin_level(i-1, *tout[i-1], mmap);
+			}
+			
+			// now we can resize table at level i
+			lmt->resize_level(i, tmpfilename, mmap);
+		}
+		
+		// now we can save table at level maxlev, if not equal to 1
+		if (lmsize()>1){
+			lmt->appendbin_level(maxlev, *tout[maxlev], mmap);
+		}
+		
+		//delete levels from 2 to lmsize();
+		for (int i=2; i<=lmsize(); i++)			lmt->delete_level(i, tmpfilename, mmap);
+		
+		//update table offsets
+		for (int i=2; i<=lmsize(); i++) lmt->update_offset(i,num[i]);
+  }
+	//close levels from 2 to lmsize()
+	for (int i=2; i<=lmsize(); i++) tout[i]->close();
+	
+	//now we can save level 1, which contains all unigrams
+	//cerr << "saving level 1" << "...\n";
+	lmt->savebin_level(1, filename, mmap);
+	
+	//update headers
+  for (int i=1; i<=lmsize(); i++) {
+    sprintf(buff," %10d",num[i]);
+    out.seekp(pos[i]);
+    out << buff;
+  }
+	
+	out.close();
+	
+  //concatenate files for each single level into one file
+	//single level files should have a name derived from "filename"
+	lmt->compact_all_levels(filename);
+	
+  cerr << "\n";
+  system("date");
+	
+	VERBOSE(2,"mdiadaptlm::saveBIN_per_word END\n");	
+  return 1;
+};
 
 ///// Save in binary format forbackoff N-gram models
-int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
+int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,int mmap)
 {
+	VERBOSE(2,"mdiadaptlm::saveBIN_per_level START\n");
   system("date");
 
   //subdict
@@ -1156,9 +1415,9 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
   else    subdict=dict; // default is subdict=dict
 
   if (mmap) {
-    cerr << "savebin with memory map: " << filename << "\n";
+    VERBOSE(2,"savebin with memory map: " << filename << "\n");
   } else {
-    cerr << "savebin: " << filename << "\n";
+    VERBOSE(2,"savebin: " << filename << "\n");
   }
 
   streampos pos[lmsize()+1];
@@ -1180,18 +1439,20 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 
   lmt->configure(maxlev,isQuant);
 
-  cerr << "saving the dictionary ...\n";
   lmt->setDict(subdict);
-  lmt->savebin_dict(out);
+	subdict->save(out);
+	out.flush();
+	
 
   //start adding n-grams to lmtable
 
   for (int i=1; i<=lmsize(); i++) {
+    cerr << "saving level " << i << "...\n";
     table_entry_pos_t numberofentries;
     if (i==1) { //unigram
-      numberofentries = (table_entry_pos_t)subdict->size();
+      numberofentries = (table_entry_pos_t) subdict->size();
     } else {
-      numberofentries = (table_entry_pos_t)entries(i);
+      numberofentries = (table_entry_pos_t) entries(i);
     }
     system("date");
     lmt->expand_level(i,numberofentries,filename,mmap);
@@ -1224,36 +1485,43 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
         //cerr << ng << " freq " << dict->freq(w) << " -  Pr " << pr << "\n";
         pr=(pr?log10(pr):-99);
 
-        if (w==dict->oovcode())
+        if (w==dict->oovcode()){
+					//CHECK whether we can avoid this reassignment because dict should be lmt->getDict()   
           *ng.wordp(1)=lmt->getDict()->oovcode();
-        else {} //do nothing
+					ibow=0.0;
+				}
+        else {
+					//				} //do nothing
 
-
-        if (lmsize()>1) {
-          ngram ng2=ng;
-          ng2.pushc(0); //extend by one
-
-          //cerr << ng2 << "\n";
-
-          mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-          assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-
-					if (backoff){
-						ibow=log10(lambda) - log10(bo);
-					}else{
-						if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-							ibow = log10(lambda);
-						}else { //force to be 0.0
-							ibow = 0.0;
+					if (lmsize()>1) {
+						ngram ng2=ng;
+						ng2.pushc(0); //extend by one
+						
+						//cerr << ng2 << "\n";
+						
+						mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
+						assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1));
+						
+						if (backoff){
+							ibow = log10(lambda) - log10(bo);
+						}else{
+							if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+								ibow = log10(lambda);
+							}else { //force to be 0.0
+								ibow = 0.0;
+							}
 						}
+					}else {
+						ibow=0.0; //default value for backoff weight at the lowest level
 					}
-        } else {
-          ibow=0.0; //default value for backoff weight at the lowest level
-        }
+				}
         lmt->add(ng,(float)pr,(float)ibow);
       }
       //cerr << "totprob = " << totp << "\n";
-    } else { //i>1 , bigrams, trigrams, fourgrams...
+    }
+		else { //i>1 , bigrams, trigrams, fourgrams...
+			*ng.wordp(1)=0;
+			get(ng,1,1); //this 
       scan(ng,INIT,i);
       while(scan(ng,CONT,i)) {
         sng.trans(ng);
@@ -1280,12 +1548,12 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
 
           mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
 
-          if (fstar>=0.0000000001 || lambda <= 0.9999999999) {
-            ibow=log10(lambda/bo);
+          if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
+            ibow=log10(lambda) - log10(bo);
             lmt->add(ng,(float)log10(pr),(float)ibow);
           }
         } else {
-          if (fstar > 0.0000000001) {
+          if (fstar >= UPPER_SINGLE_PRECISION_OF_0) {
             ibow=0.0; //value for backoff weight at the highest level
             lmt->add(ng,(float)log10(pr),(float)ibow);
           }
@@ -1297,19 +1565,15 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
     // now we can save table at level i-1
     // now we can remove table at level i-1
     if (maxlev>1 && i>1) {
-      cerr << "\ncheckbounds level " << i-1 << "...\n";
       lmt->checkbounds(i-1);
-      cerr << "saving level " << i-1 << "...\n";
       lmt->savebin_level(i-1, filename, mmap);
     }
 
     // now we can resize table at level i
-    cerr << "resizing level " << i << "...\n";
     lmt->resize_level(i, filename, mmap);
 
   }
   // now we can save table at level maxlev
-  cerr << "saving level " << maxlev << "...\n";
   lmt->savebin_level(maxlev, filename, mmap);
 
   //update headers
@@ -1320,24 +1584,23 @@ int mdiadaptlm::saveBIN(char *filename,int backoff,char* subdictfile,int mmap)
   }
   out.close();
 
-  //concatenate files for each single level
-  for (int i=1; i<=lmsize(); i++) {
-    lmt->compact_level(i,filename);
-  }
-
+  //concatenate files for each single level into one file
+	//single level files should have a name derived from "filename"
+	lmt->compact_all_levels(filename);
+	
+	VERBOSE(2,"mdiadaptlm::saveBIN_per_level END\n");
   return 1;
 }
 
 
 ///// Save in format for ARPA backoff N-gram models
-int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
+int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
 {
-
-	cerr << "int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )\n";
+	VERBOSE(2,"mdiadaptlm::saveARPA_per_word START\n");
   system("date");
 
   //subdict
-  dictionary* subdict=NULL;
+  dictionary* subdict;
 
   //accumulated unigram oov prob
 //CHECK why this is not used (differently from what happens in the other save functions
@@ -1348,15 +1611,16 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
   else   subdict=dict; // default is subdict=dict
 
   //main output file
-  fstream out(filename,ios::out);
+  mfstream out(filename,ios::out);
 
   //create temporary output file stream
   assert(strlen(filename)<1000);
   char tfilename[MAX_NGRAM][1000];
-  fstream *tout[MAX_NGRAM];
+  mfstream *tout[MAX_NGRAM];
+	
   for (int i=1; i<=lmsize(); i++) {
     sprintf(tfilename[i],"%s.%d",filename,i);
-    tout[i]=new fstream(tfilename[i],ios::out);
+    tout[i]=new mfstream(tfilename[i],ios::out);
     *tout[i] << "\n\\" << i << "-grams:\n";
   }
 
@@ -1367,10 +1631,10 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
 
   ngram sng(subdict,lmsize());
 
-  double fstar=0,lambda=0,bo=0,dummy=0,dummy2=0;
+  double fstar,lambda,bo,dummy,dummy2, pr;
 
   //n-gram counters
-  int num[lmsize()+1];
+  table_entry_pos_t num[lmsize()+1];
   for (int i=1; i<=lmsize(); i++) num[i]=0;
 
 
@@ -1387,19 +1651,20 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
     //exclude words not occurring in the subdictionary
     if (sng.containsWord(subdict->OOV(),1) && !ung.containsWord(dict->OOV(),1))	continue;
 
-    double pr=mdiadaptlm::prob(ung,1);
+    pr=mdiadaptlm::prob(ung,1);
+		pr=(pr?log10(pr):-99);
 
     if (w==dict->oovcode())
-      *tout[1] << (float) (pr?log10(pr):-99) << "\t" << "<unk>";
+      *tout[1] << (float) pr << "\t" << "<unk>";
     else
-      *tout[1] << (float) (pr?log10(pr):-99) << "\t" << (char *)dict->decode(w);
+      *tout[1] << (float) pr << "\t" << (char *)dict->decode(w);
 
     num[1]++;
 
     if (lmsize()>1) { //print back-off
       ung.pushc(0); //extend by one
       mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
-      ung.shift();//shrink by one
+			ung.shift();//shrink by one
 
       assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 			
@@ -1414,8 +1679,6 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
     *tout[1] << "\n";
 
     //manage n-grams
-
-
     if (get(ung,1,1)) {
 
       //create n-gram with history w
@@ -1429,29 +1692,24 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
         //cerr << ng << "\n";
         sng.trans(ng); // convert to subdictionary
         locng=ng;      // make a local copy
-        int f;
-
-        //find first internal level that changed
-        for (f=lmsize(); f>1; f--)
-          if (*oldng.wordp(f)!=*ng.wordp(f)) break;
-
-        if (f==lmsize()) f--; //unigrams have been already covered
-
-        for (int i=1; i<=f; i++) {
-
-          int l=lmsize()-i+1; //ngram word pointer
-
-          if (i>1) locng.shift(); //ngram has size level
-
+				
+				//find first internal level that changed
+				int f=lmsize()-1; //unigrams have been already covered
+				while (f>1 && (*oldng.wordp(f)==*ng.wordp(f))){ f--; }
+				
+				for (int l=lmsize(); l>lmsize()-f;l--){
+					
+					if (l<lmsize()) locng.shift(); //ngram has size level
+					
           if (sng.containsWord(subdict->OOV(),l)) continue;
-
+					
           // skip also eos symbols not at the final
           if (sng.containsWord(dict->EoS(),l-1)) continue;
-
+					
           pr=mdiadaptlm::prob(locng,l,fstar,dummy,dummy2);
-
+					
           //PATCH by Nicola (16-04-2008)
-
+					
           if (!(pr<=1.0 && pr > 1e-10)) {
             cerr << ng << " " << pr << "\n";
             assert(pr<=1.0);
@@ -1467,20 +1725,20 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
 
             locng.shift();
 
-            if (fstar>=0.0000000001 || lambda <= 0.9999999999) {
+            if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
               *tout[l] << (float) log10(pr);
               *tout[l] << "\t" << (char *)dict->decode(*locng.wordp(l));
               for (int j=l-1; j>0; j--)
                 *tout[l] << " " << (char *)dict->decode(*locng.wordp(j));
 
-              if (lambda < 0.9999999999) //output back-off prob
-                *tout[l] << "\t" << (float) (log10(lambda/bo));
+              if (lambda < LOWER_SINGLE_PRECISION_OF_1) //output back-off prob
+                *tout[l] << "\t" << (float) (log10(lambda) -log10(bo));
               *tout[l] << "\n";
 
               num[l]++;
             } else continue; //skip n-grams with too small fstar
           } else {
-            if (fstar >0.0000000001) {
+            if (fstar>=UPPER_SINGLE_PRECISION_OF_0 ) {
               *tout[l] << (float) log10(pr);
               *tout[l] << "\t" << (char *)dict->decode(*locng.wordp(l));
               for (int j=l-1; j>0; j--)
@@ -1510,27 +1768,29 @@ int mdiadaptlm::saveARPA(char *filename,int backoff,char* subdictfile )
   //append and remove temporary files
   for (int i=1; i<=lmsize(); i++) {
     delete tout[i];
-    tout[i]=new fstream(tfilename[i],ios::in);
+    tout[i]=new mfstream(tfilename[i],ios::in);
     out << tout[i]->rdbuf();
     delete tout[i];
-    remove(tfilename[i]);
+    removefile(tfilename[i]);
   }
 
   out << "\\end\\" << "\n";
 
   cerr << "\n";
   system("date");
-
+	
+	VERBOSE(2,"mdiadaptlm::saveARPA_per_word END\n");
   return 1;
 };
 
 ///// Save in format for ARPA backoff N-gram models
-int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
+int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile )
 {
+	VERBOSE(2,"mdiadaptlm::saveARPA_per_level START\n");
   system("date");
 
   //subdict
-  dictionary* subdict=NULL;
+  dictionary* subdict;
 
   //accumulated unigram oov prob
   double oovprob=0;
@@ -1544,7 +1804,7 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
   //  out.precision(15);
 
   streampos pos[lmsize()+1];
-  int num[lmsize()+1];
+  table_entry_pos_t num[lmsize()+1];
   char buff[100];
 
   //print header
@@ -1563,6 +1823,7 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
 
   for (int i=1; i<=lmsize(); i++) {
     cerr << "saving level " << i << "...\n";
+		
 
     out << "\n\\" << i << "-grams:\n";
 
@@ -1607,23 +1868,26 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
             ngram ng2=ng;
             ng2.pushc(0); //extend by one
 
-            //cerr << ng2 << "\n";
-
             mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-            assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-						if (backoff){
-							out << "\t" << (float) (log10(lambda) - log10(bo));
-						}else{
-							if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-								out << "\t" << (float) log10(lambda);
-							} //no output if log10(lambda)==0
-						}
+            
+	    assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
+
+	    if (backoff){
+              out << "\t" << (float) (log10(lambda) - log10(bo));
+	    }else{
+	      if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+		out << "\t" << (float) log10(lambda);
+	      } //no output if log10(lambda)==0
+	    }
           }
           out << "\n";
         }
       }
       //cerr << "totprob = " << totp << "\n";
-    } else { //i>1 , bigrams, trigrams, fourgrams...
+    }
+		else { //i>1 , bigrams, trigrams, fourgrams...
+			*ng.wordp(1)=0;
+			get(ng,1,1); //this 
       scan(ng,INIT,i);
       while(scan(ng,CONT,i)) {
 
@@ -1650,17 +1914,23 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
 
           mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
 
-          if (fstar>=0.0000000001 || lambda <= 0.9999999999) {
+          if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
             out << (float) log10(pr);
             out << "\t" << (char *)dict->decode(*ng.wordp(i));
             for (int j=i-1; j>0; j--)
               out << " " << (char *)dict->decode(*ng.wordp(j));
-            if (lambda < 0.9999999999)  out << "\t" << (float) log10(lambda/bo);
+            if (backoff){
+               out << "\t" << (float) (log10(lambda) - log10(bo));
+            }else{
+               if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+                 out << "\t" << (float) log10(lambda);
+               } //no output if log10(lambda)==0
+            }
             out << "\n";
             num[i]++;
           }
         } else {
-          if (fstar >0.0000000001) {
+          if (fstar>=UPPER_SINGLE_PRECISION_OF_0) {
             out << (float) log10(pr);
             out << "\t" << (char *)dict->decode(*ng.wordp(i));
             for (int j=i-1; j>0; j--)
@@ -1688,7 +1958,8 @@ int mdiadaptlm::saveARPA2(char *filename,int backoff,char* subdictfile )
   out.seekp(last);
   out << "\\end\\" << "\n";
   system("date");
-
+	
+	VERBOSE(2,"mdiadaptlm::saveARPA_per_level END\n");
   return 1;
 };
 

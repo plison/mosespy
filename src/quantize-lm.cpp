@@ -174,11 +174,11 @@ int main(int argc, char **argv)
   if (files.size()==3) {
     //create temporary file
     tmpfile = files[2];
-    ofstream dummy(tmpfile.c_str(),ios::out);
+    mfstream dummy(tmpfile.c_str(),ios::out);
     dummy.close();
   } else {
     //create temporary internal file in /tmp
-    ofstream dummy;
+    mfstream dummy;
     createtempfile(dummy,tmpfile,ios::out);
     dummy.close();
   }

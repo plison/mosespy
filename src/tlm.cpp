@@ -1,22 +1,22 @@
 /******************************************************************************
-IrstLM: IRST Language Model Toolkit
-Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
-
-******************************************************************************/
+ IrstLM: IRST Language Model Toolkit
+ Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
+ 
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ 
+ ******************************************************************************/
 
 using namespace std;
 
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	
 	char *BINfile=NULL;
 	char *ARPAfile=NULL;
-	char *ARPAfile2=NULL;
+  bool SavePerLevel=true; //save-per-level or save-for-word
 	
 	char *ASRfile=NULL;
 	
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 	
 	char *outpr=NULL;
 	
-	int memmap = 0; //write binary format with/without memory map, default is 0
+	bool memmap = false; //write binary format with/without memory map, default is 0
 	
 	int adaptlevel=0;   //adaptation level
 	double adaptrate=1.0;
@@ -149,107 +149,107 @@ int main(int argc, char **argv)
 	bool help=false;
 	
 	DeclareParams((char*)
-				  
-				  "Back-off",CMDBOOLTYPE, &backoff,
-				  "bo",CMDBOOLTYPE, &backoff,
-				  
-				  "Dictionary", CMDSTRINGTYPE, &dictfile,
-				  "d", CMDSTRINGTYPE, &dictfile,
-				  
-				  "DictionaryUpperBound", CMDINTTYPE, &dub,
-				  "dub", CMDINTTYPE, &dub,
-				  
-				  "NgramSize", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
-				  "n", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
-				  
-				  "Ngram", CMDSTRINGTYPE, &trainfile,
-				  "TrainOn", CMDSTRINGTYPE, &trainfile,
-				  "tr", CMDSTRINGTYPE, &trainfile,
-				  
-				  "oASR", CMDSTRINGTYPE, &ASRfile,
-				  "oasr", CMDSTRINGTYPE, &ASRfile,
-				  
-				  "o", CMDSTRINGTYPE, &ARPAfile,
-				  "oARPA", CMDSTRINGTYPE, &ARPAfile,
-				  "oarpa", CMDSTRINGTYPE, &ARPAfile,
-				  
-				  "o2", CMDSTRINGTYPE, &ARPAfile2,
-				  
-				  "oBIN", CMDSTRINGTYPE, &BINfile,
-				  "obin", CMDSTRINGTYPE, &BINfile,
-				  
-				  "TestOn", CMDSTRINGTYPE, &testfile,
-				  "te", CMDSTRINGTYPE, &testfile,
-				  
-				  "AdaptOn", CMDSTRINGTYPE, &adaptfile,
-				  "ad", CMDSTRINGTYPE, &adaptfile,
-				  
-				  "AdaptRate",CMDDOUBLETYPE , &adaptrate,
-				  "ar", CMDDOUBLETYPE, &adaptrate,
-				  
-				  "AdaptLevel", CMDSUBRANGETYPE, &adaptlevel, 1 , MAX_NGRAM,
-				  "al",CMDSUBRANGETYPE , &adaptlevel, 1, MAX_NGRAM,
-				  
-				  "AdaptOOV", CMDBOOLTYPE, &adaptoov,
-				  "ao", CMDBOOLTYPE, &adaptoov,
-				  
-				  "SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile,
-				  "ssf", CMDSTRINGTYPE, &scalefactorfile,
-				  
-				  "LanguageModelType",CMDENUMTYPE, &lmtype, LmTypeEnum,
-				  "lm",CMDENUMTYPE, &lmtype, LmTypeEnum,
-				  
-				  "Interactive",CMDENUMTYPE, &interactive, InteractiveModeEnum,
-				  "i",CMDENUMTYPE, &interactive, InteractiveModeEnum,
-				  
-				  "Statistics",CMDSUBRANGETYPE, &statistics, 1, 3,
-				  "s",CMDSUBRANGETYPE, &statistics, 1, 3,
-				  
-				  "PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
-				  "p",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
-				  
-				  "PruneSingletons",CMDBOOLTYPE, &prunesingletons,
-				  "ps",CMDBOOLTYPE, &prunesingletons,
-				  
-				  "PruneTopSingletons",CMDBOOLTYPE, &prunetopsingletons,
-				  "pts",CMDBOOLTYPE, &prunetopsingletons,
-				  
-				  "ComputeLMSize",CMDBOOLTYPE, &compsize,
-				  "sz",CMDBOOLTYPE, &compsize,
-				  
-				  "MaximumCachingLevel", CMDINTTYPE , &max_caching_level,
-				  "mcl", CMDINTTYPE, &max_caching_level,
-				  
-				  "MemoryMap", CMDBOOLTYPE, &memmap,
-				  "memmap", CMDBOOLTYPE, &memmap,
-				  "mm", CMDBOOLTYPE, &memmap,
-				  
-				  "CheckProb",CMDBOOLTYPE, &checkpr,
-				  "cp",CMDBOOLTYPE, &checkpr,
-				  
-				  "OutProb",CMDSTRINGTYPE, &outpr,
-				  "op",CMDSTRINGTYPE, &outpr,
-				  
-				  "SubLMInfo", CMDSTRINGTYPE, &slminfo,
-				  "slmi", CMDSTRINGTYPE, &slminfo,
-				  
-				  "SaveMixParam", CMDSTRINGTYPE, &omixpar,
-				  "smp", CMDSTRINGTYPE, &omixpar,
-				  
-				  "LoadMixParam", CMDSTRINGTYPE, &imixpar,
-				  "lmp", CMDSTRINGTYPE, &imixpar,
-				  
-				  "SetOovRate", CMDDOUBLETYPE, &oovrate,
-				  "or", CMDDOUBLETYPE, &oovrate,
-				  
-				  "Beta", CMDDOUBLETYPE, &beta,
-				  "beta", CMDDOUBLETYPE, &beta,
 								
-					"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
-					"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
-				  
-				  (char *)NULL
-				  );
+								"Back-off",CMDBOOLTYPE, &backoff,
+								"bo",CMDBOOLTYPE, &backoff,
+								
+								"Dictionary", CMDSTRINGTYPE, &dictfile,
+								"d", CMDSTRINGTYPE, &dictfile,
+								
+								"DictionaryUpperBound", CMDINTTYPE, &dub,
+								"dub", CMDINTTYPE, &dub,
+								
+								"NgramSize", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
+								"n", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
+								
+								"Ngram", CMDSTRINGTYPE, &trainfile,
+								"TrainOn", CMDSTRINGTYPE, &trainfile,
+								"tr", CMDSTRINGTYPE, &trainfile,
+								
+								"oASR", CMDSTRINGTYPE, &ASRfile,
+								"oasr", CMDSTRINGTYPE, &ASRfile,
+								
+								"o", CMDSTRINGTYPE, &ARPAfile,
+								"oARPA", CMDSTRINGTYPE, &ARPAfile,
+								"oarpa", CMDSTRINGTYPE, &ARPAfile,
+								
+								"oBIN", CMDSTRINGTYPE, &BINfile,
+								"obin", CMDSTRINGTYPE, &BINfile,
+
+								"SavePerLevel",CMDBOOLTYPE, &SavePerLevel,
+								
+								"TestOn", CMDSTRINGTYPE, &testfile,
+								"te", CMDSTRINGTYPE, &testfile,
+								
+								"AdaptOn", CMDSTRINGTYPE, &adaptfile,
+								"ad", CMDSTRINGTYPE, &adaptfile,
+								
+								"AdaptRate",CMDDOUBLETYPE , &adaptrate,
+								"ar", CMDDOUBLETYPE, &adaptrate,
+								
+								"AdaptLevel", CMDSUBRANGETYPE, &adaptlevel, 1 , MAX_NGRAM,
+								"al",CMDSUBRANGETYPE , &adaptlevel, 1, MAX_NGRAM,
+								
+								"AdaptOOV", CMDBOOLTYPE, &adaptoov,
+								"ao", CMDBOOLTYPE, &adaptoov,
+								
+								"SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile,
+								"ssf", CMDSTRINGTYPE, &scalefactorfile,
+								
+								"LanguageModelType",CMDENUMTYPE, &lmtype, LmTypeEnum,
+								"lm",CMDENUMTYPE, &lmtype, LmTypeEnum,
+								
+								"Interactive",CMDENUMTYPE, &interactive, InteractiveModeEnum,
+								"i",CMDENUMTYPE, &interactive, InteractiveModeEnum,
+								
+								"Statistics",CMDSUBRANGETYPE, &statistics, 1, 3,
+								"s",CMDSUBRANGETYPE, &statistics, 1, 3,
+								
+								"PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
+								"p",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
+								
+								"PruneSingletons",CMDBOOLTYPE, &prunesingletons,
+								"ps",CMDBOOLTYPE, &prunesingletons,
+								
+								"PruneTopSingletons",CMDBOOLTYPE, &prunetopsingletons,
+								"pts",CMDBOOLTYPE, &prunetopsingletons,
+								
+								"ComputeLMSize",CMDBOOLTYPE, &compsize,
+								"sz",CMDBOOLTYPE, &compsize,
+								
+								"MaximumCachingLevel", CMDINTTYPE , &max_caching_level,
+								"mcl", CMDINTTYPE, &max_caching_level,
+								
+								"MemoryMap", CMDBOOLTYPE, &memmap,
+								"memmap", CMDBOOLTYPE, &memmap,
+								"mm", CMDBOOLTYPE, &memmap,
+								
+								"CheckProb",CMDBOOLTYPE, &checkpr,
+								"cp",CMDBOOLTYPE, &checkpr,
+								
+								"OutProb",CMDSTRINGTYPE, &outpr,
+								"op",CMDSTRINGTYPE, &outpr,
+								
+								"SubLMInfo", CMDSTRINGTYPE, &slminfo,
+								"slmi", CMDSTRINGTYPE, &slminfo,
+								
+								"SaveMixParam", CMDSTRINGTYPE, &omixpar,
+								"smp", CMDSTRINGTYPE, &omixpar,
+								
+								"LoadMixParam", CMDSTRINGTYPE, &imixpar,
+								"lmp", CMDSTRINGTYPE, &imixpar,
+								
+								"SetOovRate", CMDDOUBLETYPE, &oovrate,
+								"or", CMDDOUBLETYPE, &oovrate,
+								
+								"Beta", CMDDOUBLETYPE, &beta,
+								"beta", CMDDOUBLETYPE, &beta,
+								
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
+								(char *)NULL
+								);
 	
 	if (argc == 1){
 		usage();
@@ -263,8 +263,14 @@ int main(int argc, char **argv)
 	
 	if (!lmtype || (!trainfile && lmtype!=MIXTURE)) {
 		usage("Warning: Missing parameters");
-	};
-	
+	}
+
+	if (SavePerLevel == false && backoff == true){
+		cerr << "WARNING: Current implementation does not support the usage of backoff (-bo=true) mixture models (-lm=mix) combined with the per-word saving (-saveperllevel=false)." << endl;
+		cerr << "WARNING: The usage of backoff is disabled, i.e. -bo=no  is forced" << endl;
+		
+		backoff=false;
+	}
 	
 	mdiadaptlm *lm=NULL;
 	
@@ -300,19 +306,11 @@ int main(int argc, char **argv)
 		case LINEAR_GT:
 			cerr << "This LM is no more supported\n";
 			break;
-			
+
 		case MIXTURE:
 			//temporary check: so far unable to proper handle this flag in sub LMs
 			//no ngramtable is created
-			
-			if (backoff){
-				cerr << "Mixture LM does not support back-off\n";
-				backoff=false;	
-			}
-			if (BINfile)
-				lm=new mixture(true,slminfo,size,prunefreq,imixpar,omixpar);
-			else
-				lm=new mixture(false,slminfo,size,prunefreq,imixpar,omixpar);
+			lm=new mixture(SavePerLevel,slminfo,size,prunefreq,imixpar,omixpar);
 			break;
 			
 		default:
@@ -324,9 +322,9 @@ int main(int argc, char **argv)
 		cerr << "dub (" << dub << ") is not set or too small. dub is re-set to the dictionary size (" << lm->dict->size() << ")" << endl;
 		dub = lm->dict->size();
 	}
-
+	
 	lm->dub(dub);
-
+	
 	lm->create_caches(max_caching_level);
 	
 	cerr << "eventually generate OOV code\n";
@@ -334,10 +332,11 @@ int main(int argc, char **argv)
 	
 	if (oovrate) lm->dict->setoovrate(oovrate);
 	
+	lm->save_per_level(SavePerLevel);
 	
 	lm->train();
 	
-	//it never occurs that both prunetopsingletons and prunesingletons  are YES
+	//it never occurs that both prunetopsingletons and prunesingletons  are true
 	if (prunetopsingletons==true) { //keep most specific
 		lm->prunetopsingletons(true);
 		lm->prunesingletons(false);
@@ -352,8 +351,7 @@ int main(int argc, char **argv)
 	
 	if (adaptoov) lm->dict->incflag(1);
 	
-	if (adaptfile)
-		lm->adapt(adaptfile,adaptlevel,adaptrate);
+	if (adaptfile) lm->adapt(adaptfile,adaptlevel,adaptrate);
 	
 	if (adaptoov) lm->dict->incflag(0);
 	
@@ -374,12 +372,7 @@ int main(int argc, char **argv)
 		
 		if (adaptfile)
 			((mdiadaptlm *)lm)->get_zetacache()->stat();
-		//		((mdiadaptlm *)lm)->cache->stat();
-		
-		//for (int s=1;s<=size;s++){
-		//lm->test(*lm,s);
-		//lm->test(test,s);
-		//}
+
 		cerr << "\n";
 	};
 	
@@ -530,12 +523,6 @@ int main(int argc, char **argv)
 	if (ARPAfile) {
 		cerr << "TLM: save lm (ARPA)...";
 		lm->saveARPA(ARPAfile,backoff,dictfile);
-		cerr << "\n";
-	}
-	
-	if (ARPAfile2) {
-		cerr << "TLM: save lm (ARPA2)...";
-		lm->saveARPA2(ARPAfile2,backoff,dictfile);
 		cerr << "\n";
 	}
 	

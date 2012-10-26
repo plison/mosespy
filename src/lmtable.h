@@ -40,6 +40,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "n_gram.h"
 #include "lmContainer.h"
 
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
+#define LMTMAXLEV  20
+#define MAX_LINE  100000
+
 #ifndef  LMTCODESIZE
 #define  LMTCODESIZE  (int)3
 #endif
@@ -94,7 +100,13 @@ protected:
   char*       table[LMTMAXLEV+1];  //storage of all levels
   LMT_TYPE    tbltype[LMTMAXLEV+1];  //table type for each levels
   table_entry_pos_t       cursize[LMTMAXLEV+1];  //current size of levels
-  table_entry_pos_t       maxsize[LMTMAXLEV+1];  //max size of levels
+
+  //current offset for in-memory tables (different for each level
+	//needed to manage partial tables
+	// mempos = diskpos - offset[level]
+  table_entry_pos_t       tb_offset[LMTMAXLEV+1];
+	
+	table_entry_pos_t       maxsize[LMTMAXLEV+1];  //max size of levels
   table_entry_pos_t*     startpos[LMTMAXLEV+1];  //support vector to store start positions
   char      info[100]; //information put in the header
 
@@ -139,6 +151,9 @@ protected:
   // is this LM queried for knowing the matching order or (standard
   // case) for score?
   bool      orderQuery;
+	
+	//flag to enable/disable deletion of dict in the destructor
+	bool delete_dict;
 
 public:
 
@@ -249,33 +264,50 @@ public:
   void savetxt(const char *filename);
   void savebin(const char *filename);
 
-  void savebin_level(int level, const char* filename, int mmap);
+	void appendbin_level(int level, fstream &out, int mmap);
+	void appendbin_level_nommap(int level, fstream &out);
+	void appendbin_level_mmap(int level, fstream &out);
+	
+	void savebin_level(int level, const char* filename, int mmap);
   void savebin_level_nommap(int level, const char* filename);
   void savebin_level_mmap(int level, const char* filename);
   void savebin_dict(std::fstream& out);
 
-  void compact_level(int level, const char* outfilename);
+  void compact_all_levels(const char* filename);
+  void compact_single_level(int level, const char* filename);
 
-
+	void concatenate_all_levels(const char* fromfilename, const char* tofilename);
+	void concatenate_single_level(int level, const char* fromfilename, const char* tofilename);
+	
+	void remove_all_levels(const char* filename);
+	void remove_single_level(int level, const char* filename);
+	
   void print_table_stat();
   void print_table_stat(int level);
 
   void dumplm(std::fstream& out,ngram ng, int ilev, int elev, table_entry_pos_t ipos,table_entry_pos_t epos);
-
+	
+	
+  void delete_level(int level, const char* outfilename, int mmap);
+  void delete_level_nommap(int level);
+  void delete_level_mmap(int level, const char* filename);
 
   void resize_level(int level, const char* outfilename, int mmap);
   void resize_level_nommap(int level);
   void resize_level_mmap(int level, const char* filename);
+	
+	inline void update_offset(int level, table_entry_pos_t value) { tb_offset[level]=value; };
+	
 
   void load(const std::string filename, int mmap=0);
   void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
 
   void load_centers(std::istream& inp,int l);
 
-
   void expand_level(int level, table_entry_pos_t size, const char* outfilename, int mmap);
   void expand_level_nommap(int level, table_entry_pos_t size);
   void expand_level_mmap(int level, table_entry_pos_t size, const char* outfilename);
+	
   void cpsublm(lmtable* sublmt, dictionary* subdict,bool keepunigr=true);
 
   int reload(std::set<string> words);
@@ -292,8 +324,12 @@ public:
 
   int mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table_entry_pos_t *idx);
 
+	
+	int add(ngram& ng, float prob,float bow);
+	//template<typename TA, typename TB> int add(ngram& ng, TA prob,TB bow);
 
-  template<typename TA, typename TB> int add(ngram& ng, TA prob,TB bow);
+	int addwithoffset(ngram& ng, float prob,float bow);
+//  template<typename TA, typename TB> int addwithoffset(ngram& ng, TA prob,TB bow);
 
   void checkbounds(int level);
 
@@ -316,9 +352,11 @@ public:
   inline void getmem(char* ptr,int* value,int offs,int size) {
     assert(ptr!=NULL);
     *value=ptr[offs] & 0xff;
-    for (int i=1; i<size; i++)
+    for (int i=1; i<size; i++){
       *value= *value | ( ( ptr[offs+i] & 0xff ) << (8 *i));
+		}
   };
+
   template<typename T>
   inline void putmem(char* ptr,T value,int offs) {
     assert(ptr!=NULL);
@@ -399,12 +437,28 @@ public:
   };
 
   template<typename T>
-  inline float prob(node nd,LMT_TYPE /* unused parameter: ndt */, T value) {
-    int offs=LMTCODESIZE;
-
-    putmem(nd,value,offs);
-
-    return (float) value;
+  inline T prob(node nd, LMT_TYPE ndt, T value) {
+    int offs=LMTCODESIZE;		
+		
+    switch (ndt) {
+			case INTERNAL:
+				putmem(nd, value,offs);
+				break;
+			case QINTERNAL:
+				putmem(nd,(unsigned char) value,offs);
+				break;
+			case LEAF:
+				putmem(nd, value,offs);
+				break;
+			case QLEAF:
+				putmem(nd,(unsigned char) value,offs);
+				break;
+			default:
+				assert(0);
+				return (T) 0;
+    }
+		
+    return value;
   };
 
 
@@ -435,34 +489,108 @@ public:
   template<typename T>
   inline T bow(node nd,LMT_TYPE ndt, T value) {
     int offs=LMTCODESIZE+(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
+		
+    switch (ndt) {
+			case INTERNAL:
+				putmem(nd, value,offs);
+				break;
+			case QINTERNAL:
+				putmem(nd,(unsigned char) value,offs);
+				break;
+			case LEAF:
+				putmem(nd, value,offs);
+				break;
+			case QLEAF:
+				putmem(nd,(unsigned char) value,offs);
+				break;
+			default:
+				assert(0);
+				return 0;
+    }
+		
+    return value;
+  };
+	
+	
+	inline table_entry_pos_t boundwithoffset(node nd,LMT_TYPE ndt, int level){ return bound(nd,ndt) - tb_offset[level+1]; }
+
+	inline table_entry_pos_t boundwithoffset(node nd,LMT_TYPE ndt, table_entry_pos_t value, int level){ return bound(nd, ndt, value + tb_offset[level+1]); }
+	
+//	table_entry_pos_t bound(node nd,LMT_TYPE ndt, int level=0) {
+	table_entry_pos_t bound(node nd,LMT_TYPE ndt) {
+		
+		int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
+		
+		table_entry_pos_t value;
+		
+		getmem(nd,&value,offs);
+
+//		value -= tb_offset[level+1];
+		
+		return value;
+	};
+
+
+//	table_entry_pos_t bound(node nd,LMT_TYPE ndt, table_entry_pos_t value, int level=0) {
+	table_entry_pos_t bound(node nd,LMT_TYPE ndt, table_entry_pos_t value) {
+		
+		int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
+
+//		value += tb_offset[level+1];
+		
+		putmem(nd,value,offs);
+		
+		return value;
+	};
+	
+	//template<typename T> T boundwithoffset(node nd,LMT_TYPE ndt, T value, int level);
+	
+	/*
+	 table_entry_pos_t  boundwithoffset(node nd,LMT_TYPE ndt, int level) {
+	 
+	 int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
+	 
+	 table_entry_pos_t value;
+	 
+	 getmem(nd,&value,offs);
+	 return value;
+	 //    return value-tb_offset[level+1];
+	 };
+	 */
+	
+	/*
+	 table_entry_pos_t boundwithoffset(node nd,LMT_TYPE ndt, table_entry_pos_t value, int level) {
+	 
+	 int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
+	 
+	 putmem(nd,value,offs);
+	 
+	 return value;
+	 //		return value+tb_offset[level+1];
+	 };	
+	 */
+	
+	/*
+  inline table_entry_pos_t  bound(node nd,LMT_TYPE ndt) {
+		
+    int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
+		
+    table_entry_pos_t value;
+		
+    getmem(nd,&value,offs);
+    return value;
+  };
+	
+	template<typename T>
+	inline T bound(node nd,LMT_TYPE ndt, T value) {
+				
+    int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
 
     putmem(nd,value,offs);
 
     return value;
   };
-
-  inline table_entry_pos_t bound(node nd,LMT_TYPE ndt) {
-
-    int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
-
-    table_entry_pos_t v;
-
-    getmem(nd,&v,offs);
-    return v;
-  };
-
-
-
-  template<typename T>
-  inline T bound(node nd,LMT_TYPE ndt, T value) {
-
-    int offs=LMTCODESIZE+2*(ndt==QINTERNAL?QPROBSIZE:PROBSIZE);
-
-    putmem(nd,value,offs);
-
-    return value;
-  };
-
+*/
   //returns the indexes of the successors of a node
   int succrange(node ndp,int level,table_entry_pos_t* isucc=NULL,table_entry_pos_t* esucc=NULL);
 
@@ -470,8 +598,11 @@ public:
   void printTable(int level);
 
   virtual inline void setDict(dictionary* d) {
+		if (delete_dict==true && dict) delete dict;
     dict=d;
+		delete_dict=false;
   };
+
   virtual inline dictionary* getDict() const {
     return dict;
   };

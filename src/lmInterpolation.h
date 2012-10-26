@@ -79,8 +79,10 @@ public:
   };
 
   virtual inline void setDict(dictionary* d) {
+		if (dict) delete dict;
     dict=d;
   };
+	
   virtual inline dictionary* getDict() const {
     return dict;
   };
