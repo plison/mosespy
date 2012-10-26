@@ -197,7 +197,11 @@ split -l $size $outdfile $workdir/dtsel${pid}-files-
 for file in $workdir/dtsel${pid}-files-*
 do
 echo $file  
-($bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model;sort -g -o ${file}.scores ${file}.scores) >>$logfile 2>&1 &
+( \
+$bin/dtsel -x=$useindex -i=$indfile -o=$file -s=${file}.scores -n=$ngramorder -dub=$dub -f=$minfreq -m=$model ; \
+cat ${file}.scores | perl -pe '/^nan /1000 /g;' | sort -g > ${file}.scores.tmp ; \
+mv ${file}.scores.tmp ${file}.scores \ 
+) >>$logfile 2>&1 &
 
 done
 
