@@ -154,6 +154,25 @@ public:
     UNUSED(code);
     return false;
   };
+
+
+  inline bool is_lmt_cache_enabled(){
+    #ifdef LMT_CACHE_ENABLE
+      return true;
+    #endif
+    return false;
+  }
+
+  inline bool is_ps_cache_enabled(){
+    #ifdef PS_CACHE_ENABLE
+      return true;
+    #endif
+    return false;
+  }
+
+  inline bool is_cache_enabled(){
+    return is_lmt_cache_enabled() && is_ps_cache_enabled();
+  }
 };
 
 
