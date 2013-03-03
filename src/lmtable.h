@@ -643,6 +643,7 @@ public:
   inline virtual bool is_OOV(int code) {
     return (code == dict->oovcode());
   };
+
 };
 
 #endif

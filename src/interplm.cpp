@@ -32,7 +32,6 @@ using namespace std;
 #include "normcache.h"
 #include "interplm.h"
 
-
 void interplm::trainunigr()
 {
 
@@ -527,7 +526,4 @@ main(int argc, char** argv){
 
   ilm.savebin("newlm.lm",3);
 }
-
-
-
 */

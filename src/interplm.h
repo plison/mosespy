@@ -19,6 +19,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 ******************************************************************************/
 // Basic Interpolated LM class
 
+#ifndef MF_INTERPLM_H
+#define MF_INTERPLM_H
 
 #define SHIFT_BETA   1
 #define SHIFT_ONE    2
@@ -134,7 +136,7 @@ public:
 
 };
 
-
+#endif
 
 
 

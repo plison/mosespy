@@ -23,6 +23,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #ifndef MF_MDIADAPTLM_H
 #define MF_MDIADAPTLM_H
 
+#include "ngramcache.h"
+#include "normcache.h"
+#include "interplm.h"
+
 class mdiadaptlm:public interplm
 {
 
@@ -132,15 +136,22 @@ public:
 	}
 	
   inline void save_per_level(bool value){ m_save_per_level=value; }
-	inline bool save_per_level(){ return m_save_per_level; }
+  inline bool save_per_level(){ return m_save_per_level; }
 	
   int netsize();
 
   ~mdiadaptlm();
 
   double myround(double x) {
-    long int i=(long int)x;
-    return (x-i)>0.500?i+1.0:(double)i;
+    long int value = (long int) x;
+    return (x-value)>0.500?value+1.0:(double)value;
+  }
+
+  inline bool is_train_cache_enabled(){
+    #ifdef MDIADAPTLM_CACHE_ENABLE
+      return true;
+    #endif
+    return false;
   }
 
 };

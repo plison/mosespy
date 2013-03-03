@@ -18,6 +18,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
+#ifndef MF_NORMCACHE_H
+#define MF_NORMCACHE_H
+
+#include "dictionary.h"
+#include "ngramtable.h"
+
 // Normalization factors cache
 
 class normcache
@@ -43,3 +49,6 @@ public:
   double put(ngram ng,int size,double value);
   void stat();
 };
+
+#endif
+
