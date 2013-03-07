@@ -32,8 +32,11 @@ AC_ARG_ENABLE([debugging],
 AC_ARG_ENABLE(profiling,
             [AC_HELP_STRING([--enable-profiling|--disable-profiling], [Enable or Disable (default) profiling info])])
 
+AC_ARG_ENABLE(traincaching,
+            [AC_HELP_STRING([--enable-traincaching|--disable-traincaching], [Enable or Disable (default) the usage of caching in training])])
+
 AC_ARG_ENABLE(caching,
-            [AC_HELP_STRING([--enable-caching|--disable-caching], [Enable or Disable (default) the use prob caches to store probs and other info])])
+            [AC_HELP_STRING([--enable-caching|--disable-caching], [Enable or Disable (default) the usage prob caches to store probs and other info])])
 
 AC_ARG_ENABLE(interpsearch,
             [AC_HELP_STRING([--enable-interpsearch|--disable-interpsearch], [Enable or Disable (default) the use interpolated search to retrieve n-grams])])
@@ -81,10 +84,19 @@ else
     AC_MSG_NOTICE([profiling disabled (default)])
 fi
 
+if test "x$enable_traincaching" = 'xyes'
+then
+    AC_MSG_NOTICE([train-caching enabled])
+    CPPFLAGS="$CPPFLAGS -DMDIADAPTLM_CACHE_ENABLE=1";
+    LDFLAGS="$LDFLAGS"
+else
+    AC_MSG_NOTICE([train-caching disabled (default)])
+fi
+
 if test "x$enable_caching" = 'xyes'
 then
     AC_MSG_NOTICE([caching enabled])
-    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE=1 -DMDIADAPTLM_CACHE_ENABLE=1";
+    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE=1 -DLMT_CACHE_ENABLE=1";
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([caching disabled (default)])
