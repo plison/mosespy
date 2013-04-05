@@ -165,7 +165,7 @@ if [ ! -d $tmpdir ]; then
    tmpdir_created=1;
 else
    echo "Cleaning temporary directory $tmpdir";
-   rm -r $tmpdir 2> /dev/null
+   rm $tmpdir 2> /dev/null
    if [ $? != 0 ]; then
       echo "Warning: some temporary files could not be removed"
    fi
