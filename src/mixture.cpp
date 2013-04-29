@@ -74,39 +74,43 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
   inp >> numslm;
 
   sublm=new interplm* [numslm];
-  int slmtype;
-  bool subprunesingletons;
-  bool subprunetopsingletons;
-  int subprunefreq;
-
-  char *subtrainfile;
-
-  DeclareParams((char*)
-    "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
-    "str",CMDSTRINGTYPE, &subtrainfile,
-    "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
-    "sps",CMDBOOLTYPE, &subprunesingletons,
-    "spts",CMDBOOLTYPE, &subprunetopsingletons,
-    (char *)NULL
-  );
 
   cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
 
   for (int i=0; i<numslm; i++) {
-    int npar=4;
+    int npar=6;
     char **par=new char*[npar];
-    for (int j=0; j<4; j++) {
+    for (int j=0; j<npar; j++) {
       par[j]=new char[BUFSIZ];
     }
 
+    char *subtrainfile;
+    int slmtype;
+    bool subprunesingletons;
+    bool subprunetopsingletons;
+    int subprunefreq;
+
+    DeclareParams((char*)
+      "SubLanguageModelType",CMDENUMTYPE, &slmtype, SLmTypeEnum,
+      "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
+      "str",CMDSTRINGTYPE, &subtrainfile,
+      "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
+      "spts",CMDBOOLTYPE, &subprunetopsingletons,
+      "sps",CMDBOOLTYPE, &subprunesingletons,
+      (char *)NULL  );
+
+
     par[0][0]='\0';
-    inp >> par[1] >> par[2] >> par[3];
+    for (int j=1; j<npar; j++) {
+        inp >> par[j];
+    }
 
     subtrainfile=NULL;
     slmtype=0;
     subprunefreq=-1;
     subprunesingletons=true;
     subprunetopsingletons=false;
+
     GetParams(&npar, &par, (char*) NULL);
 
     if (!slmtype || !subtrainfile || !subprunefreq==-1) {
