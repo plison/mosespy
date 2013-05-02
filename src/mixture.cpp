@@ -51,7 +51,8 @@ static Enum_T SLmTypeEnum [] = {
   {    (char*)"s0",                 SHIFT_ZERO },
   {    (char*)"LinearWittenBell",   LINEAR_WB },
   {    (char*)"wb",                 LINEAR_WB },
-  {    (char*)"Mixture",            MIXTURE},
+  {    (char*)"Mixture",						MIXTURE },
+  {    (char*)"mix",                MIXTURE },
   END_ENUM
 };
 
@@ -71,19 +72,41 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
     exit(1);
   }
 
-  inp >> numslm;
-
+	char line[MAX_LINE];
+	inp.getline(line,MAX_LINE);
+	
+	sscanf(line,"%d",&numslm);
+	
   sublm=new interplm* [numslm];
 
-  cerr << "WARNING: Parameters PruneTopSingletons (ps) and PruneSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
+  cerr << "WARNING: Parameters PruneSingletons (ps) and PruneTopSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
 
+  int max_npar=6;
   for (int i=0; i<numslm; i++) {
-    int npar=6;
-    char **par=new char*[npar];
-    for (int j=0; j<npar; j++) {
-      par[j]=new char[BUFSIZ];
-    }
-
+    char **par=new char*[max_npar];
+    par[0]=new char[BUFSIZ];
+    par[0][0]='\0';
+		
+		inp.getline(line,MAX_LINE);
+		
+		const char *const wordSeparators = " \t\r\n";
+		char *word = strtok(line, wordSeparators);
+		int j = 1;
+		
+		while (word){
+			if (i>max_npar){
+				std::cerr << "Too many parameters (expected " << max_npar << ")" << std::endl;	
+				exit(1);
+			}
+			par[j] = new char[MAX_LINE];
+			strcpy(par[j],word);
+//			std::cerr << "par[j]:|" << par[j] << "|" << std::endl;
+		  word = strtok(0, wordSeparators);
+			j++;
+		}
+	
+    int actual_npar = j;	
+		
     char *subtrainfile;
     int slmtype;
     bool subprunesingletons;
@@ -91,19 +114,17 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
     int subprunefreq;
 
     DeclareParams((char*)
-      "SubLanguageModelType",CMDENUMTYPE, &slmtype, SLmTypeEnum,
-      "slm",CMDENUMTYPE, &slmtype, SLmTypeEnum,
-      "str",CMDSTRINGTYPE, &subtrainfile,
-      "sp",CMDSUBRANGETYPE, &subprunefreq, 0 , 1000,
-      "spts",CMDBOOLTYPE, &subprunetopsingletons,
-      "sps",CMDBOOLTYPE, &subprunesingletons,
-      (char *)NULL  );
-
-
-    par[0][0]='\0';
-    for (int j=1; j<npar; j++) {
-        inp >> par[j];
-    }
+      "SubLanguageModelType",CMDENUMTYPE|CMDMSG, &slmtype, SLmTypeEnum, "type of the sub LM",
+			"slm",CMDENUMTYPE|CMDMSG, &slmtype, SLmTypeEnum, "type of the sub LM",
+			"sTrainOn",CMDSTRINGTYPE|CMDMSG, &subtrainfile, "training file of the sub LM",
+      "str",CMDSTRINGTYPE|CMDMSG, &subtrainfile, "training file of the sub LM",
+      "sPruneThresh",CMDSUBRANGETYPE|CMDMSG, &subprunefreq, 0, 1000, "threshold for pruning the sub LM",
+      "sp",CMDSUBRANGETYPE|CMDMSG, &subprunefreq, 0, 1000, "threshold for pruning the sub LM",									
+      "sPruneSingletons",CMDBOOLTYPE|CMDMSG, &subprunesingletons,  "boolean flag for pruning of singletons of the sub LM (default is true)",
+      "sps",CMDBOOLTYPE|CMDMSG, &subprunesingletons, "boolean flag for pruning of singletons of the sub LM (default is true)",
+      "sPruneTopSingletons",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",
+      "spts",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",				
+			(char *)NULL  );
 
     subtrainfile=NULL;
     slmtype=0;
@@ -111,14 +132,25 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
     subprunesingletons=true;
     subprunetopsingletons=false;
 
-    GetParams(&npar, &par, (char*) NULL);
+		GetParams(&actual_npar, &par, (char*) NULL);
+		
 
-    if (!slmtype || !subtrainfile || !subprunefreq==-1) {
-      cerr << "slm incomplete parameters\n";
+    if (!slmtype) {
+			std::cerr << "The type (-slm) for sub LM number " << i+1 << "  is not specified" << std::endl;
       exit(1);
     }
 
-    switch (slmtype) {
+		if (!subtrainfile) {
+			std::cerr << "The file (-str) for sub lm number " << i+1 << " is not specified" << std::endl;
+      exit(1);
+    }
+
+		if (subprunefreq==-1) {
+			std::cerr << "The prune threshold (-sp) for sub lm number " << i+1 << "  is not specified" << std::endl;
+      exit(1);
+    }
+
+		switch (slmtype) {
 
     case LINEAR_WB:
       sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);

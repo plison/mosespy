@@ -80,16 +80,17 @@ int main(int argc, char **argv)
 	bool help=false;
 	
 	DeclareParams((char*)								
-								"threshold", CMDSTRINGTYPE|CMDMSG, &spthr,  "pruning thresholds for 2-grams, 3-grams, 4-grams,...; if less thresholds are specified, the last one is applied to all following n-gram levels; default is 0",
-								"t", CMDSTRINGTYPE|CMDMSG, &spthr, "pruning thresholds for 2-grams, 3-grams, 4-grams,...; if less thresholds are specified, the last one is applied to all following n-gram levels; default is 0",
-								
-								"abs", CMDBOOLTYPE|CMDMSG, &aflag, "uses absolute value of weighted difference; default is 0",
+		"threshold", CMDSTRINGTYPE|CMDMSG, &spthr,  "pruning thresholds for 2-grams, 3-grams, 4-grams,...; if less thresholds are specified, the last one is applied to all following n-gram levels; default is 0",
+		"t", CMDSTRINGTYPE|CMDMSG, &spthr, "pruning thresholds for 2-grams, 3-grams, 4-grams,...; if less thresholds are specified, the last one is applied to all following n-gram levels; default is 0",
+							
+		"abs", CMDBOOLTYPE|CMDMSG, &aflag, "uses absolute value of weighted difference; default is 0",
 
-								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
-								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+		"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+		"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 								
-								(char *)NULL
-								);
+		(char *)NULL
+		);
+
 	if (argc == 1){
 		usage();
 	}

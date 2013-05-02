@@ -91,33 +91,31 @@ int main(int argc, char **argv)
   std::vector<std::string> files;
 	
 	DeclareParams((char*)
-								
-								"learn", CMDSTRINGTYPE|CMDMSG, &slearn, "learn optimal interpolation for text-file; default is false",
-								"l", CMDSTRINGTYPE|CMDMSG, &slearn, "learn optimal interpolation for text-file; default is false",
-								
-								"order", CMDINTTYPE|CMDMSG, &order, "order of n-grams used in --learn (optional)",
-								"o", CMDINTTYPE|CMDMSG, &order, "order of n-grams used in --learn (optional)",
-								
+					
+		"learn", CMDSTRINGTYPE|CMDMSG, &slearn, "learn optimal interpolation for text-file; default is false",
+		"l", CMDSTRINGTYPE|CMDMSG, &slearn, "learn optimal interpolation for text-file; default is false",
+		"order", CMDINTTYPE|CMDMSG, &order, "order of n-grams used in --learn (optional)",
+		"o", CMDINTTYPE|CMDMSG, &order, "order of n-grams used in --learn (optional)",						
                 "eval", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
-								"e", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
+		"e", CMDSTRINGTYPE|CMDMSG, &seval, "computes perplexity of the specified text file",
 								
+                "DictionaryUpperBound", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
                 "dub", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
-
                 "score", CMDBOOLTYPE|CMDMSG, &score, "computes log-prob scores of n-grams from standard input",
-								"s", CMDBOOLTYPE|CMDMSG, &score, "computes log-prob scores of n-grams from standard input",
+		"s", CMDBOOLTYPE|CMDMSG, &score, "computes log-prob scores of n-grams from standard input",
 								
                 "debug", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
-								"d", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
+		"d", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
                 "memmap", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
-								"mm", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
-								"sentence", CMDBOOLTYPE|CMDMSG, &sent_PP_flag, "computes perplexity at sentence level (identified through the end symbol)",
+		"mm", CMDINTTYPE|CMDMSG, &memmap, "uses memory map to read a binary LM",
+		"sentence", CMDBOOLTYPE|CMDMSG, &sent_PP_flag, "computes perplexity at sentence level (identified through the end symbol)",
                 "dict_load_factor", CMDFLOATTYPE|CMDMSG, &dictionary_load_factor, "sets the load factor for ngram cache; it should be a positive real value; default is 0",
                 "ngram_load_factor", CMDFLOATTYPE|CMDMSG, &ngramcache_load_factor, "sets the load factor for ngram cache; it should be a positive real value; default is false",
                 "level", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
-								"lev", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+		"lev", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
 								
-								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
-								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+		"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+		"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 								
 								(char *)NULL
 								);

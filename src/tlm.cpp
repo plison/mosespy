@@ -76,16 +76,16 @@ static Enum_T InteractiveModeEnum [] = {
 };
 
 void print_help(int TypeFlag=0){
-	std::cerr << std::endl << "tlm - estimates a language model" << std::endl;
+  std::cerr << std::endl << "tlm - estimates a language model" << std::endl;
   std::cerr << std::endl << "USAGE:"  << std::endl;
-	std::cerr << "       not yet available" << std::endl;
+  std::cerr << "       not yet available" << std::endl;
   std::cerr << std::endl << "DESCRIPTION:" << std::endl;
   std::cerr << "       tlm is a tool for the estimation of language model" << std::endl;
   std::cerr << std::endl << "OPTIONS:" << std::endl;
-	std::cerr << "       -Help|-h this help" << std::endl;
+  std::cerr << "       -Help|-h this help" << std::endl;
   std::cerr << std::endl;
 	
-	FullPrintParams(TypeFlag, 0, 1, stderr);
+  FullPrintParams(TypeFlag, 0, 1, stderr);
 }
 
 void usage(const char *msg = 0)
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	int interactive=0;
 	int statistics=0;
 	
-	bool prunefreq=false;
+	int prunefreq=0;
 	bool prunesingletons=true;
 	bool prunetopsingletons=false;
 	
@@ -149,107 +149,106 @@ int main(int argc, char **argv)
 	bool help=false;
 	
 	DeclareParams((char*)
+		"Back-off",CMDBOOLTYPE|CMDMSG, &backoff, "boolean flag for backoff LM (default is false, i.e. interpolated LM)",
+		"bo",CMDBOOLTYPE|CMDMSG, &backoff, "boolean falg for backoff LM (default is false, i.e. interpolated LM)",
+		"Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "dictionary to filter the LM (default is NULL)",
+		"d", CMDSTRINGTYPE|CMDMSG, &dictfile, "dictionary to filter the LM (default is NULL)",
 								
-								"Back-off",CMDBOOLTYPE, &backoff,
-								"bo",CMDBOOLTYPE, &backoff,
+		"DictionaryUpperBound", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
+		"dub", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
 								
-								"Dictionary", CMDSTRINGTYPE, &dictfile,
-								"d", CMDSTRINGTYPE, &dictfile,
+		"NgramSize", CMDSUBRANGETYPE|CMDMSG, &size, 1, MAX_NGRAM, "order of the LM",
+		"n", CMDSUBRANGETYPE|CMDMSG, &size, 1, MAX_NGRAM, "order of the LM",
 								
-								"DictionaryUpperBound", CMDINTTYPE, &dub,
-								"dub", CMDINTTYPE, &dub,
+		"Ngram", CMDSTRINGTYPE|CMDMSG, &trainfile, "training file",
+		"TrainOn", CMDSTRINGTYPE|CMDMSG, &trainfile, "training file",
+		"tr", CMDSTRINGTYPE|CMDMSG, &trainfile, "training file",
 								
-								"NgramSize", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
-								"n", CMDSUBRANGETYPE, &size, 1, MAX_NGRAM,
+		"oASR", CMDSTRINGTYPE|CMDMSG, &ASRfile, "output file in ASR format",
+		"oasr", CMDSTRINGTYPE|CMDMSG, &ASRfile, "output file in ASR format",
 								
-								"Ngram", CMDSTRINGTYPE, &trainfile,
-								"TrainOn", CMDSTRINGTYPE, &trainfile,
-								"tr", CMDSTRINGTYPE, &trainfile,
+		"o", CMDSTRINGTYPE|CMDMSG, &ARPAfile, "output file in ARPA format",
+		"oARPA", CMDSTRINGTYPE|CMDMSG, &ARPAfile, "output file in ARPA format",
+		"oarpa", CMDSTRINGTYPE|CMDMSG, &ARPAfile, "output file in ARPA format",
 								
-								"oASR", CMDSTRINGTYPE, &ASRfile,
-								"oasr", CMDSTRINGTYPE, &ASRfile,
-								
-								"o", CMDSTRINGTYPE, &ARPAfile,
-								"oARPA", CMDSTRINGTYPE, &ARPAfile,
-								"oarpa", CMDSTRINGTYPE, &ARPAfile,
-								
-								"oBIN", CMDSTRINGTYPE, &BINfile,
-								"obin", CMDSTRINGTYPE, &BINfile,
+		"oBIN", CMDSTRINGTYPE|CMDMSG, &BINfile, "output file in binary format",
+		"obin", CMDSTRINGTYPE|CMDMSG, &BINfile, "output file in binary format",
 
-								"SavePerLevel",CMDBOOLTYPE, &SavePerLevel,
+		"SavePerLevel",CMDBOOLTYPE|CMDMSG, &SavePerLevel, "saving type of the LM (true: per level (default), false: per word)",
+		"spl",CMDBOOLTYPE|CMDMSG, &SavePerLevel, "saving type of the LM (true: per level (default), false: per word)",
 								
-								"TestOn", CMDSTRINGTYPE, &testfile,
-								"te", CMDSTRINGTYPE, &testfile,
+		"TestOn", CMDSTRINGTYPE|CMDMSG, &testfile, "file for testing",
+		"te", CMDSTRINGTYPE|CMDMSG, &testfile, "file for testing",
 								
-								"AdaptOn", CMDSTRINGTYPE, &adaptfile,
-								"ad", CMDSTRINGTYPE, &adaptfile,
+		"AdaptOn", CMDSTRINGTYPE|CMDMSG, &adaptfile, "file for adaptation",
+		"ad", CMDSTRINGTYPE|CMDMSG, &adaptfile, "file for adaptation",
+							
+		"AdaptRate",CMDDOUBLETYPE|CMDMSG , &adaptrate, "adaptation rate",
+		"ar", CMDDOUBLETYPE|CMDMSG, &adaptrate, "adaptation rate",
+							
+		"AdaptLevel", CMDSUBRANGETYPE|CMDMSG, &adaptlevel, 1 , MAX_NGRAM, "adaptation level",
+		"al",CMDSUBRANGETYPE|CMDMSG, &adaptlevel, 1, MAX_NGRAM, "adaptation level",
 								
-								"AdaptRate",CMDDOUBLETYPE , &adaptrate,
-								"ar", CMDDOUBLETYPE, &adaptrate,
+		"AdaptOOV", CMDBOOLTYPE|CMDMSG, &adaptoov, "boolean flag for increasing the dictionary during adaptation (default is false)",
+		"ao", CMDBOOLTYPE|CMDMSG, &adaptoov, "boolean flag for increasing the dictionary during adaptation (default is false)",
 								
-								"AdaptLevel", CMDSUBRANGETYPE, &adaptlevel, 1 , MAX_NGRAM,
-								"al",CMDSUBRANGETYPE , &adaptlevel, 1, MAX_NGRAM,
+		"SaveScaleFactor", CMDSTRINGTYPE|CMDMSG, &scalefactorfile, "output file for the scale factors",
+		"ssf", CMDSTRINGTYPE|CMDMSG, &scalefactorfile, "output file for the scale factors",
 								
-								"AdaptOOV", CMDBOOLTYPE, &adaptoov,
-								"ao", CMDBOOLTYPE, &adaptoov,
+		"LanguageModelType",CMDENUMTYPE|CMDMSG, &lmtype, LmTypeEnum, "type of the LM",
+		"lm",CMDENUMTYPE|CMDMSG, &lmtype, LmTypeEnum, "type of the LM",
 								
-								"SaveScaleFactor", CMDSTRINGTYPE, &scalefactorfile,
-								"ssf", CMDSTRINGTYPE, &scalefactorfile,
+		"Interactive",CMDENUMTYPE|CMDMSG, &interactive, InteractiveModeEnum, "type of interaction",
+		"i",CMDENUMTYPE|CMDMSG, &interactive, InteractiveModeEnum, "type of interaction",
 								
-								"LanguageModelType",CMDENUMTYPE, &lmtype, LmTypeEnum,
-								"lm",CMDENUMTYPE, &lmtype, LmTypeEnum,
+		"Statistics",CMDSUBRANGETYPE|CMDMSG, &statistics, 1, 3, "output statistics of the LM of increasing detail (default is 0)",
+		"s",CMDSUBRANGETYPE|CMDMSG, &statistics, 1, 3, "output statistics of the LM of increasing detail (default is 0)",
+					
+		"PruneThresh",CMDSUBRANGETYPE|CMDMSG, &prunefreq, 0, 1000, "threshold for pruning (default is 0)",
+		"p",CMDSUBRANGETYPE|CMDMSG, &prunefreq, 0, 1000, "threshold for pruning (default is 0)",
+							
+		"PruneSingletons",CMDBOOLTYPE|CMDMSG, &prunesingletons, "boolean flag for pruning of singletons (default is true)",
+		"ps",CMDBOOLTYPE|CMDMSG, &prunesingletons, "boolean flag for pruning of singletons (default is true)",
 								
-								"Interactive",CMDENUMTYPE, &interactive, InteractiveModeEnum,
-								"i",CMDENUMTYPE, &interactive, InteractiveModeEnum,
+		"PruneTopSingletons",CMDBOOLTYPE|CMDMSG, &prunetopsingletons, "boolean flag for pruning of singletons at the top level (default is false)",
+		"pts",CMDBOOLTYPE|CMDMSG, &prunetopsingletons, "boolean flag for pruning of singletons at the top level (default is false)",
+							
+		"ComputeLMSize",CMDBOOLTYPE|CMDMSG, &compsize, "boolean flag for output the LM size (default is false)",
+		"sz",CMDBOOLTYPE|CMDMSG, &compsize, "boolean flag for output the LM size (default is false)",
 								
-								"Statistics",CMDSUBRANGETYPE, &statistics, 1, 3,
-								"s",CMDSUBRANGETYPE, &statistics, 1, 3,
+		"MaximumCachingLevel", CMDINTTYPE|CMDMSG , &max_caching_level, "maximum level for caches (default is: LM order - 1)",
+		"mcl", CMDINTTYPE|CMDMSG, &max_caching_level, "maximum level for caches (default is: LM order - 1)",
 								
-								"PruneThresh",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
-								"p",CMDSUBRANGETYPE, &prunefreq, 1, 1000,
+		"MemoryMap", CMDBOOLTYPE|CMDMSG, &memmap, "use memory mapping for bianry saving (default is false)",
+		"memmap", CMDBOOLTYPE|CMDMSG, &memmap, "use memory mapping for bianry saving (default is false)",
+		"mm", CMDBOOLTYPE|CMDMSG, &memmap, "use memory mapping for bianry saving (default is false)",
 								
-								"PruneSingletons",CMDBOOLTYPE, &prunesingletons,
-								"ps",CMDBOOLTYPE, &prunesingletons,
+		"CheckProb",CMDBOOLTYPE|CMDMSG, &checkpr, "boolean flag for checking probability distribution during test (default is false)",
+		"cp",CMDBOOLTYPE|CMDMSG, &checkpr, "boolean flag for checking probability distribution during test (default is false)",
 								
-								"PruneTopSingletons",CMDBOOLTYPE, &prunetopsingletons,
-								"pts",CMDBOOLTYPE, &prunetopsingletons,
+		"OutProb",CMDSTRINGTYPE|CMDMSG, &outpr, "output file for debugging  during test (default is \"/dev/null\")",
+		"op",CMDSTRINGTYPE|CMDMSG, &outpr, "output file for debugging  during test (default is \"/dev/null\")",
 								
-								"ComputeLMSize",CMDBOOLTYPE, &compsize,
-								"sz",CMDBOOLTYPE, &compsize,
+		"SubLMInfo", CMDSTRINGTYPE|CMDMSG, &slminfo, "configuration file for the mixture LM",
+		"slmi", CMDSTRINGTYPE|CMDMSG, &slminfo, "configuration file for the mixture LM",
 								
-								"MaximumCachingLevel", CMDINTTYPE , &max_caching_level,
-								"mcl", CMDINTTYPE, &max_caching_level,
+		"SaveMixParam", CMDSTRINGTYPE|CMDMSG, &omixpar, "output file for weights of the mixture LM",
+		"smp", CMDSTRINGTYPE|CMDMSG, &omixpar, "output file for weights of the mixture LM",
 								
-								"MemoryMap", CMDBOOLTYPE, &memmap,
-								"memmap", CMDBOOLTYPE, &memmap,
-								"mm", CMDBOOLTYPE, &memmap,
+		"LoadMixParam", CMDSTRINGTYPE|CMDMSG, &imixpar, "input file for weights of the mixture LM",
+		"lmp", CMDSTRINGTYPE|CMDMSG, &imixpar, "input file for weights of the mixture LM",
 								
-								"CheckProb",CMDBOOLTYPE, &checkpr,
-								"cp",CMDBOOLTYPE, &checkpr,
+		"SetOovRate", CMDDOUBLETYPE|CMDMSG, &oovrate, "rate for computing the OOV frequency (=oovrate*totfreq if oovrate>0) (default is 0)",
+		"or", CMDDOUBLETYPE|CMDMSG, &oovrate, "rate for computing the OOV frequency (=oovrate*totfreq if oovrate>0) (default is 0)",
 								
-								"OutProb",CMDSTRINGTYPE, &outpr,
-								"op",CMDSTRINGTYPE, &outpr,
+		"Beta", CMDDOUBLETYPE|CMDMSG, &beta, "beta value for Shift Beta LM (default is -1, i.e. automatic estimation)",
+		"beta", CMDDOUBLETYPE|CMDMSG, &beta, "beta value for Shift Beta LM (default is -1, i.e. automatic estimation)",
 								
-								"SubLMInfo", CMDSTRINGTYPE, &slminfo,
-								"slmi", CMDSTRINGTYPE, &slminfo,
+		"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+		"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 								
-								"SaveMixParam", CMDSTRINGTYPE, &omixpar,
-								"smp", CMDSTRINGTYPE, &omixpar,
-								
-								"LoadMixParam", CMDSTRINGTYPE, &imixpar,
-								"lmp", CMDSTRINGTYPE, &imixpar,
-								
-								"SetOovRate", CMDDOUBLETYPE, &oovrate,
-								"or", CMDDOUBLETYPE, &oovrate,
-								
-								"Beta", CMDDOUBLETYPE, &beta,
-								"beta", CMDDOUBLETYPE, &beta,
-								
-								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
-								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
-								
-								(char *)NULL
-								);
+		(char *)NULL
+		);
 	
 	if (argc == 1){
 		usage();
@@ -261,8 +260,14 @@ int main(int argc, char **argv)
 		usage();
 	}
 	
-	if (!lmtype || (!trainfile && lmtype!=MIXTURE)) {
-		usage("Warning: Missing parameters");
+	if (!lmtype) {
+		std::cerr << "The lm type (-lm) is not specified" << std::endl;
+		exit(1);
+	}
+	
+	if (!trainfile && lmtype!=MIXTURE) {
+		std::cerr << "The LM file (-tr) is not specified" << std::endl;
+		exit(1);
 	}
 
 	if (SavePerLevel == false && backoff == true){
@@ -311,6 +316,7 @@ int main(int argc, char **argv)
 			//temporary check: so far unable to proper handle this flag in sub LMs
 			//no ngramtable is created
 			lm=new mixture(SavePerLevel,slminfo,size,prunefreq,imixpar,omixpar);
+			exit(1);
 			break;
 			
 		default:

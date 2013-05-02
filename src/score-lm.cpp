@@ -24,16 +24,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <iostream>
 #include <sstream>
 #include <string>
-
+#include "cmd.h"
 #include <lmtable.h>
 #include <n_gram.h>
 
-
-void usage()
-{
+void print_help(int TypeFlag=0){
   std::cerr << std::endl << "score-lm - scores sentences with a language model" << std::endl;
   std::cerr << std::endl << "USAGE:"  << std::endl
-	    << "       score-lm -lm <model>  [options]" << std::endl;
+            << "       score-lm -lm <model>  [options]" << std::endl;
   std::cerr << std::endl << "OPTIONS:" << std::endl;
   std::cerr << "       -lm      language model to use (must be specified)" << std::endl;
   std::cerr << "       -dub     dictionary upper bound (default: 10000000" << std::endl;
@@ -41,7 +39,19 @@ void usage()
   std::cerr << "           meaning the actual LM order)" << std::endl;
   std::cerr << "       -mm 1    memory-mapped access to lm (default: 0)" << std::endl;
   std::cerr << std::endl;
-	exit(1);
+
+  FullPrintParams(TypeFlag, 0, 1, stderr);
+}
+
+void usage(const char *msg = 0)
+{
+  if (msg){
+    std::cerr << msg << std::endl;
+  }
+  else{
+                print_help();
+  }
+  exit(1);
 }
 
 int main(int argc, char **argv)
@@ -51,29 +61,37 @@ int main(int argc, char **argv)
   int requiredMaxlev = 1000;
   char *lm = NULL;
 
-  for(int i = 1; i < argc; i++) {
-    if(!strcmp(argv[i], "-mm")) {
-      if(++i == argc)
-        usage();
-      mmap = atoi(argv[i]);
-    } else if(!strcmp(argv[i], "-dub")) {
-      if(++i == argc)
-        usage();
-      dub = atoi(argv[i]);
-    } else if(!strcmp(argv[i], "-lm")) {
-      if(++i == argc)
-        usage();
-      lm = argv[i];
-    } else if(!strcmp(argv[i], "-level")) {
-      if(++i == argc)
-        usage();
-      requiredMaxlev = atoi(argv[i]);
-    } else
-      usage();
+  bool help=false;
+
+        DeclareParams((char*)
+                "lm", CMDSTRINGTYPE|CMDMSG, &lm, "language model to use (must be specified)",
+                "DictionaryUpperBound", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
+                "dub", CMDINTTYPE|CMDMSG, &dub, "dictionary upperbound to compute OOV word penalty: default 10^7",
+                "memmap", CMDINTTYPE|CMDMSG, &mmap, "uses memory map to read a binary LM",
+                "mm", CMDINTTYPE|CMDMSG, &mmap, "uses memory map to read a binary LM",
+                "level", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+                "lev", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
+                                                                
+                "Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+                "h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+                                                                
+                (char *)NULL
+                );
+
+  if (argc == 1){
+	usage();
   }
 
-  if(lm == NULL)
-    usage();
+  GetParams(&argc, &argv, (char*) NULL);
+        
+  if (help){
+	usage();
+  }
+
+
+  if(lm == NULL){
+	usage("Missing parameter: please, specify the LM to use (-lm)");
+  }
 
   std::ifstream lmstr(lm);
   lmtable lmt;
