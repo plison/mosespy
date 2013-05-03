@@ -316,7 +316,6 @@ int main(int argc, char **argv)
 			//temporary check: so far unable to proper handle this flag in sub LMs
 			//no ngramtable is created
 			lm=new mixture(SavePerLevel,slminfo,size,prunefreq,imixpar,omixpar);
-			exit(1);
 			break;
 			
 		default:
