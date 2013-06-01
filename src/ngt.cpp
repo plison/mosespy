@@ -231,16 +231,15 @@ int main(int argc, char **argv)
 
 
   if (subdic) {
-    int c=0;
 
     ngramtable *ngt2=new ngramtable(NULL,ngsz,NULL,NULL,NULL,0,0,NULL,0,table_type);
 
     // enforce the subdict to follow the same word order of the main dictionary
     dictionary tmpdict(subdic);
     ngt2->dict->incflag(1);
-    for (int i=0; i<ngt->dict->size(); i++) {
-      if (tmpdict.encode(ngt->dict->decode(i)) != tmpdict.oovcode()) {
-        ngt2->dict->encode(ngt->dict->decode(i));
+    for (int j=0; j<ngt->dict->size(); j++) {
+      if (tmpdict.encode(ngt->dict->decode(j)) != tmpdict.oovcode()) {
+        ngt2->dict->encode(ngt->dict->decode(j));
       }
     }
     ngt2->dict->incflag(0);
@@ -264,6 +263,7 @@ int main(int argc, char **argv)
     ngram ng2(ngt2->dict);
 
     ngt->scan(ng,INIT,ngsz);
+    long c=0;
     while (ngt->scan(ng,CONT,ngsz)) {
       ng2.trans(ng);
       ngt2->put(ng2);
@@ -274,9 +274,9 @@ int main(int argc, char **argv)
     int oov=ngt2->dict->getcode(ngt2->dict->OOV());
     if(oov>=0) ngt2->dict->oovcode(oov);
 
-    for (int i=0; i<ngt->dict->size(); i++) {
-      ngt2->dict->incfreq(ngt2->dict->encode(ngt->dict->decode(i)),
-                          ngt->dict->freq(i));
+    for (int j=0; j<ngt->dict->size(); j++) {
+      ngt2->dict->incfreq(ngt2->dict->encode(ngt->dict->decode(j)),
+                          ngt->dict->freq(j));
     }
 
     cerr <<" oov: " << ngt2->dict->freq(ngt2->dict->oovcode()) << "\n";
@@ -290,16 +290,18 @@ int main(int argc, char **argv)
     cerr << "start projection of ngramtable " << inp
          << " according to hmask\n";
 
-    int i,c;
-    int selmask[MAX_NGRAM];
+    int selmask[MAX_NGRAM];		
+    memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
     //parse hmask
-    i=0;
-    selmask[i++]=1;
-    for (c=0; c< (int)strlen(hmask); c++) {
+    selmask[0]=1;
+		int i=1;
+    for (size_t c=0; c<strlen(hmask); c++) {
       cerr << hmask[c] << "\n";
-      if (hmask[c] == '1')
-        selmask[i++]=c+2;
+      if (hmask[c] == '1'){
+        selmask[i]=c+2;
+				i++;
+			}
     }
 
     if (i!= ngsz) {
@@ -323,10 +325,11 @@ int main(int argc, char **argv)
     ngram ng2(ngt2->dict,ngsz);
 
     ngt->scan(ng,INIT,ngt->maxlevel());
+    long c=0;
     while (ngt->scan(ng,CONT,ngt->maxlevel())) {
       //projection
-      for (i=0; i<ngsz; i++)
-        *png.wordp(i+1)=*ng.wordp(selmask[i]);
+      for (int j=0; j<ngsz; j++)
+        *png.wordp(j+1)=*ng.wordp(selmask[j]);
       png.freq=ng.freq;
       //transfer
       ng2.trans(png);
@@ -342,9 +345,9 @@ int main(int argc, char **argv)
     int oov=ngt2->dict->getcode(ngt2->dict->OOV());
     if(oov>=0) ngt2->dict->oovcode(oov);
 
-    for (int i=0; i<ngt->dict->size(); i++) {
-      ngt2->dict->incfreq(ngt2->dict->encode(ngt->dict->decode(i)),
-                          ngt->dict->freq(i));
+    for (int j=0; j<ngt->dict->size(); j++) {
+      ngt2->dict->incfreq(ngt2->dict->encode(ngt->dict->decode(j)),
+                          ngt->dict->freq(j));
     }
 
     cerr <<" oov: " << ngt2->dict->freq(ngt2->dict->oovcode()) << "\n";
@@ -479,10 +482,8 @@ int main(int argc, char **argv)
 
   }
 
-
   if (out)
     bin?ngt->savebin(out,ngsz): ngt->savetxt(out,ngsz,outputgoogleformat);
-
 
 }
 

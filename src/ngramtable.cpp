@@ -56,7 +56,9 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
       if (strcmp(info,"LM_")==0) {
         inp >> resolution;
         inp >> decay;
-        sprintf(info,"%s %d %f",info,resolution,decay);
+				char       info2[100];
+        sprintf(info2,"%s %d %f",info,resolution,decay);
+				strcpy(info, info2);
       } else { //default for old LM probs
         resolution=10000000;
         decay=0.9999;
@@ -525,8 +527,8 @@ void ngramtable::generate(char *filename, dictionary* extdict)
 void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
 {
   mfstream inp(filename,ios::in);
-  int i,c=0;
   int selmask[MAX_NGRAM];
+  memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
   if (!inp) {
     cerr << "cannot open " << filename << "\n";
@@ -534,25 +536,26 @@ void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
   }
 
   //parse hmask
-  i=0;
-  selmask[i++]=1;
-  for (c=0; c< (int)strlen(hmask); c++) {
+  selmask[0]=1;
+  int i=1;
+  for (size_t c=0; c<strlen(hmask); c++) {
     cerr << hmask[c] << "\n";
-    if (hmask[c] == '1')
-      selmask[i++]=c+2;
+    if (hmask[c] == '1'){
+      selmask[i]=c+2;
+			i++;
+		}
   }
   if (i!= maxlev) {
     cerr << "wrong mask: 1 bits=" << i << " maxlev=" << maxlev << "\n";
     exit(1);
   }
 
-  //  for (i=0;i<maxlev;i++)
-  //cerr << "selmask " << i << "-> " << selmask[i] << "\n";
   cerr << "load:";
 
   ngram ng(dict);
   ngram ng2(dict);
   dict->incflag(1);
+	long c=0;
   while (inp >> ng) {
 
     if (inplen && ng.size<inplen) continue;
@@ -561,8 +564,8 @@ void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
     ng.size=0;    //reset  ng
 
     if (ng2.size >= selmask[maxlev-1]) {
-      for (i=0; i<maxlev; i++)
-        *ng2.wordp(i+1)=*ng2.wordp(selmask[i]);
+      for (int j=0; j<maxlev; j++)
+        *ng2.wordp(j+1)=*ng2.wordp(selmask[i]);
 
       //cout << ng2 << "size:" << ng2.size << "\n";
       check_dictsize_bound();

@@ -1180,9 +1180,10 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 
 	//create temporary output file stream to store single levels for all terms
   assert(strlen(filename)<1000);
-  char tfilename[MAX_NGRAM][1000];
-  mfstream *tout[MAX_NGRAM];
+  char tfilename[lmsize()+1][1000];
+  mfstream *tout[lmsize()+1];
 
+	tout[0]=NULL;
 	for (int i=1; i<=lmsize(); i++) {
     sprintf(tfilename[i],"%s-%dgrams",filename,i);
     tout[i]=new mfstream(tfilename[i],ios::out);
@@ -1615,16 +1616,16 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
 
   //create temporary output file stream
   assert(strlen(filename)<1000);
-  char tfilename[MAX_NGRAM][1000];
-  mfstream *tout[MAX_NGRAM];
+  char tfilename[lmsize()+1][1000];
+  mfstream *tout[lmsize()+1];
 	
+	tout[0]=NULL;
   for (int i=1; i<=lmsize(); i++) {
     sprintf(tfilename[i],"%s.%d",filename,i);
     tout[i]=new mfstream(tfilename[i],ios::out);
     *tout[i] << "\n\\" << i << "-grams:\n";
   }
-
-
+	
   ngram ng(dict,lmsize());
   ngram oldng(dict,lmsize());
   ngram locng(dict,lmsize());

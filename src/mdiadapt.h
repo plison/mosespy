@@ -150,8 +150,9 @@ public:
   inline bool is_train_cache_enabled(){
     #ifdef MDIADAPTLM_CACHE_ENABLE
       return true;
+    #else
+       return false;
     #endif
-    return false;
   }
 
 };
