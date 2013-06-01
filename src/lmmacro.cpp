@@ -138,7 +138,7 @@ void lmmacro::load(const std::string filename,int memmap)
   }
 #ifdef DLEXICALLM
 
-  std::string lexicalclassesfilename = lexicalclassesfilename = words[2];
+  std::string lexicalclassesfilename = words[2];
   if (lexicalclassesfilename != "NULL" && lexicalclassesfilename != "null") lexicalclassesfilename = "";
 
   if (lexicalclassesfilename != "") std::cerr << "lexicalclassesfilename:" << lexicalclassesfilename << std::endl;
@@ -222,12 +222,12 @@ void lmmacro::loadmap(const std::string mapfilename)
 
 
     if (microMacroMapN>0 && !(microMacroMapN % BUFSIZ)) {
-      microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
+      microMacroMap = (int *)reallocf(microMacroMap, sizeof(int)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
       if (collapseFlag) {
         //create supporting info for collapse
 
-        collapsableMap = (bool *)realloc(collapsableMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
-        collapsatorMap = (bool *)realloc(collapsatorMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
+        collapsableMap = (bool *)reallocf(collapsableMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
+        collapsatorMap = (bool *)reallocf(collapsatorMap, sizeof(bool)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
       }
     }
     microMacroMap[microMacroMapN] = lmtable::getDict()->getcode(macroW);
@@ -270,7 +270,7 @@ void lmmacro::loadmap(const std::string mapfilename)
     if (!bos) {
       getDict()->encode(BOS_);
       if (microMacroMapN && !(microMacroMapN%BUFSIZ))
-        microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
+        microMacroMap = (int *)reallocf(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
       microMacroMap[microMacroMapN++] = lmtable::getDict()->getcode(BOS_);
     }
 
@@ -278,7 +278,7 @@ void lmmacro::loadmap(const std::string mapfilename)
     if (!eos) {
       getDict()->encode(EOS_);
       if (microMacroMapN && !(microMacroMapN%BUFSIZ))
-        microMacroMap = (int *)realloc(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
+        microMacroMap = (int *)reallocf(microMacroMap, sizeof(int)*(microMacroMapN+BUFSIZ));
       microMacroMap[microMacroMapN++] = lmtable::getDict()->getcode(EOS_);
     }
   }
@@ -856,7 +856,7 @@ void lmmacro::loadLexicalClasses(const char *fn)
       if (wordCode>=lexicaltoken2classMapN) {
         int r = (wordCode-lexicaltoken2classMapN)/BUFSIZ;
         lexicaltoken2classMapN += (r+1)*BUFSIZ;
-        lexicaltoken2classMap = (int *)realloc(lexicaltoken2classMap, sizeof(int)*lexicaltoken2classMapN);
+        lexicaltoken2classMap = (int *)reallocf(lexicaltoken2classMap, sizeof(int)*lexicaltoken2classMapN);
       }
       lexicaltoken2classMap[wordCode] = classIdx;
     }

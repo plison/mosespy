@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "n_gram.h"
 #include "lmtable.h"
 
-#define MAX_TOKEN 2
+#define LMCLASS_MAX_TOKEN 2
 
 class lmclass: public lmtable
 {

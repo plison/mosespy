@@ -32,7 +32,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "ngramcache.h"
 #include "dictionary.h"
 #include "n_gram.h"
-#include "lmtable.h"
 #include "lmclass.h"
 #include "util.h"
 
@@ -75,10 +74,10 @@ void lmclass::load(const std::string filename,int memmap)
   fstream inp(filename.c_str(),ios::in|ios::binary);
 
   char line[MAX_LINE];
-  const char* words[MAX_TOKEN];
+  const char* words[LMCLASS_MAX_TOKEN];
   int tokenN;
   inp.getline(line,MAX_LINE,'\n');
-  tokenN = parseWords(line,words,MAX_TOKEN);
+  tokenN = parseWords(line,words,LMCLASS_MAX_TOKEN);
 
   if (tokenN != 2 || ((strcmp(words[0],"LMCLASS") != 0) && (strcmp(words[0],"lmclass")!=0)))
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");
@@ -86,7 +85,7 @@ void lmclass::load(const std::string filename,int memmap)
   maxlev = atoi(words[1]);
   std::string lmfilename;
   if (inp.getline(line,MAX_LINE,'\n')) {
-    tokenN = parseWords(line,words,MAX_TOKEN);
+    tokenN = parseWords(line,words,LMCLASS_MAX_TOKEN);
     lmfilename = words[0];
   } else {
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");
@@ -94,7 +93,7 @@ void lmclass::load(const std::string filename,int memmap)
 
   std::string W2Cdict = "";
   if (inp.getline(line,MAX_LINE,'\n')) {
-    tokenN = parseWords(line,words,MAX_TOKEN);
+    tokenN = parseWords(line,words,LMCLASS_MAX_TOKEN);
     W2Cdict = words[0];
   } else {
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");
@@ -187,7 +186,7 @@ void lmclass::checkMap()
 {
   if (MapScoreN > MaxMapSize) {
     MaxMapSize=2*MapScoreN;
-    MapScore = (double*) realloc(MapScore, sizeof(double)*(MaxMapSize));
+    MapScore = (double*) reallocf(MapScore, sizeof(double)*(MaxMapSize));
     VERBOSE(2,"In lmclass::checkMap(...) MaxMapSize=" <<  MaxMapSize  << " MapScoreN=" <<  MapScoreN  << "\n");
   }
 }
