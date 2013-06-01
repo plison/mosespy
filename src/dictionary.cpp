@@ -155,6 +155,16 @@ void dictionary::augment(dictionary *d)
 // print_curve: show statistics on dictionary growth and (optionally) on
 // OOV rates computed on test corpus
 
+void dictionary::print_curve(int curvesize, const char *filename, int listflag)
+{
+  float *OOVrates=new float[curvesize];
+  
+  test(OOVrates, curvesize, filename, listflag);
+  print_curve(curvesize, OOVrates);
+
+  delete []OOVrates;
+}
+
 void dictionary::print_curve(int curvesize, float* testOOV)
 {
 
@@ -192,6 +202,7 @@ void dictionary::print_curve(int curvesize, float* testOOV)
     cout << "\n";
   }
   cout << "*********************************************************\n";
+  delete []curve;
 }
 
 //
@@ -199,8 +210,9 @@ void dictionary::print_curve(int curvesize, float* testOOV)
 //
 
 
-float* dictionary::test(int curvesize, const char *filename, int listflag)
+void dictionary::test(float* OOVrates, int curvesize, const char *filename, int listflag)
 {
+  assert(OOVrates!=NULL);
 
   int NwTest=0;
   int* OOVchart = new int[curvesize];
@@ -214,8 +226,7 @@ float* dictionary::test(int curvesize, const char *filename, int listflag)
 
   if (!inp) {
     cerr << "cannot open test: " << filename << "\n";
-    //    print_curve(curvesize);
-    return NULL;
+    exit_error(ERROR_IO);
   }
   cerr << "test:";
 
@@ -250,11 +261,10 @@ float* dictionary::test(int curvesize, const char *filename, int listflag)
     OOVchart[i] = OOVchart[i] + OOVchart[i-1];
 
   // computing percentages from word numbers
-  float* OOVrates = new float[curvesize];
   for (int i=0; i<curvesize; i++)
     OOVrates[i] = (float)OOVchart[i]/NwTest * 100.0;
 
-  return OOVrates;
+  delete []OOVchart;
 }
 
 void dictionary::load(char* filename)

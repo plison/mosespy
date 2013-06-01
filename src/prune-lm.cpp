@@ -63,11 +63,13 @@ void usage(const char *msg = 0)
 void s2t(string	cps, float *thr)
 {
   int	i;
-  char	*s=strdup(cps.c_str()), *tk;
+  char *s=strdup(cps.c_str());
+	char *tk;
 
   thr[0]=0;
   for(i=1,tk=strtok(s, ","); tk; tk=strtok(0, ","),i++) thr[i]=atof(tk);
   for(; i<MAX_NGRAM; i++) thr[i]=thr[i-1];
+  free(s);
 }
 
 int main(int argc, char **argv)
@@ -155,7 +157,7 @@ int main(int argc, char **argv)
     exit(1);
   }
 
-  lmt.load(inp,infile.c_str(),outfile.c_str(),0,NONE);
+  lmt.load(inp,infile.c_str(),outfile.c_str(),0);
   std::cerr << "pruning LM with thresholds: \n";
 
   for (int i=1; i<lmt.maxlevel(); i++) std::cerr<< " " << thr[i];

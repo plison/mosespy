@@ -63,10 +63,10 @@ void lmInterpolation::load(const std::string filename,int mmap)
   fstream inp(filename.c_str(),ios::in|ios::binary);
 
   char line[MAX_LINE];
-  const char* words[MAX_TOKEN];
+  const char* words[LMINTERPOLATION_MAX_TOKEN];
   int tokenN;
   inp.getline(line,MAX_LINE,'\n');
-  tokenN = parseWords(line,words,MAX_TOKEN);
+  tokenN = parseWords(line,words,LMINTERPOLATION_MAX_TOKEN);
 
   if (tokenN != 2 || ((strcmp(words[0],"LMINTERPOLATION") != 0) && (strcmp(words[0],"lminterpolation")!=0)))
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMINTERPOLATION number_of_models\nweight_of_LM_1 filename_of_LM_1\nweight_of_LM_2 filename_of_LM_2");
@@ -160,21 +160,14 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
   unsigned int _statesize=0,actualstatesize=0;
   int _bol=0,actualbol=MAX_NGRAM;
   double _bow=0.0,actualbow=0.0;
-//  bool _extendible=false,actualextendible=false;
-  bool* _extendible=NULL,actualextendible=false;
-
-  if (extendible) {
-    _extendible=new bool;
-    _extendible=false;
-  }
+  bool _extendible=false;
+  bool actualextendible=false;
 
   for (size_t i=0; i<m_lm.size(); i++) {
 
     ngram _ng(m_lm[i]->getDict());
     _ng.trans(ng);
-//    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,&_extendible);
-    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,_extendible);
-    //    assert(_statesize != InvalidContextLength);
+    _logpr=m_lm[i]->clprob(_ng,&_bow,&_bol,&_maxsuffptr,&_statesize,&_extendible);
 
     /*
     cerr.precision(10);
@@ -214,7 +207,7 @@ double lmInterpolation::clprob(ngram ng, double* bow,int* bol,char** maxsuffptr,
   if (statesize) *statesize=actualstatesize;
   if (extendible) {
     *extendible=actualextendible;
-    delete _extendible;
+//    delete _extendible;
   }
 
   /*

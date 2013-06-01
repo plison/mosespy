@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
   // show statistics on dictionary growth and OOV rates on test corpus
   if (testfile != NULL)
-    d->print_curve(curvesize, d->test(curvesize, testfile, listflag));
+    d->print_curve(curvesize, testfile, listflag);
   else if (curveflag)
     d->print_curve(curvesize);
 

@@ -225,9 +225,10 @@ public:
       cerr << "close/open " << a <<"\n";
       close();
       open(a,ios::in);
-    } else
+      delete []a;
+    } else{
       seekp(0);
-
+    }
     return *this;
   }
 

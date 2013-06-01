@@ -92,6 +92,8 @@ class dictionary
   float        load_factor; //!< dictionary loading factor
   char* oov_str;    //!< oov string
 
+  void test(float* testOOV, int curvesize, const char *filename, int listflag=0);	// prepare into testOOV the OOV statistics computed on test set
+
 public:
 
   friend class dictionary_iter;
@@ -217,7 +219,7 @@ public:
   void stat();
 
   void print_curve(int curvesize, float* testOOV=NULL);
-  float* test(int curvesize, const char *filename, int listflag=0);	// return OOV statistics computed on test set
+  void print_curve(int curvesize, const char *filename, int listflag=0);
 
   void cleanfreq() {
     for (int i=0; i<n; tb[i++].freq=0) {};
