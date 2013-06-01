@@ -302,3 +302,25 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 
   return 1;
 }
+
+void exit_error(int err){
+        switch(err){
+        case ERROR_IO:
+                VERBOSE(0,"Input/Output error\n");
+                break;
+        case ERROR_MEMORY:
+                VERBOSE(0,"Allocation memory error\n");
+                break;
+        case ERROR_DATA:
+                VERBOSE(0,"Data format error\n");
+                break;
+        case ERROR_MODEL:
+                VERBOSE(0,"Model computation error\n");
+                break;
+        default:
+                VERBOSE(0,"Undefined error\n");
+                break;
+        }
+        exit(err);
+};
+

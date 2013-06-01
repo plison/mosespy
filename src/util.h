@@ -46,6 +46,13 @@
 #define UPPER_DOUBLE_PRECISION_OF_1 1.000000000001
 #define LOWER_DOUBLE_PRECISION_OF_1 0.999999999999
 
+#define	ERROR_GENERIC	1
+#define	ERROR_IO	2
+#define	ERROR_MEMORY	3
+#define	ERROR_DATA	4
+#define	ERROR_MODEL	5
+
+
 std::string gettempfolder();
 std::string createtempName();
 void createtempfile(mfstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
@@ -79,6 +86,8 @@ double GetUserTime();
 
 int parseWords(char *, const char **, int);
 int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow);
+
+void exit_error(int err);
 
 #endif
 
