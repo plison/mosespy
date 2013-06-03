@@ -282,18 +282,13 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
   sprintf(cmd,"mv %s %s",houtfname,hinfname);
 
   //start of training
-
-  double lastLL=10;
   double LL=-1e+99;
 
   int iter=0;
   int r=topics;
 
-
   while (iter < maxiter)
-    //while ( (iter < maxiter) && (((lastLL-LL)/lastLL)>0.00001))
   {
-    lastLL=LL;
     LL=0;
 
     if (flagW)  //reset support arrays
@@ -379,7 +374,6 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
     trset.reset();
 
     cout << "iteration: " << ++iter << " LL: " << LL << "\n";
-    //	LL=lastLL;
 
     if (flagW) {
       cerr << "Saving base distributions\n";

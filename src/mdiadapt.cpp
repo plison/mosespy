@@ -1458,7 +1458,6 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
     system("date");
     lmt->expand_level(i,numberofentries,filename,mmap);
 
-    double totp=0;
     double fstar,lambda,bo,dummy,dummy2,pr,ibow;
 
     ngram ng(dict,1);
@@ -1473,7 +1472,6 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
 
         sng.trans(ng);
         pr=mdiadaptlm::prob(ng,1);
-        totp+=pr;
 
         if (sng.containsWord(subdict->OOV(),i) && !ng.containsWord(dict->OOV(),i)) {
           oovprob+=pr; //accumulate oov probability
@@ -1518,7 +1516,6 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
 				}
         lmt->add(ng,(float)pr,(float)ibow);
       }
-      //cerr << "totprob = " << totp << "\n";
     }
 		else { //i>1 , bigrams, trigrams, fourgrams...
 			*ng.wordp(1)=0;
@@ -1828,9 +1825,7 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
 
     out << "\n\\" << i << "-grams:\n";
 
-    double totp=0;
     double fstar,lambda,bo,dummy,dummy2,pr;
-
 
     ngram ng(dict,1);
     ngram ng2(dict);
@@ -1845,7 +1840,6 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
 
         sng.trans(ng);
         pr=mdiadaptlm::prob(ng,1);
-        totp+=pr;
 
         if (sng.containsWord(subdict->OOV(),i) && !ng.containsWord(dict->OOV(),i)) {
           oovprob+=pr; //accumulate oov probability
@@ -1884,7 +1878,6 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
           out << "\n";
         }
       }
-      //cerr << "totprob = " << totp << "\n";
     }
 		else { //i>1 , bigrams, trigrams, fourgrams...
 			*ng.wordp(1)=0;

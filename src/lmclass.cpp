@@ -85,7 +85,7 @@ void lmclass::load(const std::string filename,int memmap)
   maxlev = atoi(words[1]);
   std::string lmfilename;
   if (inp.getline(line,MAX_LINE,'\n')) {
-    tokenN = parseWords(line,words,LMCLASS_MAX_TOKEN);
+    parseWords(line,words,LMCLASS_MAX_TOKEN);
     lmfilename = words[0];
   } else {
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");
@@ -93,7 +93,7 @@ void lmclass::load(const std::string filename,int memmap)
 
   std::string W2Cdict = "";
   if (inp.getline(line,MAX_LINE,'\n')) {
-    tokenN = parseWords(line,words,LMCLASS_MAX_TOKEN);
+    parseWords(line,words,LMCLASS_MAX_TOKEN);
     W2Cdict = words[0];
   } else {
     error((char*)"ERROR: wrong header format of configuration file\ncorrect format: LMCLASS LM_order\nfilename_of_LM\nfilename_of_map");

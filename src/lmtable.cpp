@@ -820,16 +820,16 @@ void lmtable::expand_level_nommap(int level, table_entry_pos_t size)
   table[level] = new char[(table_pos_t) maxsize[level] * nodesize(tbltype[level])];
   if (maxlev>1 && level<maxlev) {
     startpos[level]=new table_entry_pos_t[maxsize[level]];
-		LMT_TYPE ndt=tbltype[level];
-		int ndsz=nodesize(ndt);
-		char *found = table[level];
+    LMT_TYPE ndt=tbltype[level];
+    int ndsz=nodesize(ndt);
+    char *found = table[level];
     for (table_entry_pos_t c=0; c<maxsize[level]; c++) {
       startpos[level][c]=BOUND_EMPTY1;
-			found += ndsz;
+      found += ndsz;
 //			bound(found,ndt,BOUND_EMPTY2);
     }
   }
-	VERBOSE(2,"lmtable::expand_level_nommap END Level:" << level << endl);
+  VERBOSE(2,"lmtable::expand_level_nommap END Level:" << level << endl);
 }
 
 void lmtable::printTable(int level)
@@ -1944,7 +1944,6 @@ int lmtable::get(ngram& ng,int n,int lev)
   table_entry_pos_t offset=0,limit=cursize[1];
 
   //information of table entries
-  table_entry_pos_t hit;
   char* found;
   LMT_TYPE ndt;
   ng.link=NULL;
@@ -1953,13 +1952,13 @@ int lmtable::get(ngram& ng,int n,int lev)
   for (int l=1; l<=lev; l++) {
 
     //initialize entry information
-    hit = 0 ;
+    bool hit = false;
     found = NULL;
     ndt=tbltype[l];
 
 #ifdef LMT_CACHE_ENABLE
     if (lmtcache[l] && lmtcache[l]->get(ng.wordp(n),found)) {
-      hit=1;
+      hit=true;
     } else {
       search(l,
              offset,
@@ -1974,7 +1973,7 @@ int lmtable::get(ngram& ng,int n,int lev)
 
     //insert both found and not found items!!!
     //insert only not found items!!!
-    if (lmtcache[l] && hit==0) {
+    if (lmtcache[l] && hit==true) {
 
       const char* found2=found;
       lmtcache[l]->add(ng.wordp(n),found2);
@@ -2608,9 +2607,6 @@ table_entry_pos_t lmtable::wdprune(float *thr, int aflag)
   isPruned=true;  //the table now might contain pruned n-grams
 
   ng.size=0;
-
-  double tlk, bo, ts, tbs;
-  tlk = bo = ts = tbs = 0;
 
   for(l=2; l<=maxlev; l++) wdprune(thr, aflag, ng, 1, l, 0, cursize[1]);
   return 0;

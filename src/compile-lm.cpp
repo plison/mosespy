@@ -138,15 +138,6 @@ int main(int argc, char **argv)
     usage("Warning: Please specify a LM file to read from");
   }
 
-  //Define output type of table
-	OUTFILE_TYPE outtype;
-  if (textoutput)
-    outtype=TEXT;
-  else if (seval != NULL || sscore)
-    outtype=NONE;
-  else
-    outtype=BINARY;
-
   std::string infile = files[0];
   std::string outfile = "";
 

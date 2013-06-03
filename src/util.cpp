@@ -144,10 +144,10 @@ How to use it:
 void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap)
 {
   void	*p=NULL;
-  int	pgsz,g=0;
 
 #ifdef _WIN32
   /*
+  int g=0;
   // code for windows must be checked
   	HANDLE	fh,
   		mh;
@@ -172,6 +172,7 @@ void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap)
   */
 
 #else
+  int pgsz,g=0;
   if(offset) {
     pgsz = sysconf(_SC_PAGESIZE);
     g = *gap = offset%pgsz;
