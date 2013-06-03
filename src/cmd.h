@@ -47,18 +47,18 @@ extern "C" {
 #endif
 	
 	typedef struct {
-		char	*Name;
+		char *Name;
 		int	Idx;
 	} Enum_T;
 	
 	typedef struct {
-		int	Type;
+		int Type;
 		int Flag;
-		char	*Name,
-		*ArgStr;
-		char	*Msg;
-		void	*Val,
-		*p;
+		void *Val;
+		void *p;
+		char *Name;
+		char *ArgStr;
+		char *Msg;
 	} Cmd_T;
 	
 	int

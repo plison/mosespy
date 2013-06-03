@@ -21,7 +21,6 @@
 class plsa
 {
   int topics;      //number of topics
-  int maxdocs;     //max number of docs
 
   dictionary* dict;
   double **T;

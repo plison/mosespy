@@ -82,7 +82,7 @@ public:
   address Hash(const T key);
 
   //! Compares the keys of two entries
-  int Comp(const T Key1, const T Key2);
+  int Comp(const T Key1, const T Key2) const;
 
   //! Searches for an item
   T find(T item);
@@ -92,13 +92,13 @@ public:
   T scan(HT_ACTION action);
 
   //! Prints statistics
-  void stat();
+  void stat() const ;
 
   //! Print a map of memory use
   void map(std::ostream& co=std::cout, int cols=80);
 
   //! Returns amount of used memory
-  int used() {
+  int used() const {
     return size * sizeof(entry<T> **) + memory->used();
   }
 
@@ -195,9 +195,6 @@ T htable<T>::insert(T key)
 template <class T>
 T htable<T>::scan(HT_ACTION action)
 {
-
-  T k;
-
   if (action == HT_INIT) {
     scan_i=0;
     scan_p=table[0];
@@ -208,7 +205,7 @@ T htable<T>::scan(HT_ACTION action)
   while ((scan_p==NULL) && (++scan_i<size)) scan_p=table[scan_i];
 
   if (scan_p!=NULL) {
-    k=scan_p->key;
+		T k = scan_p->key;
     scan_p=(entry<T> *)scan_p->next;
     return k;
   };
@@ -255,7 +252,7 @@ void htable<T>::map(ostream& co,int cols)
 }
 
 template <class T>
-void htable<T>::stat()
+void htable<T>::stat() const
 {
   cerr << "htable class statistics\n";
   cerr << "size " << size

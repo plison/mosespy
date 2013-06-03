@@ -29,8 +29,6 @@ using namespace std;
 #include "n_gram.h"
 #include "doc.h"
 
-
-
 doc::doc(dictionary* d,char* docfname)
 {
   dict=d;
@@ -42,6 +40,7 @@ doc::doc(dictionary* d,char* docfname)
   cd=-1;
   dfname=docfname;
   df=NULL;
+  binary=false;
 };
 
 doc::~doc()

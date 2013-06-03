@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <fstream>
 #include <streambuf>
 #include <cstdio>
+#include "util.h"
 #include "mfstream.h"
 
 using namespace std;
@@ -127,6 +128,44 @@ mfstream& mfstream::writex(void *p, int sz,int n)
   return *this;
 }
 
+//! Tells current position within a file
+streampos mfstream::tellp() {
+    if (_cmd==0) return (streampos) fstream::tellg();
+    cerr << "tellp not allowed on commands\n";
+    exit(IRSTLM_ERROR_IO);
+}
+
+//! Seeks a position within a file
+mfstream& mfstream::seekp(streampos loc) {
+    if (_cmd==0)
+      fstream::seekg(loc);
+    else {
+      cerr << "seekp not allowed on commands\n";
+      exit(IRSTLM_ERROR_IO);
+    }
+    return *this;
+}
+
+//! Reopens an input stream
+mfstream& mfstream::reopen() {
+
+    if (_mode != in) {
+      cerr << "mfstream::reopen() openmode must be ios:in\n";
+      exit(IRSTLM_ERROR_IO);
+    }
+
+    if (strlen(_cmdname)>0) {
+      char *a=new char[strlen(_cmdname)+1];
+      strcpy(a,_cmdname);
+      cerr << "close/open " << a <<"\n";
+      close();
+      open(a,ios::in);
+      delete []a;
+    } else{
+      seekp(0);
+    }
+    return *this;
+}
 
 
 

@@ -234,7 +234,7 @@ int main(int argc, char **argv)
     tc.train(adafile,it,.0);
   }
   if (strcmp(hfile,"hfff")==0)  system("rm -f hfff");
-  delete hfile;
+  delete []hfile;
 	
   exit(1);
 }

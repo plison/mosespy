@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
+#include "util.h"
 #include "mfstream.h"
 #include "math.h"
 #include "mempool.h"
@@ -29,6 +30,171 @@ using namespace std;
 #include "dictionary.h"
 #include "n_gram.h"
 #include "ngramtable.h"
+
+tabletype::tabletype(TABLETYPE tt,int codesize) {
+
+    if (codesize<=4 && codesize>0)
+      CODESIZE=codesize;
+    else {
+      cerr << "ngramtable wrong codesize\n";
+      exit(IRSTLM_ERROR_DATA);
+    }
+
+    code_range[1]=255;
+    code_range[2]=65535;
+    code_range[3]=16777214;
+    code_range[4]=2147483640;
+    code_range[6]=140737488360000LL; //stay below true limit
+//	code_range[6]=281474977000000LL; //stay below true limit
+
+    //information which is useful to initialize
+    //LEAFPROB tables
+    L_FREQ_SIZE=FREQ1;
+
+    WORD_OFFS  =0;
+    MSUCC_OFFS =CODESIZE;
+    MTAB_OFFS  =MSUCC_OFFS+CODESIZE;
+    FLAGS_OFFS =MTAB_OFFS+PTRSIZE;
+
+    switch (tt) {
+
+    case COUNT:
+      SUCC1_OFFS =0;
+      SUCC2_OFFS =0;
+      BOFF_OFFS  =0;
+      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
+      I_FREQ_NUM=1;
+      L_FREQ_NUM=1;
+
+      ttype=tt;
+      break;
+
+    case FULL:
+    case MSHIFTBETA_B:
+      SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
+      SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
+      BOFF_OFFS  =SUCC2_OFFS+CODESIZE;
+      I_FREQ_OFFS=BOFF_OFFS+INTSIZE;
+      L_FREQ_OFFS=CODESIZE;
+      I_FREQ_NUM=2;
+      L_FREQ_NUM=1;
+
+      ttype=tt;
+      break;
+
+    case MSHIFTBETA_I:
+      SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
+      SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
+      BOFF_OFFS  =0;
+      I_FREQ_OFFS=SUCC2_OFFS+CODESIZE;
+      L_FREQ_OFFS=CODESIZE;
+      I_FREQ_NUM=2;
+      L_FREQ_NUM=1;
+
+      ttype=tt;
+      break;
+
+    case SIMPLE_I:
+      SUCC1_OFFS = 0;
+      SUCC2_OFFS = 0;
+      BOFF_OFFS  = 0;
+      I_FREQ_OFFS= FLAGS_OFFS+CHARSIZE;
+      L_FREQ_OFFS=CODESIZE;
+      I_FREQ_NUM=1;
+      L_FREQ_NUM=1;
+
+      ttype=tt;
+      break;
+
+    case SIMPLE_B:
+
+      SUCC1_OFFS  = 0;
+      SUCC2_OFFS  = 0;
+      BOFF_OFFS   = FLAGS_OFFS+CHARSIZE;
+      I_FREQ_OFFS = BOFF_OFFS+INTSIZE;
+      L_FREQ_OFFS = CODESIZE;
+      I_FREQ_NUM  = 1;
+      L_FREQ_NUM  = 1;
+
+      ttype=tt;
+      break;
+
+    case SHIFTBETA_I:
+      SUCC1_OFFS = FLAGS_OFFS+CHARSIZE;
+      SUCC2_OFFS = 0;
+      BOFF_OFFS  = 0;
+      I_FREQ_OFFS= SUCC1_OFFS+CODESIZE;
+      L_FREQ_OFFS=CODESIZE;
+      I_FREQ_NUM=1;
+      L_FREQ_NUM=1;
+
+      ttype=tt;
+      break;
+
+    case SHIFTBETA_B:
+
+      SUCC1_OFFS  = FLAGS_OFFS+CHARSIZE;
+      SUCC2_OFFS  = 0;
+      BOFF_OFFS   = SUCC1_OFFS+CODESIZE;
+      I_FREQ_OFFS = BOFF_OFFS+INTSIZE;
+      L_FREQ_OFFS = CODESIZE;
+      I_FREQ_NUM  = 1;
+      L_FREQ_NUM  = 1;
+
+      ttype=tt;
+      break;
+
+    case LEAFPROB:
+    case FLEAFPROB:
+      SUCC1_OFFS  = 0;
+      SUCC2_OFFS  = 0;
+      BOFF_OFFS   = 0;
+      I_FREQ_OFFS = FLAGS_OFFS+CHARSIZE;
+      I_FREQ_NUM  = 0;
+      L_FREQ_NUM  = 1;
+
+      ttype=tt;
+      break;
+
+    case LEAFPROB2:
+      SUCC1_OFFS =0;
+      SUCC2_OFFS =0;
+      BOFF_OFFS  =0;
+      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
+      I_FREQ_NUM=0;
+      L_FREQ_NUM=2;
+
+      ttype=LEAFPROB;
+      break;
+
+    case LEAFPROB3:
+      SUCC1_OFFS =0;
+      SUCC2_OFFS =0;
+      BOFF_OFFS  =0;
+      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
+      I_FREQ_NUM=0;
+      L_FREQ_NUM=3;
+
+      ttype=LEAFPROB;
+      break;
+
+    case LEAFPROB4:
+      SUCC1_OFFS =0;
+      SUCC2_OFFS =0;
+      BOFF_OFFS  =0;
+      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
+      I_FREQ_NUM=0;
+      L_FREQ_NUM=4;
+
+      ttype=LEAFPROB;
+      break;
+
+    default:
+      assert(tt==COUNT);
+    }
+
+    L_FREQ_OFFS=CODESIZE;
+};
 
 ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */, 
 					   dictionary* extdict /* external dictionary */,char* filterdictfile,
@@ -1456,19 +1622,228 @@ bool ngramtable::check_dictsize_bound()
   return true;
 }
 
+int ngramtable::update(ngram ng) {
+
+    if (!get(ng,ng.size,ng.size)) {
+      cerr << "cannot find " << ng << "\n";
+      exit(IRSTLM_ERROR_MODEL);
+    }
+
+    freq(ng.link,ng.pinfo,ng.freq);
+
+    return 1;
+}
+
+void ngramtable::resetngramtable() {
+    //clean up all memory and restart from an empty table
+
+    freetree(); //clean memory pool
+    memset(tree,0,inodesize(6)); //reset tree
+    //1-gram table initial flags
+
+    if (maxlev>1) mtflags(tree,INODE | FREQ4);
+    else if (maxlev==1) mtflags(tree,LNODE | FREQ4);
+
+    word(tree,0);      //dummy word
+    msucc(tree,0);     // number of different n-grams
+    mtable(tree,NULL); // table of n-gram
+
+    for (int i=1; i<=maxlev; i++)
+      mentr[i]=memory[i]=occupancy[i]=0;
+
+}
+
+int ngramtable::putmem(char* ptr,int value,int offs,int size) {
+    assert(ptr!=NULL);
+    for (int i=0; i<size; i++)
+      ptr[offs+i]=(value >> (8 * i)) & 0xff;
+    return value;
+}
+
+int ngramtable::getmem(char* ptr,int* value,int offs,int size) {
+    assert(ptr!=NULL);
+    *value=ptr[offs] & 0xff;
+    for (int i=1; i<size; i++)
+      *value= *value | ( ( ptr[offs+i] & 0xff ) << (8 *i));
+    return *value;
+}
+
+long ngramtable::putmem(char* ptr,long long value,int offs,int size) {
+    assert(ptr!=NULL);
+    for (int i=0; i<size; i++)
+      ptr[offs+i]=(value >> (8 * i)) & 0xffLL;
+    return value;
+}
+
+long ngramtable::getmem(char* ptr,long long* value,int offs,int size) {
+    assert(ptr!=NULL);
+    *value=ptr[offs] & 0xff;
+    for (int i=1; i<size; i++)
+      *value= *value | ( ( ptr[offs+i] & 0xffLL ) << (8 *i));
+    return *value;
+}
+
+void ngramtable::tb2ngcpy(int* wordp,char* tablep,int n) {
+    for (int i=0; i<n; i++)
+      getmem(tablep,&wordp[i],i*CODESIZE,CODESIZE);
+}
+
+void ngramtable::ng2tbcpy(char* tablep,int* wordp,int n) {
+    for (int i=0; i<n; i++)
+      putmem(tablep,wordp[i],i*CODESIZE,CODESIZE);
+}
+
+int ngramtable::ngtbcmp(int* wordp,char* tablep,int n) {
+    int word;
+    for (int i=0; i<n; i++) {
+      getmem(tablep,&word,i*CODESIZE,CODESIZE);
+      if (wordp[i]!=word) return 1;
+    }
+    return 0;
+}
+
+int ngramtable::codecmp(char * a,char *b) {
+    register int i,result;
+    for (i=(CODESIZE-1); i>=0; i--) {
+      result=(unsigned char)a[i]-(unsigned char)b[i];
+      if(result) return result;
+    }
+    return 0;
+};
+
+long long ngramtable::freq(node nd,NODETYPE ndt,long long value) {
+    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
+
+    if (ndt & FREQ1)
+      putmem(nd,value,offs,1);
+    else if (ndt & FREQ2)
+      putmem(nd,value,offs,2);
+    else if (ndt & FREQ3)
+      putmem(nd,value,offs,3);
+    else if (ndt & FREQ4)
+      putmem(nd,value,offs,4);
+    else
+      putmem(nd,value,offs,6);
+    return value;
+}
+
+long long ngramtable::freq(node nd,NODETYPE ndt) {
+    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
+    long long value;
+
+    if (ndt & FREQ1)
+      getmem(nd,&value,offs,1);
+    else if (ndt & FREQ2)
+      getmem(nd,&value,offs,2);
+    else if (ndt & FREQ3)
+      getmem(nd,&value,offs,3);
+    else if (ndt & FREQ4)
+      getmem(nd,&value,offs,4);
+    else
+      getmem(nd,&value,offs,6);
+
+    return value;
+}
+
+
+long long ngramtable::setfreq(node nd,NODETYPE ndt,long long value,int index) {
+    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
+
+    if (ndt & FREQ1)
+      putmem(nd,value,offs+index * 1,1);
+    else if (ndt & FREQ2)
+      putmem(nd,value,offs+index * 2,2);
+    else if (ndt & FREQ3)
+      putmem(nd,value,offs+index * 3,3);
+    else if (ndt & FREQ4)
+      putmem(nd,value,offs+index * 4,4);
+    else
+      putmem(nd,value,offs+index * 6,6);
+
+    return value;
+}
+
+long long ngramtable::getfreq(node nd,NODETYPE ndt,int index) {
+    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
+
+    long long value;
+
+    if (ndt & FREQ1)
+      getmem(nd,&value,offs+ index * 1,1);
+    else if (ndt & FREQ2)
+      getmem(nd,&value,offs+ index * 2,2);
+    else if (ndt & FREQ3)
+      getmem(nd,&value,offs+ index * 3,3);
+    else if (ndt & FREQ4)
+      getmem(nd,&value,offs+ index * 4,4);
+    else
+      getmem(nd,&value,offs+ index * 6,6);
+
+    return value;
+}
+
+table ngramtable::mtable(node nd) {
+    char v[PTRSIZE];;
+    for (int i=0; i<PTRSIZE; i++)
+      v[i]=nd[MTAB_OFFS+i];
+
+    return *(table *)v;
+}
+
+table ngramtable::mtable(node nd,table value) {
+    char *v=(char *)&value;
+    for (int i=0; i<PTRSIZE; i++)
+      nd[MTAB_OFFS+i]=v[i];
+    return value;
+}
+
+int ngramtable::mtablesz(node nd) {
+    if (mtflags(nd) & LNODE) {
+      if (mtflags(nd) & FREQ1)
+        return lnodesize(1);
+      else if (mtflags(nd) & FREQ2)
+        return lnodesize(2);
+      else if (mtflags(nd) & FREQ3)
+        return lnodesize(3);
+      else if (mtflags(nd) & FREQ4)
+        return lnodesize(4);
+      else
+        return lnodesize(6);
+    } else if (mtflags(nd) & INODE) {
+      if (mtflags(nd) & FREQ1)
+        return inodesize(1);
+      else if (mtflags(nd) & FREQ2)
+        return inodesize(2);
+      else if (mtflags(nd) & FREQ3)
+        return inodesize(3);
+      else if (mtflags(nd) & FREQ4)
+        return inodesize(4);
+      else
+        return inodesize(6);
+    } else {
+      cerr << "node has wrong flags\n";
+      exit(1);
+    }
+}
+
+
 /*
  main(int argc, char** argv){
-	 dictionary d(argv[1]);
+         dictionary d(argv[1]);
 
-	 ngram ng(&d);
+         ngram ng(&d);
 
-	 cerr << "caricato dizionario da " << argv[1] << "\n";
+         cerr << "caricato dizionario da " << argv[1] << "\n";
 
-	 ngramtable t(&d,argv[2],1);
+         ngramtable t(&d,argv[2],1);
 
-	 t.stat(1);
-	 t.savetxt(argv[3]);
+         t.stat(1);
+         t.savetxt(argv[3]);
 
  }
- */
+*/
+
+
+
+
 

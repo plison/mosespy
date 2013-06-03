@@ -441,7 +441,7 @@ dictionary::~dictionary()
   delete [] tb;
 }
 
-void dictionary::stat()
+void dictionary::stat() const
 {
   cout << "dictionary class statistics\n";
   cout << "size " << n
@@ -548,7 +548,7 @@ int dictionary::encode(const char *w)
 }
 
 
-const char *dictionary::decode(int c)
+const char *dictionary::decode(int c) const
 {
   if (c>=0 && c < n)
     return tb[c].word;

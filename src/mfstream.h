@@ -193,44 +193,13 @@ public:
   mfstream& iwritex(streampos loc,void *ptr,int size,int n=1);
 
   //! Tells current position within a file
-  streampos tellp() {
-    if (_cmd==0) return (streampos) fstream::tellg();
-    cerr << "tellp not allowed on commands\n";
-    exit(IRSTLM_ERROR_IO);
-  }
+  streampos tellp();
 
   //! Seeks a position within a file
-  mfstream& seekp(streampos loc) {
-    if (_cmd==0)
-      fstream::seekg(loc);
-    else {
-      cerr << "seekp not allowed on commands\n";
-      exit(IRSTLM_ERROR_IO);
-    }
-    return *this;
-  }
+  mfstream& seekp(streampos loc);
 
   //! Reopens an input stream
-
-  mfstream& reopen() {
-
-    if (_mode != in) {
-      cerr << "mfstream::reopen() openmode must be ios:in\n";
-      exit(IRSTLM_ERROR_IO);
-    }
-
-    if (strlen(_cmdname)>0) {
-      char *a=new char[strlen(_cmdname)+1];
-      strcpy(a,_cmdname);
-      cerr << "close/open " << a <<"\n";
-      close();
-      open(a,ios::in);
-      delete []a;
-    } else{
-      seekp(0);
-    }
-    return *this;
-  }
+  mfstream& reopen();
 
 };
 

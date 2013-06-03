@@ -177,10 +177,7 @@ GetParams(int	*n,
 	char	**argv = *a,
 	*s,
 	*p,
-	*CmdFile,
 	*defCmd;
-	FILE	*fp;
-	int	IsPipe;
 	
 #if defined(MSDOS)||defined(_WIN32)
 	char	*dot = 0;
@@ -212,7 +209,7 @@ GetParams(int	*n,
 		defCmd += strspn(defCmd, "\n\r");
 	}
 	for(;;) {
-		CmdFile=0;
+		char *CmdFile = NULL;
 		if(argc && argv[0][0]=='-' && argv[0][1]=='=') {
 			CmdFile = argv[0]+2;
 			++argv;
@@ -231,8 +228,9 @@ GetParams(int	*n,
 			defCmd += strspn(defCmd, "\n\r");
 		}
 		
-		IsPipe = !strncmp(CmdFile, "@@", 2);
-		fp = IsPipe
+		int	IsPipe = !strncmp(CmdFile, "@@", 2);
+		
+		FILE	*fp = IsPipe
 		? popen(CmdFile+2, "r")
 		: strcmp(CmdFile, "-")
 		? fopen(CmdFile, "r")
@@ -241,8 +239,7 @@ GetParams(int	*n,
 		
 		if(!fp) {
 			if(defCmd) continue;
-			fprintf(stderr, "Unable to open command file %s\n",
-							CmdFile);
+			fprintf(stderr, "Unable to open command file %s\n", CmdFile);
 			exit(1);
 		}
 		while(GetLine(fp, LINSIZ, Line) && strcmp(Line, "\\End")) {
@@ -256,7 +253,6 @@ GetParams(int	*n,
 			else
 				fclose(fp);
 		}
-		CmdFile = NULL;
 	}
 	if(DefCmd) free(DefCmd);
 	
@@ -356,14 +352,6 @@ FullPrintParams(int	TypeFlag,
 {
 	return PrintParams4(TypeFlag, ValFlag, MsgFlag, fp);
 }
-/*
- int 
- PrintParams(int		ValFlag,
- FILE	*fp, int MsgFlag)
- {
- return PrintParams4(MsgFlag, ValFlag, 0, fp);
- }
- */
 
 static int 
 PrintParams4(int	TypeFlag,
@@ -961,11 +949,13 @@ PrintEnum(Cmd_T	*cmd,
 					FILE	*fp)
 {
 	Enum_T	*en;
-	char	*sep="";
 	
 	fprintf(fp, "%s", cmd->Name);
 	if(TypeFlag) {
 		fprintf(fp, " [enum { ");
+		
+		char	*sep="";
+		
 		for(en=(Enum_T*)cmd->p; en->Name; en++) {
 			if(*en->Name) {
 				fprintf(fp, "%s%s", sep, en->Name);
@@ -1115,10 +1105,8 @@ static char **
 str2array(char	*s,
 					char	*sep)
 {
-	char	*p,
-	**a;
-	int	n = 0,
-	l;
+	char	*p, **a;
+	int	n = 0;
 	
 	if(!sep) sep = SepString;
 	p = s += strspn(s, sep);
@@ -1132,7 +1120,7 @@ str2array(char	*s,
 	p = s;
 	n = 0;
 	while(*p) {
-		l = strcspn(p, sep);
+		int l = strcspn(p, sep);
 		a[n] = malloc(l+1);
 		memcpy(a[n], p, l);
 		a[n][l] = 0;

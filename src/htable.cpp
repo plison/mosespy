@@ -82,7 +82,7 @@ address htable<char *>::Hash(char* key)
 }
 
 template <>
-int htable<int*>::Comp(int *key1, int *key2)
+int htable<int*>::Comp(int *key1, int *key2) const
 {
   assert(key1 && key2);
 
@@ -94,7 +94,7 @@ int htable<int*>::Comp(int *key1, int *key2)
 }
 
 template <>
-int htable<char*>::Comp(char *key1, char *key2)
+int htable<char*>::Comp(char *key1, char *key2) const
 {
   assert(key1 && key2);
 

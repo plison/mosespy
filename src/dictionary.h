@@ -100,31 +100,31 @@ public:
 
   dictionary* oovlex; //<! additional dictionary
 
-  inline int dub() {
+  inline int dub() const {
     return dubv;
   }
 
   inline int dub(int value) {
-		return dubv=value;
-	}
+    return dubv=value;
+  }
 
-  inline const char *OOV() {
+  inline static const char *OOV() {
     return (char*) OOV_;
   }
 	
-  inline const char *BoS() {
+  inline static const char *BoS() {
     return (char*) BOS_;
   }
 	
-  inline const char *EoS() {
+  inline static const char *EoS() {
     return (char*) EOS_;
   }
 	
-  inline const char *BoD() {
+  inline static const char *BoD() {
     return (char*) BOD_;
   }
 	
-  inline const char *EoD() {
+  inline static const char *EoD() {
     return (char*) EOD_;
   }
 
@@ -132,14 +132,16 @@ public:
     return oov_code=(v>=0?v:oov_code);
   }
 
-  inline int incflag() {
+  inline int incflag() const {
     return ifl;
   }
+
   inline int incflag(int v) {
     return ifl=v;
   }
 
   int getword(fstream& inp , char* buffer);
+
   int isprintable(char* w) {
     char buffer[MAX_WORD];
     sprintf(buffer,"%s",w);
@@ -188,9 +190,10 @@ public:
     return tb[code].freq;
   }
 
-  inline long long totfreq() {
+  inline long long totfreq() const {
     return N;
   }
+
   inline float set_load_factor(float value) {
     return load_factor=value;
   }
@@ -210,13 +213,13 @@ public:
 
   void augment(dictionary *d);
 
-  int size() {
+  int size() const {
     return n;
   }
   int getcode(const char *w);
   int encode(const char *w);
-  const char *decode(int c);
-  void stat();
+  const char *decode(int c) const;
+  void stat() const;
 
   void print_curve(int curvesize, float* testOOV=NULL);
   void print_curve(int curvesize, const char *filename, int listflag=0);

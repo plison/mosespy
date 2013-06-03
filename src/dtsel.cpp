@@ -62,13 +62,12 @@ void usage(const char *msg = 0)
 }
 
 double prob(ngramtable* ngt,ngram ng,int size,int cv){
-	double fstar,lambda;
-	
 	assert(size<=ngt->maxlevel() && size<=ng.size);	
 	if (size>1){				
 		ngram history=ng;
 		if (ngt->get(history,size,size-1) && history.freq>cv){
-			fstar=0.0;
+			double fstar=0.0;
+			double lambda;
 			if (ngt->get(ng,size,size)){
 				cv=(cv>ng.freq)?ng.freq:cv;
 				if (ng.freq>cv){
@@ -262,7 +261,10 @@ int main(int argc, char **argv)
 					
 
 		int linenumber=1; string line;	
-		int lenght=0;float deltaH=0; float deltaHoov=0; int words=0;string index;
+		int length=0;
+		float deltaH=0;
+		float deltaHoov=0;
+		int words=0;string index;
 
 		while (getline(inp,line)){
 
@@ -273,13 +275,13 @@ int main(int argc, char **argv)
 			if (useindex) lninp >> index;
 			
 			// reset ngram at begin of sentence
-			ng.size=1; deltaH=0;deltaHoov=0; lenght=0;
+			ng.size=1; deltaH=0;deltaHoov=0; length=0;
 			
 			while(lninp>>ng){
 			
 				if (*ng.wordp(1)==bos) continue;
 											
-				lenght++; words++;
+				length++; words++;
 				
 				if ((words % 1000000)==0) cerr << ".";				
 				
@@ -297,7 +299,7 @@ int main(int argc, char **argv)
 				}											
 			}
 
-			output << (deltaH + deltaHoov)/lenght  << " " << line << "\n";													
+			output << (deltaH + deltaHoov)/length  << " " << line << "\n";													
 		}
 	}
 	else{

@@ -116,182 +116,17 @@ public:
   //Offsets of leaf node fields
   int L_FREQ_OFFS; //frequency offset
 
-  TABLETYPE tbtype() {
+  tabletype(TABLETYPE tt,int codesize=DEFCODESIZE);
+
+  inline TABLETYPE tbtype() const {
     return ttype;
   }
 
-  tabletype(TABLETYPE tt,int codesize=DEFCODESIZE) {
-
-    if (codesize<=4 && codesize>0)
-      CODESIZE=codesize;
-    else {
-      cerr << "ngramtable wrong codesize\n";
-      exit(IRSTLM_ERROR_DATA);
-    }
-
-    code_range[1]=255;
-    code_range[2]=65535;
-    code_range[3]=16777214;
-    code_range[4]=2147483640;
-    code_range[6]=140737488360000LL; //stay below true limit
-//	code_range[6]=281474977000000LL; //stay below true limit
-
-    //information which is useful to initialize
-    //LEAFPROB tables
-    L_FREQ_SIZE=FREQ1;
-
-    WORD_OFFS  =0;
-    MSUCC_OFFS =CODESIZE;
-    MTAB_OFFS  =MSUCC_OFFS+CODESIZE;
-    FLAGS_OFFS =MTAB_OFFS+PTRSIZE;
-
-    switch (tt) {
-
-    case COUNT:
-      SUCC1_OFFS =0;
-      SUCC2_OFFS =0;
-      BOFF_OFFS  =0;
-      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
-      I_FREQ_NUM=1;
-      L_FREQ_NUM=1;
-
-      ttype=tt;
-      break;
-
-    case FULL:
-    case MSHIFTBETA_B:
-      SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
-      SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
-      BOFF_OFFS  =SUCC2_OFFS+CODESIZE;
-      I_FREQ_OFFS=BOFF_OFFS+INTSIZE;
-      L_FREQ_OFFS=CODESIZE;
-      I_FREQ_NUM=2;
-      L_FREQ_NUM=1;
-
-      ttype=tt;
-      break;
-
-    case MSHIFTBETA_I:
-      SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
-      SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
-      BOFF_OFFS  =0;
-      I_FREQ_OFFS=SUCC2_OFFS+CODESIZE;
-      L_FREQ_OFFS=CODESIZE;
-      I_FREQ_NUM=2;
-      L_FREQ_NUM=1;
-
-      ttype=tt;
-      break;
-
-    case SIMPLE_I:
-      SUCC1_OFFS = 0;
-      SUCC2_OFFS = 0;
-      BOFF_OFFS  = 0;
-      I_FREQ_OFFS= FLAGS_OFFS+CHARSIZE;
-      L_FREQ_OFFS=CODESIZE;
-      I_FREQ_NUM=1;
-      L_FREQ_NUM=1;
-
-      ttype=tt;
-      break;
-
-    case SIMPLE_B:
-
-      SUCC1_OFFS  = 0;
-      SUCC2_OFFS  = 0;
-      BOFF_OFFS   = FLAGS_OFFS+CHARSIZE;
-      I_FREQ_OFFS = BOFF_OFFS+INTSIZE;
-      L_FREQ_OFFS = CODESIZE;
-      I_FREQ_NUM  = 1;
-      L_FREQ_NUM  = 1;
-
-      ttype=tt;
-      break;
-
-    case SHIFTBETA_I:
-      SUCC1_OFFS = FLAGS_OFFS+CHARSIZE;
-      SUCC2_OFFS = 0;
-      BOFF_OFFS  = 0;
-      I_FREQ_OFFS= SUCC1_OFFS+CODESIZE;
-      L_FREQ_OFFS=CODESIZE;
-      I_FREQ_NUM=1;
-      L_FREQ_NUM=1;
-
-      ttype=tt;
-      break;
-
-    case SHIFTBETA_B:
-
-      SUCC1_OFFS  = FLAGS_OFFS+CHARSIZE;
-      SUCC2_OFFS  = 0;
-      BOFF_OFFS   = SUCC1_OFFS+CODESIZE;
-      I_FREQ_OFFS = BOFF_OFFS+INTSIZE;
-      L_FREQ_OFFS = CODESIZE;
-      I_FREQ_NUM  = 1;
-      L_FREQ_NUM  = 1;
-
-      ttype=tt;
-      break;
-
-    case LEAFPROB:
-    case FLEAFPROB:
-      SUCC1_OFFS  = 0;
-      SUCC2_OFFS  = 0;
-      BOFF_OFFS   = 0;
-      I_FREQ_OFFS = FLAGS_OFFS+CHARSIZE;
-      I_FREQ_NUM  = 0;
-      L_FREQ_NUM  = 1;
-
-      ttype=tt;
-      break;
-
-    case LEAFPROB2:
-      SUCC1_OFFS =0;
-      SUCC2_OFFS =0;
-      BOFF_OFFS  =0;
-      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
-      I_FREQ_NUM=0;
-      L_FREQ_NUM=2;
-
-      ttype=LEAFPROB;
-      break;
-
-    case LEAFPROB3:
-      SUCC1_OFFS =0;
-      SUCC2_OFFS =0;
-      BOFF_OFFS  =0;
-      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
-      I_FREQ_NUM=0;
-      L_FREQ_NUM=3;
-
-      ttype=LEAFPROB;
-      break;
-
-    case LEAFPROB4:
-      SUCC1_OFFS =0;
-      SUCC2_OFFS =0;
-      BOFF_OFFS  =0;
-      I_FREQ_OFFS=FLAGS_OFFS+CHARSIZE;
-      I_FREQ_NUM=0;
-      L_FREQ_NUM=4;
-
-      ttype=LEAFPROB;
-      break;
-
-    default:
-      assert(tt==COUNT);
-    }
-
-    L_FREQ_OFFS=CODESIZE;
-  }
-
-  int inodesize(int s) {
-
+  inline int inodesize(int s) const {
     return I_FREQ_OFFS + I_FREQ_NUM * s;
-
   }
 
-  int lnodesize(int s) {
+  inline int lnodesize(int s) const {
     return L_FREQ_OFFS + L_FREQ_NUM * s;
   }
 
@@ -349,26 +184,10 @@ public:
   inline void freetree() {
     freetree(tree);
   };
+
   void freetree(node nd);
 
-  void resetngramtable() {
-    //clean up all memory and restart from an empty table
-
-    freetree(); //clean memory pool
-    memset(tree,0,inodesize(6)); //reset tree
-    //1-gram table initial flags
-
-    if (maxlev>1) mtflags(tree,INODE | FREQ4);
-    else if (maxlev==1) mtflags(tree,LNODE | FREQ4);
-
-    word(tree,0);      //dummy word
-    msucc(tree,0);     // number of different n-grams
-    mtable(tree,NULL); // table of n-gram
-
-    for (int i=1; i<=maxlev; i++)
-      mentr[i]=memory[i]=occupancy[i]=0;
-
-  }
+  void resetngramtable();
 
   void stat(int level=4);
 
@@ -392,7 +211,6 @@ public:
   void savetxt(char *filename,int sz=0,int googleformat=0);
   void loadtxt(char *filename,int googletable=0);
 
-
   void savebin(char *filename,int sz=0);
   void savebin(mfstream& out);
   void savebin(mfstream& out,node nd,NODETYPE ndt,int lev,int mlev);
@@ -410,11 +228,11 @@ public:
 
   void augment(ngramtable* ngt);
 
-  int scan(ngram& ng,ACTION action=CONT,int maxlev=-1) {
+  inline int scan(ngram& ng,ACTION action=CONT,int maxlev=-1) {
     return scan(tree,INODE,0,ng,action,maxlev);
   }
 
-  int succscan(ngram& h,ngram& ng,ACTION action,int lev) {
+  inline int succscan(ngram& h,ngram& ng,ACTION action,int lev) {
     //return scan(h.link,h.info,h.lev,ng,action,lev);
     return scan(h.link,h.info,lev-1,ng,action,lev);
   }
@@ -441,58 +259,16 @@ public:
   int comptbsize(int n);
   table *grow(table *tb,NODETYPE ndt,int lev,int n,int sz,NODETYPE oldndt=0);
 
-
   bool check_dictsize_bound();
 
+  int putmem(char* ptr,int value,int offs,int size);
+  int getmem(char* ptr,int* value,int offs,int size);
+  long putmem(char* ptr,long long value,int offs,int size);
+  long getmem(char* ptr,long long* value,int offs,int size);
 
-  inline int putmem(char* ptr,int value,int offs,int size) {
-    assert(ptr!=NULL);
-    for (int i=0; i<size; i++)
-      ptr[offs+i]=(value >> (8 * i)) & 0xff;
-    return value;
-  }
-
-  inline int getmem(char* ptr,int* value,int offs,int size) {
-    assert(ptr!=NULL);
-    *value=ptr[offs] & 0xff;
-    for (int i=1; i<size; i++)
-      *value= *value | ( ( ptr[offs+i] & 0xff ) << (8 *i));
-    return *value;
-  }
-
-  inline long putmem(char* ptr,long long value,int offs,int size) {
-    assert(ptr!=NULL);
-    for (int i=0; i<size; i++)
-      ptr[offs+i]=(value >> (8 * i)) & 0xffLL;
-    return value;
-  }
-
-  inline long getmem(char* ptr,long long* value,int offs,int size) {
-    assert(ptr!=NULL);
-    *value=ptr[offs] & 0xff;
-    for (int i=1; i<size; i++)
-      *value= *value | ( ( ptr[offs+i] & 0xffLL ) << (8 *i));
-    return *value;
-  }
-
-  inline void tb2ngcpy(int* wordp,char* tablep,int n=1) {
-    for (int i=0; i<n; i++)
-      getmem(tablep,&wordp[i],i*CODESIZE,CODESIZE);
-  }
-
-  inline void ng2tbcpy(char* tablep,int* wordp,int n=1) {
-    for (int i=0; i<n; i++)
-      putmem(tablep,wordp[i],i*CODESIZE,CODESIZE);
-  }
-
-  inline int ngtbcmp(int* wordp,char* tablep,int n=1) {
-    int word;
-    for (int i=0; i<n; i++) {
-      getmem(tablep,&word,i*CODESIZE,CODESIZE);
-      if (wordp[i]!=word) return 1;
-    }
-    return 0;
-  }
+  inline void tb2ngcpy(int* wordp,char* tablep,int n=1);
+  inline void ng2tbcpy(char* tablep,int* wordp,int n=1);
+  inline int ngtbcmp(int* wordp,char* tablep,int n=1);
 
   inline int word(node nd,int value) {
     putmem(nd,value,WORD_OFFS,CODESIZE);
@@ -505,111 +281,28 @@ public:
     return v;
   }
 
-  unsigned char mtflags(node nd,unsigned char value) {
+  inline unsigned char mtflags(node nd,unsigned char value) {
     return *(unsigned char *)(nd+FLAGS_OFFS)=value;
   }
 
-  unsigned char mtflags(node nd) {
+  inline unsigned char mtflags(node nd) {
     return *(unsigned char *)(nd+FLAGS_OFFS);
   }
 
-  int codecmp(char * a,char *b) {
-    register int i,result;
-    for (i=(CODESIZE-1); i>=0; i--) {
-      result=(unsigned char)a[i]-(unsigned char)b[i];
-      if(result) return result;
-    }
-    return 0;
-  };
+  int codecmp(char * a,char *b);
 
-  int codediff(node a,node b) {
+  inline int codediff(node a,node b) {
     return word(a)-word(b);
   };
 
 
-  int update(ngram ng) {
+  int update(ngram ng);
 
-    if (!get(ng,ng.size,ng.size)) {
-      cerr << "cannot find " << ng << "\n";
-      exit(IRSTLM_ERROR_MODEL);
-    }
+  long long freq(node nd,NODETYPE ndt,long long value);
+  long long freq(node nd,NODETYPE ndt);
 
-    freq(ng.link,ng.pinfo,ng.freq);
-
-    return 1;
-  }
-
-  long long freq(node nd,NODETYPE ndt,long long value) {
-    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
-
-    if (ndt & FREQ1)
-      putmem(nd,value,offs,1);
-    else if (ndt & FREQ2)
-      putmem(nd,value,offs,2);
-    else if (ndt & FREQ3)
-      putmem(nd,value,offs,3);
-    else if (ndt & FREQ4)
-      putmem(nd,value,offs,4);
-    else
-      putmem(nd,value,offs,6);
-    return value;
-  }
-
-  long long freq(node nd,NODETYPE ndt) {
-    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
-    long long value;
-
-    if (ndt & FREQ1)
-      getmem(nd,&value,offs,1);
-    else if (ndt & FREQ2)
-      getmem(nd,&value,offs,2);
-    else if (ndt & FREQ3)
-      getmem(nd,&value,offs,3);
-    else if (ndt & FREQ4)
-      getmem(nd,&value,offs,4);
-    else
-      getmem(nd,&value,offs,6);
-
-    return value;
-  }
-
-
-  long long setfreq(node nd,NODETYPE ndt,long long value,int index=0) {
-    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
-
-    if (ndt & FREQ1)
-      putmem(nd,value,offs+index * 1,1);
-    else if (ndt & FREQ2)
-      putmem(nd,value,offs+index * 2,2);
-    else if (ndt & FREQ3)
-      putmem(nd,value,offs+index * 3,3);
-    else if (ndt & FREQ4)
-      putmem(nd,value,offs+index * 4,4);
-    else
-      putmem(nd,value,offs+index * 6,6);
-
-    return value;
-  }
-
-  long long getfreq(node nd,NODETYPE ndt,int index=0) {
-    int offs=(ndt & LNODE)?L_FREQ_OFFS:I_FREQ_OFFS;
-
-    long long value;
-
-    if (ndt & FREQ1)
-      getmem(nd,&value,offs+ index * 1,1);
-    else if (ndt & FREQ2)
-      getmem(nd,&value,offs+ index * 2,2);
-    else if (ndt & FREQ3)
-      getmem(nd,&value,offs+ index * 3,3);
-    else if (ndt & FREQ4)
-      getmem(nd,&value,offs+ index * 4,4);
-    else
-      getmem(nd,&value,offs+ index * 6,6);
-
-    return value;
-  }
-
+  long long setfreq(node nd,NODETYPE ndt,long long value,int index=0);
+  long long getfreq(node nd,NODETYPE ndt,int index=0);
 
   double boff(node nd) {
     int value=0;
@@ -664,53 +357,15 @@ public:
     return value;
   }
 
-  table mtable(node nd) {
-    char v[PTRSIZE];;
-    for (int i=0; i<PTRSIZE; i++)
-      v[i]=nd[MTAB_OFFS+i];
+  table mtable(node nd);
+  table mtable(node nd,table value);
+  int mtablesz(node nd);
 
-    return *(table *)v;
+  inline int bo_state() {
+    return backoff_state;
   }
-
-  table mtable(node nd,table value) {
-    char *v=(char *)&value;
-    for (int i=0; i<PTRSIZE; i++)
-      nd[MTAB_OFFS+i]=v[i];
-    return value;
-  }
-
-  int mtablesz(node nd) {
-    if (mtflags(nd) & LNODE) {
-      if (mtflags(nd) & FREQ1)
-        return lnodesize(1);
-      else if (mtflags(nd) & FREQ2)
-        return lnodesize(2);
-      else if (mtflags(nd) & FREQ3)
-        return lnodesize(3);
-      else if (mtflags(nd) & FREQ4)
-        return lnodesize(4);
-      else
-        return lnodesize(6);
-    } else if (mtflags(nd) & INODE) {
-      if (mtflags(nd) & FREQ1)
-        return inodesize(1);
-      else if (mtflags(nd) & FREQ2)
-        return inodesize(2);
-      else if (mtflags(nd) & FREQ3)
-        return inodesize(3);
-      else if (mtflags(nd) & FREQ4)
-        return inodesize(4);
-      else
-        return inodesize(6);
-    } else {
-      cerr << "node has wrong flags\n";
-      exit(1);
-    }
-  }
-
-
-  int bo_state(int value=-1) {
-    return (value==-1?backoff_state:backoff_state=value);
+  inline int bo_state(int value) {
+    return backoff_state=value;
   }
 
 
