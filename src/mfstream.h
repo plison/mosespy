@@ -196,7 +196,7 @@ public:
   streampos tellp() {
     if (_cmd==0) return (streampos) fstream::tellg();
     cerr << "tellp not allowed on commands\n";
-    exit(1);
+    exit(IRSTLM_ERROR_IO);
   }
 
   //! Seeks a position within a file
@@ -205,7 +205,7 @@ public:
       fstream::seekg(loc);
     else {
       cerr << "seekp not allowed on commands\n";
-      exit(1);
+      exit(IRSTLM_ERROR_IO);
     }
     return *this;
   }
@@ -216,7 +216,7 @@ public:
 
     if (_mode != in) {
       cerr << "mfstream::reopen() openmode must be ios:in\n";
-      exit(1);
+      exit(IRSTLM_ERROR_IO);
     }
 
     if (strlen(_cmdname)>0) {

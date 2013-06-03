@@ -126,7 +126,7 @@ public:
       CODESIZE=codesize;
     else {
       cerr << "ngramtable wrong codesize\n";
-      exit(1);
+      exit(IRSTLM_ERROR_DATA);
     }
 
     code_range[1]=255;
@@ -531,7 +531,7 @@ public:
 
     if (!get(ng,ng.size,ng.size)) {
       cerr << "cannot find " << ng << "\n";
-      exit (1);
+      exit(IRSTLM_ERROR_MODEL);
     }
 
     freq(ng.link,ng.pinfo,ng.freq);

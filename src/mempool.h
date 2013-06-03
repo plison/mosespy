@@ -47,6 +47,9 @@ class memnode
   friend class strstack;  //!< grant access
   char          *block;   //!< block of memory
   memnode        *next;   //!< next block ptr
+
+public:
+  memnode():block(0),next(0) {};
 };
 
 

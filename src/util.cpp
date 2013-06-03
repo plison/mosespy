@@ -306,16 +306,22 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 
 void exit_error(int err){
         switch(err){
-        case ERROR_IO:
+        case IRSTLM_NO_ERROR:
+                VERBOSE(0,"No error\n");
+                break;
+        case IRSTLM_ERROR_GENERIC:
+                VERBOSE(0,"Generic error\n");
+                break;
+        case IRSTLM_ERROR_IO:
                 VERBOSE(0,"Input/Output error\n");
                 break;
-        case ERROR_MEMORY:
+        case IRSTLM_ERROR_MEMORY:
                 VERBOSE(0,"Allocation memory error\n");
                 break;
-        case ERROR_DATA:
+        case IRSTLM_ERROR_DATA:
                 VERBOSE(0,"Data format error\n");
                 break;
-        case ERROR_MODEL:
+        case IRSTLM_ERROR_MODEL:
                 VERBOSE(0,"Model computation error\n");
                 break;
         default:

@@ -226,7 +226,7 @@ void dictionary::test(float* OOVrates, int curvesize, const char *filename, int 
 
   if (!inp) {
     cerr << "cannot open test: " << filename << "\n";
-    exit_error(ERROR_IO);
+    exit_error(IRSTLM_ERROR_IO);
   }
   cerr << "test:";
 
