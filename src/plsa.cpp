@@ -22,6 +22,7 @@ using namespace std;
 
 #include <iostream>
 #include "cmd.h"
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -77,7 +78,6 @@ void usage(const char *msg = 0)
   else{
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
@@ -156,28 +156,34 @@ int main(int argc, char **argv)
 	
 	if (argc == 1){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
   GetParams(&argc, &argv, (char*) NULL);
 	
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
   if (!dictfile) {
-    usage("Missing parameters dictionary");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Missing parameters dictionary");
   };
 	
   if (!adafile & (!trainfile || !binfile) && (!trainfile || !it || !topics || !basefile)) {
-    usage("Missing parameters for training");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Missing parameters for training");
   }
 	
   if ((!trainfile && basefile) && (!featurefile || !adafile || !it || !topics)) {
-    usage("Missing parameters for adapting");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Missing parameters for adapting");
   }
 	
   if ((adafile) && (!featurefile)) {
-    usage("Missing parameters for adapting 2");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Missing parameters for adapting 2");
   }
 	
   if (!tmphfile) {
@@ -211,7 +217,7 @@ int main(int argc, char **argv)
       col.save(binfile,binsize);
     else
       col.save(binfile);
-    exit(1);
+    exit_error(IRSTLM_NO_ERROR);
   }
 	
   system("rm -f hfff");
@@ -221,7 +227,7 @@ int main(int argc, char **argv)
   if (ctfile) { //combine t
     tc.combineT(ctfile);
     tc.saveW(basefile);
-    exit(1);
+    exit_error(IRSTLM_NO_ERROR);
   }
 	
   if (trainfile) {
@@ -236,7 +242,7 @@ int main(int argc, char **argv)
   if (strcmp(hfile,"hfff")==0)  system("rm -f hfff");
   delete []hfile;
 	
-  exit(1);
+	exit_error(IRSTLM_NO_ERROR);
 }
 
 

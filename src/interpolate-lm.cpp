@@ -68,7 +68,6 @@ void usage(const char *msg = 0)
   else{
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
@@ -122,6 +121,7 @@ int main(int argc, char **argv)
 	
 	if (argc == 1){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	for(int i=1; i < argc; i++) {
@@ -132,14 +132,17 @@ int main(int argc, char **argv)
 	
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 
   if (files.size() > 2) {
-    usage("Warning: Too many arguments");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Too many arguments");
   }
 	
   if (files.size() < 1) {
-    usage("Warning: specify a LM list file to read from");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Must pecify a LM list file to read from");
   }
 
   std::string infile = files[0];
@@ -192,16 +195,15 @@ int main(int argc, char **argv)
   N=atoi(words[1]);
   std::cerr << "Number of LMs: " << N << "..." << std::endl;
   if(N > 100) {
-    std::cerr << "Can't interpolate more than 100 language models." << std::endl;
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"Can't interpolate more than 100 language models");
+		
   }
 
   for (int i=0; i<N; i++) {
     inptxt.getline(line,BUFSIZ,'\n');
     tokenN = parseWords(line,words,3);
     if(tokenN != 2) {
-      std::cerr << "Wrong input format." << std::endl;
-      exit(1);
+			exit_error(IRSTLM_ERROR_DATA,"Wrong input format");
     }
     w[i] = (float) atof(words[0]);
     lmf[i] = words[1];
@@ -244,8 +246,7 @@ int main(int argc, char **argv)
       if(dev.eof())
         break;
       if(dev.fail()) {
-        std::cerr << "Problem reading input file " << seval << std::endl;
-        exit(1);
+				exit_error(IRSTLM_ERROR_IO,"Problem reading input file");
       }
       std::istringstream lstream(line);
       if(line.substr(0, 29) == "###interpolate-lm:replace-lm ") {

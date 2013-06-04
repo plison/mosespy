@@ -27,7 +27,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 using namespace std;
 
 #include <iostream>
+#include <sstream>
 #include <cmath>
+#include "util.h"
 #include "cmd.h"
 #include "mfstream.h"
 #include "mempool.h"
@@ -53,7 +55,6 @@ void usage(const char *msg = 0)
   else{
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
@@ -135,16 +136,19 @@ int main(int argc, char **argv)
 	
 	if (argc == 1){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
   GetParams(&argc, &argv, (char*) NULL);
 
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
   if (inp==NULL) {
-		usage("Warning: no input file specified\n");
+		usage();
+		exit_error(IRSTLM_ERROR_DATA,"Warning: no input file specified");
   };
 
   if (out==NULL) {
@@ -213,7 +217,7 @@ int main(int argc, char **argv)
       inpstream.flush();
     }
 
-    exit(1);
+    exit_error(IRSTLM_NO_ERROR);
   }
 
 
@@ -305,14 +309,16 @@ int main(int argc, char **argv)
     }
 
     if (i!= ngsz) {
-      cerr << "wrong mask: 1 bits=" << i << " maxlev=" << ngsz << "\n";
-      exit(1);
+			std::stringstream ss_msg;
+			ss_msg << "wrong mask: 1 bits=" << i << " maxlev=" << ngsz;
+			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
     }
 
     if (selmask[ngsz-1] >  ngt->maxlevel()) {
-      cerr << "wrong mask: farest bits=" << selmask[ngsz-1]
+			std::stringstream ss_msg;
+			ss_msg << "wrong mask: farest bits=" << selmask[ngsz-1]
            << " maxlev=" << ngt->maxlevel() << "\n";
-      exit(1);
+			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
     }
 
     //ngramtable* ngt2=new ngramtable(NULL,ngsz,NULL,NULL,0,NULL,0,table_type);

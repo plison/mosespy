@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 using namespace std;
 
 #include <cmath>
+#include <sstream>
 #include "mfstream.h"
 #include "mempool.h"
 #include "dictionary.h"
@@ -68,8 +69,9 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
 
   mfstream inp(sublminfo,ios::in );
   if (!inp) {
-    cerr << "cannot open " << sublminfo << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << sublminfo;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
 	char line[MAX_LINE];
@@ -95,8 +97,9 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
 		
 		while (word){
 			if (i>max_npar){
-				std::cerr << "Too many parameters (expected " << max_npar << ")" << std::endl;	
-				exit(1);
+				std::stringstream ss_msg;
+				ss_msg << "Too many parameters (expected " << max_npar << ")";
+				exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
 			}
 			par[j] = new char[MAX_LINE];
 			strcpy(par[j],word);
@@ -136,18 +139,21 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
 		
 
     if (!slmtype) {
-			std::cerr << "The type (-slm) for sub LM number " << i+1 << "  is not specified" << std::endl;
-      exit(1);
+			std::stringstream ss_msg;
+			ss_msg << "The type (-slm) for sub LM number " << i+1 << "  is not specified" ;
+			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
     }
 
 		if (!subtrainfile) {
-			std::cerr << "The file (-str) for sub lm number " << i+1 << " is not specified" << std::endl;
-      exit(1);
+			std::stringstream ss_msg;
+			ss_msg << "The file (-str) for sub lm number " << i+1 << " is not specified";
+			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
     }
 
 		if (subprunefreq==-1) {
-			std::cerr << "The prune threshold (-sp) for sub lm number " << i+1 << "  is not specified" << std::endl;
-      exit(1);
+			std::stringstream ss_msg;
+			ss_msg << "The prune threshold (-sp) for sub lm number " << i+1 << "  is not specified";
+			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
     }
 
 		switch (slmtype) {
@@ -173,8 +179,7 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
       break;
 
     default:
-      cerr << "not implemented yet\n";
-      exit(1);
+				exit_error(IRSTLM_ERROR_DATA, "not implemented yet");
     };
 
     sublm[i]->prunesingletons(subprunesingletons==true);
@@ -277,8 +282,9 @@ int mixture::loadpar(char* ipf)
   mfstream inp(ipf,ios::in);
 
   if (!inp) {
-    cerr << "cannot open file with parameters: " << ipf << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open file: " << ipf;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   cerr << "loading parameters from " << ipf << "\n";
@@ -290,8 +296,9 @@ int mixture::loadpar(char* ipf)
   sscanf(header,"%d %d",&value1,&value2);
 
   if (value1 != lmsize() || value2 != pmax) {
-    cerr << "parameter file " << ipf << " is incompatible\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "parameter file " << ipf << " is incompatible";
+		exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
   }
 
   for (int i=0; i<=lmsize(); i++)
@@ -311,9 +318,10 @@ int mixture::train()
   genpmap();
 
   if (dub()<dict->size()) {
-    cerr << "\nERROR: DUB value is too small: the LM will possibly compute wrong probabilities if sub-LMs have different vocabularies!\n";
-		cerr << "This exception should already have been handled before!!!\n";
-		exit(1);
+		std::stringstream ss_msg;
+    ss_msg << "\nERROR: DUB value is too small: the LM will possibly compute wrong probabilities if sub-LMs have different vocabularies!\n";
+		ss_msg << "This exception should already have been handled before!!!\n";
+		exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
   }
 
   cerr << "mixlm --> DUB: " << dub() << endl;

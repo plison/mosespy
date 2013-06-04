@@ -25,7 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <cassert>
+#include "util.h"
 #include "lmContainer.h"
 #include "lmtable.h"
 #include "lmmacro.h"
@@ -50,8 +52,9 @@ int lmContainer::getLanguageModelType(std::string filename)
   fstream inp(filename.c_str(),ios::in|ios::binary);
 
   if (!inp.good()) {
-    std::cerr << "Failed to open " << filename << "!" << std::endl;
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "Failed to open " << filename;
+    exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
   //give a look at the header to get informed about the language model type
   std::string header;
@@ -112,8 +115,7 @@ lmContainer* lmContainer::CreateLanguageModel(int type, float nlf, float dlf)
   }
 
   if (lm == NULL) {
-    std::cerr << "This language model type is unknown!" << std::endl;
-    exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "This language model type is unknown!");
   }
 
   lm->setLanguageModelType(type);

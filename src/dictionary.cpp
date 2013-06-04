@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "mempool.h"
 #include "htable.h"
 #include "dictionary.h"
@@ -58,8 +59,9 @@ dictionary::dictionary(char *filename,int size, float lf)
   mfstream inp(filename,ios::in);
 
   if (!inp) {
-    cerr << "cannot open " << filename << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename << "\n";
+    exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   char buffer[100];
@@ -114,8 +116,9 @@ void dictionary::generate(char *filename)
   mfstream inp(filename,ios::in);
 
   if (!inp) {
-    cerr << "cannot open " << filename << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename << "\n";
+    exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   cerr << "dict:";
@@ -220,8 +223,9 @@ void dictionary::test(float* OOVrates, int curvesize, const char *filename, int 
   mfstream inp(filename,ios::in);
 
   if (!inp) {
-    cerr << "cannot open test: " << filename << "\n";
-    exit_error(IRSTLM_ERROR_IO);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename << "\n";
+    exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
   cerr << "test:";
 
@@ -272,8 +276,9 @@ void dictionary::load(char* filename)
   mfstream inp(filename,ios::in);
 
   if (!inp) {
-    cerr << "\ncannot open " << filename << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename << "\n";
+    exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   cerr << "dict:";
@@ -282,8 +287,9 @@ void dictionary::load(char* filename)
   if (strncmp(header,"DICT",4)==0)
     freqflag=1;
   else if (strncmp(header,"dict",4)!=0) {
-    cerr << "\ndictionary file " << filename << " has a wrong header\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "dictionary file " << filename << " has a wrong header";
+    exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
   }
 
 
@@ -340,9 +346,9 @@ void dictionary::load(std::istream& inp)
     //always insert without checking whether the word is already in
     if ((addr=htb->insert((char  *)&tb[n].word))) {
       if (addr!=(char *)&tb[n].word) {
-        cerr << "dictionary::loadtxt wrong entry was found ("
-             <<  buffer << ") in position " << n << "\n";
-        exit(1);
+				std::stringstream ss_msg;
+				ss_msg << "dictionary::loadtxt wrong entry was found (" <<  buffer << ") in position " << n;
+				exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
       }
     }
 

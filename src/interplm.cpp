@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 using namespace std;
 
 #include <cmath>
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -80,8 +81,7 @@ interplm::interplm(char *ngtfile,int depth,TABLETYPE tabtype):
 {
 
   if (maxlevel()<depth) {
-    cerr << "interplm: ngramtable size is too low\n";
-    exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "interplm::interplm ngramtable size is too low");
   }
 
   lms=depth;
@@ -293,8 +293,9 @@ void gencorrcounts2(){
       tb[l]->freq(ng2.link,ng2.info,0);
       }
       else{
-        cerr << "cannot find " << ng2 << "count " << count << "\n";
-	exit(1);
+				std:stringstream ss_msg;
+				ss_msg << "cannot find " << ng2 << "count " << count << "\n";
+				exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
       }
 
       ng.size++;
@@ -312,7 +313,7 @@ void gencorrcounts2(){
     }
   }
 
-  exit(1);
+  exit_error(IRSTLM_NO_ERROR);
 
 }
 */
@@ -339,8 +340,7 @@ void interplm::test(char* filename,int size,int backoff,int checkpr,char* outpr)
 {
 
   if (size>lmsize()) {
-    cerr << "test: wrong ngram size\n";
-    exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "interplm::test: wrong ngram size");
   }
 
 
@@ -442,8 +442,7 @@ void interplm::test_ngt(ngramtable& ngt,int sz,int /* unused parameter: backoff 
   cout.precision(10);
 
   if (sz > ngt.maxlevel()) {
-    cerr << "test_ngt: ngramtable has uncompatible size\n";
-    exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "interplm::test_ngt: ngramtable has uncompatible size");
   }
 
   if (checkpr) cerr << "checking probabilities\n";

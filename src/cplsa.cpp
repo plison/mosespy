@@ -21,6 +21,8 @@
 using namespace std;
 
 #include <cmath>
+#include <string>
+#include <sstream>
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -203,8 +205,9 @@ int plsa::loadW(char* fname)
   inp.read((char *)&r,sizeof(int)); //number of topics
 
   if (topics>0 && r != topics) {
-    cerr << "incompatible number of topics: " << r << "\n";
-    exit(2);
+		std::stringstream ss_msg;
+		ss_msg << "incompatible number of topics: " << r;
+    exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
   } else
     topics=r;
 
@@ -342,8 +345,9 @@ int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noise
         }
 
         if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
-          cerr << "totH=" << totH << "\n";
-          exit(1);
+					std::stringstream ss_msg;
+					ss_msg << "Total H is wrong; totH=" << totH << "\n";
+					exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
         }
 
         //save H

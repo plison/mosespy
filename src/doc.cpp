@@ -22,6 +22,7 @@ using namespace std;
 
 #include <math.h>
 #include <assert.h>
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -64,8 +65,7 @@ int doc::open()
   else if (sscanf(header,"%d",&n) && n>0)
     binary=false;
   else {
-    cerr << "doc::open error wrong header\n";
-    exit(0);
+    exit_error(IRSTLM_ERROR_DATA, "doc::open() error: wrong header\n");
   }
 
   cerr << "opening: " << n << (binary?" bin-":" txt-") << "docs\n";

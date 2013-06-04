@@ -25,8 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <sstream>
 #include <string>
 #include "cmd.h"
-#include <lmtable.h>
-#include <n_gram.h>
+#include "util.h"
+#include "lmtable.h"
+#include "n_gram.h"
 
 void print_help(int TypeFlag=0){
   std::cerr << std::endl << "score-lm - scores sentences with a language model" << std::endl;
@@ -51,7 +52,6 @@ void usage(const char *msg = 0)
   else{
                 print_help();
   }
-  exit(1);
 }
 
 int main(int argc, char **argv)
@@ -79,18 +79,21 @@ int main(int argc, char **argv)
                 );
 
   if (argc == 1){
-	usage();
+		usage();
+		exit_error(IRSTLM_NO_ERROR);
   }
 
   GetParams(&argc, &argv, (char*) NULL);
         
   if (help){
-	usage();
+		usage();
+		exit_error(IRSTLM_NO_ERROR);
   }
 
 
   if(lm == NULL){
-	usage("Missing parameter: please, specify the LM to use (-lm)");
+		usage();
+		exit_error(IRSTLM_ERROR_DATA,"Missing parameter: please, specify the LM to use (-lm)");
   }
 
   std::ifstream lmstr(lm);

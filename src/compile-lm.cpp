@@ -54,7 +54,6 @@ void usage(const char *msg = 0)
 	if (!msg){
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
@@ -115,6 +114,7 @@ int main(int argc, char **argv)
 	
 	if (argc == 1){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	for(int i=1; i < argc; i++) {
@@ -128,14 +128,17 @@ int main(int argc, char **argv)
 	
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}	
 
   if (files.size() > 2) {
-    usage("Warning: Too many arguments");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Warning: Too many arguments");
   }
 
   if (files.size() < 1) {
-    usage("Warning: Please specify a LM file to read from");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Warning: Please specify a LM file to read from");
   }
 
   std::string infile = files[0];

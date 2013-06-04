@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <sys/types.h>
 #include <sys/mman.h>
 #endif
@@ -80,7 +81,7 @@ void createtempfile(mfstream  &fileStream, string &filePath, std::ios_base::open
   if (fileStream == 0)
   {
     perror("error creating file");
-    exit(4);
+    exit_error(IRSTLM_ERROR_IO);
   }
 }
 
@@ -92,7 +93,7 @@ void removefile(const std::string &filePath)
   if (remove(filePath.c_str()) != 0)
   {
     perror("Error deleting file" );
-    exit(2);
+    exit_error(IRSTLM_ERROR_IO);
   }
 #endif
 }
@@ -279,9 +280,10 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 
   inp.getline(line,MAX_LINE);
   if (strlen(line)==MAX_LINE-1) {
-    cerr << "parseline: input line exceed MAXLINE ("
-         << MAX_LINE << ") chars " << line << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "parseline: input line exceed MAXLINE (" << MAX_LINE << ") chars " << line << "\n";
+		
+    exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
   }
 
   howmany = parseWords(line, words, Order + 3);

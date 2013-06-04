@@ -58,7 +58,6 @@ void usage(const char *msg = 0)
   else{
 		print_help();
 	}
-	exit(1);
 }
 
 double prob(ngramtable* ngt,ngram ng,int size,int cv){
@@ -194,30 +193,28 @@ int main(int argc, char **argv)
 
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	if (scorefile==NULL) {
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
-	if (!evalset && (!indom || !outdom)){
-		cerr <<"Must specify in-domain and out-domain data files\n";
-		exit(1);
+	if (!evalset && (!indom || !outdom)){		
+    exit_error(IRSTLM_ERROR_DATA, "Must specify in-domain and out-domain data files");
 	};
 	
 	//score file is always required: either as output or as input
 	if (!scorefile){
-		cerr <<"Must specify score file\n";
-		exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "Must specify score file");
 	};
 	
 	if (!evalset && !model){
-		cerr <<"Must specify data selection model\n";
-		exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "Must specify data selection model");
 	}
 	
 	if (evalset && (convergence_treshold<0 || convergence_treshold > 0.1)){
-		cerr <<"Convergence threshold must be between 0 and 0.1. \n";
-		exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "Convergence threshold must be between 0 and 0.1");
 	}
 	
 	TABLETYPE table_type=COUNT;

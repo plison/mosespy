@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 using namespace std;
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -98,7 +99,6 @@ void usage(const char *msg = 0)
   else{
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
@@ -140,13 +140,15 @@ int main(int argc, char **argv)
 	
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
   if (files.size() > 3) {
-    usage("Warning: Too many arguments");
+		exit_error(IRSTLM_ERROR_DATA,"Too many arguments");
   }
 
   if (files.size() < 1) {
-    usage("Warning: Please specify a LM file to read from");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Please specify a LM file to read from");
   }
 
   std::string infile = files[0];
@@ -187,8 +189,9 @@ int main(int argc, char **argv)
 
   inputfilestream inp(infile.c_str());
 	if (!inp.good()) {
-    std::cerr << "Failed to open " << infile << "!\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "Failed to open " << infile;;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 	
   std::ofstream* out;
@@ -199,8 +202,9 @@ int main(int argc, char **argv)
     out->open(outfile.c_str());
   }
 	if (!out->good()) {
-    std::cerr << "Failed to open " << outfile << "!\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "Failed to open " << outfile;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   std::cerr << "Writing " << outfile << "..." << std::endl;
@@ -283,12 +287,13 @@ int main(int argc, char **argv)
         inp.getline(line,MAX_LINE);
         filebuff << line << std::endl;
         if (!filebuff.good()) {
-          std::cerr << "Cannot write in temporary file " << tmpfile  << std::endl
-                    << " Probably there is not enough space in this filesystem " << std::endl
-                    << " Eventually rerun quantize-lm by specifyng the pathname" << std::endl
-                    << " of the temporary file to be used. " << std::endl;
           removefile(tmpfile.c_str());
-          exit(1);
+					std::stringstream ss_msg;
+					ss_msg << "Cannot write in temporary file " << tmpfile  << std::endl
+					<< " Probably there is not enough space in this filesystem " << std::endl
+					<< " Eventually rerun quantize-lm by specifyng the pathname" << std::endl
+					<< " of the temporary file to be used. ";
+					exit_error(IRSTLM_ERROR_IO, ss_msg.str());
         }
         int howmany = parseWords(line, words, Order + 3);
         assert(howmany == Order+2 || howmany == Order+1);

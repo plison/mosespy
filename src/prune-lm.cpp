@@ -23,6 +23,7 @@
 using namespace std;
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -57,7 +58,6 @@ void usage(const char *msg = 0)
 	if (!msg){
 		print_help();
 	}
-	exit(1);
 }
 
 void s2t(string	cps, float *thr)
@@ -95,6 +95,7 @@ int main(int argc, char **argv)
 
 	if (argc == 1){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	int first_file=1;
@@ -119,14 +120,17 @@ int main(int argc, char **argv)
 	
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	if (files.size() > 2) {
-    usage("Warning: Too many arguments");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Too many arguments");
   }
 
   if (files.size() < 1) {
-    usage("Warning: Specify a LM file to read from");
+    usage();
+		exit_error(IRSTLM_ERROR_DATA,"Specify a LM file to read from");
   }
 
   memset(thr, 0, sizeof(thr));
@@ -153,8 +157,9 @@ int main(int argc, char **argv)
   lmtable lmt;
   inputfilestream inp(infile.c_str());
   if (!inp.good()) {
-    std::cerr << "Failed to open " << infile << "!" << std::endl;
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "Failed to open " << infile;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   lmt.load(inp,infile.c_str(),outfile.c_str(),0);
@@ -164,6 +169,7 @@ int main(int argc, char **argv)
   std::cerr << "\n";
   lmt.wdprune((float*)thr, aflag);
   lmt.savetxt(outfile.c_str());
-  return 0;
+	
+	exit_error(IRSTLM_NO_ERROR);
 }
 
