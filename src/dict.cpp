@@ -4,6 +4,7 @@ using namespace std;
 
 #include <iostream>
 #include "cmd.h"
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "dictionary.h"
@@ -22,11 +23,10 @@ void usage(const char *msg = 0)
 {
   if (msg){
     std::cerr << msg << std::endl;
-	}
+  }
   else{
-		print_help();
-	}
-	exit(1);
+    print_help();
+  }
 }
 
 int main(int argc, char **argv)
@@ -86,16 +86,19 @@ int main(int argc, char **argv)
 	
 	if (argc == 1){
 		usage();
+  		exit_error(IRSTLM_NO_ERROR);
 	}
 
   GetParams(&argc, &argv, (char*) NULL);
 	
 	if (help){
 		usage();
+  		exit_error(IRSTLM_NO_ERROR);
 	}
 	
   if (inp==NULL) {
-		usage("Warning: no input file specified");
+		usage();
+  		exit_error(IRSTLM_NO_ERROR, "Warning: no input file specified");
   };
 
   // options compatibility issues:
@@ -105,8 +108,8 @@ int main(int argc, char **argv)
     freqflag=1;
     mfstream test(testfile,ios::in);
     if (!test) {
-			usage(strcat((char*) "Warning: cannot open testfile: ", testfile));
-      exit(1);
+      usage();
+      exit_error(IRSTLM_NO_ERROR,strcat((char*) "Warning: cannot open testfile: ", testfile));
     }
     test.close();
 

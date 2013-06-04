@@ -80,12 +80,10 @@ dictionary::dictionary(char *filename,int size, float lf)
 
 
 
-int dictionary::getword(fstream& inp , char* buffer)
+int dictionary::getword(fstream& inp , char* buffer) const
 {
 
-
   while(inp >> setw(MAX_WORD) >> buffer) {
-
 
     //warn if the word is very long
     if (strlen(buffer)==(MAX_WORD-1)) {
@@ -98,7 +96,6 @@ int dictionary::getword(fstream& inp , char* buffer)
       cerr << "zero length word!\n";
       continue;
     }
-
 
     return 1;
 
@@ -165,7 +162,7 @@ void dictionary::print_curve(int curvesize, const char *filename, int listflag)
   delete []OOVrates;
 }
 
-void dictionary::print_curve(int curvesize, float* testOOV)
+void dictionary::print_curve(int curvesize, float* testOOV) const
 {
 
   int* curve = new int[curvesize];
@@ -208,8 +205,6 @@ void dictionary::print_curve(int curvesize, float* testOOV)
 //
 //	test : compute OOV rates on test corpus using dictionaries of different sizes
 //
-
-
 void dictionary::test(float* OOVrates, int curvesize, const char *filename, int listflag)
 {
   assert(OOVrates!=NULL);

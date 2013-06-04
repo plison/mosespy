@@ -140,9 +140,9 @@ public:
     return ifl=v;
   }
 
-  int getword(fstream& inp , char* buffer);
+  int getword(fstream& inp , char* buffer) const;
 
-  int isprintable(char* w) {
+  int isprintable(char* w) const {
     char buffer[MAX_WORD];
     sprintf(buffer,"%s",w);
     return strcmp(w,buffer)==0;
@@ -221,11 +221,11 @@ public:
   const char *decode(int c) const;
   void stat() const;
 
-  void print_curve(int curvesize, float* testOOV=NULL);
+  void print_curve(int curvesize, float* testOOV=NULL) const;
   void print_curve(int curvesize, const char *filename, int listflag=0);
 
   void cleanfreq() {
-    for (int i=0; i<n; tb[i++].freq=0) {};
+    for (int i=0; i<n; ++i){ tb[i].freq=0; };
     N=0;
   }
 
