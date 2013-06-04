@@ -23,6 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <sstream>
+#include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -134,8 +136,7 @@ shiftbeta::shiftbeta(char* ngtfile,int depth,int prunefreq,double b,TABLETYPE tt
     for (int l=lmsize(); l>1; l--)
       beta[l]=b;
   } else {
-    cerr << "shiftbeta: beta must be < 1.0 and > 0\n";
-    exit (1);
+		exit_error(IRSTLM_ERROR_DATA,"shiftbeta::shiftbeta beta must be < 1.0 and > 0");
   }
 
   prunethresh=prunefreq;
@@ -377,9 +378,10 @@ int mshiftbeta::train()
 		}
 		
 		if (n1 == 0 || n2 == 0 ||  n1 <= n2) {
-			cerr << "Error: lower order count-of-counts cannot be estimated properly\n";
-			cerr << "Hint: use another smoothing method with this corpus.\n";
-			exit(1);
+			std::stringstream ss_msg;
+			ss_msg << "Error: lower order count-of-counts cannot be estimated properly\n";
+			ss_msg << "Hint: use another smoothing method with this corpus.\n";
+			exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
 		}
 		
 		double Y=(double)n1/(double)(n1 + 2 * n2);
@@ -528,8 +530,9 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
     if (get(ng,size,size))
       fstar=(double) mfreq(ng,size)/(double)unigrtotfreq;
     else {
-			 cerr << "Missing probability for word: " << dict->decode(*ng.wordp(1)) << "\n";					
-			 exit(1);
+			std::stringstream ss_msg;
+			ss_msg << "Missing probability for word: " << dict->decode(*ng.wordp(1));
+			exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
 		 }
   }
 

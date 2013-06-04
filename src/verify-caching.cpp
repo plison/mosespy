@@ -49,11 +49,32 @@ void usage(const char *msg = 0)
 	if (!msg){
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
 {	
+	bool help=false;
+	
+  DeclareParams((char*)
+								
+								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
+								
+								(char *)NULL
+								);
+	
+	if (argc == 1){
+		usage();
+		exit_error(IRSTLM_NO_ERROR);
+	}
+	
+  GetParams(&argc, &argv, (char*) NULL);
+	
+	if (help){
+		usage();
+		exit_error(IRSTLM_NO_ERROR);
+	}
+	
   lmContainer* lmC;
   if (lmC->is_cache_enabled()){
     std::cout << " caching is ENABLED" << std::endl;

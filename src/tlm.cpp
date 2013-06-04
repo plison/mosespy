@@ -96,7 +96,6 @@ void usage(const char *msg = 0)
   else{
 		print_help();
 	}
-	exit(1);
 }
 
 int main(int argc, char **argv)
@@ -252,22 +251,22 @@ int main(int argc, char **argv)
 	
 	if (argc == 1){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	GetParams(&argc, &argv, (char*) NULL);
 	
 	if (help){
 		usage();
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	if (!lmtype) {
-		std::cerr << "The lm type (-lm) is not specified" << std::endl;
-		exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"The lm type (-lm) is not specified");
 	}
 	
 	if (!trainfile && lmtype!=MIXTURE) {
-		std::cerr << "The LM file (-tr) is not specified" << std::endl;
-		exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"The LM file (-tr) is not specified");
 	}
 
 	if (SavePerLevel == false && backoff == true){
@@ -285,8 +284,7 @@ int main(int argc, char **argv)
 			if (beta==-1 || (beta<1.0 && beta>0))
 				lm=new shiftbeta(trainfile,size,prunefreq,beta,(backoff?SHIFTBETA_B:SHIFTBETA_I));
 			else {
-				cerr << "ShiftBeta: beta must be >0 and <1\n";
-				exit(1);
+				exit_error(IRSTLM_ERROR_DATA,"ShiftBeta: beta must be >0 and <1");
 			}
 			break;
 			
@@ -294,8 +292,7 @@ int main(int argc, char **argv)
 			if (size>1)
 				lm=new mshiftbeta(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
 			else {
-				cerr << "Modified Shift Beta requires size > 1!\n";
-				exit(1);
+				exit_error(IRSTLM_ERROR_DATA,"Modified Shift Beta requires size > 1");
 			}
 			
 			break;
@@ -365,8 +362,7 @@ int main(int argc, char **argv)
 	if (backoff) lm->compute_backoff();
 	
 	if (size>lm->maxlevel()) {
-		cerr << "lm size is too large\n";
-		exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"lm size is too large");
 	}
 	
 	if (!size) size=lm->maxlevel();
@@ -489,8 +485,7 @@ int main(int argc, char **argv)
 			case ADAPT: {
 				
 				if (backoff) {
-					cerr << "This modality is not supported with backoff LMs\n";
-					exit(1);
+					exit_error(IRSTLM_ERROR_DATA,"This modality is not supported with backoff LMs");
 				}
 				
 				char afile[50],tfile[50];
@@ -516,7 +511,7 @@ int main(int argc, char **argv)
 				break;
 		}
 		
-		exit(1);
+		exit_error(IRSTLM_NO_ERROR);
 	}
 	
 	if (ASRfile) {
@@ -549,7 +544,7 @@ int main(int argc, char **argv)
 	delete lm;
 	cerr << "\n";
 	
-	exit(0);
+	exit_error(IRSTLM_NO_ERROR);
 }
 
 

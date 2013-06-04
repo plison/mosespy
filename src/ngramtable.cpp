@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
+#include <sstream>
 #include "util.h"
 #include "mfstream.h"
 #include "math.h"
@@ -36,8 +37,7 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
     if (codesize<=4 && codesize>0)
       CODESIZE=codesize;
     else {
-      cerr << "ngramtable wrong codesize\n";
-      exit(IRSTLM_ERROR_DATA);
+			exit_error(IRSTLM_ERROR_DATA,"ngramtable wrong codesize");
     }
 
     code_range[1]=255;
@@ -239,14 +239,12 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
   }
 
   if (!maxl) {
-    cerr << "ngramtable: ngram size must be specified\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"ngramtable: ngram size must be specified");
   }
 
   //distant co-occurreces works for bigrams and trigrams
   if (dstco && (maxl!=2) && (maxl!=3)) {
-    cerr << "distant co-occurrences work with 2-gram and 3-gram!\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"distant co-occurrences work with 2-gram and 3-gram");
   }
 
   maxlev=maxl;
@@ -264,8 +262,7 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
   else if (maxlev==1)
     mtflags(tree,LNODE | FREQ4);
   else {
-    cerr << "ngramtable: wrong level setting\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"ngramtable: wrong level setting");
   }
 
   word(tree,0); // dummy variable
@@ -309,8 +306,7 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
 
   if ((strncmp(header,"ngram",5)==0) ||
       (strncmp(header,"NGRAM",5)==0)) {
-    cerr << "this ngram file format is no more supported!\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"this ngram file format is no more supported");
   }
 
   if (strncmp(header,"nGrAm",5)==0)
@@ -338,8 +334,7 @@ void ngramtable::savetxt(char *filename,int depth,int googleformat)
 {
 
   if (depth>maxlev) {
-    cerr << "savetxt: wrong n-gram size\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"ngramtable::savetxt: wrong n-gram size");
   }
 
   depth=(depth>0?depth:maxlev);
@@ -496,8 +491,7 @@ void ngramtable::savebin(char *filename,int depth)
 {
 
   if (depth > maxlev) {
-    cerr << "savebin: wrong n-gram size\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"ngramtable::savebin: wrong n-gram size");
   }
 
   depth=(depth>0?depth:maxlev);
@@ -629,8 +623,9 @@ void ngramtable::generate(char *filename, dictionary* extdict)
   int i,c=0;
 
   if (!inp) {
-    cerr << "cannot open " << filename << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   cerr << "load:";
@@ -697,8 +692,9 @@ void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
   memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
   if (!inp) {
-    cerr << "cannot open " << filename << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   //parse hmask
@@ -712,8 +708,9 @@ void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
 		}
   }
   if (i!= maxlev) {
-    cerr << "wrong mask: 1 bits=" << i << " maxlev=" << maxlev << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "wrong mask: 1 bits=" << i << " maxlev=" << maxlev;
+		exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
   }
 
   cerr << "load:";
@@ -762,15 +759,17 @@ void ngramtable::generate_dstco(char *filename,int dstco)
   int c=0;
 
   if (!inp) {
-    cerr << "cannot open " << filename << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "cannot open " << filename;
+		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
 
   cerr << "load distant co-occurrences:";
   if (dstco>MAX_NGRAM) {
-    cerr << "window size (" << dstco << ") exceeds MAXNGRAM\n";
     inp.close();
-    exit (1);
+		std::stringstream ss_msg;
+		ss_msg << "window size (" << dstco << ") exceeds MAXNGRAM";
+		exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
   }
 
   ngram ng(dict);
@@ -854,9 +853,7 @@ void ngramtable::augment(ngramtable* ngt)
 {
 
   if (ngt->maxlev != maxlev) {
-    cerr << "ngt augmentation is not possible "
-         << "due to table incompatibility!";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"ngramtable::augment augmentation is not possible due to table incompatibility");
   }
 
   if (ngt->dict->oovcode()!=-1)
@@ -1186,8 +1183,7 @@ char **ngramtable::grow(table *tb,NODETYPE ndt,int lev,
       else if (oldndt & FREQ4)
         oldsz=inodesize(4);
       else {
-        cerr << "funzione non prevista\n";
-        exit(1);
+				exit_error(IRSTLM_ERROR_DATA,"ngramtable::grow functionality not available");
       }
     } else if (ndt & LNODE) {
       if (oldndt & FREQ1)
@@ -1199,8 +1195,7 @@ char **ngramtable::grow(table *tb,NODETYPE ndt,int lev,
       else if (oldndt & FREQ4)
         oldsz=lnodesize(4);
       else {
-        cerr << "funzione non prevista\n";
-        exit(1);
+				exit_error(IRSTLM_ERROR_DATA,"ngramtable::grow functionality not available");
       }
     }
 
@@ -1378,8 +1373,7 @@ int ngramtable::get(ngram& ng,int n,int lev)
   assert(lev <= n && lev <= maxlev && ng.size >= n);
 
   if ((I_FREQ_NUM==0) && (lev < maxlev)) {
-    cerr << "get: for this type of table ngram cannot be smaller than table size\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_DATA,"ngramtable::get for this type of table ngram cannot be smaller than table size");
   }
 
 
@@ -1432,8 +1426,7 @@ int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram&
   assert(lev<=maxlev);
 
   if ((I_FREQ_NUM==0) && (maxl < maxlev)) {
-    cerr << "scan: ngram cannot be smaller than LEAFPROB table\n";
-    exit(1);
+		exit_error(IRSTLM_ERROR_MODEL,"ngramtable::scan ngram cannot be smaller than LEAFPROB table");
   }
 
 
@@ -1614,10 +1607,9 @@ double ngramtable::prob(ngram ong)
 bool ngramtable::check_dictsize_bound()
 {
   if (dict->size() >= code_range[CODESIZE]) {
-    cerr
-        << "dictionary size overflows code range "
-        << code_range[CODESIZE] << "\n";
-    exit(1);
+		std::stringstream ss_msg;
+		ss_msg << "dictionary size overflows code range " << code_range[CODESIZE];
+		exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
   }
   return true;
 }
@@ -1625,8 +1617,9 @@ bool ngramtable::check_dictsize_bound()
 int ngramtable::update(ngram ng) {
 
     if (!get(ng,ng.size,ng.size)) {
-      cerr << "cannot find " << ng << "\n";
-      exit(IRSTLM_ERROR_MODEL);
+			std::stringstream ss_msg;
+			ss_msg << "cannot find " << ng;
+			exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
     }
 
     freq(ng.link,ng.pinfo,ng.freq);
@@ -1821,9 +1814,10 @@ int ngramtable::mtablesz(node nd) {
       else
         return inodesize(6);
     } else {
-      cerr << "node has wrong flags\n";
-      exit(1);
+			exit_error(IRSTLM_ERROR_DATA,"ngramtable::mtablesz node has wrong flags");
     }
+	
+	return lnodesize(1); //this instruction is never reached
 }
 
 
