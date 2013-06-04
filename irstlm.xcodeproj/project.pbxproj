@@ -14,15 +14,17 @@
 			);
 			dependencies = (
 				3DE049241610483D00A26D29 /* PBXTargetDependency */,
-				3DE049141610481700A26D29 /* PBXTargetDependency */,
 				3DE049161610481C00A26D29 /* PBXTargetDependency */,
-				3DE049181610482000A26D29 /* PBXTargetDependency */,
-				3DE0491A1610482400A26D29 /* PBXTargetDependency */,
-				3DE0491C1610482800A26D29 /* PBXTargetDependency */,
-				3DE0491E1610482C00A26D29 /* PBXTargetDependency */,
-				3DE049201610483000A26D29 /* PBXTargetDependency */,
-				3DE049221610483300A26D29 /* PBXTargetDependency */,
+				3DE049141610481700A26D29 /* PBXTargetDependency */,
 				3D90F198161ACA85005EF654 /* PBXTargetDependency */,
+				3DE049201610483000A26D29 /* PBXTargetDependency */,
+				3DE049181610482000A26D29 /* PBXTargetDependency */,
+				3DE049221610483300A26D29 /* PBXTargetDependency */,
+				3DE0491C1610482800A26D29 /* PBXTargetDependency */,
+				3DE0491A1610482400A26D29 /* PBXTargetDependency */,
+				3DE0491E1610482C00A26D29 /* PBXTargetDependency */,
+				3DC9B83D175E349000089688 /* PBXTargetDependency */,
+				3DC9B84A175E34D600089688 /* PBXTargetDependency */,
 			);
 			name = ALL;
 			productName = ALL;
@@ -50,6 +52,9 @@
 		3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A716104E7B00205CAE /* cplsa.cpp */; };
 		3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A816104E7B00205CAE /* doc.cpp */; };
 		3D90F199161ACAAB005EF654 /* dtsel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* dtsel.cpp */; };
+		3DC9B83A175E346D00089688 /* score-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9B7FC175E2F6A00089688 /* score-lm.cpp */; };
+		3DC9B84E175E350F00089688 /* verify-caching.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9B821175E31AC00089688 /* verify-caching.cpp */; };
+		3DC9B85D175E35B600089688 /* score-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9B7FC175E2F6A00089688 /* score-lm.cpp */; };
 		3DE048EA161046FC00A26D29 /* lmclass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DE048E8161046FC00A26D29 /* lmclass.cpp */; };
 		3DE048EB161046FC00A26D29 /* lmclass.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE048E9161046FC00A26D29 /* lmclass.h */; };
 		3DE048F61610478800A26D29 /* lmInterpolation.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DE048F51610478800A26D29 /* lmInterpolation.h */; };
@@ -153,6 +158,34 @@
 			remoteGlobalIDString = 3D90F182161ACA12005EF654;
 			remoteInfo = dtsel;
 		};
+		3DC9B838175E345B00089688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D733D3F30B1F3B0800565249 /* irstlm */;
+			remoteInfo = irstlm;
+		};
+		3DC9B83C175E349000089688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3DC9B833175E344A00089688 /* score-lm */;
+			remoteInfo = "score-lm";
+		};
+		3DC9B847175E34C700089688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D733D3F30B1F3B0800565249 /* irstlm */;
+			remoteInfo = irstlm;
+		};
+		3DC9B849175E34D600089688 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3DC9B842175E34BD00089688 /* verify-caching */;
+			remoteInfo = "verify-caching";
+		};
 		3DE049131610481700A26D29 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
@@ -239,6 +272,10 @@
 		3D86C7A716104E7B00205CAE /* cplsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cplsa.cpp; path = src/cplsa.cpp; sourceTree = "<group>"; };
 		3D86C7A816104E7B00205CAE /* doc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = doc.cpp; path = src/doc.cpp; sourceTree = "<group>"; };
 		3D90F1A2161ACC07005EF654 /* dtsel */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dtsel; sourceTree = BUILT_PRODUCTS_DIR; };
+		3DC9B7FC175E2F6A00089688 /* score-lm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "score-lm.cpp"; path = "src/score-lm.cpp"; sourceTree = "<group>"; };
+		3DC9B821175E31AC00089688 /* verify-caching.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "verify-caching.cpp"; path = "src/verify-caching.cpp"; sourceTree = "<group>"; };
+		3DC9B834175E344A00089688 /* score-lm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "score-lm"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3DC9B843175E34BD00089688 /* verify-caching */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "verify-caching"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3DE048E8161046FC00A26D29 /* lmclass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmclass.cpp; path = src/lmclass.cpp; sourceTree = "<group>"; };
 		3DE048E9161046FC00A26D29 /* lmclass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmclass.h; path = src/lmclass.h; sourceTree = "<group>"; };
 		3DE048F51610478800A26D29 /* lmInterpolation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmInterpolation.h; path = src/lmInterpolation.h; sourceTree = "<group>"; };
@@ -365,6 +402,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3DC9B832175E344A00089688 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3DC9B841175E34BD00089688 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D733D3F20B1F3B0800565249 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -397,6 +448,8 @@
 				3D4F4DDB135C5C4C00E85480 /* interpolate-lm */,
 				3D4F4DF6135C5D7300E85480 /* plsa */,
 				3D90F1A2161ACC07005EF654 /* dtsel */,
+				3DC9B834175E344A00089688 /* score-lm */,
+				3DC9B843175E34BD00089688 /* verify-caching */,
 			);
 			name = irstlm;
 			sourceTree = "<group>";
@@ -404,6 +457,8 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3DC9B821175E31AC00089688 /* verify-caching.cpp */,
+				3DC9B7FC175E2F6A00089688 /* score-lm.cpp */,
 				3D86C79D16104E2600205CAE /* plsa.cpp */,
 				3D86C7A716104E7B00205CAE /* cplsa.cpp */,
 				3D86C7A816104E7B00205CAE /* doc.cpp */,
@@ -667,6 +722,40 @@
 			productReference = 3D90F1A2161ACC07005EF654 /* dtsel */;
 			productType = "com.apple.product-type.tool";
 		};
+		3DC9B833175E344A00089688 /* score-lm */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3DC9B83B175E348B00089688 /* Build configuration list for PBXNativeTarget "score-lm" */;
+			buildPhases = (
+				3DC9B831175E344A00089688 /* Sources */,
+				3DC9B832175E344A00089688 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3DC9B839175E345B00089688 /* PBXTargetDependency */,
+			);
+			name = "score-lm";
+			productName = "score-lm";
+			productReference = 3DC9B834175E344A00089688 /* score-lm */;
+			productType = "com.apple.product-type.tool";
+		};
+		3DC9B842175E34BD00089688 /* verify-caching */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3DC9B84B175E34F500089688 /* Build configuration list for PBXNativeTarget "verify-caching" */;
+			buildPhases = (
+				3DC9B840175E34BD00089688 /* Sources */,
+				3DC9B841175E34BD00089688 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3DC9B848175E34C700089688 /* PBXTargetDependency */,
+			);
+			name = "verify-caching";
+			productName = "verify-caching";
+			productReference = 3DC9B843175E34BD00089688 /* verify-caching */;
+			productType = "com.apple.product-type.tool";
+		};
 		D733D3F30B1F3B0800565249 /* irstlm */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D733D3F50B1F3B2600565249 /* Build configuration list for PBXNativeTarget "irstlm" */;
@@ -732,6 +821,8 @@
 				3D4F4DED135C5D7300E85480 /* plsa */,
 				3D90F182161ACA12005EF654 /* dtsel */,
 				3DE04907161047DD00A26D29 /* ALL */,
+				3DC9B833175E344A00089688 /* score-lm */,
+				3DC9B842175E34BD00089688 /* verify-caching */,
 			);
 		};
 /* End PBXProject section */
@@ -801,6 +892,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3DC9B831175E344A00089688 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3DC9B85D175E35B600089688 /* score-lm.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3DC9B840175E34BD00089688 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3DC9B84E175E350F00089688 /* verify-caching.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D733D3F10B1F3B0800565249 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -828,6 +935,7 @@
 				3DE048FA161047A000A26D29 /* lmInterpolation.cpp in Sources */,
 				3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */,
 				3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */,
+				3DC9B83A175E346D00089688 /* score-lm.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -886,6 +994,26 @@
 			isa = PBXTargetDependency;
 			target = 3D90F182161ACA12005EF654 /* dtsel */;
 			targetProxy = 3D90F197161ACA85005EF654 /* PBXContainerItemProxy */;
+		};
+		3DC9B839175E345B00089688 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D733D3F30B1F3B0800565249 /* irstlm */;
+			targetProxy = 3DC9B838175E345B00089688 /* PBXContainerItemProxy */;
+		};
+		3DC9B83D175E349000089688 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3DC9B833175E344A00089688 /* score-lm */;
+			targetProxy = 3DC9B83C175E349000089688 /* PBXContainerItemProxy */;
+		};
+		3DC9B848175E34C700089688 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D733D3F30B1F3B0800565249 /* irstlm */;
+			targetProxy = 3DC9B847175E34C700089688 /* PBXContainerItemProxy */;
+		};
+		3DC9B84A175E34D600089688 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3DC9B842175E34BD00089688 /* verify-caching */;
+			targetProxy = 3DC9B849175E34D600089688 /* PBXContainerItemProxy */;
 		};
 		3DE049141610481700A26D29 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1307,14 +1435,110 @@
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
 				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = "$(HOME)/bin";
+				INSTALL_PATH = "";
 				OTHER_LDFLAGS = (
 					"-lz",
 					"-lirstlm",
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = dtsel;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		3DC9B836175E344B00089688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "score-lm";
+				SKIP_INSTALL = YES;
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		3DC9B837175E344B00089688 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "";
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "score-lm";
+				SKIP_INSTALL = NO;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		3DC9B845175E34BE00089688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "verify-caching";
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		3DC9B846175E34BE00089688 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "verify-caching";
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1505,6 +1729,24 @@
 			buildConfigurations = (
 				3D90F189161ACA12005EF654 /* Debug */,
 				3D90F18A161ACA12005EF654 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3DC9B83B175E348B00089688 /* Build configuration list for PBXNativeTarget "score-lm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DC9B836175E344B00089688 /* Debug */,
+				3DC9B837175E344B00089688 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3DC9B84B175E34F500089688 /* Build configuration list for PBXNativeTarget "verify-caching" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DC9B845175E34BE00089688 /* Debug */,
+				3DC9B846175E34BE00089688 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
