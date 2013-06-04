@@ -24,6 +24,14 @@
 
 #define	CMD_H
 
+#define IRSTLM_CMD_NO_ERROR         0
+#define IRSTLM_CMD_ERROR_GENERIC    1
+#define IRSTLM_CMD_ERROR_IO         2
+#define IRSTLM_CMD_ERROR_MEMORY     3
+#define IRSTLM_CMD_ERROR_DATA       4
+#define IRSTLM_CMD_ERROR_MODEL      5
+
+
 #define	CMDDOUBLETYPE	1
 #define	CMDENUMTYPE	2
 #define	CMDINTTYPE	3

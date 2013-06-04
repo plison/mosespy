@@ -39,7 +39,6 @@
 
 #include	"cmd.h"
 
-
 #define	FALSE	0
 #define	TRUE	1
 
@@ -187,7 +186,7 @@ GetParams(int	*n,
 	if(!(Line=malloc(LINSIZ))) {
 		fprintf(stderr, "GetParams(): Unable to alloc %d bytes\n",
 						LINSIZ);
-		exit(1);
+		exit(IRSTLM_CMD_ERROR_MEMORY);
 	}
 	for(ProgName=*argv+strlen(*argv);
 	    ProgName-->*argv && *ProgName!='/' && *ProgName!='\\';);
@@ -240,7 +239,7 @@ GetParams(int	*n,
 		if(!fp) {
 			if(defCmd) continue;
 			fprintf(stderr, "Unable to open command file %s\n", CmdFile);
-			exit(1);
+			exit(IRSTLM_CMD_ERROR_IO);
 		}
 		while(GetLine(fp, LINSIZ, Line) && strcmp(Line, "\\End")) {
 			StoreCmdLine(Line);
@@ -421,7 +420,7 @@ BuildCmdList(Cmd_T	**cmdp,
 	if(!*cmdSz) {
 		if(!(cmds=*cmdp=malloc((1+(*cmdSz=BUFSIZ))*sizeof(Cmd_T)))) {
 			fprintf(stderr, "BuildCmdList(): malloc() failed\n");
-			exit(-1);
+			exit(IRSTLM_CMD_ERROR_MEMORY);
 		}
 	} else {
 		for(cmds=*cmdp; cmds[cmdN].Name; ++cmdN);
@@ -433,7 +432,7 @@ BuildCmdList(Cmd_T	**cmdp,
 			if(!cmds) {
 				fprintf(stderr,
 								"BuildCmdList(): realloc() failed\n");
-				exit(-1);
+				exit(IRSTLM_CMD_ERROR_MEMORY);
 			}
 		}
 		for(j=0; j<cmdN&&strcmp(cmds[j].Name, ParName)<0; j++);
@@ -484,7 +483,7 @@ BuildCmdList(Cmd_T	**cmdp,
 				fprintf(stderr, "%s: %s %d %s \"%s\"\n",
 								"BuildCmdList()", "Unknown Type",
 								cmd->Type&~CMDMSG, "for parameter", cmd->Name);
-				exit(1);
+				exit(IRSTLM_CMD_ERROR_DATA);
 		}
 		if(cmd->Type&CMDMSG) {
 			cmd->Type&=~CMDMSG;
@@ -503,7 +502,7 @@ CmdError(char	*opt)
 	fprintf(stderr, "Invalid option \"%s\"\n", opt);
 	fprintf(stderr, "This program expects the following parameters:\n");
 	PrintParams4(TRUE, FALSE, TRUE, stderr);
-	exit(0);
+	exit(IRSTLM_CMD_ERROR_DATA);
 	return 0;
 }
 
@@ -597,7 +596,7 @@ PrintParam(Cmd_T	*cmd,
 							cmd->Type,
 							"for parameter",
 							cmd->Name);
-			exit(1);
+			exit(IRSTLM_CMD_ERROR_DATA);
 	}
 	fprintf(fp, ":");
 	//	fprintf(fp, "\n");
@@ -701,7 +700,7 @@ SetParam(Cmd_T	*cmd,
 				fprintf(stderr,
 								"Float value required for parameter \"%s\"\n",
 								cmd->Name);
-				exit(1);
+				exit(IRSTLM_CMD_ERROR_DATA);
 			}
 			break;
 		case CMDFLOATTYPE:
@@ -709,7 +708,7 @@ SetParam(Cmd_T	*cmd,
 				fprintf(stderr,
 								"Float value required for parameter \"%s\"\n",
 								cmd->Name);
-				exit(1);
+				exit(IRSTLM_CMD_ERROR_DATA);
 			}
 			break;
 		case CMDENUMTYPE:
@@ -723,7 +722,7 @@ SetParam(Cmd_T	*cmd,
 				fprintf(stderr,
 								"Integer value required for parameter \"%s\"\n",
 								cmd->Name);
-				exit(1);
+				exit(IRSTLM_CMD_ERROR_DATA);
 			}
 			break;
 		case CMDSTRINGTYPE:
@@ -754,7 +753,7 @@ SetParam(Cmd_T	*cmd,
 							cmd->Type,
 							"for parameter",
 							cmd->Name);
-			exit(1);
+			exit(IRSTLM_CMD_ERROR_DATA);
 	}
 	cmd->ArgStr = strdup(s);
 	
@@ -825,7 +824,7 @@ SetSubrange(Cmd_T	*cmd,
 		fprintf(stderr,
 						"Integer value required for parameter \"%s\"\n",
 						cmd->Name);
-		exit(1);
+		exit(IRSTLM_CMD_ERROR_DATA);
 	}
 	if(n < *(int*)cmd->p || n > *((int*)cmd->p+1)) {
 		return SubrangeError(cmd, n);
@@ -844,7 +843,7 @@ SetGte(Cmd_T	*cmd,
 		fprintf(stderr,
 						"Integer value required for parameter \"%s\"\n",
 						cmd->Name);
-		exit(1);
+		exit(IRSTLM_CMD_ERROR_DATA);
 	}
 	if(n<*(int*)cmd->p) {
 		return GteError(cmd, n);
@@ -880,7 +879,7 @@ SetLte(Cmd_T	*cmd,
 		fprintf(stderr,
 						"Integer value required for parameter \"%s\"\n",
 						cmd->Name);
-		exit(1);
+		exit(IRSTLM_CMD_ERROR_DATA);
 	}
 	if(n > *(int*)cmd->p) {
 		return LteError(cmd, n);
@@ -902,7 +901,7 @@ EnumError(Cmd_T	*cmd,
 		if(*en->Name) fprintf(stderr, " %s\n", en->Name);
 	}
 	fprintf(stderr, "\n");
-	exit(1);
+	exit(IRSTLM_CMD_ERROR_DATA);
 	return 0;
 }
 
@@ -914,7 +913,7 @@ GteError(Cmd_T	*cmd,
 					"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
 	fprintf(stderr, "Valid values must be greater than or equal to %d\n",
 					*(int*)cmd->p);
-	exit(1);
+	exit(IRSTLM_CMD_ERROR_DATA);
 	return 0;
 }
 
@@ -926,7 +925,7 @@ LteError(Cmd_T	*cmd,
 					"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
 	fprintf(stderr, "Valid values must be less than or equal to %d\n",
 					*(int*)cmd->p);
-	exit(1);
+	exit(IRSTLM_CMD_ERROR_DATA);
 	return 0;
 }
 
@@ -938,7 +937,7 @@ SubrangeError(Cmd_T	*cmd,
 					"Value %d out of range for parameter \"%s\"\n", n, cmd->Name);
 	fprintf(stderr, "Valid values range from %d to %d\n",
 					*(int*)cmd->p, *((int*)cmd->p+1));
-	exit(1);
+	exit(IRSTLM_CMD_ERROR_DATA);
 	return 0;
 }
 
@@ -1184,7 +1183,7 @@ StoreCmdLine(char	*s)
 		if(!CmdLines) {
 			fprintf(stderr, "%s\n",
 							"StoreCmdLine(): malloc() failed");
-			exit(-1);
+			exit(IRSTLM_CMD_ERROR_MEMORY);
 		}
 	}
 	CmdLines[CmdLinesL++] = strdup(s);
