@@ -150,14 +150,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3D90F182161ACA12005EF654 /* dtsel */;
-			remoteInfo = dtsel;
-		};
-		3D90F19E161ACB2B005EF654 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 3D90F182161ACA12005EF654 /* dtsel */;
+			remoteGlobalIDString = 3D90F182161ACA12005EF654;
 			remoteInfo = dtsel;
 		};
 		3DE049131610481700A26D29 /* PBXContainerItemProxy */ = {
@@ -245,7 +238,7 @@
 		3D86C7A416104E6600205CAE /* doc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = doc.h; path = src/doc.h; sourceTree = "<group>"; };
 		3D86C7A716104E7B00205CAE /* cplsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cplsa.cpp; path = src/cplsa.cpp; sourceTree = "<group>"; };
 		3D86C7A816104E7B00205CAE /* doc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = doc.cpp; path = src/doc.cpp; sourceTree = "<group>"; };
-		3D90F1A2161ACC07005EF654 /* dtsel */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = dtsel; path = build/Debug/dtsel; sourceTree = "<group>"; };
+		3D90F1A2161ACC07005EF654 /* dtsel */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dtsel; sourceTree = BUILT_PRODUCTS_DIR; };
 		3DE048E8161046FC00A26D29 /* lmclass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lmclass.cpp; path = src/lmclass.cpp; sourceTree = "<group>"; };
 		3DE048E9161046FC00A26D29 /* lmclass.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmclass.h; path = src/lmclass.h; sourceTree = "<group>"; };
 		3DE048F51610478800A26D29 /* lmInterpolation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lmInterpolation.h; path = src/lmInterpolation.h; sourceTree = "<group>"; };
@@ -650,7 +643,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				3D90F19F161ACB2B005EF654 /* PBXTargetDependency */,
 				3D4F4DEE135C5D7300E85480 /* PBXTargetDependency */,
 			);
 			name = plsa;
@@ -894,11 +886,6 @@
 			isa = PBXTargetDependency;
 			target = 3D90F182161ACA12005EF654 /* dtsel */;
 			targetProxy = 3D90F197161ACA85005EF654 /* PBXContainerItemProxy */;
-		};
-		3D90F19F161ACB2B005EF654 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 3D90F182161ACA12005EF654 /* dtsel */;
-			targetProxy = 3D90F19E161ACB2B005EF654 /* PBXContainerItemProxy */;
 		};
 		3DE049141610481700A26D29 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
