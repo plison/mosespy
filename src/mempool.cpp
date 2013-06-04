@@ -249,8 +249,7 @@ const char *strstack::push(const char *s)
   int len=strlen(s);
 
   if ((len+1) >= size) {
-    cerr << "strstack::push string is too long\n";
-    exit(1);
+    exit_error(IRSTLM_ERROR_DATA, "strstack::push string is too long");
   };
 
   if ((idx+len+1) >= size) {
@@ -420,8 +419,7 @@ char *storage::allocate(int size)
     newcalls++;
     char* p=(char *)calloc(sizeof(char),size);
     if (p==NULL) {
-      cerr << "storage::alloc insufficient memory\n";
-      exit(1);
+      exit_error(IRSTLM_ERROR_MEMORY, "storage::alloc insufficient memory");
     }
     return p;
   }
@@ -455,8 +453,7 @@ char *storage::reallocate(char *oldptr,int oldsize,int newsize)
       cerr << "a\b";
   }
   if (newptr==NULL) {
-    cerr << "storage::realloc insufficient memory\n";
-    exit(1);
+    exit_error(IRSTLM_ERROR_MEMORY,"storage::realloc insufficient memory");
   }
 
   return newptr;
@@ -484,6 +481,7 @@ int storage::free(char *addr,int size)
 
 void storage::stat()
 {
+  IFVERBOSE(1){
   int used=0;
   int memory=sizeof(char *) * setsize;
   int waste=0;
@@ -502,5 +500,6 @@ void storage::stat()
           << " active  " << used
           << " used memory " << memory/1024 << "Kb"
           << " wasted " << waste/1024 << "Kb\n");
+  }
 }
 

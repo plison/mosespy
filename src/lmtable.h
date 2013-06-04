@@ -184,9 +184,9 @@ public:
   void init_lmtcaches(int uptolev);
   void init_caches(int uptolev);
 
-  void used_prob_and_state_cache();
-  void used_lmtcaches();
-  void used_caches();
+  void used_prob_and_state_cache() const;
+  void used_lmtcaches() const;
+  void used_caches() const;
 
 
   void delete_prob_and_state_cache();
@@ -197,13 +197,13 @@ public:
   void delete_lmtcaches();
   void delete_caches();
 
-  void check_prob_and_state_cache_levels();
-  void check_probcache_levels() {
+  void check_prob_and_state_cache_levels() const;
+  void check_probcache_levels() const {
     check_prob_and_state_cache_levels();
   }; //kept for back compatibility
-  void check_statecache_levels() {}; //kept for back compatibility
-  void check_lmtcaches_levels();
-  void check_caches_levels();
+  void check_statecache_levels() const{}; //kept for back compatibility
+  void check_lmtcaches_levels() const;
+  void check_caches_levels() const;
 
   void reset_prob_and_state_cache();
   void reset_probcache() {
@@ -214,49 +214,49 @@ public:
   void reset_caches();
 
 
-  bool are_prob_and_state_cache_active();
-  bool is_probcache_active() {
+  bool are_prob_and_state_cache_active() const;
+  bool is_probcache_active() const {
     return are_prob_and_state_cache_active();
   }; //kept for back compatibility
-  bool is_statecache_active() {
+  bool is_statecache_active() const {
     return are_prob_and_state_cache_active();
   }; //kept for back compatibility
-  bool are_lmtcaches_active();
-  bool are_caches_active();
+  bool are_lmtcaches_active() const;
+  bool are_caches_active() const;
 
   void reset_mmap();
 
 //set the inverted flag to load ngrams in an inverted order
 //this choice is disregarded if a binary LM is loaded,
 //because the info is stored into the header
-  bool is_inverted(const bool flag) {
+  inline bool is_inverted(const bool flag) {
     return isInverted=flag;
   }
-  bool is_inverted() {
+  inline bool is_inverted() const {
     return isInverted;
   }
 
   void configure(int n,bool quantized);
 
   //set penalty for OOV words
-  double getlogOOVpenalty() const {
+  inline double getlogOOVpenalty() const {
     return logOOVpenalty;
   }
 
-  double setlogOOVpenalty(int dub) {
+  inline double setlogOOVpenalty(int dub) {
     assert(dub > dict->size());
     dictionary_upperbound = dub;
     return logOOVpenalty=log((double)(dictionary_upperbound - dict->size()))/M_LN10;
   }
 
-  double setlogOOVpenalty(double oovp) {
+  inline double setlogOOVpenalty(double oovp) {
     return logOOVpenalty=oovp;
   }
 
   virtual int maxlevel() const {
     return maxlev;
   };
-  bool isQuantized() const {
+  inline bool isQuantized() const {
     return isQtable;
   }
 

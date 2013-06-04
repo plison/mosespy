@@ -109,7 +109,9 @@ int main(int argc, char **argv)
     mfstream test(testfile,ios::in);
     if (!test) {
       usage();
-      exit_error(IRSTLM_NO_ERROR,strcat((char*) "Warning: cannot open testfile: ", testfile));
+			std::string msg("Warning: cannot open testfile: ");
+			msg.append(testfile);
+      exit_error(IRSTLM_NO_ERROR, msg);
     }
     test.close();
 

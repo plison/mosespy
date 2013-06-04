@@ -193,7 +193,7 @@ void lmtable::delete_caches()
 }
 
 
-void lmtable::used_prob_and_state_cache()
+void lmtable::used_prob_and_state_cache() const
 {
 #ifdef PS_CACHE_ENABLE
   std::cerr << "prob_and_state_cache() ";
@@ -201,7 +201,7 @@ void lmtable::used_prob_and_state_cache()
 #endif
 }
 
-void lmtable::used_lmtcaches()
+void lmtable::used_lmtcaches() const
 {
 #ifdef LMT_CACHE_ENABLE
   for (int i=2; i<=max_cache_lev; i++) {
@@ -211,14 +211,14 @@ void lmtable::used_lmtcaches()
 #endif
 }
 
-void lmtable::used_caches()
+void lmtable::used_caches() const
 {
   used_prob_and_state_cache();
   used_lmtcaches();
 }
 
 
-void lmtable::check_prob_and_state_cache_levels()
+void lmtable::check_prob_and_state_cache_levels() const
 {
 #ifdef PS_CACHE_ENABLE
   if (prob_and_state_cache && prob_and_state_cache->isfull())
@@ -226,7 +226,7 @@ void lmtable::check_prob_and_state_cache_levels()
 #endif
 }
 
-void lmtable::check_lmtcaches_levels()
+void lmtable::check_lmtcaches_levels() const
 {
 #ifdef LMT_CACHE_ENABLE
   for (int i=2; i<=max_cache_lev; i++)
@@ -234,13 +234,13 @@ void lmtable::check_lmtcaches_levels()
 #endif
 }
 
-void lmtable::check_caches_levels()
+void lmtable::check_caches_levels() const
 {
   check_prob_and_state_cache_levels();
   check_lmtcaches_levels();
 }
 
-void lmtable::reset_prob_and_state_cache()
+void lmtable::reset_prob_and_state_cache() 
 {
 #ifdef PS_CACHE_ENABLE
   if (prob_and_state_cache)
@@ -262,7 +262,7 @@ void lmtable::reset_caches()
   reset_lmtcaches();
 }
 
-bool lmtable::are_prob_and_state_cache_active()
+bool lmtable::are_prob_and_state_cache_active() const
 {
 #ifdef PS_CACHE_ENABLE
   return prob_and_state_cache!=NULL;
@@ -271,7 +271,7 @@ bool lmtable::are_prob_and_state_cache_active()
 #endif
 }
 
-bool lmtable::are_lmtcaches_active()
+bool lmtable::are_lmtcaches_active() const
 {
 #ifdef LMT_CACHE_ENABLE
   if (max_cache_lev < 2)
@@ -284,7 +284,7 @@ bool lmtable::are_lmtcaches_active()
 #endif
 }
 
-bool lmtable::are_caches_active()
+bool lmtable::are_caches_active() const
 {
   return (are_prob_and_state_cache_active() && are_lmtcaches_active());
 }
@@ -318,8 +318,8 @@ void lmtable::load(const std::string infile, int mmap)
 
   if (!inp.good()) {
     std::cerr << "Failed to open " << infile << "!" << std::endl;
-    exit(1);
-  }
+    exit_error(IRSTLM_ERROR_IO, "Failed to open "+infile);
+	}
   setMaxLoadedLevel(requiredMaxlev);
 
   //check whether memory mapping is required
@@ -784,7 +784,7 @@ void lmtable::expand_level_mmap(int level, table_entry_pos_t size, const char* o
   fd = fopen(nameNgrams, "w+");
   if (fd == NULL) {
     perror("Error opening file for writing");
-    exit(EXIT_FAILURE);
+    exit_error(IRSTLM_ERROR_IO, "Error opening file for writing");
   }
   table_pos_t filesize=(table_pos_t) maxsize[level] * nodesize(tbltype[level]);
   // set the file to the proper size:
@@ -796,7 +796,7 @@ void lmtable::expand_level_mmap(int level, table_entry_pos_t size, const char* o
   if (table[level] == MAP_FAILED) {
     fclose(fd);
     perror("Error mmapping the file");
-    exit(EXIT_FAILURE);
+    exit_error(IRSTLM_ERROR_IO, "Error mmapping the file");
   }
 
   if (maxlev>1 && level<maxlev) {
@@ -1952,11 +1952,11 @@ int lmtable::get(ngram& ng,int n,int lev)
   for (int l=1; l<=lev; l++) {
 
     //initialize entry information
-    bool hit = false;
     found = NULL;
     ndt=tbltype[l];
 
 #ifdef LMT_CACHE_ENABLE
+    bool hit = false;
     if (lmtcache[l] && lmtcache[l]->get(ng.wordp(n),found)) {
       hit=true;
     } else {
@@ -2129,9 +2129,9 @@ int lmtable::succscan(ngram& h,ngram& ng,LMT_ACTION action,int lev)
       return 0;
 
   default:
-    cerr << "succscan: only permitted options are LMT_INIT and LMT_CONT\n";
-    exit(0);
+    exit_error(IRSTLM_ERROR_MODEL, "succscan: only permitted options are LMT_INIT and LMT_CONT");
   }
+  return 0;
 }
 
 //maxsuffptr returns the largest suffix of an n-gram that is contained

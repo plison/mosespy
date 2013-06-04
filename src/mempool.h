@@ -47,9 +47,12 @@ class memnode
   friend class strstack;  //!< grant access
   char          *block;   //!< block of memory
   memnode        *next;   //!< next block ptr
-
 public:
-  memnode():block(0),next(0) {};
+  //! Creates a memory node
+  memnode():block(NULL), next(NULL){};
+	
+  //! Destroys memory node
+  ~memnode(){};
 };
 
 
@@ -93,12 +96,12 @@ public:
   //! Returns effectively used memory (bytes)
   /*! includes 8 bytes required by each call of new */
 
-  int used() {
+  int used() const {
     return blocknum * (true_size + 8);
   }
 
   //! Returns amount of wasted memory (bytes)
-  int wasted() {
+  int wasted() const {
     return used()-(entries * item_size);
   }
 };
@@ -136,11 +139,11 @@ public:
 
   void stat();
 
-  int used() {
+  int used() const {
     return memory;
   }
 
-  int wasted() {
+  int wasted() const {
     return waste;
   }
 
