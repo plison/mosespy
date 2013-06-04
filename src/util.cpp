@@ -304,38 +304,34 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
   return 1;
 }
 
-void exit_error(int err, const char *msg){
-        switch(err){
-        case IRSTLM_NO_ERROR:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"No error\n");
-                break;
-        case IRSTLM_ERROR_GENERIC:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"Generic error\n");
-                break;
-        case IRSTLM_ERROR_IO:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"Input/Output error\n");
-                break;
-        case IRSTLM_ERROR_MEMORY:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"Allocation memory error\n");
-                break;
-        case IRSTLM_ERROR_DATA:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"Data format error\n");
-		break;
-        case IRSTLM_ERROR_MODEL:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"Model computation error\n");
-                break;
-        default:
-                if (msg) { VERBOSE(0,msg); }
-                else VERBOSE(0,"Undefined error\n");
-                break;
-        }
-        VERBOSE(0,"\n");
-        exit(err);
+void exit_error(int err, const std::string &msg){
+	if (msg != "") { VERBOSE(0,msg); }
+	else{
+		switch(err){
+			case IRSTLM_NO_ERROR:
+				VERBOSE(0,"No error");
+				break;
+			case IRSTLM_ERROR_GENERIC:
+				VERBOSE(0,"Generic error");
+				break;
+			case IRSTLM_ERROR_IO:
+				VERBOSE(0,"Input/Output error");
+				break;
+			case IRSTLM_ERROR_MEMORY:
+				VERBOSE(0,"Allocation memory error");
+				break;
+			case IRSTLM_ERROR_DATA:
+				VERBOSE(0,"Data format error");
+				break;
+			case IRSTLM_ERROR_MODEL:
+				VERBOSE(0,"Model computation error");
+				break;
+			default:
+				VERBOSE(0,"Undefined error");
+				break;
+		}
+	}
+	VERBOSE(0,"\n");
+	exit(err);
 };
 
