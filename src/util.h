@@ -88,7 +88,7 @@ double GetUserTime();
 int parseWords(char *, const char **, int);
 int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow);
 
-void exit_error(int err);
+void exit_error(int err, const char *msg = NULL);
 
 #endif
 
