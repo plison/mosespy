@@ -162,28 +162,28 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = D733D3F30B1F3B0800565249 /* irstlm */;
+			remoteGlobalIDString = D733D3F30B1F3B0800565249;
 			remoteInfo = irstlm;
 		};
 		3DC9B83C175E349000089688 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3DC9B833175E344A00089688 /* score-lm */;
+			remoteGlobalIDString = 3DC9B833175E344A00089688;
 			remoteInfo = "score-lm";
 		};
 		3DC9B847175E34C700089688 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = D733D3F30B1F3B0800565249 /* irstlm */;
+			remoteGlobalIDString = D733D3F30B1F3B0800565249;
 			remoteInfo = irstlm;
 		};
 		3DC9B849175E34D600089688 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 08FB7793FE84155DC02AAC07 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3DC9B842175E34BD00089688 /* verify-caching */;
+			remoteGlobalIDString = 3DC9B842175E34BD00089688;
 			remoteInfo = "verify-caching";
 		};
 		3DE049131610481700A26D29 /* PBXContainerItemProxy */ = {
@@ -795,6 +795,9 @@
 /* Begin PBXProject section */
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = NO;
+			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "irstlm" */;
 			compatibilityVersion = "Xcode 2.4";
 			developmentRegion = English;
@@ -810,6 +813,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				3DE04907161047DD00A26D29 /* ALL */,
 				D733D3F30B1F3B0800565249 /* irstlm */,
 				D77D1C700B30325000D79D16 /* dict */,
 				3D4F4D82135C48E800E85480 /* ngt */,
@@ -820,7 +824,6 @@
 				3D4F4DD2135C5C4C00E85480 /* interpolate-lm */,
 				3D4F4DED135C5D7300E85480 /* plsa */,
 				3D90F182161ACA12005EF654 /* dtsel */,
-				3DE04907161047DD00A26D29 /* ALL */,
 				3DC9B833175E344A00089688 /* score-lm */,
 				3DC9B842175E34BD00089688 /* verify-caching */,
 			);
@@ -1104,6 +1107,7 @@
 		1DEB923708733DC60010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
@@ -1160,7 +1164,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = "compile-lm";
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1200,7 +1204,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = ngt;
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1240,7 +1244,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = "quantize-lm";
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1280,7 +1284,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = "prune-lm";
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1322,7 +1326,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = tlm;
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1362,7 +1366,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = "interpolate-lm";
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1402,7 +1406,7 @@
 					"$(inherited)",
 				);
 				PREBINDING = NO;
-				PRODUCT_NAME = dict;
+				PRODUCT_NAME = plsa;
 				ZERO_LINK = NO;
 			};
 			name = Release;
@@ -1659,7 +1663,7 @@
 				1DEB923708733DC60010E9CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4D6D135C481600E85480 /* Build configuration list for PBXNativeTarget "compile-lm" */ = {
 			isa = XCConfigurationList;
@@ -1668,7 +1672,7 @@
 				3D4F4D6F135C481600E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4D88135C48E800E85480 /* Build configuration list for PBXNativeTarget "ngt" */ = {
 			isa = XCConfigurationList;
@@ -1677,7 +1681,7 @@
 				3D4F4D8A135C48E800E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4D93135C48EC00E85480 /* Build configuration list for PBXNativeTarget "quantize-lm" */ = {
 			isa = XCConfigurationList;
@@ -1686,7 +1690,7 @@
 				3D4F4D95135C48EC00E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4D9E135C48F100E85480 /* Build configuration list for PBXNativeTarget "prune-lm" */ = {
 			isa = XCConfigurationList;
@@ -1695,7 +1699,7 @@
 				3D4F4DA0135C48F100E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4DC2135C5B8800E85480 /* Build configuration list for PBXNativeTarget "tlm" */ = {
 			isa = XCConfigurationList;
@@ -1704,7 +1708,7 @@
 				3D4F4DC4135C5B8800E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4DD8135C5C4C00E85480 /* Build configuration list for PBXNativeTarget "interpolate-lm" */ = {
 			isa = XCConfigurationList;
@@ -1713,7 +1717,7 @@
 				3D4F4DDA135C5C4C00E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D4F4DF3135C5D7300E85480 /* Build configuration list for PBXNativeTarget "plsa" */ = {
 			isa = XCConfigurationList;
@@ -1722,7 +1726,7 @@
 				3D4F4DF5135C5D7300E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3D90F188161ACA12005EF654 /* Build configuration list for PBXNativeTarget "dtsel" */ = {
 			isa = XCConfigurationList;
@@ -1731,7 +1735,7 @@
 				3D90F18A161ACA12005EF654 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3DC9B83B175E348B00089688 /* Build configuration list for PBXNativeTarget "score-lm" */ = {
 			isa = XCConfigurationList;
@@ -1740,7 +1744,7 @@
 				3DC9B837175E344B00089688 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3DC9B84B175E34F500089688 /* Build configuration list for PBXNativeTarget "verify-caching" */ = {
 			isa = XCConfigurationList;
@@ -1749,7 +1753,7 @@
 				3DC9B846175E34BE00089688 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		3DE049121610481400A26D29 /* Build configuration list for PBXAggregateTarget "ALL" */ = {
 			isa = XCConfigurationList;
@@ -1758,7 +1762,7 @@
 				3DE04909161047DD00A26D29 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		D733D3F50B1F3B2600565249 /* Build configuration list for PBXNativeTarget "irstlm" */ = {
 			isa = XCConfigurationList;
@@ -1767,7 +1771,7 @@
 				D733D3F70B1F3B2600565249 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		D77D1C750B30329200D79D16 /* Build configuration list for PBXNativeTarget "dict" */ = {
 			isa = XCConfigurationList;
@@ -1776,7 +1780,7 @@
 				D77D1C770B30329200D79D16 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
