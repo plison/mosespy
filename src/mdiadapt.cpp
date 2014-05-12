@@ -77,11 +77,11 @@ void mdiadaptlm::caches_stat()
 #ifdef MDIADAPTLM_CACHE_ENABLE
   for (int i=1; i<=max_caching_level; i++) {
     if (probcache[i]) {
-      cerr << "Statistics of probcache at level " << i << " (of " << lmsize() << ") ";
+      cerr << "Statistics of probcache at level " << i << " (of " << maxlev << ") ";
       probcache[i]->stat();
     }
     if (backoffcache[i]) {
-      cerr << "Statistics of backoffcache at level " << i << " (of " << lmsize() << ") ";
+      cerr << "Statistics of backoffcache at level " << i << " (of " << maxlev << ") ";
       backoffcache[i]->stat();
     }
   }
@@ -1169,9 +1169,8 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
     VERBOSE(2,"savebin: " << filename << "\n");
   }
 	
-	
-  streampos pos[lmsize()+1];
   int maxlev=lmsize();
+  streampos pos[LMTMAXLEV+1];
   char buff[100];
   int isQuant=0; //savebin for quantized LM is not yet implemented
 	
@@ -1180,11 +1179,11 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 
 	//create temporary output file stream to store single levels for all terms
   assert(strlen(filename)<1000);
-  char tfilename[lmsize()+1][1000];
-  mfstream *tout[lmsize()+1];
+  char tfilename[LMTMAXLEV+1][1000];
+  mfstream *tout[LMTMAXLEV+1];
 
 	tout[0]=NULL;
-	for (int i=1; i<=lmsize(); i++) {
+	for (int i=1; i<=maxlev; i++) {
     sprintf(tfilename[i],"%s-%dgrams",filename,i);
     tout[i]=new mfstream(tfilename[i],ios::out);
   }
@@ -1202,17 +1201,17 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 	subdict->save(out);
 	out.flush();
 	
-  ngram ng(dict,lmsize());
-  ngram oldng(dict,lmsize());
-  ngram locng(dict,lmsize());
+  ngram ng(dict,maxlev);
+  ngram oldng(dict,maxlev);
+  ngram locng(dict,maxlev);
 	
-  ngram sng(subdict,lmsize());
+  ngram sng(subdict,maxlev);
 	
   double fstar,lambda,bo,dummy,dummy2,pr,ibow;
 	
   //n-gram counters
-  table_entry_pos_t num[lmsize()+1];
-  for (int i=1; i<=lmsize(); i++) num[i]=0;
+  table_entry_pos_t num[LMTMAXLEV+1];
+  for (int i=1; i<=maxlev; i++) num[i]=0;
 	
 	lmtable* lmt = new lmtable();
 	
@@ -1238,7 +1237,7 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 		pr=mdiadaptlm::prob(ung,1);
 		pr=(pr?log10(pr):-99);
 		
-		if (lmsize()>1) { //compute back-off
+		if (maxlev>1) { //compute back-off
 			ung.pushc(0); //extend by one
 			mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
 			ung.shift();//shrink by one
@@ -1269,10 +1268,10 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
       *ng.wordp(lmsize())=w;
 			
       //create sentinel n-gram
-      for (int i=1; i<=lmsize(); i++) *oldng.wordp(i)=-1;
+      for (int i=1; i<=maxlev; i++) *oldng.wordp(i)=-1;
 			
       //create the table for all levels but the level 1, with the maximum number of possible entries
-      for (int i=2; i<=lmsize(); i++) 
+      for (int i=2; i<=maxlev; i++) 
 				lmt->expand_level(i,entries(i),tmpfilename,mmap);
 			
       scan(ung.link,ung.info,1,ng,INIT,lmsize());
@@ -1281,13 +1280,13 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 				locng=ng;      // make a local copy
 				
 				//find first internal level that changed
-				int f=lmsize()-1; //unigrams have been already covered
+				int f=maxlev-1; //unigrams have been already covered
 				while (f>1 && (*oldng.wordp(f)==*ng.wordp(f))){ f--; }
 
-				for (int l=lmsize()-(f-1); l<=lmsize(); l++){
+				for (int l=maxlev-(f-1); l<=lmsize(); l++){
 					
 					locng=ng;      // make a local copy
-					if (l<lmsize()) locng.shift(lmsize()-l); //reduce the ngram, which has size level
+					if (l<lmsize()) locng.shift(maxlev-l); //reduce the ngram, which has size level
 					
 					if (sng.containsWord(subdict->OOV(),l)) continue;
 					
@@ -1343,7 +1342,7 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 		}
 		else{
       //create empty tables for all levels but the level 1, to keep consistency with the rest of the code
-      for (int i=2; i<=lmsize(); i++) 
+      for (int i=2; i<=maxlev; i++) 
 				lmt->expand_level(i,0,tmpfilename,mmap);
 		}
 		
@@ -1363,25 +1362,25 @@ int mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile,in
 		}
 		
 		// now we can save table at level maxlev, if not equal to 1
-		if (lmsize()>1){
+		if (maxlev>1){
 			lmt->appendbin_level(maxlev, *tout[maxlev], mmap);
 		}
 		
 		//delete levels from 2 to lmsize();
-		for (int i=2; i<=lmsize(); i++)			lmt->delete_level(i, tmpfilename, mmap);
+		for (int i=2; i<=maxlev; i++)			lmt->delete_level(i, tmpfilename, mmap);
 		
 		//update table offsets
-		for (int i=2; i<=lmsize(); i++) lmt->update_offset(i,num[i]);
+		for (int i=2; i<=maxlev; i++) lmt->update_offset(i,num[i]);
   }
 	//close levels from 2 to lmsize()
-	for (int i=2; i<=lmsize(); i++) tout[i]->close();
+	for (int i=2; i<=maxlev; i++) tout[i]->close();
 	
 	//now we can save level 1, which contains all unigrams
 	//cerr << "saving level 1" << "...\n";
 	lmt->savebin_level(1, filename, mmap);
 	
 	//update headers
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     sprintf(buff," %10d",num[i]);
     out.seekp(pos[i]);
     out << buff;
@@ -1420,9 +1419,9 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
   } else {
     VERBOSE(2,"savebin: " << filename << "\n");
   }
-
-  streampos pos[lmsize()+1];
+	
   int maxlev=lmsize();
+  streampos pos[LMTMAXLEV+1];
   char buff[100];
   int isQuant=0; //savebin for quantized LM is not yet implemented
 
@@ -1447,7 +1446,7 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
 
   //start adding n-grams to lmtable
 
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     cerr << "saving level " << i << "...\n";
     table_entry_pos_t numberofentries;
     if (i==1) { //unigram
@@ -1492,7 +1491,7 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
         else {
 					//				} //do nothing
 
-					if (lmsize()>1) {
+					if (maxlev>1) {
 						ngram ng2=ng;
 						ng2.pushc(0); //extend by one
 						
@@ -1540,7 +1539,7 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
           pr=1e-10;
         }
 
-        if (i<lmsize()) {
+        if (i<maxlev) {
           ng2=ng;
           ng2.pushc(0); //extend by one
 
@@ -1575,7 +1574,7 @@ int mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile,i
   lmt->savebin_level(maxlev, filename, mmap);
 
   //update headers
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     sprintf(buff," %10d",lmt->getCurrentSize(i));
     out.seekp(pos[i]);
     out << buff;
@@ -1610,14 +1609,15 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
 
   //main output file
   mfstream out(filename,ios::out);
-
+	
+  int maxlev=lmsize();
   //create temporary output file stream
   assert(strlen(filename)<1000);
-  char tfilename[lmsize()+1][1000];
-  mfstream *tout[lmsize()+1];
+  char tfilename[LMTMAXLEV+1][1000];
+  mfstream *tout[LMTMAXLEV+1];
 	
 	tout[0]=NULL;
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     sprintf(tfilename[i],"%s.%d",filename,i);
     tout[i]=new mfstream(tfilename[i],ios::out);
     *tout[i] << "\n\\" << i << "-grams:\n";
@@ -1632,8 +1632,8 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
   double fstar,lambda,bo,dummy,dummy2, pr;
 
   //n-gram counters
-  table_entry_pos_t num[lmsize()+1];
-  for (int i=1; i<=lmsize(); i++) num[i]=0;
+  table_entry_pos_t num[LMTMAXLEV+1];
+  for (int i=1; i<=maxlev; i++) num[i]=0;
 
 
   //main loop
@@ -1659,7 +1659,7 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
 
     num[1]++;
 
-    if (lmsize()>1) { //print back-off
+    if (maxlev>1) { //print back-off
       ung.pushc(0); //extend by one
       mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
 			ung.shift();//shrink by one
@@ -1680,24 +1680,24 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
     if (get(ung,1,1)) {
 
       //create n-gram with history w
-      *ng.wordp(lmsize())=w;
+      *ng.wordp(maxlev)=w;
 
       //create sentinel n-gram
-      for (int i=1; i<=lmsize(); i++) *oldng.wordp(i)=-1;
+      for (int i=1; i<=maxlev; i++) *oldng.wordp(i)=-1;
 
-      scan(ung.link,ung.info,1,ng,INIT,lmsize());
-      while(scan(ung.link,ung.info,1,ng,CONT,lmsize())) {
+      scan(ung.link,ung.info,1,ng,INIT,maxlev);
+      while(scan(ung.link,ung.info,1,ng,CONT,maxlev)) {
         //cerr << ng << "\n";
         sng.trans(ng); // convert to subdictionary
         locng=ng;      // make a local copy
 				
 				//find first internal level that changed
-				int f=lmsize()-1; //unigrams have been already covered
+				int f=maxlev-1; //unigrams have been already covered
 				while (f>1 && (*oldng.wordp(f)==*ng.wordp(f))){ f--; }
 				
-				for (int l=lmsize(); l>lmsize()-f;l--){
+				for (int l=maxlev; l>maxlev-f;l--){
 					
-					if (l<lmsize()) locng.shift(); //ngram has size level
+					if (l<maxlev) locng.shift(); //ngram has size level
 					
           if (sng.containsWord(subdict->OOV(),l)) continue;
 					
@@ -1715,7 +1715,7 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
             pr=1e-10;
           }
 
-          if (l<lmsize()) {
+          if (l<maxlev) {
 
             locng.pushc(0); //extend by one
 
@@ -1757,14 +1757,14 @@ int mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile )
   //print header
   out << "\n\\data\\" << "\n";
   char buff[100];
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
     out << buff;
   }
   out << "\n";
 
   //append and remove temporary files
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     delete tout[i];
     tout[i]=new mfstream(tfilename[i],ios::in);
     out << tout[i]->rdbuf();
@@ -1801,14 +1801,15 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
   fstream out(filename,ios::out);
   //  out.precision(15);
 
-  streampos pos[lmsize()+1];
-  table_entry_pos_t num[lmsize()+1];
+	int maxlev = lmsize();
+  streampos pos[LMTMAXLEV+1];
+  table_entry_pos_t num[LMTMAXLEV+1];
   char buff[100];
 
   //print header
   out << "\n\\data\\" << "\n";
 
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     num[i]=0;
     pos[i]=out.tellp();
     sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
@@ -1819,7 +1820,7 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
 
   //start writing n-grams
 
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     cerr << "saving level " << i << "...\n";
 		
 
@@ -1859,7 +1860,7 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
         else {
           out << "\t" << (char *)dict->decode(w);
 
-          if (lmsize()>1) {
+          if (maxlev>1) {
             ngram ng2=ng;
             ng2.pushc(0); //extend by one
 
@@ -1902,7 +1903,7 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
           pr=1e-10;
         }
 
-        if (i<lmsize()) {
+        if (i<maxlev) {
           ng2=ng;
           ng2.pushc(0); //extend by one
 
@@ -1943,7 +1944,7 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
   streampos last=out.tellp();
 
   //update headers
-  for (int i=1; i<=lmsize(); i++) {
+  for (int i=1; i<=maxlev; i++) {
     sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
     out.seekp(pos[i]);
     out << buff;
