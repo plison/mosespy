@@ -67,7 +67,7 @@ dictionary="";
 uniform="-f=y";
 queueparameters=""
 
-while getopts “hvi:o:n:k:t:s:q:pbl:d:u” OPTION
+while getopts “hvi:o:n:k:t:s:q:pbl:d:u" OPTION
 do
      case $OPTION in
          h)
@@ -151,7 +151,7 @@ if [ -e $outfile ]; then
    exit 6;
 fi
 
-if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout"]; then
+if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
    echo "Logfile $logfile already exists! either remove or rename it."
    exit 7;
 fi

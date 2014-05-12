@@ -153,7 +153,7 @@ int ngramcache::add(const int* ngp,const prob_and_state_t& info)
 };
 
 
-void ngramcache::stat()
+void ngramcache::stat() const
 {
   cerr << "ngramcache stats: entries=" << entries << " acc=" << accesses << " hits=" << hits
        << " ht.used= " << ht->used() << " mp.used= " << mp->used() << " mp.wasted= " << mp->wasted() << "\n";

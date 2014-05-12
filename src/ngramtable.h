@@ -121,7 +121,6 @@ public:
   inline TABLETYPE tbtype() const {
     return ttype;
   }
-
   inline int inodesize(int s) const {
     return I_FREQ_OFFS + I_FREQ_NUM * s;
   }
@@ -137,7 +136,7 @@ class ngramtable:tabletype
 {
 
   node            tree; // ngram table root
-  int           maxlev; // max storable n-gram
+	int           maxlev; // max storable n-gram
   NODETYPE   treeflags;
   char       info[100]; //information put in the header
   int       resolution; //max resolution for probabilities
@@ -199,11 +198,11 @@ public:
     return (v==-1?getfreq(tree,treeflags,1):setfreq(tree,treeflags,v,1));
   }
 
-  inline long long entries(int lev) {
+  inline long long entries(int lev) const {
     return mentr[lev];
   }
 
-  int maxlevel() {
+  inline int maxlevel() const {
     return maxlev;
   }
 
@@ -285,7 +284,7 @@ public:
     return *(unsigned char *)(nd+FLAGS_OFFS)=value;
   }
 
-  inline unsigned char mtflags(node nd) {
+  inline unsigned char mtflags(node nd) const {
     return *(unsigned char *)(nd+FLAGS_OFFS);
   }
 

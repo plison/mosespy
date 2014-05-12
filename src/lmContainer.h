@@ -53,7 +53,7 @@ public:
   lmContainer();
   virtual ~lmContainer() {};
 
-  virtual void load(const std::string filename, int mmap=0) {
+  virtual void load(const std::string &filename, int mmap=0) {
     UNUSED(filename);
     UNUSED(mmap);
   };
@@ -136,7 +136,7 @@ public:
   inline void setLanguageModelType(int type) {
     lmtype=type;
   };
-  inline int getLanguageModelType() {
+  inline int getLanguageModelType() const {
     return lmtype;
   };
   int getLanguageModelType(std::string filename);
@@ -156,21 +156,23 @@ public:
   };
 
 
-  inline bool is_lmt_cache_enabled(){
+  inline static bool is_lmt_cache_enabled(){
     #ifdef LMT_CACHE_ENABLE
       return true;
+    #else
+      return false;
     #endif
-    return false;
   }
 
-  inline bool is_ps_cache_enabled(){
+  inline static bool is_ps_cache_enabled(){
     #ifdef PS_CACHE_ENABLE
-      return true;
+		return true;
+		#else
+		  return false;
     #endif
-    return false;
   }
 
-  inline bool is_cache_enabled(){
+  inline static bool is_cache_enabled(){
     return is_lmt_cache_enabled() && is_ps_cache_enabled();
   }
 };

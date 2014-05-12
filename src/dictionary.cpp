@@ -81,10 +81,8 @@ dictionary::dictionary(char *filename,int size, float lf)
 }
 
 
-
 int dictionary::getword(fstream& inp , char* buffer) const
 {
-
   while(inp >> setw(MAX_WORD) >> buffer) {
 
     //warn if the word is very long
@@ -100,7 +98,6 @@ int dictionary::getword(fstream& inp , char* buffer) const
     }
 
     return 1;
-
   }
 
   return 0;
@@ -202,7 +199,7 @@ void dictionary::print_curve(int curvesize, float* testOOV) const
     cout << "\n";
   }
   cout << "*********************************************************\n";
-  delete []curve;
+	delete []curve;
 }
 
 //
@@ -262,7 +259,6 @@ void dictionary::test(float* OOVrates, int curvesize, const char *filename, int 
   // computing percentages from word numbers
   for (int i=0; i<curvesize; i++)
     OOVrates[i] = (float)OOVchart[i]/NwTest * 100.0;
-
   delete []OOVchart;
 }
 

@@ -689,6 +689,7 @@ void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
 {
   mfstream inp(filename,ios::in);
   int selmask[MAX_NGRAM];
+//  for (size_t c=0; c<MAX_NGRAM; c++) { selmask[c]=0; }
   memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
   if (!inp) {

@@ -333,11 +333,11 @@ void lmtable::load(const std::string infile, int mmap)
 #endif
   }
 
-  load(inp,infile.c_str(),NULL,mmap,NONE);
+  load(inp,infile.c_str(),NULL,mmap);
   getDict()->incflag(0);
 }
 
-void lmtable::load(istream& inp,const char* filename,const char* outfilename,int keep_on_disk, OUTFILE_TYPE /* unused parameter: outtype */)
+void lmtable::load(istream& inp,const char* filename,const char* outfilename,int keep_on_disk)
 {
 
   VERBOSE(2,"lmtable::load(istream& inp,...)" << std::endl);
@@ -426,7 +426,6 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
 
   int Order,n;
 
-  int maxlevel_h;
   //char *SepString = " \t\n"; unused
 
   //open input stream and prepare an input string
@@ -443,6 +442,7 @@ void lmtable::loadtxt_mmap(istream& inp,const char* header,const char* outfilena
   isItable=(strncmp(header,"iARPA",5)==0?true:false);
 
   if (isQtable) {
+		int maxlevel_h;
     //check if header contains other infos
     inp >> line;
     if (!(maxlevel_h=atoi(line))) {
@@ -729,14 +729,14 @@ void lmtable::loadtxt_level(istream& inp, int level)
     if (parseline(inp,level,ng,prob,bow)) {
 
       // if table is inverted then revert n-gram
-      if (isInverted & level>1) {
+      if (isInverted && (level>1)) {
         ing.invert(ng);
         ng=ing;
       }
 
       //if table is in incomplete ARPA format prob is just the
       //discounted frequency, so we need to add bow * Pr(n-1 gram)
-      if (isItable && level>1) {
+      if (isItable && (level>1)) {
         //get bow of lower context
         get(ng,ng.size,ng.size-1);
         float rbow=0.0;
@@ -801,13 +801,19 @@ void lmtable::expand_level_mmap(int level, table_entry_pos_t size, const char* o
 
   if (maxlev>1 && level<maxlev) {
     startpos[level]=new table_entry_pos_t[maxsize[level]];
-		LMT_TYPE ndt=tbltype[level];
-		int ndsz=nodesize(ndt);
-		char *found = table[level];
+		/*
+		 LMT_TYPE ndt=tbltype[level];
+		 TOCHECK XXXXXXXXX
+		 int ndsz=nodesize(ndt);
+		 char *found = table[level];
+		 */
     for (table_entry_pos_t c=0; c<maxsize[level]; c++) {
       startpos[level][c]=BOUND_EMPTY1;
-			found += ndsz;
-//			bound(found,ndt,BOUND_EMPTY2);
+			/*
+			 TOCHECK XXXXXXXXX
+			 found += ndsz;
+			 bound(found,ndt,BOUND_EMPTY2);
+			 */
     }
   }
 }
@@ -820,11 +826,23 @@ void lmtable::expand_level_nommap(int level, table_entry_pos_t size)
   table[level] = new char[(table_pos_t) maxsize[level] * nodesize(tbltype[level])];
   if (maxlev>1 && level<maxlev) {
     startpos[level]=new table_entry_pos_t[maxsize[level]];
+		/*
+		 TOCHECK XXXXXXXXX
+		 LMT_TYPE ndt=tbltype[level];
+		 int ndsz=nodesize(ndt);
+		 char *found = table[level];
+		 */
     LMT_TYPE ndt=tbltype[level];
     int ndsz=nodesize(ndt);
     char *found = table[level];
+		
     for (table_entry_pos_t c=0; c<maxsize[level]; c++) {
       startpos[level][c]=BOUND_EMPTY1;
+			/*
+			 TOCHECK XXXXXXXXX
+			 found += ndsz;
+			 bound(found,ndt,BOUND_EMPTY2);
+			 */
       found += ndsz;
 //			bound(found,ndt,BOUND_EMPTY2);
     }
@@ -844,10 +862,12 @@ void lmtable::printTable(int level)
   cout << "level = " << level << " of size:" << printEntryN <<" ndsz:" << ndsz << " \n";
 	
   //TOCHECK: Nicola, 18 dicembre 2009
-  float p,bw;
-	table_entry_pos_t bnd, start;
 	
 	if (level<maxlev){
+		float p;
+		float bw;
+		table_entry_pos_t bnd;		
+		table_entry_pos_t start;
 		for (table_entry_pos_t c=0; c<printEntryN; c++) {
 			p=prob(tbl,ndt);
 			bw=bow(tbl,ndt);
@@ -859,6 +879,7 @@ void lmtable::printTable(int level)
 			tbl+=ndsz;
 		}
 	}else{
+		float p;
 		for (table_entry_pos_t c=0; c<printEntryN; c++) {
 			p=prob(tbl,ndt);
 //			cout << p << " " << word(tbl) << "\n";
@@ -1325,7 +1346,7 @@ void lmtable::cpsublm(lmtable* slmt, dictionary* subdict,bool keepunigr)
         if (lookup[word(entry)]!=-1 || keepunigr) {
 
           if ((slmt->cursize[l] % slmt->dict->size()) ==0)
-            slmt->table[l]=(char *)realloc(slmt->table[l],((table_pos_t) slmt->cursize[l] + (table_pos_t) slmt->dict->size()) * ndsz);
+            slmt->table[l]=(char *)reallocf(slmt->table[l],((table_pos_t) slmt->cursize[l] + (table_pos_t) slmt->dict->size()) * ndsz);
 
           newentry=slmt->table[l] + (table_pos_t) slmt->cursize[l] * ndsz;
           memcpy(newentry,entry,ndsz);
@@ -1362,7 +1383,7 @@ void lmtable::cpsublm(lmtable* slmt, dictionary* subdict,bool keepunigr)
             if (lookup[word(entry)]!=-1) {
 
               if ((slmt->cursize[l] % slmt->dict->size()) ==0)
-                slmt->table[l]=(char *)realloc(slmt->table[l],(table_pos_t) (slmt->cursize[l]+slmt->dict->size()) * ndsz);
+                slmt->table[l]=(char *)reallocf(slmt->table[l],(table_pos_t) (slmt->cursize[l]+slmt->dict->size()) * ndsz);
 
               newentry=slmt->table[l] + (table_pos_t) slmt->cursize[l] * ndsz;
               memcpy(newentry,entry,ndsz);
@@ -2067,7 +2088,7 @@ void lmtable::dumplm(fstream& out,ngram ng, int ilev, int elev, table_entry_pos_
       out << ipr <<"\t";
 
       // if table is inverted then revert n-gram
-      if (isInverted & ng.size>1) {
+      if (isInverted && (ng.size>1)) {
         ing.invert(ng);
         for (int k=ing.size; k>=1; k--) {
           if (k<ing.size) out << " ";
@@ -2425,7 +2446,7 @@ double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,u
 
   if (sz>maxlev) sz=maxlev; //adjust n-gram level to table size
 
-  double logpr = 0.0;
+  double logpr;
 
 #ifdef PS_CACHE_ENABLE
   //cache hit

@@ -136,7 +136,7 @@ public:
 	}
 	
   inline void save_per_level(bool value){ m_save_per_level=value; }
-  inline bool save_per_level(){ return m_save_per_level; }
+  inline bool save_per_level() const { return m_save_per_level; }
 	
   int netsize();
 
@@ -147,7 +147,7 @@ public:
     return (x-value)>0.500?value+1.0:(double)value;
   }
 
-  inline bool is_train_cache_enabled(){
+  inline static bool is_train_cache_enabled() {
     #ifdef MDIADAPTLM_CACHE_ENABLE
       return true;
     #else

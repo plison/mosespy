@@ -87,11 +87,11 @@ public:
 
   double zerofreq(int lev);
 
-  inline int lmsize() {
+  inline int lmsize() const {
     return lms;
   }
 
-  inline int obswrd() {
+  inline int obswrd() const {
     return dict->size();
   }
 

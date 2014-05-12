@@ -153,16 +153,16 @@ protected:
   int _cmd;
   openmode _mode;
   FILE* _FILE;
-
+	
+  char _cmdname[500];
 
   int swapbytes(char *p, int sz, int n);
 
 public:
-
-  char _cmdname[500];
 	
   //! Creates and opens a file/command stream without a specified nmode
-  mfstream () : std::fstream(), _cmd(0) {
+  mfstream () : std::fstream(), buf(NULL), _cmd(0), _FILE(NULL) {
+    _cmdname[0]='\0';
   }
 	
   //! Creates and opens a  file/command stream in a specified nmode
@@ -200,7 +200,6 @@ public:
 
   //! Reopens an input stream
   mfstream& reopen();
-
 };
 
 

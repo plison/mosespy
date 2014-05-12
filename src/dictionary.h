@@ -135,7 +135,7 @@ public:
   inline int incflag() const {
     return ifl;
   }
-
+	
   inline int incflag(int v) {
     return ifl=v;
   }
@@ -170,7 +170,6 @@ public:
     std::cerr << "setting OOV rate to: " << oovrate << " -- freq= " << oovfreq << std::endl;
     return freq(oovcode(),oovfreq);
   }
-
 
   inline long long incfreq(int code,long long value) {
     N+=value;
@@ -218,6 +217,7 @@ public:
   }
   int getcode(const char *w);
   int encode(const char *w);
+
   const char *decode(int c) const;
   void stat() const;
 

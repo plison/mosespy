@@ -64,10 +64,10 @@ public:
   ngramcache(int n,int size,int maxentries,float lf=NGRAMCACHE_LOAD_FACTOR);
   ~ngramcache();
 
-  int cursize() {
+  inline int cursize() const {
     return entries;
   }
-  int maxsize() {
+  inline int maxsize() const {
     return maxn;
   }
   void reset(int n=0);
@@ -77,11 +77,11 @@ public:
   int add(const int* ngp,const char*& info);
   int add(const int* ngp,const double& info);
   int add(const int* ngp,const prob_and_state_t& info);
-  int isfull() {
+  inline int isfull() const {
     return (entries >= maxn);
   }
-  void stat();
-  inline void used() {
+  void stat() const;
+  inline void used() const {
     stat();
   };
 

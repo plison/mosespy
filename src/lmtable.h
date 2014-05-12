@@ -300,7 +300,7 @@ public:
 	
 
   void load(const std::string filename, int mmap=0);
-  void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0,OUTFILE_TYPE outtype=NONE);
+  void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0);
 
   void load_centers(std::istream& inp,int l);
 

@@ -295,6 +295,7 @@ int main(int argc, char **argv)
          << " according to hmask\n";
 
     int selmask[MAX_NGRAM];		
+		//for (size_t c=0; c<MAX_NGRAM; c++) { selmask[c]=0;	}
     memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
     //parse hmask

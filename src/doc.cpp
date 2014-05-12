@@ -41,7 +41,7 @@ doc::doc(dictionary* d,char* docfname)
   cd=-1;
   dfname=docfname;
   df=NULL;
-  binary=false;
+	binary=false;
 };
 
 doc::~doc()

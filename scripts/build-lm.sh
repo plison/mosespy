@@ -60,7 +60,7 @@ boundaries="";
 dictionary="";
 uniform="-f=y";
 
-while getopts “hvi:o:n:k:t:s:pbl:d:u” OPTION
+while getopts "hvi:o:n:k:t:s:pbl:d:u" OPTION
 do
      case $OPTION in
          h)
