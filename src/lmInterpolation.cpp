@@ -47,9 +47,9 @@ lmInterpolation::lmInterpolation(float nlf, float dlf)
   isInverted=false;
 }
 
-void lmInterpolation::load(const std::string filename,int mmap)
+void lmInterpolation::load(const std::string &filename,int mmap)
 {
-  VERBOSE(2,"lmInterpolation::load(const std::string filename,int memmap)" << std::endl);
+  VERBOSE(2,"lmInterpolation::load(const std::string &filename,int memmap)" << std::endl);
   VERBOSE(2," filename:|" << filename << "|" << std::endl);
 	
 	
@@ -78,7 +78,7 @@ void lmInterpolation::load(const std::string filename,int mmap)
   m_isinverted.resize(m_number_lm);
   m_lm.resize(m_number_lm);
 	
-  VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_number_lm:"<< m_number_lm << std::endl;);
+  VERBOSE(2,"lmInterpolation::load(const std::string &filename,int mmap) m_number_lm:"<< m_number_lm << std::endl;);
 	
   dict->incflag(1);
   for (int i=0; i<m_number_lm; i++) {
@@ -99,7 +99,7 @@ void lmInterpolation::load(const std::string filename,int mmap)
 		
     m_weight[i] = (float) atof(words[0]);
     m_file[i] = words[1];
-    VERBOSE(2,"lmInterpolation::load(const std::string filename,int mmap) m_file:"<< words[1] << std::endl;);
+    VERBOSE(2,"lmInterpolation::load(const std::string &filename,int mmap) m_file:"<< words[1] << std::endl;);
 		
     m_lm[i] = load_lm(i,memmap,ngramcache_load_factor,dictionary_load_factor);
 		//set the actual value for inverted flag, which is known only after loading the lM
@@ -132,10 +132,7 @@ void lmInterpolation::load(const std::string filename,int mmap)
 
 lmContainer* lmInterpolation::load_lm(int i,int memmap, float nlf, float dlf)
 {
-	
   //checking the language model type
-//  lmContainer* lmt=NULL;
-//  lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
   lmContainer* lmt=lmContainer::CreateLanguageModel(m_file[i],nlf,dlf);
 	
   //let know that table has inverted n-grams

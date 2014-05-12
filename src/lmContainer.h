@@ -53,12 +53,13 @@ public:
   lmContainer();
   virtual ~lmContainer() {};
 
+	 
   virtual void load(const std::string &filename, int mmap=0) {
     UNUSED(filename);
     UNUSED(mmap);
   };
-
-  virtual void savetxt(const char *filename) {
+	
+	virtual void savetxt(const char *filename) {
     UNUSED(filename);
   };
   virtual void savebin(const char *filename) {
@@ -136,7 +137,7 @@ public:
   void inline setLanguageModelType(int type) {
     lmtype=type;
   };
-  int inline getLanguageModelType() const {
+  int getLanguageModelType() const {
     return lmtype;
   };
   static int getLanguageModelType(std::string filename);

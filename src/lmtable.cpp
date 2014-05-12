@@ -310,9 +310,9 @@ void lmtable::configure(int n,bool quantized)
 }
 
 
-void lmtable::load(const std::string infile, int mmap)
+void lmtable::load(const std::string &infile, int mmap)
 {
-  VERBOSE(2,"lmtable::load(const std::string filename, int mmap)" << std::endl);
+  VERBOSE(2,"lmtable::load(const std::string &filename, int mmap)" << std::endl);
   VERBOSE(2,"Reading " << infile << "..." << std::endl);
   inputfilestream inp(infile.c_str());
 

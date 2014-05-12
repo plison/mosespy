@@ -45,6 +45,8 @@ inline void error(const char* message)
 lmContainer::lmContainer()
 {
   requiredMaxlev=1000;
+	lmtype=_IRSTLM_LMUNKNOWN;
+	maxlev=0;
 }
 
 int lmContainer::getLanguageModelType(std::string filename)
@@ -123,7 +125,7 @@ lmContainer* lmContainer::CreateLanguageModel(int type, float nlf, float dlf)
 bool lmContainer::filter(const string sfilter, lmContainer*& sublmC, const string skeepunigrams)
 {
   if (lmtype == _IRSTLM_LMTABLE) {
-    sublmC = sublmC->CreateLanguageModel(lmtype,((lmtable*) this)->GetNgramcacheLoadFactor(),((lmtable*) this)->GetDictioanryLoadFactor());
+    sublmC = lmContainer::CreateLanguageModel(lmtype,((lmtable*) this)->GetNgramcacheLoadFactor(),((lmtable*) this)->GetDictionaryLoadFactor());
 
     //let know that table has inverted n-grams
     sublmC->is_inverted(is_inverted());

@@ -62,9 +62,9 @@ lmmacro::~lmmacro()
 }
 
 
-void lmmacro::load(const std::string filename,int memmap)
+void lmmacro::load(const std::string &filename,int memmap)
 {
-  VERBOSE(2,"lmmacro::load(const std::string filename,int memmap)" << std::endl);
+  VERBOSE(2,"lmmacro::load(const std::string &filename,int memmap)" << std::endl);
 
   //get info from the configuration file
   fstream inp(filename.c_str(),ios::in|ios::binary);

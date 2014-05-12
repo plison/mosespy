@@ -299,7 +299,7 @@ public:
 	inline void update_offset(int level, table_entry_pos_t value) { tb_offset[level]=value; };
 	
 
-  void load(const std::string filename, int mmap=0);
+  void load(const std::string &filename, int mmap=0);
   void load(std::istream& inp,const char* filename=NULL,const char* outfilename=NULL,int mmap=0);
 
   void load_centers(std::istream& inp,int l);
@@ -621,7 +621,7 @@ public:
   inline float GetNgramcacheLoadFactor() {
     return  ngramcache_load_factor;
   }
-  inline float GetDictioanryLoadFactor() {
+  inline float GetDictionaryLoadFactor() {
     return  ngramcache_load_factor;
   }
 

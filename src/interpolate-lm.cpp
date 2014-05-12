@@ -549,8 +549,6 @@ int main(int argc, char **argv)
 
 lmContainer* load_lm(std::string file,int requiredMaxlev,int dub,int memmap, float nlf, float dlf)
 {
-//  lmContainer* lmt=NULL;
-//  lmt = lmt->CreateLanguageModel(file,nlf,dlf);
   lmContainer* lmt = lmContainer::CreateLanguageModel(file,nlf,dlf);
 	
   lmt->setMaxLoadedLevel(requiredMaxlev);

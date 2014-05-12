@@ -72,7 +72,7 @@ public:
 
   ~lmclass();
 
-  void load(const std::string filename,int mmap=0);
+  void load(const std::string &filename,int mmap=0);
 
   double lprob(ngram ng, double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL);
   inline double clprob(ngram ng,double* bow=NULL,int* bol=NULL,char** maxsuffptr=NULL,unsigned int* statesize=NULL,bool* extendible=NULL) {

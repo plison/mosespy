@@ -66,9 +66,9 @@ lmclass::~lmclass()
   delete dict;
 }
 
-void lmclass::load(const std::string filename,int memmap)
+void lmclass::load(const std::string &filename,int memmap)
 {
-  VERBOSE(2,"lmclass::load(const std::string filename,int memmap)" << std::endl);
+  VERBOSE(2,"lmclass::load(const std::string &filename,int memmap)" << std::endl);
 
   //get info from the configuration file
   fstream inp(filename.c_str(),ios::in|ios::binary);
