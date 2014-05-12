@@ -133,13 +133,13 @@ public:
 
   virtual void  reset_mmap() {};
 
-  inline void setLanguageModelType(int type) {
+  void inline setLanguageModelType(int type) {
     lmtype=type;
   };
-  inline int getLanguageModelType() const {
+  int inline getLanguageModelType() const {
     return lmtype;
   };
-  int getLanguageModelType(std::string filename);
+  static int getLanguageModelType(std::string filename);
 
   inline virtual void dictionary_incflag(const bool flag) {
     UNUSED(flag);
@@ -147,8 +147,8 @@ public:
 
   virtual bool filter(const string sfilter, lmContainer*& sublmt, const string skeepunigrams);
 
-  lmContainer* CreateLanguageModel(const std::string infile, float nlf=0.0, float dlf=0.0);
-  lmContainer* CreateLanguageModel(int type, float nlf=0.0, float dlf=0.0);
+  static lmContainer* CreateLanguageModel(const std::string infile, float nlf=0.0, float dlf=0.0);
+  static lmContainer* CreateLanguageModel(int type, float nlf=0.0, float dlf=0.0);
 
   inline virtual bool is_OOV(int code) {
     UNUSED(code);

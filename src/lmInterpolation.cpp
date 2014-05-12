@@ -134,9 +134,9 @@ lmContainer* lmInterpolation::load_lm(int i,int memmap, float nlf, float dlf)
 {
 	
   //checking the language model type
-  lmContainer* lmt=NULL;
-	
-  lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
+//  lmContainer* lmt=NULL;
+//  lmt = lmt->CreateLanguageModel(m_file[i],nlf,dlf);
+  lmContainer* lmt=lmContainer::CreateLanguageModel(m_file[i],nlf,dlf);
 	
   //let know that table has inverted n-grams
   lmt->is_inverted(m_isinverted[i]);  //set inverted flag for each LM

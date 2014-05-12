@@ -176,9 +176,10 @@ int main(int argc, char **argv)
 
 
   //checking the language model type
-  lmContainer* lmt=NULL;
-	lmt = lmt->CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor);
-//  lmContainer* lmt = lmt->CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor);
+//  lmContainer* lmt=NULL;
+//	lmt = lmContainer::CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor);
+  lmContainer* lmt = lmContainer::CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor);
+//	lmContainer* lmt = lmt->CreateLanguageModel(infile,ngramcache_load_factor,dictionary_load_factor);
 	
   //let know that table has inverted n-grams
   if (invert) lmt->is_inverted(invert);
