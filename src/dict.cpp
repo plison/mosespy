@@ -9,6 +9,7 @@ using namespace std;
 #include "mempool.h"
 #include "dictionary.h"
 
+	
 void print_help(int TypeFlag=0){
 	std::cerr << std::endl << "dict - extracts a dictionary" << std::endl;
 	std::cerr << std::endl << "USAGE:"  << std::endl;

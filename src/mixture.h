@@ -25,6 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #define END_ENUM    {   (char*)0,  0 }
 
+namespace irstlm {
+	
 class mixture: public mdiadaptlm
 {
   double** l[MAX_NGRAM]; //interpolation parameters
@@ -86,7 +88,8 @@ public:
   int get(ngram& ng,int n,int lev);
 
 };
-
+	
+}//namespace irstlm
 #endif
 
 

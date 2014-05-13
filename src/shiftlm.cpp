@@ -36,7 +36,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "interplm.h"
 #include "mdiadapt.h"
 #include "shiftlm.h"
-
+	
+namespace irstlm {
 //
 //Shiftone interpolated language model
 //
@@ -588,6 +589,7 @@ int symshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int 
   return 1;
 }
 
+}//namespace irstlm
 
 
 /*

@@ -30,13 +30,14 @@
 #include "lmInterpolation.h"
 
 using namespace std;
-
+	
 inline void error(const char* message)
 {
   std::cerr << message << "\n";
   throw std::runtime_error(message);
 }
 
+namespace irstlm {
 lmInterpolation::lmInterpolation(float nlf, float dlf)
 {
   ngramcache_load_factor = nlf;
@@ -239,4 +240,4 @@ double lmInterpolation::setlogOOVpenalty(int dub)
   logOOVpenalty=log(OOVpenalty);
   return logOOVpenalty;
 }
-
+}//namespace irstlm

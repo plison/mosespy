@@ -35,7 +35,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "interplm.h"
 #include "mdiadapt.h"
 #include "linearlm.h"
-
+	
+namespace irstlm {
 //
 //Linear interpolated language model: Witten & Bell discounting scheme
 //
@@ -145,4 +146,4 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
   return 1;
 }
 
-
+}//namespace irstlm

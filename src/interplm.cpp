@@ -32,7 +32,7 @@ using namespace std;
 #include "ngramtable.h"
 #include "normcache.h"
 #include "interplm.h"
-
+	
 void interplm::trainunigr()
 {
 
@@ -509,8 +509,6 @@ void interplm::test_ngt(ngramtable& ngt,int sz,int /* unused parameter: backoff 
   cout.flush();
 
 }
-
-
 
 
 /*

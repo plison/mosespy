@@ -35,7 +35,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "lmInterpolation.h"
 
 using namespace std;
+	
 
+namespace irstlm {
+	
 inline void error(const char* message)
 {
   std::cerr << message << "\n";
@@ -139,3 +142,4 @@ bool lmContainer::filter(const string sfilter, lmContainer*& sublmC, const strin
   return false;
 };
 
+}//namespace irstlm

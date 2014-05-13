@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 #ifndef MF_NGRAMTABLE_H
 #define MF_NGRAMTABLE_H
-
+	
 //Backoff symbol
 #ifndef BACKOFF_
 #define BACKOFF_ "_backoff_"
@@ -366,8 +366,6 @@ public:
   inline int bo_state(int value) {
     return backoff_state=value;
   }
-
-
 };
 
 #endif

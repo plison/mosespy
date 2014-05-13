@@ -166,7 +166,6 @@ mfstream& mfstream::reopen() {
 }
 
 
-
 /*
  int main()
  {

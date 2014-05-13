@@ -31,6 +31,9 @@ using namespace std;
 #include "lmContainer.h"
 
 /********************************/
+
+using namespace irstlm;
+
 void print_help(int TypeFlag=0){
   std::cerr << std::endl << "verify_caching - verify whether caching is enabled or disabled" << std::endl;
   std::cerr << std::endl << "USAGE:"  << std::endl;

@@ -31,8 +31,6 @@
 const int NULL=0;
 #endif
 
-#define MP_BLOCK_SIZE 1000000
-
 #include <iostream>  // std::ostream
 
 //! Memory block
@@ -41,6 +39,9 @@ const int NULL=0;
 - strstack to store strings of variable size
 */
 
+
+#define MP_BLOCK_SIZE 1000000
+	
 class memnode
 {
   friend class mempool;   //!< grant access

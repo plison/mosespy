@@ -37,7 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "util.h"
 
 using namespace std;
-
+	
 // local utilities: start
 
 inline void error(const char* message)
@@ -49,7 +49,8 @@ inline void error(const char* message)
 // local utilities: end
 
 
-
+namespace irstlm {
+	
 lmmacro::lmmacro(float nlf, float dlfi):lmtable(nlf,dlfi)
 {
   dict = new dictionary((char *)NULL,1000000); // dict of micro tags
@@ -743,12 +744,12 @@ void lmmacro::Micro2MacroMapping(ngram *in, ngram *out)
   return;
 }
 
-
-
+	
+	
 // DISMITTED ON FEB 2011 BECAUSE TOO MUCH PROBLEMATIC FROM A THEORETICAL POINT OF VIEW
 
 #ifdef DLEXICALLM
-
+	
 void lmmacro::Micro2MacroMapping(ngram *in, ngram *out, char **lemmas)
 {
   VERBOSE(2,"In Micro2MacroMapping, in    = " <<  *in  << "\n")
@@ -892,4 +893,5 @@ void lmmacro::cutLex(ngram *in, ngram *out)
   return;
 }
 #endif
-
+	
+}//namespace irstlm

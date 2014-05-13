@@ -32,6 +32,8 @@ using namespace std;
 #include "math.h"
 #include "lmContainer.h"
 
+using namespace irstlm;
+
 /********************************/
 void print_help(int TypeFlag=0){
   std::cerr << std::endl << "compile-lm - compiles an ARPA format LM into an IRSTLM format one" << std::endl;

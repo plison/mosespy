@@ -202,5 +202,4 @@ public:
   mfstream& reopen();
 };
 
-
 #endif

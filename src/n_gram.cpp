@@ -36,7 +36,7 @@ using namespace std;
 #include "index.h"
 
 using namespace std;
-
+	
 ngram::ngram(dictionary* d,int sz)
 {
   dict=d;

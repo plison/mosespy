@@ -18,6 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
+namespace irstlm {
 
 // Non linear Shift based interpolated LMs
 
@@ -81,4 +82,5 @@ public:
   }
 
 };
-
+	
+}//namespace irstlm

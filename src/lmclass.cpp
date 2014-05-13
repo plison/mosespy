@@ -38,7 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 using namespace std;
 
 // local utilities: start
-
+	
 int parseWords(char *sentence, const char **words, int max);
 
 inline void error(const char* message)
@@ -49,7 +49,7 @@ inline void error(const char* message)
 
 // local utilities: end
 
-
+namespace irstlm {
 
 lmclass::lmclass(float nlf, float dlfi):lmtable(nlf,dlfi)
 {
@@ -233,3 +233,5 @@ void lmclass::mapping(ngram &in, ngram &out)
   VERBOSE(3,"In lmclass::mapping(ngram &in, ngram &out) out    = " <<  out  << "\n");
   return;
 }
+}//namespace irstlm
+

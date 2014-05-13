@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 
+namespace irstlm {
 //
 //Minimum discrimination adaptation for interplm
 //
@@ -1957,7 +1958,8 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
 	VERBOSE(2,"mdiadaptlm::saveARPA_per_level END\n");
   return 1;
 };
-
+	
+}//namespace irstlm
 
 /*
 main(int argc,char** argv){

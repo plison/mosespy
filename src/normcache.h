@@ -49,6 +49,5 @@ public:
   double put(ngram ng,int size,double value);
   void stat();
 };
-
 #endif
 

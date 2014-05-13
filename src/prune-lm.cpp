@@ -33,8 +33,9 @@ using namespace std;
 #include "math.h"
 #include "lmtable.h"
 
-
 /********************************/
+
+using namespace irstlm;
 
 void print_help(int TypeFlag=0){
   std::cerr << std::endl << "prune-lm - prunes language models" << std::endl;

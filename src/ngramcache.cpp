@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "ngramcache.h"
 
 using namespace std;
-
+	
 void ngramcache::print (const int* ngp)
 {
   std::cerr << "ngp: size:" << ngsize << "|";
@@ -158,5 +158,4 @@ void ngramcache::stat() const
   cerr << "ngramcache stats: entries=" << entries << " acc=" << accesses << " hits=" << hits
        << " ht.used= " << ht->used() << " mp.used= " << mp->used() << " mp.wasted= " << mp->wasted() << "\n";
 };
-
 

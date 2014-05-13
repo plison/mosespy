@@ -37,10 +37,11 @@ using namespace std;
 #include "cmd.h"
 #include "util.h"
 
+namespace irstlm {
 //
 //Mixture interpolated language model
 //
-
+	
 static Enum_T SLmTypeEnum [] = {
   {    (char*)"ModifiedShiftBeta",  MOD_SHIFT_BETA },
   {    (char*)"msb",                MOD_SHIFT_BETA },
@@ -542,7 +543,7 @@ int mixture::get(ngram& ng,int n,int lev)
   return ngramtable::get(ng,n,lev);
 
 }
-
+}//namespace irstlm
 
 
 

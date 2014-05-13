@@ -34,7 +34,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "n_gram.h"
 #include "lmContainer.h"
 
-
+	
+namespace irstlm {
 /*
 interpolation of several sub LMs
 */
@@ -124,6 +125,7 @@ public:
     return true;
   }
 };
+}//namespace irstlm
 
 #endif
 

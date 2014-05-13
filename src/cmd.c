@@ -49,16 +49,16 @@ static Enum_T	BoolEnum[] = {
 	{	(char*)"true",   TRUE},
 	{	(char*)"0",	    FALSE},
 	{	(char*)"1",	     TRUE},
-  { (char*)"NO",    FALSE},
-  { (char*)"YES",    TRUE},
-  { (char*)"No",    FALSE},
-  { (char*)"Yes",    TRUE},
-  { (char*)"no",    FALSE},
-  { (char*)"yes",    TRUE},
-  { (char*)"N",     FALSE},
-  { (char*)"Y",      TRUE},
-  { (char*)"n",     FALSE},
-  { (char*)"y",      TRUE},
+	{ (char*)"NO",    FALSE},
+	{ (char*)"YES",    TRUE},
+	{ (char*)"No",    FALSE},
+	{ (char*)"Yes",    TRUE},
+	{ (char*)"no",    FALSE},
+	{ (char*)"yes",    TRUE},
+	{ (char*)"N",     FALSE},
+	{ (char*)"Y",      TRUE},
+	{ (char*)"n",     FALSE},
+	{ (char*)"y",      TRUE},
 	{	0,		0	}
 };
 
@@ -189,7 +189,7 @@ GetParams(int	*n,
 		exit(IRSTLM_CMD_ERROR_MEMORY);
 	}
 	for(ProgName=*argv+strlen(*argv);
-	    ProgName-->*argv && *ProgName!='/' && *ProgName!='\\';);
+			ProgName-->*argv && *ProgName!='/' && *ProgName!='\\';);
 	++ProgName;
 #if defined(MSDOS)||defined(_WIN32)
 	if((dot=strchr(ProgName, '.'))) *dot=0;
@@ -255,7 +255,7 @@ GetParams(int	*n,
 	}
 	if(DefCmd) free(DefCmd);
 	
-//	while(argc && **argv=='-'){
+	//	while(argc && **argv=='-'){
 	while(argc){
 		if (**argv=='-'){
 			s=strchr(*argv, '=');
@@ -641,8 +641,8 @@ GetLine(FILE	*fp,
 
 static int 
 Scan(char	*ProgName,
-     Cmd_T	*cmds,
-     char	*Line)
+		 Cmd_T	*cmds,
+		 char	*Line)
 {
 	char	*q,
 	*p;
@@ -651,7 +651,7 @@ Scan(char	*ProgName,
 	HasToMatch = FALSE,
 	c0,
 	c;
-
+	
 	p = Line+strspn(Line, SepString);
 	if(!(hl=strcspn(p, SepString))) return 0;
 	if(ProgName&&(q=strchr(p, '/')) && q-p<hl) {
@@ -806,8 +806,8 @@ SetFlag(Cmd_T	*cmd,
 	
 	for(; (l=strcspn(s, "+"))>0; s+=l,s+=!!*s) {
 		for(en=(Enum_T*)cmd->p;
-		    en->Name&&(l!=strlen(en->Name)||strncmp(s, en->Name, l));
-		    en++);
+				en->Name&&(l!=strlen(en->Name)||strncmp(s, en->Name, l));
+				en++);
 		if(!en->Name) return EnumError(cmd, s);
 		*(int*)cmd->Val |= en->Idx;
 	}
@@ -835,7 +835,7 @@ SetSubrange(Cmd_T	*cmd,
 
 static int 
 SetGte(Cmd_T	*cmd,
-       char	*s)
+			 char	*s)
 {
 	int	n;
 	
@@ -871,7 +871,7 @@ SetNumArray(Cmd_T	*cmd,
 
 static int 
 SetLte(Cmd_T	*cmd,
-       char	*s)
+			 char	*s)
 {
 	int	n;
 	
@@ -1189,3 +1189,4 @@ StoreCmdLine(char	*s)
 	CmdLines[CmdLinesL++] = strdup(s);
 	return 0;
 }
+

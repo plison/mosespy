@@ -27,7 +27,6 @@ using namespace std;
 #include "n_gram.h"
 #include "ngramtable.h"
 #include "normcache.h"
-
 // Normalization factors cache
 
 normcache::normcache(dictionary* d)
@@ -115,7 +114,6 @@ void normcache::stat()
 {
   cerr << "misses " << miss << ", hits " << hit << "\n";
 }
-
 
 
 

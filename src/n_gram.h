@@ -30,7 +30,7 @@
 #include <fstream>
 #include <cassert>
 #include "dictionary.h"
-
+	
 #ifdef MYMAXNGRAM
 #define MAX_NGRAM MYMAXNGRAM
 #else
@@ -123,8 +123,6 @@ public:
     return false;
   }
 
-
-
   inline int ckhisto(int sz) {
 
     for (int i=sz; i>1; i--)
@@ -138,9 +136,6 @@ public:
   int pushw(const char* w);
 
   //~ngram();
-
-
-
 };
 
 #endif

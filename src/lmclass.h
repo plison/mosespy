@@ -34,9 +34,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "dictionary.h"
 #include "n_gram.h"
 #include "lmtable.h"
-
+	
 #define LMCLASS_MAX_TOKEN 2
 
+namespace irstlm {
 class lmclass: public lmtable
 {
   dictionary     *dict; // dictionary (words - macro tags)
@@ -91,8 +92,8 @@ public:
     dict->incflag(flag);
   };
 };
-
-
+	
+}//namespace irstlm
 
 #endif
 

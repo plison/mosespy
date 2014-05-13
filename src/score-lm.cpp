@@ -29,6 +29,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "lmtable.h"
 #include "n_gram.h"
 
+using namespace irstlm;
+
 void print_help(int TypeFlag=0){
   std::cerr << std::endl << "score-lm - scores sentences with a language model" << std::endl;
   std::cerr << std::endl << "USAGE:"  << std::endl

@@ -33,6 +33,7 @@ using namespace std;
 #include "lmContainer.h"
 /********************************/
 
+using namespace irstlm;
 
 inline void error(const char* message)
 {

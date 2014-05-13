@@ -13,7 +13,6 @@ inline const char *index(const char *str, char search)
   return NULL;
 }
 
-
 #endif
 
 

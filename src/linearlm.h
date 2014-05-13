@@ -18,11 +18,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
+
 // Linear discounting interpolated LMs
 
 
 //Witten and Bell linear discounting
-
+namespace irstlm {
 class linearwb: public mdiadaptlm
 {
   int prunethresh;
@@ -34,8 +35,8 @@ public:
   ~linearwb() {}
 };
 
-
-
 //Good Turing linear discounting
 
 //no more supported
+	
+}//namespace irstlm

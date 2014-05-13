@@ -1,23 +1,23 @@
 // $Id: util.cpp 363 2010-02-22 15:02:45Z mfederico $
 /******************************************************************************
-IrstLM: IRST Language Model Toolkit
-Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
-
-******************************************************************************/
+ IrstLM: IRST Language Model Toolkit
+ Copyright (C) 2006 Marcello Federico, ITC-irst Trento, Italy
+ 
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ 
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
+ 
+ ******************************************************************************/
 
 #ifdef WIN32
 #include <windows.h>
@@ -40,87 +40,87 @@ using namespace std;
 string gettempfolder()
 {
 #ifdef _WIN32
-  char *tmpPath = getenv("TMP");
-  string str(tmpPath);
-  if (str.substr(str.size() - 1, 1) != "\\")
-    str += "\\";
-  return str;
+	char *tmpPath = getenv("TMP");
+	string str(tmpPath);
+	if (str.substr(str.size() - 1, 1) != "\\")
+		str += "\\";
+	return str;
 #else
-  char *tmpPath = getenv("TMP");
-  if (!tmpPath || !*tmpPath)
-    return "/tmp/";
-  string str(tmpPath);
-  if (str.substr(str.size() - 1, 1) != "/")
-    str += "/";
-  return str;
+	char *tmpPath = getenv("TMP");
+	if (!tmpPath || !*tmpPath)
+		return "/tmp/";
+	string str(tmpPath);
+	if (str.substr(str.size() - 1, 1) != "/")
+		str += "/";
+	return str;
 #endif
 }
 
 string createtempName()
 {       
-  string tmpfolder = gettempfolder();
+	string tmpfolder = gettempfolder();
 #ifdef _WIN32
-  char buffer[BUFSIZ];
-  //To check whether the following function open the stream as well
-  //In this case it is mandatory to close it immediately
-  ::GetTempFileNameA(tmpfolder.c_str(), "", 0, buffer);
+	char buffer[BUFSIZ];
+	//To check whether the following function open the stream as well
+	//In this case it is mandatory to close it immediately
+	::GetTempFileNameA(tmpfolder.c_str(), "", 0, buffer);
 #else
-  char buffer[tmpfolder.size() + 16];
-  strcpy(buffer, tmpfolder.c_str());
-  strcat(buffer, "dskbuff--XXXXXX");
-  int fd=mkstemp(buffer);
-  close(fd);
+	char buffer[tmpfolder.size() + 16];
+	strcpy(buffer, tmpfolder.c_str());
+	strcat(buffer, "dskbuff--XXXXXX");
+	int fd=mkstemp(buffer);
+	close(fd);
 #endif
-  return (string) buffer;
+	return (string) buffer;
 }
 
 void createtempfile(mfstream  &fileStream, string &filePath, std::ios_base::openmode flags)
 {       
-  filePath = createtempName();
-  fileStream.open(filePath.c_str(), flags);
-  if (fileStream == 0)
-  {
-    perror("error creating file");
-    exit_error(IRSTLM_ERROR_IO);
-  }
+	filePath = createtempName();
+	fileStream.open(filePath.c_str(), flags);
+	if (fileStream == 0)
+	{
+		perror("error creating file");
+		exit_error(IRSTLM_ERROR_IO);
+	}
 }
 
 void removefile(const std::string &filePath)
 {
 #ifdef _WIN32
-  ::DeleteFileA(filePath.c_str());
+	::DeleteFileA(filePath.c_str());
 #else
-  if (remove(filePath.c_str()) != 0)
-  {
-    perror("Error deleting file" );
-    exit_error(IRSTLM_ERROR_IO);
-  }
+	if (remove(filePath.c_str()) != 0)
+	{
+		perror("Error deleting file" );
+		exit_error(IRSTLM_ERROR_IO);
+	}
 #endif
 }
 
 inputfilestream::inputfilestream(const std::string &filePath)
-  : std::istream(0),
-    m_streambuf(0)
+: std::istream(0),
+m_streambuf(0)
 {
-  //check if file is readable
-  std::filebuf* fb = new std::filebuf();
-  _good=(fb->open(filePath.c_str(), std::ios::in)!=NULL);
-
-  if (filePath.size() > 3 &&
-      filePath.substr(filePath.size() - 3, 3) == ".gz") {
-    fb->close();
-    delete fb;
-    m_streambuf = new gzfilebuf(filePath.c_str());
-  } else {
-    m_streambuf = fb;
-  }
-  this->init(m_streambuf);
+	//check if file is readable
+	std::filebuf* fb = new std::filebuf();
+	_good=(fb->open(filePath.c_str(), std::ios::in)!=NULL);
+	
+	if (filePath.size() > 3 &&
+			filePath.substr(filePath.size() - 3, 3) == ".gz") {
+		fb->close();
+		delete fb;
+		m_streambuf = new gzfilebuf(filePath.c_str());
+	} else {
+		m_streambuf = fb;
+	}
+	this->init(m_streambuf);
 }
 
 inputfilestream::~inputfilestream()
 {
-  delete m_streambuf;
-  m_streambuf = 0;
+	delete m_streambuf;
+	m_streambuf = 0;
 }
 
 void inputfilestream::close()
@@ -130,93 +130,93 @@ void inputfilestream::close()
 
 
 /* MemoryMap Management
-Code kindly provided by Fabio Brugnara, ITC-irst Trento.
-How to use it:
-- call MMap with offset and required size (psgz):
-  pg->b = MMap(fd, rdwr,offset,pgsz,&g);
-- correct returned pointer with the alignment gap and save the gap:
-  pg->b += pg->gap = g;
-- when releasing mapped memory, subtract the gap from the pointer and add
-  the gap to the requested dimension
-  Munmap(pg->b-pg->gap, pgsz+pg->gap, 0);
-*/
+ Code kindly provided by Fabio Brugnara, ITC-irst Trento.
+ How to use it:
+ - call MMap with offset and required size (psgz):
+ pg->b = MMap(fd, rdwr,offset,pgsz,&g);
+ - correct returned pointer with the alignment gap and save the gap:
+ pg->b += pg->gap = g;
+ - when releasing mapped memory, subtract the gap from the pointer and add
+ the gap to the requested dimension
+ Munmap(pg->b-pg->gap, pgsz+pg->gap, 0);
+ */
 
 
 void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap)
 {
-  void	*p=NULL;
-
+	void	*p=NULL;
+	
 #ifdef _WIN32
-  /*
-  int g=0;
-  // code for windows must be checked
-  	HANDLE	fh,
-  		mh;
-
-  	fh = (HANDLE)_get_osfhandle(fd);
-      if(offset) {
-        // bisogna accertarsi che l'offset abbia la granularita`
-        //corretta, MAI PROVATA!
-        SYSTEM_INFO	si;
-
-        GetSystemInfo(&si);
-        g = *gap = offset % si.dwPageSize;
-      } else if(gap) {
-        *gap=0;
-      }
-  	if(!(mh=CreateFileMapping(fh, NULL, PAGE_READWRITE, 0, len+g, NULL))) {
-  		return 0;
-  	}
-  	p = (char*)MapViewOfFile(mh, FILE_MAP_ALL_ACCESS, 0,
-                             offset-*gap, len+*gap);
-  	CloseHandle(mh);
-  */
-
+	/*
+	 int g=0;
+	 // code for windows must be checked
+	 HANDLE	fh,
+	 mh;
+	 
+	 fh = (HANDLE)_get_osfhandle(fd);
+	 if(offset) {
+	 // bisogna accertarsi che l'offset abbia la granularita`
+	 //corretta, MAI PROVATA!
+	 SYSTEM_INFO	si;
+	 
+	 GetSystemInfo(&si);
+	 g = *gap = offset % si.dwPageSize;
+	 } else if(gap) {
+	 *gap=0;
+	 }
+	 if(!(mh=CreateFileMapping(fh, NULL, PAGE_READWRITE, 0, len+g, NULL))) {
+	 return 0;
+	 }
+	 p = (char*)MapViewOfFile(mh, FILE_MAP_ALL_ACCESS, 0,
+	 offset-*gap, len+*gap);
+	 CloseHandle(mh);
+	 */
+	
 #else
-  int pgsz,g=0;
-  if(offset) {
-    pgsz = sysconf(_SC_PAGESIZE);
-    g = *gap = offset%pgsz;
-  } else if(gap) {
-    *gap=0;
-  }
-  p = mmap((void*)0, len+g, access,
-           MAP_SHARED|MAP_FILE,
-           fd, offset-g);
-  if((long)p==-1L)
+	int pgsz,g=0;
+	if(offset) {
+		pgsz = sysconf(_SC_PAGESIZE);
+		g = *gap = offset%pgsz;
+	} else if(gap) {
+		*gap=0;
+	}
+	p = mmap((void*)0, len+g, access,
+					 MAP_SHARED|MAP_FILE,
+					 fd, offset-g);
+	if((long)p==-1L)
 	{
-    perror("mmap failed");
-    p=0;
-  }
+		perror("mmap failed");
+		p=0;
+	}
 #endif
-  return p;
+	return p;
 }
 
 
 int Munmap(void	*p,size_t	len,int	sync)
 {
-  int	r=0;
-
+	int	r=0;
+	
 #ifdef _WIN32
-  /*
-    //code for windows must be checked
-  	if(sync) FlushViewOfFile(p, len);
-  	UnmapViewOfFile(p);
-  */
+	/*
+	 //code for windows must be checked
+	 if(sync) FlushViewOfFile(p, len);
+	 UnmapViewOfFile(p);
+	 */
 #else
-  cerr << "len  = " << len << endl;
-  cerr << "sync = " << sync << endl;
-  cerr << "running msync..." << endl;
-  if(sync) msync(p, len, MS_SYNC);
-  cerr << "done. Running munmap..." << endl;
-  if((r=munmap((void*)p, len)))
+	cerr << "len  = " << len << endl;
+	cerr << "sync = " << sync << endl;
+	cerr << "running msync..." << endl;
+	if(sync) msync(p, len, MS_SYNC);
+	cerr << "done. Running munmap..." << endl;
+	if((r=munmap((void*)p, len)))
 	{
 		perror("munmap() failed");
 	}
-  cerr << "done" << endl;
-
+	cerr << "done" << endl;
+	
 #endif
-  return r;
+	return r;
 }
 
 
@@ -226,17 +226,17 @@ Timer g_timer;
 
 void ResetUserTime()
 {
-  g_timer.start();
+	g_timer.start();
 };
 
 void PrintUserTime(const std::string &message)
 {
-  g_timer.check(message.c_str());
+	g_timer.check(message.c_str());
 }
 
 double GetUserTime()
 {
-  return g_timer.get_elapsed_time();
+	return g_timer.get_elapsed_time();
 }
 
 
@@ -244,22 +244,22 @@ double GetUserTime()
 
 int parseWords(char *sentence, const char **words, int max)
 {
-  char *word;
-  int i = 0;
-
-  const char *const wordSeparators = " \t\r\n";
-
-  for (word = strtok(sentence, wordSeparators);
-       i < max && word != 0;
-       i++, word = strtok(0, wordSeparators)) {
-    words[i] = word;
-  }
-
-  if (i < max) {
-    words[i] = 0;
-  }
-
-  return i;
+	char *word;
+	int i = 0;
+	
+	const char *const wordSeparators = " \t\r\n";
+	
+	for (word = strtok(sentence, wordSeparators);
+			 i < max && word != 0;
+			 i++, word = strtok(0, wordSeparators)) {
+		words[i] = word;
+	}
+	
+	if (i < max) {
+		words[i] = 0;
+	}
+	
+	return i;
 }
 
 
@@ -273,37 +273,37 @@ int parseWords(char *sentence, const char **words, int max)
 
 int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 {
-
-  const char* words[1+ LMTMAXLEV + 1 + 1];
-  int howmany;
-  char line[MAX_LINE];
-
-  inp.getline(line,MAX_LINE);
-  if (strlen(line)==MAX_LINE-1) {
+	
+	const char* words[1+ LMTMAXLEV + 1 + 1];
+	int howmany;
+	char line[MAX_LINE];
+	
+	inp.getline(line,MAX_LINE);
+	if (strlen(line)==MAX_LINE-1) {
 		std::stringstream ss_msg;
 		ss_msg << "parseline: input line exceed MAXLINE (" << MAX_LINE << ") chars " << line << "\n";
 		
-    exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
-  }
-
-  howmany = parseWords(line, words, Order + 3);
-
-  if (!(howmany == (Order+ 1) || howmany == (Order + 2)))
-    assert(howmany == (Order+ 1) || howmany == (Order + 2));
-
-  //read words
-  ng.size=0;
-  for (int i=1; i<=Order; i++)
-    ng.pushw(strcmp(words[i],"<unk>")?words[i]:ng.dict->OOV());
-
-  //read logprob/code and logbow/code
-  assert(sscanf(words[0],"%f",&prob));
-  if (howmany==(Order+2))
-    assert(sscanf(words[Order+1],"%f",&bow));
-  else
-    bow=0.0; //this is log10prob=0 for implicit backoff
-
-  return 1;
+		exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
+	}
+	
+	howmany = parseWords(line, words, Order + 3);
+	
+	if (!(howmany == (Order+ 1) || howmany == (Order + 2)))
+		assert(howmany == (Order+ 1) || howmany == (Order + 2));
+	
+	//read words
+	ng.size=0;
+	for (int i=1; i<=Order; i++)
+		ng.pushw(strcmp(words[i],"<unk>")?words[i]:ng.dict->OOV());
+	
+	//read logprob/code and logbow/code
+	assert(sscanf(words[0],"%f",&prob));
+	if (howmany==(Order+2))
+		assert(sscanf(words[Order+1],"%f",&bow));
+	else
+		bow=0.0; //this is log10prob=0 for implicit backoff
+	
+	return 1;
 }
 
 void exit_error(int err, const std::string &msg){

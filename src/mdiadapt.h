@@ -26,7 +26,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "ngramcache.h"
 #include "normcache.h"
 #include "interplm.h"
-
+	
+namespace irstlm {
 class mdiadaptlm:public interplm
 {
 
@@ -157,6 +158,7 @@ public:
 
 };
 
+}//namespace irstlm
 #endif
 
 

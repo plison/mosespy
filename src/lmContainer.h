@@ -39,6 +39,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 typedef enum {BINARY,TEXT,YRANIB,NONE} OUTFILE_TYPE;
 
+namespace irstlm {
 class lmContainer
 {
   static const bool debug=true;
@@ -177,7 +178,7 @@ public:
     return is_lmt_cache_enabled() && is_ps_cache_enabled();
   }
 };
-
+}//namespace irstlm
 
 #endif
 

@@ -19,7 +19,6 @@
  ******************************************************************************/
 
 using namespace std;
-
 #include <iostream>
 #include <cmath>
 #include <math.h>
@@ -39,6 +38,10 @@ using namespace std;
 #include "linearlm.h"
 #include "mixture.h"
 #include "lmtable.h"
+
+/********************************/
+
+using namespace irstlm;
 
 
 #define NGRAM 1

@@ -30,6 +30,7 @@ using namespace std;
 #include "n_gram.h"
 #include "doc.h"
 
+
 doc::doc(dictionary* d,char* docfname)
 {
   dict=d;
