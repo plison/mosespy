@@ -34,7 +34,6 @@ using namespace std;
 #include "lmtable.h"
 
 /********************************/
-
 using namespace irstlm;
 
 void print_help(int TypeFlag=0){

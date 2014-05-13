@@ -294,8 +294,7 @@ int main(int argc, char **argv)
     cerr << "start projection of ngramtable " << inp
          << " according to hmask\n";
 
-    int selmask[MAX_NGRAM];		
-		//for (size_t c=0; c<MAX_NGRAM; c++) { selmask[c]=0;	}
+    int selmask[MAX_NGRAM];
     memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
     //parse hmask
@@ -305,8 +304,8 @@ int main(int argc, char **argv)
       cerr << hmask[c] << "\n";
       if (hmask[c] == '1'){
         selmask[i]=c+2;
-				i++;
-			}
+	i++;
+      }
     }
 
     if (i!= ngsz) {

@@ -36,7 +36,7 @@ using namespace std;
 #include "index.h"
 
 using namespace std;
-	
+
 ngram::ngram(dictionary* d,int sz)
 {
   dict=d;
@@ -80,7 +80,7 @@ void ngram::trans (const ngram& ng)
     info=0;
     memset(midx,0,sizeof(int)*MAX_NGRAM);
     isym=-1;
-    for (int i=1; i<=size; i++)
+    for (int i=1; i<=size; ++i)
       word[MAX_NGRAM-i]=dict->encode(ng.dict->decode(*ng.wordp(i)));
   }
 }

@@ -688,15 +688,15 @@ void ngramtable::generate(char *filename, dictionary* extdict)
 void ngramtable::generate_hmask(char *filename,char* hmask,int inplen)
 {
   mfstream inp(filename,ios::in);
-  int selmask[MAX_NGRAM];
-//  for (size_t c=0; c<MAX_NGRAM; c++) { selmask[c]=0; }
-  memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
   if (!inp) {
 		std::stringstream ss_msg;
 		ss_msg << "cannot open " << filename;
 		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
   }
+
+  int selmask[MAX_NGRAM];
+  memset(selmask, 0, sizeof(int)*MAX_NGRAM);
 
   //parse hmask
   selmask[0]=1;
