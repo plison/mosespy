@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 								(char *)NULL
 								);
 	
-	if (argc == 1){
+	if (argc > 1){
 		usage();
 		exit_error(IRSTLM_NO_ERROR);
 	}
@@ -78,14 +78,14 @@ int main(int argc, char **argv)
 		exit_error(IRSTLM_NO_ERROR);
 	}
 	
-  lmContainer* lmC=NULL;
-  if (lmC->is_cache_enabled()){
+  lmContainer* lmC;
+	if (lmC->is_cache_enabled()){
     std::cout << " caching is ENABLED" << std::endl;
   }else{
     std::cout << " caching is DISABLED" << std::endl;
   }
 
-  mdiadaptlm* lm=NULL;
+  mdiadaptlm* lm;
   if (lm->is_train_cache_enabled()){
     std::cout << " train-caching is ENABLED" << std::endl;
   }else{
