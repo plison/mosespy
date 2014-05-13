@@ -231,8 +231,8 @@ int main(int argc, char **argv)
   //Learning mixture weights
   if (learn) {
 
-    std::vector<float> p[N]; //LM probabilities
-    float c[N]; //expected counts
+    std::vector<float> p[100]; //LM probabilities
+    float c[100]; //expected counts
     float den,norm; //inner denominator, normalization term
     float variation=1.0; // global variation between new old params
 
