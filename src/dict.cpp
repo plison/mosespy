@@ -1,6 +1,5 @@
 // $Id: dict.cpp 3677 2010-10-13 09:06:51Z bertoldi $
 
-using namespace std;
 
 #include <iostream>
 #include "cmd.h"
@@ -8,6 +7,8 @@ using namespace std;
 #include "mfstream.h"
 #include "mempool.h"
 #include "dictionary.h"
+
+using namespace std;
 
 	
 void print_help(int TypeFlag=0){

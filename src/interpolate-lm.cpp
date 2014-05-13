@@ -18,8 +18,6 @@
 
  ******************************************************************************/
 
-using namespace std;
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -31,8 +29,9 @@ using namespace std;
 #include "util.h"
 #include "math.h"
 #include "lmContainer.h"
-/********************************/
 
+/********************************/
+using namespace std;
 using namespace irstlm;
 
 inline void error(const char* message)

@@ -24,7 +24,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 // by M. Federico
 // Copyright Marcello Federico, ITC-irst, 1998
 
-using namespace std;
 
 #include <iostream>
 #include <sstream>
@@ -37,6 +36,8 @@ using namespace std;
 #include "dictionary.h"
 #include "n_gram.h"
 #include "ngramtable.h"
+
+using namespace std;
 
 void print_help(int TypeFlag=0){
 	std::cerr << std::endl << "ngt - collects n-grams" << std::endl;

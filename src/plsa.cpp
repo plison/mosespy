@@ -18,7 +18,6 @@
  
  ******************************************************************************/
 
-using namespace std;
 
 #include <iostream>
 #include "cmd.h"
@@ -31,6 +30,8 @@ using namespace std;
 #include "ngramtable.h"
 #include "doc.h"
 #include "cplsa.h"
+
+using namespace std;
 
 void print_help(int TypeFlag=0){
   std::cerr << std::endl << "plsa - performs probabilistic latent semantic analysis LM inference" << std::endl;

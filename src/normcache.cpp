@@ -18,7 +18,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
-using namespace std;
 
 #include "mfstream.h"
 #include "mempool.h"
@@ -27,6 +26,9 @@ using namespace std;
 #include "n_gram.h"
 #include "ngramtable.h"
 #include "normcache.h"
+
+using namespace std;
+
 // Normalization factors cache
 
 normcache::normcache(dictionary* d)

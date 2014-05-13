@@ -18,7 +18,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
-using namespace std;
 
 #include <cmath>
 #include <sstream>
@@ -36,6 +35,8 @@ using namespace std;
 #include "mixture.h"
 #include "cmd.h"
 #include "util.h"
+
+using namespace std;
 
 namespace irstlm {
 //

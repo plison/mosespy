@@ -18,7 +18,6 @@
 
 ******************************************************************************/
 
-using namespace std;
 
 #include <math.h>
 #include <assert.h>
@@ -30,6 +29,7 @@ using namespace std;
 #include "n_gram.h"
 #include "doc.h"
 
+using namespace std;
 
 doc::doc(dictionary* d,char* docfname)
 {

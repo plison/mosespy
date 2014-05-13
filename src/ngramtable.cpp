@@ -20,8 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
-using namespace std;
-
 #include <sstream>
 #include "util.h"
 #include "mfstream.h"
@@ -31,6 +29,8 @@ using namespace std;
 #include "dictionary.h"
 #include "n_gram.h"
 #include "ngramtable.h"
+
+using namespace std;
 
 tabletype::tabletype(TABLETYPE tt,int codesize) {
 

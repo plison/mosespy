@@ -20,7 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 ******************************************************************************/
 
-using namespace std;
 
 #include <iostream>
 #include <sstream>
@@ -32,6 +31,8 @@ using namespace std;
 #include "cmd.h"
 #include "math.h"
 #include "util.h"
+
+using namespace std;
 
 //----------------------------------------------------------------------
 //  Special type and global variable for the BIN CLUSTERING algorithm

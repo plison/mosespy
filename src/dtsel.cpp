@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 // by M. Federico
 // Copyright Marcello Federico, Fondazione Bruno Kessler, 2012
 
-using namespace std;
 
 #include <cmath>
 #include "util.h"
@@ -38,6 +37,8 @@ using namespace std;
 #include "n_gram.h"
 #include "ngramtable.h"
 #include "cmd.h"
+
+using namespace std;
 
 #define YES   1
 #define NO    0

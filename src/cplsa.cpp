@@ -18,7 +18,6 @@
  
  **********************************************dou********************************/
 
-using namespace std;
 
 #include <cmath>
 #include <string>
@@ -33,6 +32,7 @@ using namespace std;
 #include "doc.h"
 #include "cplsa.h"
 
+using namespace std;
 	
 #define MY_RAND (((double)rand()/RAND_MAX)* 2.0 - 1.0)
 	

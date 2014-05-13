@@ -18,7 +18,6 @@
  
  ******************************************************************************/
 
-using namespace std;
 #include <iostream>
 #include <cmath>
 #include <math.h>
@@ -40,7 +39,7 @@ using namespace std;
 #include "lmtable.h"
 
 /********************************/
-
+using namespace std;
 using namespace irstlm;
 
 

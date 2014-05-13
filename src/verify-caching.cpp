@@ -20,7 +20,6 @@
 
  ******************************************************************************/
 
-using namespace std;
 
 #include <iostream>
 #include <string>
@@ -31,7 +30,7 @@ using namespace std;
 #include "lmContainer.h"
 
 /********************************/
-
+using namespace std;
 using namespace irstlm;
 
 void print_help(int TypeFlag=0){

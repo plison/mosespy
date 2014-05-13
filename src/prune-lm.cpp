@@ -20,7 +20,6 @@
 
 ******************************************************************************/
 
-using namespace std;
 
 #include <iostream>
 #include <sstream>
@@ -34,6 +33,7 @@ using namespace std;
 #include "lmtable.h"
 
 /********************************/
+using namespace std;
 using namespace irstlm;
 
 void print_help(int TypeFlag=0){
