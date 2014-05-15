@@ -76,17 +76,15 @@ int main(int argc, char **argv)
 		usage();
 		exit_error(IRSTLM_NO_ERROR);
 	}
-	
-  lmContainer* lmC = NULL;
-	if (lmC->is_cache_enabled()){
-    std::cout << " caching is ENABLED" << std::endl;
+
+  if (lmContainer::is_cache_enabled()){
+		std::cout << " caching is ENABLED" << std::endl;
   }else{
     std::cout << " caching is DISABLED" << std::endl;
   }
 
-  mdiadaptlm* lm = NULL;
-  if (lm->is_train_cache_enabled()){
-    std::cout << " train-caching is ENABLED" << std::endl;
+	if (mdiadaptlm::is_train_cache_enabled()){
+		std::cout << " train-caching is ENABLED" << std::endl;
   }else{
     std::cout << " train-caching is DISABLED" << std::endl;
   }
