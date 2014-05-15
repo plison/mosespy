@@ -2326,7 +2326,8 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 		return rbow + lpr;
 	} //Direct ngram TRIE
 	else {
-		assert(extendible==NULL && lastbow==NULL);
+		assert((extendible == NULL) || (extendible && *extendible==false));
+//		assert(lastbow==NULL);
 		for (ngram ng=ong; ng.size>0; ng.size--) {
 			if (get(ng,ng.size,ng.size)) {
 				iprob=ng.prob;
