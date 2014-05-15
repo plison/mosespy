@@ -31,7 +31,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define MIXTURE      7
 #define MOD_SHIFT_BETA   8
 
-
 class interplm:public ngramtable
 {
 
@@ -109,11 +108,11 @@ public:
     return 0.0;
   }
 
-  void test_ngt(ngramtable& ngt,int sz=0,int backoff=0,int checkpr=0);
+  void test_ngt(ngramtable& ngt,int sz=0,bool backoff=false,bool checkpr=false);
 
-  void test_txt(char *filename,int sz=0,int backoff=0,int checkpr=0,char* outpr=NULL);
+  void test_txt(char *filename,int sz=0,bool backoff=false,bool checkpr=false,char* outpr=NULL);
 
-  void test(char* filename,int sz,int backoff=0,int checkpr=0,char* outpr=NULL);
+  void test(char* filename,int sz,bool backoff=false,bool checkpr=false,char* outpr=NULL);
 
   virtual int discount(ngram /* unused parameter: ng */,int /* unused parameter: size */,double& /* unused parameter: fstar */ ,double& /* unused parameter: lambda */,int /* unused parameter: cv*/=0) {
     return 0;

@@ -66,7 +66,6 @@ static Enum_T LmTypeEnum [] = {
   END_ENUM
 };
 
-
 static Enum_T InteractiveModeEnum [] = {
   {    (char*)"Ngram",       NGRAM },
   {    (char*)"Sequence",    SEQUENCE },
@@ -102,7 +101,6 @@ void usage(const char *msg = 0)
 
 int main(int argc, char **argv)
 {
-	
 	char *dictfile=NULL;
 	char *trainfile=NULL;
 	char *testfile=NULL;
@@ -120,7 +118,7 @@ int main(int argc, char **argv)
 	
 	char* scalefactorfile=NULL;
 	
-	int backoff=0; //back-off or interpolation
+	bool backoff=false; //back-off or interpolation
 	int lmtype=0;
 	int dub=0; //dictionary upper bound
 	int size=0;   //lm size
@@ -151,7 +149,7 @@ int main(int argc, char **argv)
 	
 	DeclareParams((char*)
 		"Back-off",CMDBOOLTYPE|CMDMSG, &backoff, "boolean flag for backoff LM (default is false, i.e. interpolated LM)",
-		"bo",CMDBOOLTYPE|CMDMSG, &backoff, "boolean falg for backoff LM (default is false, i.e. interpolated LM)",
+		"bo",CMDBOOLTYPE|CMDMSG, &backoff, "boolean flag for backoff LM (default is false, i.e. interpolated LM)",
 		"Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "dictionary to filter the LM (default is NULL)",
 		"d", CMDSTRINGTYPE|CMDMSG, &dictfile, "dictionary to filter the LM (default is NULL)",
 								

@@ -78,11 +78,11 @@ void mdiadaptlm::caches_stat()
 #ifdef MDIADAPTLM_CACHE_ENABLE
   for (int i=1; i<=max_caching_level; i++) {
     if (probcache[i]) {
-      cerr << "Statistics of probcache at level " << i << " (of " << maxlev << ") ";
+      cerr << "Statistics of probcache at level " << i << " (of " << maxlevel() << ") ";
       probcache[i]->stat();
     }
     if (backoffcache[i]) {
-      cerr << "Statistics of backoffcache at level " << i << " (of " << maxlev << ") ";
+      cerr << "Statistics of backoffcache at level " << i << " (of " << maxlevel() << ") ";
       backoffcache[i]->stat();
     }
   }
@@ -493,7 +493,7 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
 
   //probcache miss
   mdiadaptlm::bodiscount(ng,size,fstar,lambda,bo);
-
+	
   if (fstar>UPPER_SINGLE_PRECISION_OF_1 || lambda>UPPER_SINGLE_PRECISION_OF_1) {
     cerr << "wrong probability: " << ng
          << " , size " << size

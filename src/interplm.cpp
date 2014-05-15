@@ -336,7 +336,7 @@ double interplm::zerofreq(int lev)
 }
 
 
-void interplm::test(char* filename,int size,int backoff,int checkpr,char* outpr)
+void interplm::test(char* filename,int size,bool backoff,bool checkpr,char* outpr)
 {
 
   if (size>lmsize()) {
@@ -359,7 +359,7 @@ void interplm::test(char* filename,int size,int backoff,int checkpr,char* outpr)
 }
 
 
-void interplm::test_txt(char* filename,int size,int /* unused parameter: backoff */,int checkpr,char* outpr)
+void interplm::test_txt(char* filename,int size,bool /* unused parameter: backoff */,bool checkpr,char* outpr)
 {
 
   cerr << "test text " << filename << " ";
@@ -432,7 +432,7 @@ void interplm::test_txt(char* filename,int size,int /* unused parameter: backoff
 }
 
 
-void interplm::test_ngt(ngramtable& ngt,int sz,int /* unused parameter: backoff */,int checkpr)
+void interplm::test_ngt(ngramtable& ngt,int sz,bool /* unused parameter: backoff */,bool checkpr)
 {
 
   double pr;

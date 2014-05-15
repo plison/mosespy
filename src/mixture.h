@@ -23,8 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #ifndef LM_MIXTURE
 #define LM_MIXTURE
 
-#define END_ENUM    {   (char*)0,  0 }
-
 namespace irstlm {
 	
 class mixture: public mdiadaptlm

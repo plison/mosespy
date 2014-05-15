@@ -39,10 +39,14 @@
 
 #include	"cmd.h"
 
-#define	FALSE	0
-#define	TRUE	1
+#ifdef	NEEDSTRDUP
+char	*strdup(const char *s);
+#endif
 
-static Enum_T	BoolEnum[] = {
+#define	LINSIZ		10240
+
+
+static Bool_T	BoolEnum[] = {
 	{	(char*)"FALSE",	FALSE},
 	{	(char*)"TRUE",   TRUE},
 	{	(char*)"false",	FALSE},
@@ -59,14 +63,9 @@ static Enum_T	BoolEnum[] = {
 	{ (char*)"Y",      TRUE},
 	{ (char*)"n",     FALSE},
 	{ (char*)"y",      TRUE},
-	{	0,		0	}
+	END_ENUM
 };
 
-#ifdef	NEEDSTRDUP
-char	*strdup(const char *s);
-#endif
-
-#define	LINSIZ		10240
 
 static char
 *GetLine(FILE	*fp,
@@ -88,6 +87,8 @@ SetParam(Cmd_T	*cmd,
 				 char	*s),
 SetEnum(Cmd_T	*cmd,
 				char	*s),
+SetBool(Cmd_T	*cmd,
+				char	*s),
 SetFlag(Cmd_T	*cmd,
 				char	*s),
 SetSubrange(Cmd_T	*cmd,
@@ -102,6 +103,8 @@ SetLte(Cmd_T	*cmd,
 			 char	*s),
 CmdError(char	*opt),
 EnumError(Cmd_T	*cmd,
+					char	*s),
+BoolError(Cmd_T	*cmd,
 					char	*s),
 SubrangeError(Cmd_T	*cmd,
 							int	n),
@@ -119,6 +122,10 @@ PrintParams4(int	TypeFlag,
 						 FILE	*fp),
 FreeParam(Cmd_T	*cmd),
 PrintEnum(Cmd_T	*cmd,
+					int	TypeFlag,
+					int	ValFlag,
+					FILE	*fp),
+PrintBool(Cmd_T	*cmd,
 					int	TypeFlag,
 					int	ValFlag,
 					FILE	*fp),
@@ -443,6 +450,8 @@ BuildCmdList(Cmd_T	**cmdp,
 		cmd->Val = va_arg(args, void*);
 		cmd->Msg = 0;
 		cmd->Flag = 0;
+		cmd->p = 0;
+		
 		switch(cmd->Type&~CMDMSG) {
 			case CMDENUMTYPE:	/* get the pointer to Enum_T struct */
 			case CMDFLAGTYPE:
@@ -470,10 +479,11 @@ BuildCmdList(Cmd_T	**cmdp,
 				*((int**)cmd->p)[1] = 0;
 				break;
 			case CMDBOOLTYPE:
-				cmd->Type = CMDENUMTYPE|(cmd->Type&CMDMSG);
 				cmd->p = BoolEnum;
-				cmd->Flag = 1;
 				break;
+				//cmd->p = (Bool_T*)calloc(1, sizeof(Bool_T));
+				//				cmd->p = va_arg(args, void*);
+//				cmd->p = BoolEnum;
 			case CMDDOUBLETYPE:	/* nothing else is needed	 */
 			case CMDFLOATTYPE:
 			case CMDINTTYPE:
@@ -510,6 +520,7 @@ static int
 FreeParam(Cmd_T	*cmd)
 {
 	switch(cmd->Type) {
+		case CMDBOOLTYPE2:
 		case CMDSUBRANGETYPE:
 		case CMDGTETYPE:
 		case CMDLTETYPE:
@@ -546,6 +557,10 @@ PrintParam(Cmd_T	*cmd,
 			fprintf(fp, "%s", cmd->Name);
 			if(TypeFlag) fprintf(fp, " [float]");
 			if(ValFlag) fprintf(fp, ": %22.15e", *(float *)cmd->Val);
+			break;
+		case CMDBOOLTYPE2:
+		case CMDBOOLTYPE:
+			PrintBool(cmd, TypeFlag, ValFlag, fp);
 			break;
 		case CMDENUMTYPE:
 			PrintEnum(cmd, TypeFlag, ValFlag, fp);
@@ -711,6 +726,10 @@ SetParam(Cmd_T	*cmd,
 				exit(IRSTLM_CMD_ERROR_DATA);
 			}
 			break;
+		case CMDBOOLTYPE2:
+		case CMDBOOLTYPE:
+			SetBool(cmd, s);
+			break;
 		case CMDENUMTYPE:
 			SetEnum(cmd, s);
 			break;
@@ -765,6 +784,22 @@ SetParam(Cmd_T	*cmd,
 }
 
 static int 
+SetBool(Cmd_T	*cmd,
+				char	*s)
+{
+	Bool_T	*en;
+	
+	for(en=(Bool_T*)cmd->p; en->Name; en++) {
+		if(*en->Name && !strcmp(s, en->Name)) {
+			*(char*)cmd->Val = en->Idx;
+			return 0;
+		}
+	}
+	return BoolError(cmd, s);
+}
+
+
+static int 
 SetEnum(Cmd_T	*cmd,
 				char	*s)
 {
@@ -789,8 +824,26 @@ EnumIdx(Enum_T	*en,
 	return -1;
 }
 
+char
+BoolIdx(Bool_T	*en,
+				char	*s)
+{
+	if(en) for(; en->Name; en++) {
+		if(*en->Name && !strcmp(s, en->Name)) return en->Idx;
+	}
+	return -1;
+}
+
 char *
 EnumStr(Enum_T	*en,
+				int	i)
+{
+	if(en) for(; en->Name; en++) if(en->Idx==i) return en->Name;
+	return 0;
+}
+
+char *
+BoolStr(Bool_T	*en,
 				int	i)
 {
 	if(en) for(; en->Name; en++) if(en->Idx==i) return en->Name;
@@ -906,6 +959,23 @@ EnumError(Cmd_T	*cmd,
 }
 
 static int 
+BoolError(Cmd_T	*cmd,
+					char	*s)
+{
+	Bool_T	*en;
+	
+	fprintf(stderr,
+					"Invalid value \"%s\" for parameter \"%s\"\n", s, cmd->Name);
+	fprintf(stderr, "Valid values are:\n");
+	for(en=(Bool_T*)cmd->p; en->Name; en++) {
+		if(*en->Name) fprintf(stderr, " %s\n", en->Name);
+	}
+	fprintf(stderr, "\n");
+	exit(IRSTLM_CMD_ERROR_DATA);
+	return 0;
+}
+
+static int 
 GteError(Cmd_T	*cmd,
 				 int	n)
 {
@@ -965,6 +1035,39 @@ PrintEnum(Cmd_T	*cmd,
 	}
 	if(ValFlag) {
 		for(en=(Enum_T*)cmd->p; en->Name; en++) {
+			if(*en->Name && en->Idx==*(int*)cmd->Val) {
+				fprintf(fp, ": %s", en->Name);
+			}
+		}
+	}
+	//	fprintf(fp, "\n");
+	return 0;
+}
+
+static int 
+PrintBool(Cmd_T	*cmd,
+					int	TypeFlag,
+					int	ValFlag,
+					FILE	*fp)
+{
+	Bool_T	*en;
+	
+	fprintf(fp, "%s", cmd->Name);
+	if(TypeFlag) {
+		fprintf(fp, " [enum { ");
+		
+		char	*sep="";
+		
+		for(en=(Bool_T*)cmd->p; en->Name; en++) {
+			if(*en->Name) {
+				fprintf(fp, "%s%s", sep, en->Name);
+				sep=", ";
+			}
+		}
+		fprintf(fp, " }]");
+	}
+	if(ValFlag) {
+		for(en=(Bool_T*)cmd->p; en->Name; en++) {
 			if(*en->Name && en->Idx==*(int*)cmd->Val) {
 				fprintf(fp, ": %s", en->Name);
 			}

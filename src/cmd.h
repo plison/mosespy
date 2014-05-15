@@ -24,6 +24,15 @@
 
 #define	CMD_H
 
+
+
+#define	FALSE	0
+#define	TRUE	1
+
+#define END_ENUM    {   (char*)0,  0 }
+
+
+
 #define IRSTLM_CMD_NO_ERROR         0
 #define IRSTLM_CMD_ERROR_GENERIC    1
 #define IRSTLM_CMD_ERROR_IO         2
@@ -41,6 +50,7 @@
 #define	CMDLTETYPE	7
 #define	CMDSTRARRAYTYPE	8
 #define	CMDBOOLTYPE	9
+#define	CMDBOOLTYPE2	19
 #define	CMDFLAGTYPE	10
 #define	CMDINTARRAYTYPE	11
 #define	CMDDBLARRAYTYPE	12
@@ -58,6 +68,11 @@ extern "C" {
 		char *Name;
 		int	Idx;
 	} Enum_T;
+	
+	typedef struct {
+		char *Name;
+		char Idx;
+	} Bool_T;
 	
 	typedef struct {
 		int Type;
@@ -84,11 +99,16 @@ extern "C" {
 	FullPrintParams(int		TypeFlag,
 							int		ValFlag,
 							int		MsgFlag,
-							FILE	*fp),
+									FILE	*fp),
 	EnumIdx(Enum_T	*en,
+					char	*s);
+	char BoolIdx(Bool_T	*en,
 					char	*s);
 	char
 	*EnumStr(Enum_T	*en,
+					 int	i);
+	char
+	*BoolStr(Bool_T	*en,
 					 int	i);
 	
 #ifdef	__cplusplus
