@@ -90,5 +90,10 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow);
 
 void exit_error(int err, const std::string &msg="");
 
+namespace irstlm
+{
+	void* reallocf(void *ptr, size_t size);
+}
+
 #endif
 

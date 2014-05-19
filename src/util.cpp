@@ -337,3 +337,20 @@ void exit_error(int err, const std::string &msg){
 	exit(err);
 };
 
+namespace irstlm
+{
+	void* reallocf(void *ptr, size_t size){
+		void *p=realloc(ptr,size);
+		
+		if (p)
+		{
+			return p;
+		}
+		else
+		{
+			free(ptr);
+			return NULL;
+		}
+	}
+}
+
