@@ -104,7 +104,7 @@ def sbatch(pythonFile, account=None, nbNodes=1, memoryGb=60):
     if not os.path.exists(pythonFile):
         raise RuntimeError(pythonFile + " must be a python file") 
            
-    batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, 
+    batchFile = createBatchFile("python -u " + pythonFile, account, nbNodes=nbNodes, 
                                 name=pythonFile, memoryGb=memoryGb)
     shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
     
@@ -202,10 +202,10 @@ def splitData(dataFile, outputDir, nbSplits):
 def getSlurmAccount():
     user = (os.popen("whoami")).read().strip()
     result = (os.popen("sacctmgr show User "+user + " -p")).read()
-    s = re.search(user+"\|((\S)+)\|", result)
+    s = re.search(user+"\|((\S)+?)\|", result)
     if s:
         account = s.group(1)
-        print "Using account " + account
+        print "Using SLURM account \"" + account + "\"..."
         return account
     return None
 
