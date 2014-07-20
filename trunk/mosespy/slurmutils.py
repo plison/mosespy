@@ -200,8 +200,11 @@ def splitData(dataFile, outputDir, nbSplits):
 
 
 def getSlurmAccount():
-    user = os.popen("whoami").read()
-    result = os.popen("sacctmgr show User "+user + " -p").read()
+    user = (os.popen("whoami")).read().strip()
+    print user
+    cmd = "sacctmgr show User "+user + " -p"
+    result = (os.popen(cmd)).read()
+    print result
     s = re.search(user+"|((\S)+)|", result)
     if s:
         return s.group(1)
