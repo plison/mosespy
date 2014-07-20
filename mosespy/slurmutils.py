@@ -66,6 +66,7 @@ class SlurmExperiment(Experiment):
         elif not self.system.has_key("tm") or not self.system["tm"].has_key("data"):
             raise RuntimeError("Aligned training data is not yet processed")    
         
+        trainData = self.system["tm"]["data"]
         print ("Building translation model " + self.system["source"] + "-" 
                + self.system["target"] + " with " + trainData["clean"] 
                + " with " + str(nbSplits) + " splits")
