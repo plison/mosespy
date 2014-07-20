@@ -1,37 +1,125 @@
 
-import time, shutil, os, shellutils, textwrap, re
+import time, shutil, os, shellutils, textwrap, re, sys
+import mosespy
+from mosespy import Experiment 
      
-def run_batch(pythonFile, nbNodes=1):
+     
+class SlurmExperiment(Experiment):
     
-    print "Creating batch file for python file " + pythonFile
-    batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, name="Main")
-    shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
+    def __init__(self, expName, sourceLang=None, targetLang=None):
+            
+        print "Starting " + sys.argv[0] + " using sbatch"
+            
+        if not os.path.exists(sys.argv[0]):
+            raise RuntimeError(sys.argv[0] + " must be a python file") 
     
-    with open('logs/out.txt') as out:
-        text = out.read().strip('\n')
-        if "Submitted batch job" in text:
-            jobid = text.replace("Submitted batch job ", "")
-            print "Waiting for job " + jobid + " to start..."
-            jobfile = "slurm-"+jobid+".out"
-            while not os.path.exists(jobfile):
-                time.sleep(5)
-            print "Job " + jobid + " has now started"
-            with open(jobfile) as slurm:
-                while True:
-                    where = slurm.tell()
-                    line = slurm.readline()
-                    if not line:
-                        time.sleep(1)
-                        slurm.seek(where)
-                    elif "Job " + jobid in line and "completed" in line:
-                        break
-                    else:
-                        print line,  
-            shutil.move(jobfile, "./logs/"+jobfile) 
+        pythonFile = sys.argv[0].strip()
+        nbNodes = 1
+        for arg in sys.argv:
+            if "--nodes=" in arg:
+                nbNodes = int(arg.replace("--nodes=", "").strip())
+                    
+        batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, name="Main")
+        shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
+        
+        with open('logs/out.txt') as out:
+            text = out.read().strip('\n')
+            if "Submitted batch job" in text:
+                jobid = text.replace("Submitted batch job ", "")
+                print "Waiting for job " + jobid + " to start..."
+                jobfile = "slurm-"+jobid+".out"
+                while not os.path.exists(jobfile):
+                    time.sleep(5)
+                print "Job " + jobid + " has now started"
+                with open(jobfile) as slurm:
+                    while True:
+                        where = slurm.tell()
+                        line = slurm.readline()
+                        if not line:
+                            time.sleep(1)
+                            slurm.seek(where)
+                        elif "Job " + jobid in line and "completed" in line:
+                            break
+                        else:
+                            print line,  
+                shutil.move(jobfile, "./logs/"+jobfile) 
+            else:
+                print "Cannot start batch script, aborting"
+                exit()
+                
+    
+  
+    def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
+        
+        if nbSplits == 1:
+            Experiment.trainTranslationModel(self, trainStem, nbThreads)
+            return
+       
+        if trainStem:         
+            trainData = self.processAlignedData(trainStem)
+            self.system["tm"] = {"data": trainData}
+            self.recordState()        
+        elif not self.system.has_key("tm") or not self.system["tm"].has_key("data"):
+            raise RuntimeError("Aligned training data is not yet processed")    
+        
+        print ("Building translation model " + self.system["source"] + "-" 
+               + self.system["target"] + " with " + trainData["clean"] 
+               + " with " + str(nbSplits) + " splits")
+
+        tmScript, tmDir = self.getTrainScript(nbThreads)
+    
+        outputDir = os.path.dirname(tmDir) + "/splits"
+        shutil.rmtree(outputDir)
+        os.makedirs(outputDir)
+    
+        splits = splitData(trainData["clean"] + "." + self.system["source"], outputDir, nbSplits)
+        splitData(trainData["clean"] + "." + self.system["target"], outputDir, nbSplits)
+                      
+        paramScript = tmScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
+                                .replace(trainData["clean"], outputDir + "/" +"$TASK_ID")
+        arrayrun(paramScript, nbSplits)
+           
+        if not os.path.exists(tmDir+"/model"):
+            os.makedirs(tmDir+"/model")
+        with open(tmDir+"/model/aligned."+self.system["alignment"], 'w') as al:
+            for split in splits:
+                with open(split+"/model/aligned."+self.system["alignment"]) as part:
+                    al.write(part.read())
+                                               
+        result = shellutils.run(tmScript + " --first-step 4")
+
+        if result:
+            print "Finished building translation model in directory " + mosespy.getFileDescription(tmDir)
+            self.system["tm"]["dir"]=tmDir
+            self.recordState()
         else:
-            print "Cannot start batch script: " + text
-            return False
-    return True
+            print "Construction of translation model FAILED"
+            shellutils.run("rm -rf " + tmDir)
+
+
+
+def arrayrun(paramScript, nbSplits):
+    
+    batchFile = createBatchFile(paramScript, name="split-$TASK_ID")
+
+    shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
+                 outfile="./logs/out-split.txt")
+    time.sleep(1)
+    jobs = set()
+    with open('./logs/out-split.txt') as out:
+        for l in out.readlines():
+            if "Submitted batch job" in l:
+                jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
+                jobs.add(jobid)
+    time.sleep(1)
+    while True:
+        queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
+        if len(set(queue.split()).intersection(jobs)) == 0:
+            break
+        print "Unfinished jobs: " + str(list(jobs))
+        time.sleep(10)
+      
+         
 
    
 def createBatchFile(script, nbNodes=1, memoryGb=60, name=None):
@@ -67,54 +155,7 @@ def createBatchFile(script, nbNodes=1, memoryGb=60, name=None):
 
 
 
-
-def trainInSplits(baseScript, nbSplits):
         
-    tmDir = (re.search("--root-dir\s+((\S)+)", baseScript)).group(1)
-    trainData = (re.search("-corpus\s+((\S)+)", baseScript)).group(1)
-    alignment = (re.search("-alignment\s+((\S)+)", baseScript)).group(1)
-    source = (re.search("-f\s+((\S)+)", baseScript)).group(1)
-    target = (re.search("-e\s+((\S)+)", baseScript)).group(1)
-
-    outputDir = os.path.dirname(tmDir) + "/splits"
-    shutil.rmtree(outputDir)
-    os.makedirs(outputDir)
-
-    splits = splitData(trainData + "." + source, outputDir, nbSplits)
-    splitData(trainData + "." + target, outputDir, nbSplits)
-              
-    for split in splits:
-            shutil.rmtree(split, ignore_errors=True)
-
-    paramScript = baseScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
-                            .replace(trainData, outputDir + "/" +"$TASK_ID")
-    batchFile = createBatchFile(paramScript, name="split-$TASK_ID")
-    
-    shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
-                 outfile="./logs/out-split.txt")
-    time.sleep(1)
-    jobs = set()
-    with open('./logs/out-split.txt') as out:
-        for l in out.readlines():
-            if "Submitted batch job" in l:
-                jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
-                jobs.add(jobid)
-    time.sleep(1)
-    while True:
-        queue = os.popen("squeue -u plison").read()
-        if len(set(queue.split()).intersection(jobs)) == 0:
-            break
-        print "Unfinished jobs: " + str(list(jobs))
-        time.sleep(10)
-       
-    if not os.path.exists(tmDir+"/model"):
-        os.makedirs(tmDir+"/model")
-    with open(tmDir+"/model/aligned."+alignment, 'w') as al:
-        for split in splits:
-            with open(split+"/model/aligned."+alignment) as part:
-                al.write(part.read())
-                                           
-    return shellutils.run(baseScript + " --first-step 4")
 
     
 
