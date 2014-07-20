@@ -8,6 +8,10 @@ class SlurmExperiment(Experiment):
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
             
+        if "--no-sbatch" in sys.argv:
+            Experiment.__init__(self, expName, sourceLang, targetLang)
+            return
+        
         print "Starting " + sys.argv[0] + " using sbatch"
             
         if not os.path.exists(sys.argv[0]):
@@ -19,7 +23,7 @@ class SlurmExperiment(Experiment):
             if "--nodes=" in arg:
                 nbNodes = int(arg.replace("--nodes=", "").strip())
                     
-        batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, name="Main")
+        batchFile = createBatchFile("python -u " + pythonFile +" --no-sbatch", nbNodes=nbNodes, name="Main")
         shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
         
         with open('logs/out.txt') as out:
