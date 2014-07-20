@@ -32,5 +32,14 @@ def run(script, infile=None, outfile=None):
     else:
         print "\t!!! Task [" + str(callincr) + "] FAILED"
         return False
+    
+    
+def existsExecutable(command):
+    for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, command)
+            if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
+                return True
+    return False
         
 
