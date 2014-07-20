@@ -309,22 +309,5 @@ def cleanFiles(inputStem, outputStem, source, target, maxLength=80):
 
 
    
-
-def splitData(dataFile, outputDir, nbSplits):
-        
-    extension = dataFile.split(".")[len(dataFile.split("."))-1]
-    totalLines = int(os.popen("wc -l " + dataFile).read().split(" ")[0])
-    shellutils.run("split -d -l %i -a %i %s %s"%(totalLines / nbSplits + 1, nbSplits, 
-                                               dataFile, outputDir+"/"+ extension +"." ))
-    
-    digits = []
-    for f in os.listdir(outputDir):
-        if f.startswith(extension+".") and f.split(".")[1].isdigit():
-            digit = f.split(".")[1]
-            shutil.move(outputDir+"/"+ extension+ "."+digit, outputDir+"/"+str(int(digit))+"."+extension)
-            digits.append(outputDir+"/"+str(int(digit)))
-    digits.sort()
-    return digits
-  
  
 
