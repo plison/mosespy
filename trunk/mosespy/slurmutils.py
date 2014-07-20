@@ -1,11 +1,11 @@
 
-import time, shutil, os
+import time, shutil, os, shellutils, textwrap, re
      
 def run_batch(pythonFile, nbNodes=1):
     
     print "Creating batch file for python file " + pythonFile
     batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, name="Main")
-    run("sbatch " + batchFile, outfile="logs/out.txt")
+    shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
     
     with open('logs/out.txt') as out:
         text = out.read().strip('\n')
@@ -34,9 +34,10 @@ def run_batch(pythonFile, nbNodes=1):
     return True
 
    
-def createBatchFile(script, nbNodes=1, memoryGb=60):
+def createBatchFile(script, nbNodes=1, memoryGb=60, name=None):
       
-    name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
+    if not name:
+        name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
     #script = script + (" < " + infile if infile else "")  + (" > " + outfile if outfile else "")
     if memoryGb > 60:
         memoryStr = str(max(1, memoryGb)) + "G --partition=hugemem"
@@ -59,7 +60,7 @@ def createBatchFile(script, nbNodes=1, memoryGb=60):
                             module load intel
                             module load openmpi.intel
                             export LD_LIBRARY_PATH=%s                                   
-                            %s""" %(name, "50G", nbNodes, libraryPath, script))   
+                            %s""" %(name, memoryStr, nbNodes, libraryPath, script))   
     with open(batchFile, 'w') as f:
         f.write(batch)
     return batchFile
@@ -88,7 +89,7 @@ def trainInSplits(baseScript, nbSplits):
 
     paramScript = baseScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
                             .replace(trainData, outputDir + "/" +"$TASK_ID")
-    batchFile = shellutils.createBatchFile(paramScript, None, None, 1, 30, name="split-$TASK_ID")
+    batchFile = createBatchFile(paramScript, None, None, 1, 30, name="split-$TASK_ID")
     
     shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
                  outfile="./logs/out-split.txt")
@@ -117,4 +118,22 @@ def trainInSplits(baseScript, nbSplits):
     return shellutils.run(baseScript + " --first-step 4")
 
     
+
+
+def splitData(dataFile, outputDir, nbSplits):
+        
+    extension = dataFile.split(".")[len(dataFile.split("."))-1]
+    totalLines = int(os.popen("wc -l " + dataFile).read().split(" ")[0])
+    shellutils.run("split -d -l %i -a %i %s %s"%(totalLines / nbSplits + 1, nbSplits, 
+                                               dataFile, outputDir+"/"+ extension +"." ))
+    
+    digits = []
+    for f in os.listdir(outputDir):
+        if f.startswith(extension+".") and f.split(".")[1].isdigit():
+            digit = f.split(".")[1]
+            shutil.move(outputDir+"/"+ extension+ "."+digit, outputDir+"/"+str(int(digit))+"."+extension)
+            digits.append(outputDir+"/"+str(int(digit)))
+    digits.sort()
+    return digits
+  
     
