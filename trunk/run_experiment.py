@@ -13,9 +13,9 @@ tuningData = "./data/news-dev/newssyscomb2009"
 
 print "AHAH"
 exp = Experiment("exp-parallel", "fr", "en")
-time.sleep(100000)
-#exp.trainLanguageModel(trainData+".en")
-exp.trainTranslationModel(trainData)
+time.sleep(1)
+exp.trainLanguageModel(trainData+".en")
+#exp.trainTranslationModel(trainData)
 
 
 #exp.tuneTranslationModel(tuningData)
