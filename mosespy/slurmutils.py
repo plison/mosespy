@@ -12,7 +12,7 @@ class SlurmExperiment(Experiment):
             raise RuntimeError("SLURM system not present, aborting")
         if not account:
             print "current var: " + os.popen("echo $SLURM_ACCOUNT").read()
-        print "SLURM!!! "
+        print "SLURM!!! " + account
         self.system["slurm_account"] = account
     
   
