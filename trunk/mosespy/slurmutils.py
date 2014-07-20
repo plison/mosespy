@@ -47,12 +47,13 @@ class SlurmExperiment(Experiment):
         splitData(trainData["clean"] + "." + self.system["source"], outputDir, nbSplits)
         splitData(trainData["clean"] + "." + self.system["target"], outputDir, nbSplits)
 
-        paramScript = tmScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
+        paramScript = (tmScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
                                 .replace(trainData["clean"], outputDir + "/" +"$TASK_ID")
+                                + " --last-step 3")
         arrayrun(paramScript, self.system["slurm_account"], nbSplits)
-           
-        if not os.path.exists(tmDir+"/model"):
-            os.makedirs(tmDir+"/model")
+        
+        shutil.rmtree(tmDir, ignore_errors=True)   
+        os.makedirs(tmDir+"/model")
         with open(tmDir+"/model/aligned."+self.system["alignment"], 'w') as al:
             for split in range(0, nbSplits):
                 with open(outputDir+ "/" + str(split)+"/model/aligned."+self.system["alignment"]) as part:
@@ -88,7 +89,7 @@ def arrayrun(paramScript, account, nbSplits):
         if len(set(queue.split()).intersection(jobs)) == 0:
             break
         print "Unfinished jobs: " + str(list(jobs))
-        time.sleep(10)
+        time.sleep(60)
 
 
 def sbatch(pythonFile, account=None, nbNodes=1, memoryGb=60):
@@ -153,7 +154,7 @@ def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, nam
                             #!/bin/bash
                             #SBATCH --job-name=%s
                             #SBATCH --account=%s
-                            #SBATCH --time=05:00:00
+                            #SBATCH --time=%s
                             #SBATCH --ntasks=1
                             #SBATCH --mem-per-cpu=%s
                             #SBATCH --nodes=%i
@@ -161,8 +162,10 @@ def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, nam
                             source /cluster/bin/jobsetup  
                             module load intel
                             module load openmpi.intel
-                            export LD_LIBRARY_PATH=%s                                   
-                            %s""" %(name, account, memoryStr, 
+                            export LD_LIBRARY_PATH=%s 
+                                                              
+                            %s 
+                            """%(name, account, time, memoryStr, 
                                     nbNodes, libraryPath, script))   
     with open(batchFile, 'w') as f:
         f.write(batch)
@@ -177,7 +180,6 @@ def splitData(dataFile, outputDir, nbSplits):
     extension = dataFile.split(".")[len(dataFile.split("."))-1]
     totalLines = int(os.popen("wc -l " + dataFile).read().strip().split(" ")[0])
 
-    digits = set()
     with open(dataFile) as fullFile:
         curSplit = 0
         curFile = open(outputDir + "/" + str(curSplit) + "." + extension, 'w')
@@ -187,15 +189,10 @@ def splitData(dataFile, outputDir, nbSplits):
             nbLines += 1
             if nbLines >= (totalLines / nbSplits + 1):
                 nbLines = 0
-                curSplit += 1
                 curFile.close()
-                digits.add(curFile.name)
+                curSplit += 1
                 curFile = open(outputDir + "/" + str(curSplit) + "." + extension, 'w')
-        digits.add(curFile.name)
         curFile.close()
-    digits = list(digits)
-    digits.sort()
-    return digits
 
 
 
