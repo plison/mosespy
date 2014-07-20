@@ -210,7 +210,7 @@ class Experiment:
         if len(text) < 500:
             shellutils.run(transScript)
         else:
-            shellutils.run_batch(transScript)
+            shellutils.run(transScript)
         
               
                                 
