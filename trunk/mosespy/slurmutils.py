@@ -68,7 +68,6 @@ def createBatchFile(script, nbNodes=1, memoryGb=60, name=None):
 
 
 
-
 def trainInSplits(baseScript, nbSplits):
         
     tmDir = (re.search("--root-dir\s+((\S)+)", baseScript)).group(1)
@@ -89,7 +88,7 @@ def trainInSplits(baseScript, nbSplits):
 
     paramScript = baseScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
                             .replace(trainData, outputDir + "/" +"$TASK_ID")
-    batchFile = createBatchFile(paramScript, None, None, 1, 30, name="split-$TASK_ID")
+    batchFile = createBatchFile(paramScript, name="split-$TASK_ID")
     
     shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
                  outfile="./logs/out-split.txt")
