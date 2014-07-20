@@ -6,7 +6,7 @@ from mosespy import Experiment
      
 class SlurmExperiment(Experiment):
     
-    def __init__(self, expName, account=None, sourceLang=None, targetLang=None):
+    def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
         if not shellutils.existsExecutable("sbatch"):
             raise RuntimeError("SLURM system not present, aborting")
