@@ -9,7 +9,7 @@ tuningData = "./data/news-dev/newssyscomb2009"
 
 exp = SlurmExperiment("exp-parallel", "en", "fr")
 #exp.trainLanguageModel(trainData+".en")
-exp.trainTranslationModel(nSplits=4)
+exp.trainTranslationModel(nbSplits=4)
 
 
 #exp.tuneTranslationModel(tuningData)
