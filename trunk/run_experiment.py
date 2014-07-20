@@ -8,8 +8,8 @@ trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/news-dev/newssyscomb2009"
 
 exp = SlurmExperiment("exp-parallel", "en", "fr")
-exp.trainLanguageModel(trainData+".en")
-exp.trainTranslationModel(trainData)
+#exp.trainLanguageModel(trainData+".en")
+exp.trainTranslationModel(nSplits=4)
 
 
 #exp.tuneTranslationModel(tuningData)
