@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*- 
 
-import sys, os, time
+import sys, os
+from mosespy.slurmutils import SlurmExperiment
 from mosespy.mosespy import Experiment
-from mosespy import slurmutils
-
-if "-batch" in sys.argv or "--batch" in sys.argv:
-    slurmutils.run_batch(os.path.basename(__file__))
-    exit()
 
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/news-dev/newssyscomb2009"
 
-exp = Experiment("exp-parallel", "fr", "en")
+exp = SlurmExperiment("exp-parallel", "en", "fr")
 exp.trainLanguageModel(trainData+".en")
 exp.trainTranslationModel(trainData)
 
