@@ -17,7 +17,7 @@ my_env["PATH"] = ("/opt/rocks/bin:" + os.popen("echo $PATH").read().strip('\n'))
 def run(script, infile=None, outfile=None):
     global callincr
     callincr = callincr + 1 if 'callincr' in globals() else 1
-    print "\t[" + str(callincr) + "] Running " + script + \
+    print "[" + str(callincr) + "] Running " + script + \
             (" < " + infile if infile is not None else "") + \
           (" > " + outfile if outfile is not None else "")
              

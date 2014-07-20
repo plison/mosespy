@@ -5,18 +5,13 @@ import shellutils, slurmutils
 from xml.dom import minidom
 
 workingDir ="./experiments/"
-
+defaultAlignment = "grow-diag-final-and"
+defaultReordering = "msd-bidirectional-fe"
 
 class Experiment:
             
-    def __init__(self, expName, sourceLang, targetLang):
-        
+    def __init__(self, expName, sourceLang=None, targetLang=None):
         self.system = {}
-        self.system["source"] = sourceLang
-        self.system["source_long"] = getLanguage(sourceLang)
-        self.system["target"] = targetLang
-        self.system["target_long"] = getLanguage(targetLang)
-
         self.system["name"] = expName
         
         self.system["path"] = workingDir+self.system["name"]
@@ -25,8 +20,20 @@ class Experiment:
         elif os.path.exists(self.system["path"]+"/experiment.json"):
             self.system = json.loads(open(self.system["path"]+"/experiment.json").read())
             
-        print ("Experiment " + expName + " (" + sourceLang  
-               + "-" + targetLang + ") successfully started")
+        if sourceLang:
+            self.system["source"] = sourceLang
+            self.system["source_long"] = getLanguage(sourceLang)
+        if targetLang:
+            self.system["target"] = targetLang
+            self.system["target_long"] = getLanguage(targetLang)
+            
+        if not self.system.has_key("alignment"):
+            self.system["alignment"] = defaultAlignment
+        if not self.system.has_key("reordering"):
+            self.system["reordering"] = defaultReordering
+            
+        print ("Experiment " + expName + " (" + self.system["source"]  
+               + "-" + self.system["target"] + ") successfully started")
 
                       
     
@@ -69,41 +76,20 @@ class Experiment:
     
     
     
-    def trainTranslationModel(self, trainStem, nbSplits=1, nbThreads=16):
+    def trainTranslationModel(self, trainStem=None, nbThreads=16):
+           
+        if trainStem:         
+            trainData = self.processAlignedData(trainStem)
+            self.system["tm"] = {"data": trainData}
+            self.recordState()        
+        elif not self.system.has_key("tm") or not self.system["tm"].has_key("data"):
+            raise RuntimeError("Aligned training data is not yet processed")    
         
-        trainSource = trainStem+"."+self.system["source"]
-        trainTarget = trainStem+"."+self.system["target"]
-        if not os.path.exists(trainSource) or not os.path.exists(trainTarget):
-            raise RuntimeError("Files " + trainSource + " and " 
-                               + trainTarget + " do no exist")
-            
-        if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
-            raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
-
-        trainData = self.processAlignedData(trainStem)
         print ("Building translation model " + self.system["source"] + "-" 
-               + self.system["target"] + " with " + trainData["clean"])
+               + self.system["target"] + " with " + self.system["tm"]["data"]["clean"])
 
-        self.system["tm"] = {"data": trainData}
-        self.recordState()        
-        
-        lmPath = os.popen("pwd").read().strip()+"/" + self.system["lm"]["blm"]
-        tmDir = self.system["path"] + "/translationmodel"
-        tmScript = ("./moses/scripts/training/train-model.perl "
-                    + "--root-dir " + tmDir + " -corpus " +  trainData["clean"] 
-                    + " -f " + self.system["source"] + " -e " + self.system["target"] 
-                    + " -alignment grow-diag-final-and " 
-                    + " -reordering msd-bidirectional-fe "  
-                    + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+lmPath+":8" 
-                    + " -external-bin-dir ./mgizapp/bin -cores %i -mgiza -mgiza-cpus %i"
-                    + " -parallel -sort-buffer-size %iG -sort-batch-size 1021 " 
-                    + " -sort-compress gzip -sort-parallel %i"
-                    )%(nbThreads, nbThreads, 8, nbThreads)
-
-        if nbSplits > 1:
-            result = slurmutils.trainInSplits(tmScript, nbSplits)
-        else:
-            result = shellutils.run(tmScript)
+        tmScript, tmDir = self.getTrainScript(nbThreads)
+        result = shellutils.run(tmScript)
         if result:
             print "Finished building translation model in directory " + getFileDescription(tmDir)
             self.system["tm"]["dir"]=tmDir
@@ -114,14 +100,28 @@ class Experiment:
 
 
 
+    def getTrainScript(self ,nbThreads):
+        if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
+            raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
+        
+        lmPath = os.popen("pwd").read().strip()+"/" + self.system["lm"]["blm"]
+        tmDir = self.system["path"] + "/translationmodel"
+        tmScript = ("./moses/scripts/training/train-model.perl "
+                    + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
+                    + " -f " + self.system["source"] + " -e " + self.system["target"] 
+                    + " -alignment " + self.system["alignment"] + " " 
+                    + " -reordering " + self.system["reordering"] + " "
+                    + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+lmPath+":8" 
+                    + " -external-bin-dir ./mgizapp/bin -cores %i -mgiza -mgiza-cpus %i"
+                    + " -parallel -sort-buffer-size %iG -sort-batch-size 1021 " 
+                    + " -sort-compress gzip -sort-parallel %i"
+                    )%(nbThreads, nbThreads, 8, nbThreads)
+        return tmScript, tmDir
+
+
                        
 
     def tuneTranslationModel(self, tuningStem, memoryGb=32, nbCores=16):
-
-        if (not os.path.exists(tuningStem+"."+self.system["source"]) 
-            or not os.path.exists(tuningStem+"."+self.system["target"])):
-            raise RuntimeError("Files " + tuningStem+"."+self.system["source"] + " and " 
-                               + tuningStem+"."+self.system["source"] + " do no exist")
             
         if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
             raise RuntimeError("Translation model is not yet trained")
