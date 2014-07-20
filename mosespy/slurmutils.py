@@ -9,11 +9,11 @@ class SlurmExperiment(Experiment):
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
         if not shellutils.existsExecutable("sbatch"):
-            raise RuntimeError("SLURM system not present, aborting")
-        if not account:
-            print "current var: " + os.popen("echo $SLURM_ACCOUNT").read()
-        print "SLURM!!! " + account
-        self.system["slurm_account"] = account
+            print "SLURM system not present, some methods might be unavailable"
+        elif not account:
+            account = getSlurmAccount()
+        if account:
+            self.system["slurm_account"] = account
     
   
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
@@ -21,6 +21,11 @@ class SlurmExperiment(Experiment):
         if nbSplits == 1:
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
+        
+        if not self.system.has_key("slurm_account"):
+            print "SLURM system not present, cannot split model training"
+            Experiment.trainTranslationModel(self, trainStem, nbThreads)
+            return            
        
         if trainStem:         
             trainData = self.processAlignedData(trainStem)
@@ -44,7 +49,7 @@ class SlurmExperiment(Experiment):
 
         paramScript = tmScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
                                 .replace(trainData["clean"], outputDir + "/" +"$TASK_ID")
-        self.arrayrun(paramScript, nbSplits)
+        arrayrun(paramScript, self.system["slurm_account"], nbSplits)
            
         if not os.path.exists(tmDir+"/model"):
             os.makedirs(tmDir+"/model")
@@ -64,63 +69,69 @@ class SlurmExperiment(Experiment):
             shellutils.run("rm -rf " + tmDir)
 
 
-    def arrayrun(self, paramScript, nbSplits):
-        
-        batchFile = createBatchFile(paramScript, self.system["slurm_account"], name="split-$TASK_ID")
+def arrayrun(paramScript, account, nbSplits):
     
-        shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
-                     outfile="./logs/out-split.txt")
-        time.sleep(1)
-        jobs = set()
-        with open('./logs/out-split.txt') as out:
-            for l in out.readlines():
-                if "Submitted batch job" in l:
-                    jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
-                    jobs.add(jobid)
-        time.sleep(1)
-        while True:
-            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-            if len(set(queue.split()).intersection(jobs)) == 0:
-                break
-            print "Unfinished jobs: " + str(list(jobs))
-            time.sleep(10)
+    batchFile = createBatchFile(paramScript, account, name="split-$TASK_ID")
+
+    shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
+                 outfile="./logs/out-split.txt")
+    time.sleep(1)
+    jobs = set()
+    with open('./logs/out-split.txt') as out:
+        for l in out.readlines():
+            if "Submitted batch job" in l:
+                jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
+                jobs.add(jobid)
+    time.sleep(1)
+    while True:
+        queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
+        if len(set(queue.split()).intersection(jobs)) == 0:
+            break
+        print "Unfinished jobs: " + str(list(jobs))
+        time.sleep(10)
 
 
-def sbatch(pythonFile, account, nbNodes=1, memoryGb=60):
+def sbatch(pythonFile, account=None, nbNodes=1, memoryGb=60):
 
-        print "Starting " + pythonFile + " using sbatch"
-            
-        if not os.path.exists(pythonFile):
-            raise RuntimeError(pythonFile + " must be a python file") 
-               
-        batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, 
-                                    name=pythonFile, memoryGb=memoryGb)
-        shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
+    print "Starting " + pythonFile + " using sbatch"
         
-        with open('logs/out.txt') as out:
-            text = out.read().strip('\n')
-            if "Submitted batch job" in text:
-                jobid = text.replace("Submitted batch job ", "")
-                print "Waiting for job " + jobid + " to start..."
-                jobfile = "slurm-"+jobid+".out"
-                while not os.path.exists(jobfile):
-                    time.sleep(5)
-                print "Job " + jobid + " has now started"
-                with open(jobfile) as slurm:
-                    while True:
-                        where = slurm.tell()
-                        line = slurm.readline()
-                        if not line:
-                            time.sleep(1)
-                            slurm.seek(where)
-                        elif "Job " + jobid in line and "completed" in line:
-                            break
-                        else:
-                            print line,  
-                shutil.move(jobfile, "./logs/"+jobfile) 
-            else:
-                print "Cannot start batch script, aborting"
-                exit()
+    if not account:
+        account = getSlurmAccount()
+    if not account:
+        print "could not identify SLURM account for user, switching back to normal mode"
+        shellutils.run("python -u " + pythonFile)
+        
+    if not os.path.exists(pythonFile):
+        raise RuntimeError(pythonFile + " must be a python file") 
+           
+    batchFile = createBatchFile("python -u " + pythonFile, nbNodes=nbNodes, 
+                                name=pythonFile, memoryGb=memoryGb)
+    shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
+    
+    with open('logs/out.txt') as out:
+        text = out.read().strip('\n')
+        if "Submitted batch job" in text:
+            jobid = text.replace("Submitted batch job ", "")
+            print "Waiting for job " + jobid + " to start..."
+            jobfile = "slurm-"+jobid+".out"
+            while not os.path.exists(jobfile):
+                time.sleep(5)
+            print "Job " + jobid + " has now started"
+            with open(jobfile) as slurm:
+                while True:
+                    where = slurm.tell()
+                    line = slurm.readline()
+                    if not line:
+                        time.sleep(1)
+                        slurm.seek(where)
+                    elif "Job " + jobid in line and "completed" in line:
+                        break
+                    else:
+                        print line,  
+            shutil.move(jobfile, "./logs/"+jobfile) 
+        else:
+            print "Cannot start batch script, aborting"
+            exit()
 
   
      
@@ -185,6 +196,17 @@ def splitData(dataFile, outputDir, nbSplits):
     digits = list(digits)
     digits.sort()
     return digits
+
+
+
+def getSlurmAccount():
+    user = os.popen("whoami").read()
+    result = os.popen("sacctmgr show User "+user + " -p").read()
+    s = re.search(user+"|((\S)+)|", result)
+    if s:
+        return s.group(1)
+    return None
+
 
 
 
