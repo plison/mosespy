@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*- 
 
-import sys, os
+import sys
+from mosespy import slurmutils
 from mosespy.slurmutils import SlurmExperiment
 from mosespy.mosespy import Experiment
+
+
+if "--batch" in sys.argv:
+    slurmutils.sbatch(__file__)
+
 
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/news-dev/newssyscomb2009"
