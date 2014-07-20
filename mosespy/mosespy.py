@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*- 
 
-import os, shutil, json, time, syscalls, re
+import os, shutil, json, time, re
+import shellutils, slurmutils
 from xml.dom import minidom
 
 workingDir ="./experiments/"
@@ -41,7 +42,7 @@ class Experiment:
         print "Building language model based on " + processedTrain["true"]
         
         sbFile = processedTrain["true"].replace(".true.", ".sb.")
-        syscalls.run("./irstlm/bin/add-start-end.sh", processedTrain["true"], sbFile)
+        shellutils.run("./irstlm/bin/add-start-end.sh", processedTrain["true"], sbFile)
         self.system["lm"]["sb"] = sbFile
         self.recordState()
         
@@ -49,19 +50,19 @@ class Experiment:
         lmScript = (("export IRSTLM=./irstlm; ./irstlm/bin/build-lm.sh -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp"
                     )%(sbFile, lmFile, ngram_order))
-        syscalls.run(lmScript)
+        shellutils.run(lmScript)
         self.system["lm"]["lm"] = lmFile
         self.recordState()
                            
         arpaFile = self.system["path"] + "/langmodel.arpa." + lang
         arpaScript = ("./irstlm/bin/compile-lm  --text=yes %s %s"%(lmFile+".gz", arpaFile))
-        syscalls.run(arpaScript)  
+        shellutils.run(arpaScript)  
         self.system["lm"]["arpa"] = arpaFile
         self.recordState()
 
         blmFile = self.system["path"] + "/langmodel.blm." + lang
         blmScript = "./moses/bin/build_binary " + arpaFile + " " + blmFile
-        syscalls.run(blmScript)
+        shellutils.run(blmScript)
         print "New Binarised language model: " + getFileDescription(blmFile)   
         self.system["lm"]["blm"] = blmFile
         self.recordState()
@@ -100,65 +101,18 @@ class Experiment:
                     )%(nbThreads, nbThreads, 8, nbThreads)
 
         if nbSplits > 1:
-            result = self.trainInSplits(tmScript, nbSplits)
+            result = slurmutils.trainInSplits(tmScript, nbSplits)
         else:
-            result = syscalls.run(tmScript)
+            result = shellutils.run(tmScript)
         if result:
             print "Finished building translation model in directory " + getFileDescription(tmDir)
             self.system["tm"]["dir"]=tmDir
             self.recordState()
         else:
             print "Construction of translation model FAILED"
-            syscalls.run("rm -rf " + tmDir)
+            shellutils.run("rm -rf " + tmDir)
 
 
-
-
-    def trainInSplits(self, baseScript, nbSplits):
-            
-        tmDir = (re.search("--root-dir\s+((\S)+)", baseScript)).group(1)
-        trainData = (re.search("-corpus\s+((\S)+)", baseScript)).group(1)
-        alignment = (re.search("-alignment\s+((\S)+)", baseScript)).group(1)
-
-        outputDir = self.system["path"]+"/splits"
-        shutil.rmtree(outputDir)
-        os.makedirs(outputDir)
-    
-        splits = splitData(trainData + "." + self.system["source"], outputDir, nbSplits)
-        splitData(trainData + "." + self.system["target"], outputDir, nbSplits)
-                  
-        for split in splits:
-                shutil.rmtree(split, ignore_errors=True)
-
-        paramScript = baseScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
-                                .replace(trainData, outputDir + "/" +"$TASK_ID")
-        batchFile = syscalls.createBatchFile(paramScript, None, None, 1, 30, name="split-$TASK_ID")
-        
-        syscalls.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
-                     outfile="./logs/out-split.txt")
-        time.sleep(1)
-        jobs = set()
-        with open('./logs/out-split.txt') as out:
-            for l in out.readlines():
-                if "Submitted batch job" in l:
-                    jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
-                    jobs.add(jobid)
-        time.sleep(1)
-        while True:
-            queue = os.popen("squeue -u plison").read()
-            if len(set(queue.split()).intersection(jobs)) == 0:
-                break
-            print "Unfinished jobs: " + str(list(jobs))
-            time.sleep(10)
-           
-        if not os.path.exists(tmDir+"/model"):
-            os.makedirs(tmDir+"/model")
-        with open(tmDir+"/model/aligned."+alignment, 'w') as al:
-            for split in splits:
-                with open(split+"/model/aligned."+alignment) as part:
-                    al.write(part.read())
-                                               
-        return syscalls.run(baseScript + " --first-step 4")
 
                        
 
@@ -183,11 +137,12 @@ class Experiment:
         tuneScript = ("./moses/scripts/training/mert-moses.pl " 
                       + path+tuningData["clean"] + "." + self.system["source"] + " " 
                       + path+tuningData["clean"] + "." + self.system["target"] + " "
-                      + path+"mpirun ./moses/bin/moses " + path+self.system["tm"]["dir"] + "/model/moses.ini " 
+                      + "'mpirun " + path+"./moses/bin/moses' " 
+                      + path+self.system["tm"]["dir"] + "/model/moses.ini " 
                       + "--mertdir " + path + "./moses/bin/ " + 
                       " --decoder-flags=\'-threads %i\' --working-dir " + path+tuneDir
                       )%(nbCores)
-        syscalls.run_batch(tuneScript, memoryGb=memoryGb)
+        shellutils.run(tuneScript)
         print "Finished tuning translation model in directory " + getFileDescription(tuneDir)
         self.system["ttm"]["dir"]=tuneDir
         self.recordState()
@@ -253,9 +208,9 @@ class Experiment:
         print text
         transScript = u'echo \"%r\" | ./moses/bin/moses -f %s'%(text,iniFile)
         if len(text) < 500:
-            syscalls.run(transScript)
+            shellutils.run(transScript)
         else:
-            syscalls.run_batch(transScript)
+            shellutils.run_batch(transScript)
         
               
                                 
@@ -266,10 +221,10 @@ class Experiment:
     #    binaDir = tm["tmDir"].replace("model.", "binmodel.")
     #    binScript = ("mkdir " + binaDir + "; ./moses/bin/processPhraseTable -ttable 0 0 " + tuneDir + 
     #                  "/model/phrase-table.gz " + " -nscores 5 -out " + binaDir + "/phrase-table")
-    #    syscalls.run(binScript)            
+    #    shellutils.run(binScript)            
     #    binScript2 = ("./moses/bin/processLexicalTable -in " + tuneDir + "/reordering-table.wbe-msd-bidirectional-fe.gz " 
     #                  + " -out " + binaDir + "/reordering-table")
-    #    syscalls.run(binScript2)
+    #    shellutils.run(binScript2)
     #    print "Finished binarising the translation model in directory " + getFileDescription(binaDir)
             
             
@@ -309,7 +264,7 @@ def tokeniseFile(inputFile, outputFile):
                     
     print "Start tokenisation of file \"" + inputFile + "\""
     tokScript = "./moses/scripts/tokenizer/tokenizer.perl -l " + lang
-    syscalls.run(tokScript, inputFile, outputFile)
+    shellutils.run(tokScript, inputFile, outputFile)
     print "New tokenised file: " + getFileDescription(outputFile)            
     return outputFile
 
@@ -321,7 +276,7 @@ def trainTruecasingModel(inputFile, modelFile):
     print "Start building truecasing model based on " + inputFile
     truecaseModelScript = ("./moses/scripts/recaser/train-truecaser.perl " 
                            "--model " + modelFile + " --corpus " + inputFile)
-    syscalls.run(truecaseModelScript)
+    shellutils.run(truecaseModelScript)
     print "New truecasing model: " + getFileDescription(modelFile)
     return modelFile
     
@@ -336,7 +291,7 @@ def truecaseFile(inputFile, outputFile, modelFile):
 
     print "Start truecasing of file \"" + inputFile + "\""
     truecaseScript = "./moses/scripts/recaser/truecase.perl --model " + modelFile
-    syscalls.run(truecaseScript, inputFile, outputFile)
+    shellutils.run(truecaseScript, inputFile, outputFile)
     print "New truecased file: " + getFileDescription(outputFile)
     return outputFile
 
@@ -345,7 +300,7 @@ def cleanFiles(inputStem, outputStem, source, target, maxLength=80):
                
     cleanScript = ("./moses/scripts/training/clean-corpus-n.perl " + 
                    inputStem + " " + source + " " + target + " " + outputStem + " 1 " + str(maxLength))
-    syscalls.run(cleanScript)
+    shellutils.run(cleanScript)
     outputSource = outputStem+"."+source
     outputTarget = outputStem+"."+target
     print "New cleaned files: " + (getFileDescription(outputSource) + " and " + 
@@ -359,7 +314,7 @@ def splitData(dataFile, outputDir, nbSplits):
         
     extension = dataFile.split(".")[len(dataFile.split("."))-1]
     totalLines = int(os.popen("wc -l " + dataFile).read().split(" ")[0])
-    syscalls.run("split -d -l %i -a %i %s %s"%(totalLines / nbSplits + 1, nbSplits, 
+    shellutils.run("split -d -l %i -a %i %s %s"%(totalLines / nbSplits + 1, nbSplits, 
                                                dataFile, outputDir+"/"+ extension +"." ))
     
     digits = []
@@ -371,6 +326,5 @@ def splitData(dataFile, outputDir, nbSplits):
     digits.sort()
     return digits
   
-
  
 
