@@ -155,7 +155,7 @@ def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, nam
                             #SBATCH --account=%s
                             #SBATCH --time=05:00:00
                             #SBATCH --ntasks=1
-                            #SBATCH --mem=%s
+                            #SBATCH --mem-per-cpu=%s
                             #SBATCH --nodes=%i
 
                             source /cluster/bin/jobsetup  
