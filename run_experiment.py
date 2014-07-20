@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
 
-import sys, os
+import sys, os, time
 from mosespy.mosespy import Experiment
 from mosespy import syscalls
 
@@ -11,8 +11,10 @@ if "-batch" in sys.argv or "--batch" in sys.argv:
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/news-dev/newssyscomb2009"
 
+print "AHAH"
 exp = Experiment("exp-parallel", "fr", "en")
-exp.trainLanguageModel(trainData+".en")
+time.sleep(100000)
+#exp.trainLanguageModel(trainData+".en")
 exp.trainTranslationModel(trainData)
 
 
