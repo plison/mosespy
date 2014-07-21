@@ -1,17 +1,8 @@
 
 import os, subprocess
   
-my_env = os.environ
-my_env["LD_LIBRARY_PATH"] = ("/cluster/home/plison/libs/boost_1_55_0/lib64" 
-                             + ":/cluster/home/plison/libs/gperftools-2.2.1/lib/" 
-                             + ":/cluster/software/VERSIONS/openmpi.intel-1.8/lib"
-                             + ":/cluster/software/VERSIONS/intel-2013.sp1.3/compiler/lib/intel64" 
-                             + ":/cluster/software/VERSIONS/intel-2013.sp1.3/mkl/lib/intel64" 
-                             + ":/cluster/software/VERSIONS/intel-2013.sp1.3/ipp/lib/intel64" 
-                             + ":/cluster/software/VERSIONS/intel-2013.sp1.3/tbb/lib/intel64" 
-                             + ":" + os.popen("echo $LD_LIBRARY_PATH").read().strip('\n'))
 
-my_env["PATH"] = ("/opt/rocks/bin:" + os.popen("echo $PATH").read().strip('\n'))
+initialCmds = ""
 
 
 def run(script, infile=None, outfile=None):
@@ -24,7 +15,8 @@ def run(script, infile=None, outfile=None):
     stdin=open(infile) if infile is not None else None
     stdout=open(outfile, 'w') if outfile is not None else None
       
-    result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True, env=my_env)
+    result = subprocess.call(initialCmds + " ; " + script, 
+                             stdin=stdin, stdout=stdout, shell=True)
        
     if not result:
         print "\tTask [" + str(callincr) + "] successful"

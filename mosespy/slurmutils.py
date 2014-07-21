@@ -120,6 +120,9 @@ def arrayrun(paramScript, account, nbSplits):
             break
         print "Unfinished jobs: " + str(list(jobs))
         time.sleep(60)
+    print "SLURM array run completed."
+    for job in jobs:
+        shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
 
 
 def sbatch(pythonFile, account=None, nbTasks=1, memoryGb=60):
@@ -184,14 +187,14 @@ def createBatchFile(script, account, time="5:00:00", nbTasks=1, memoryGb=60, nam
                             #SBATCH --job-name=%s
                             #SBATCH --account=%s
                             #SBATCH --time=%s
-                            #SBATCH --ntasks=$i
+                            #SBATCH --ntasks=%i
                             #SBATCH --mem-per-cpu=%s
 
                             source /cluster/bin/jobsetup  
                             %s                                  
                             %s 
                             """%(name, account, time, nbTasks, memoryStr, 
-                                 initialCmds, script))   
+                                 shellutils.initialCmds, script))   
     with open(batchFile, 'w') as f:
         f.write(batch)
     return batchFile
