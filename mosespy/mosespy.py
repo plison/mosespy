@@ -211,27 +211,28 @@ class Experiment:
     
     
     def translate(self, text):
-        if not self.system.has_key("tm"):
-            raise RuntimeError("No translation model has been built yet!")
-        elif not self.system.has_key("ttm"):
-            print "WARNING: translation model has not been tuned!"
-            iniFile = self.system["tm"]["dir"]+"/model/moses.ini"
+        if self.system.has_key("btm"):
+            initFile = self.system["btm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("ttm"):
+            print "Warning: translation model is not yet binarised"
+            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("tm"):
+            print "Warning: translation model is not yet tuned!"
+            initFile = self.system["tm"]["dir"] + "/moses.ini"
         else:
-            iniFile = self.system["ttm"]["dir"]+"/moses.ini"
+            raise RuntimeError("Translation model is not yet trained!")
         print text
-        transScript = u'echo \"%r\" | ./moses/bin/moses -f %s'%(text,iniFile)
-        if len(text) < 500:
-            shellutils.run(transScript)
-        else:
-            shellutils.run(transScript)
+        transScript = u'echo \"%r\" | ./moses/bin/moses -f %s'%(text,initFile)
+        result = shellutils.run(transScript, return_output=True)
+        print result
+        return result
         
-              
-                                
+                                        
 
 
     def binariseModel(self):
         print "Binarise translation model " + self.system["source"] + " -> " + self.system["target"]
-        if self.system.has_key["ttm"] and self.system["ttm"].has_key("dir"):
+        if not self.system.has_key("ttm") or not self.system["ttm"].has_key("dir"):
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
         binaDir = self.system["path"]+"/binmodel"
@@ -244,6 +245,15 @@ class Experiment:
                       + "/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
                       + " -out " + binaDir + "/reordering-table")
         shellutils.run(binScript2)
+        with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
+            with open(binaDir+"/moses.ini", 'w') as newConfig:
+                for l in initConfig.readlines():
+                    l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
+                    l = l.replace("tunedmodel", "binmodel")
+                    newConfig.write(l)
+        
+        self.system["btm"] = {"dir":binaDir}
+        self.recordState()
         print "Finished binarising the translation model in directory " + getFileDescription(binaDir)
             
             

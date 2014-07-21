@@ -58,7 +58,12 @@ class SlurmExperiment(Experiment):
         with open(tmDir+"/model/aligned."+self.system["alignment"], 'w') as al:
             for split in range(0, nbSplits):
                 with open(outputDir+ "/" + str(split)+"/model/aligned."+self.system["alignment"]) as part:
-                    al.write(part.read())
+                    partalign = part.read() + "\n"
+                    al.write(partalign)
+        with open(tmDir+"/model/aligned."+self.system["alignment"], 'rw') as al:
+            for line in file:
+                if line.strip():
+                    file.write(line)
                                                
         result = shellutils.run(tmScript + " --first-step 4")
 
@@ -71,10 +76,29 @@ class SlurmExperiment(Experiment):
             shellutils.run("rm -rf " + tmDir)
 
 
+ 
+    def translate(self, text):
+        if self.system.has_key("btm"):
+            initFile = self.system["btm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("ttm"):
+            print "Warning: translation model is not yet binarised"
+            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("tm"):
+            print "Warning: translation model is not yet tuned!"
+            initFile = self.system["tm"]["dir"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet trained!")
+        print text
+        transScript = u'echo \"%r\" | mpirun ./moses/bin/moses -f %s'%(text,initFile)
+        result = shellutils.run(transScript, return_output=True)
+        print result
+        return result
+        
+
 
 def arrayrun(paramScript, account, nbSplits):
     
-    batchFile = createBatchFile(paramScript, account, name="split-$TASK_ID")
+    batchFile = createBatchFile(paramScript, account, name="split-$TASK_ID", nbTasks=1)
 
     shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
                  outfile="./logs/out-split.txt")

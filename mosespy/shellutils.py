@@ -6,7 +6,7 @@ initialCmds = ""
 
 
 
-def run(script, infile=None, outfile=None):
+def run(script, infile=None, outfile=None, return_output=False):
     global callincr
     callincr = callincr + 1 if 'callincr' in globals() else 1
     print "[" + str(callincr) + "] Running " + script + \
@@ -19,14 +19,17 @@ def run(script, infile=None, outfile=None):
     if initialCmds:
         script = initialCmds + " ; " + script
         
-    result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
-       
-    if not result:
-        print "\tTask [" + str(callincr) + "] successful"
-        return True
+    if return_output:
+        return subprocess.check_output(script, stdin=stdin, shell=True)
     else:
-        print "\t!!! Task [" + str(callincr) + "] FAILED"
-        return False
+        result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
+       
+        if not result:
+            print "\tTask [" + str(callincr) + "] successful"
+            return True
+        else:
+            print "\t!!! Task [" + str(callincr) + "] FAILED"
+            return False
     
     
 def existsExecutable(command):
