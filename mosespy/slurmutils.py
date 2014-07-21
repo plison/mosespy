@@ -93,7 +93,7 @@ class SlurmExperiment(Experiment):
         splits = tuningScript.split(" ")
         for split in splits:
             if "/bin/moses" in split:
-                tuningScript = tuningScript.replace(split, "mpirun " + split)
+                tuningScript = tuningScript.replace(split, "./mosespy/moses_mpi.sh")
         shellutils.run(tuningScript)
         print "Finished tuning translation model in directory " + mosespy.getFileDescription(tuneDir)
         self.system["ttm"]["dir"]=tuneDir
