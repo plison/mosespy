@@ -43,15 +43,7 @@ class SlurmExperiment(Experiment):
         tmScript, tmDir = self.getTrainScript(nbThreads)
     
         outputDir = os.path.dirname(tmDir) + "/splits"
-        shutil.rmtree(outputDir, ignore_errors=True)
-        os.makedirs(outputDir)
-        splitData(trainData["clean"] + "." + self.system["source"], outputDir, nbSplits)
-        splitData(trainData["clean"] + "." + self.system["target"], outputDir, nbSplits)
-
-        paramScript = (tmScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
-                                .replace(trainData["clean"], outputDir + "/" +"$TASK_ID")
-                                + " --last-step 3")
-        arrayrun(paramScript, self.system["slurm_account"], nbSplits)
+        
         
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
