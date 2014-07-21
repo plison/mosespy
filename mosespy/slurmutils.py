@@ -71,11 +71,7 @@ class SlurmExperiment(Experiment):
             shellutils.run("rm -rf " + tmDir)
 
 
-    def tuneTranslationModel(self, tuningStem=None, nbSplits=1, nbThreads=16):
-        
-        if nbSplits == 1:
-            Experiment.tuneTranslationModel(self, tuningStem, nbThreads)
-            return
+    def tuneTranslationModel(self, tuningStem=None, nbThreads=16):
         
         if not shellutils.existsExecutable("mpirun"):
             print "MPI cannot be used to optimise the tuning process"
