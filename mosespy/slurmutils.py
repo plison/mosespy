@@ -44,7 +44,6 @@ class SlurmExperiment(Experiment):
     
         outputDir = os.path.dirname(tmDir) + "/splits"
         
-        
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
         with open(tmDir+"/model/aligned."+self.system["alignment"], 'w') as al:
