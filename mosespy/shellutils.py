@@ -42,3 +42,20 @@ def existsExecutable(command):
     return False
         
 
+
+
+def getsize(filename):
+    desc = filename + " ("
+    if os.path.isfile(filename):
+        size = os.path.getsize(filename)
+        if size > 1000000000:
+            size = str(size/1000000000) + " G"
+        elif size > 1000000:
+            size = str(size/1000000) + " M"
+        else:
+            size = str(size/1000) + " K"     
+    elif os.path.isdir(filename):
+        size = os.popen('du -sh ' + filename).read()
+    desc += size + ")"
+    return desc
+
