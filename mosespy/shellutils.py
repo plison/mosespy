@@ -5,6 +5,7 @@ import os, subprocess
 initialCmds = ""
 
 
+
 def run(script, infile=None, outfile=None):
     global callincr
     callincr = callincr + 1 if 'callincr' in globals() else 1
@@ -27,7 +28,8 @@ def run(script, infile=None, outfile=None):
     
     
 def existsExecutable(command):
-    for path in os.environ["PATH"].split(os.pathsep):
+    paths = os.popen(initialCmds + " ; echo $PATH").read().strip()
+    for path in paths.split(os.pathsep):
             path = path.strip('"')
             exe_file = os.path.join(path, command)
             if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
