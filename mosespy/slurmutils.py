@@ -3,6 +3,7 @@ import time, shutil, os, shellutils, textwrap, re, sys
 import mosespy
 from mosespy import Experiment 
      
+initialCmds = ""
      
 class SlurmExperiment(Experiment):
     
@@ -68,6 +69,39 @@ class SlurmExperiment(Experiment):
         else:
             print "Construction of translation model FAILED"
             shellutils.run("rm -rf " + tmDir)
+
+
+    def tuneTranslationModel(self, tuningStem=None, nbSplits=1, nbThreads=16):
+        
+        if nbSplits == 1:
+            Experiment.tuneTranslationModel(self, tuningStem, nbThreads)
+            return
+        
+        if not shellutils.existsExecutable("mpirun"):
+            print "MPI cannot be used to optimise the tuning process"
+            Experiment.tuneTranslationModel(self, tuningStem, nbThreads)
+            return            
+       
+        if tuningStem:         
+            tuningData = self.processAlignedData(tuningStem)
+            self.system["ttm"] = {"data":tuningData}
+            self.recordState()
+        elif not self.system.has_key("ttm") or not self.system["ttm"].has_key("data"):
+            raise RuntimeError("Aligned tuning data is not yet processed")    
+        
+        print ("Tuning translation model " + self.system["source"] + "-" 
+               + self.system["target"] + " with " + tuningData["clean"] 
+               + " (MPI mode)")
+        
+        tuningScript, tuneDir = self.getTuningScript(nbThreads)
+        splits = tuningScript.split(" ")
+        for split in splits:
+            if "/bin/moses" in split:
+                tuningScript = tuningScript.replace(split, "mpirun " + split)
+        shellutils.run(tuningScript)
+        print "Finished tuning translation model in directory " + mosespy.getFileDescription(tuneDir)
+        self.system["ttm"]["dir"]=tuneDir
+        self.recordState()
 
 
 def arrayrun(paramScript, account, nbSplits):
@@ -148,8 +182,7 @@ def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, nam
     else:
         memoryStr = str(max(1, memoryGb)) + "G"
     batchFile = "logs/"+name.replace("$","")+".sh"
-    libraryPath = ("$LD_LIBRARY_PATH:/cluster/home/plison/libs/boost_1_55_0/lib64" 
-                   + ":/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+ 
     batch = textwrap.dedent("""\
                             #!/bin/bash
                             #SBATCH --job-name=%s
@@ -160,13 +193,10 @@ def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, nam
                             #SBATCH --nodes=%i
 
                             source /cluster/bin/jobsetup  
-                            module load intel
-                            module load openmpi.intel
-                            export LD_LIBRARY_PATH=%s 
-                                                              
+                            %s                                  
                             %s 
                             """%(name, account, time, memoryStr, 
-                                    nbNodes, libraryPath, script))   
+                                    nbNodes, initialCmds, script))   
     with open(batchFile, 'w') as f:
         f.write(batch)
     return batchFile
