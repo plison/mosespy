@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*- 
 
 import os, shutil, json, time, re
-import shellutils, slurmutils
+import shellutils
 from xml.dom import minidom
 
 workingDir ="./experiments/"
@@ -70,7 +70,7 @@ class Experiment:
         blmFile = self.system["path"] + "/langmodel.blm." + lang
         blmScript = "./moses/bin/build_binary " + arpaFile + " " + blmFile
         shellutils.run(blmScript)
-        print "New Binarised language model: " + getFileDescription(blmFile)   
+        print "New Binarised language model: " + shellutils.getsize(blmFile)   
         self.system["lm"]["blm"] = blmFile
         self.recordState()
     
@@ -93,7 +93,7 @@ class Experiment:
         os.makedirs(tmDir) 
         result = shellutils.run(tmScript)
         if result:
-            print "Finished building translation model in directory " + getFileDescription(tmDir)
+            print "Finished building translation model in directory " + shellutils.getsize(tmDir)
             self.system["tm"]["dir"]=tmDir
             self.recordState()
         else:
@@ -138,7 +138,7 @@ class Experiment:
         tuningScript, tuneDir = self.getTuningScript(nbThreads)
         shutil.rmtree(tuneDir, ignore_errors=True)
         shellutils.run(tuningScript)
-        print "Finished tuning translation model in directory " + getFileDescription(tuneDir)
+        print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
         self.system["ttm"]["dir"]=tuneDir
         self.recordState()
         
@@ -254,7 +254,7 @@ class Experiment:
         
         self.system["btm"] = {"dir":binaDir}
         self.recordState()
-        print "Finished binarising the translation model in directory " + getFileDescription(binaDir)
+        print "Finished binarising the translation model in directory " + shellutils.getsize(binaDir)
             
             
     def recordState(self):
@@ -262,22 +262,6 @@ class Experiment:
         with open(self.system["path"]+"/experiment.json", 'w') as jsonFile:
             jsonFile.write(dump)
 
-
-
-def getFileDescription(filename):
-    desc = filename + " ("
-    if os.path.isfile(filename):
-        size = os.path.getsize(filename)
-        if size > 1000000000:
-            size = str(size/1000000000) + " G"
-        elif size > 1000000:
-            size = str(size/1000000) + " M"
-        else:
-            size = str(size/1000) + " K"     
-    elif os.path.isdir(filename):
-        size = os.popen('du -sh mydir').read()
-    desc += size + ")"
-    return desc
 
 
 def getLanguage(langcode):
@@ -298,7 +282,7 @@ def tokeniseFile(inputFile, outputFile):
     print "Start tokenisation of file \"" + inputFile + "\""
     tokScript = "./moses/scripts/tokenizer/tokenizer.perl -l " + lang
     shellutils.run(tokScript, inputFile, outputFile)
-    print "New tokenised file: " + getFileDescription(outputFile)            
+    print "New tokenised file: " + shellutils.getsize(outputFile)            
     return outputFile
 
             
@@ -310,7 +294,7 @@ def trainTruecasingModel(inputFile, modelFile):
     truecaseModelScript = ("./moses/scripts/recaser/train-truecaser.perl " 
                            "--model " + modelFile + " --corpus " + inputFile)
     shellutils.run(truecaseModelScript)
-    print "New truecasing model: " + getFileDescription(modelFile)
+    print "New truecasing model: " + shellutils.getsize(modelFile)
     return modelFile
     
     
@@ -325,7 +309,7 @@ def truecaseFile(inputFile, outputFile, modelFile):
     print "Start truecasing of file \"" + inputFile + "\""
     truecaseScript = "./moses/scripts/recaser/truecase.perl --model " + modelFile
     shellutils.run(truecaseScript, inputFile, outputFile)
-    print "New truecased file: " + getFileDescription(outputFile)
+    print "New truecased file: " + shellutils.getsize(outputFile)
     return outputFile
 
    
@@ -336,8 +320,8 @@ def cleanFiles(inputStem, outputStem, source, target, maxLength=80):
     shellutils.run(cleanScript)
     outputSource = outputStem+"."+source
     outputTarget = outputStem+"."+target
-    print "New cleaned files: " + (getFileDescription(outputSource) + " and " + 
-                                   getFileDescription(outputTarget))
+    print "New cleaned files: " + (shellutils.getsize(outputSource) + " and " + 
+                                   shellutils.getsize(outputTarget))
     return outputSource, outputTarget
 
 
