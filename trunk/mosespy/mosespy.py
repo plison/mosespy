@@ -146,15 +146,16 @@ class Experiment:
         if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
             raise RuntimeError("Translation model is not yet trained")
 
-        tuneDir = self.system["path"]+"/tunedmodel"
+        tuneDir = self.system["path"]+"/tunedmodel4"
         path= os.popen("pwd").read().strip()+"/"
         tuneScript = ("./moses/scripts/training/mert-moses.pl " 
                       + path+self.system["ttm"]["data"]["clean"] + "." + self.system["source"] + " " 
                       + path+self.system["ttm"]["data"]["clean"] + "." + self.system["target"] + " "
                       + path+"./moses/bin/moses " 
                       + path+self.system["tm"]["dir"] + "/model/moses.ini " 
-                      + "--mertdir " + path + "./moses/bin/ " + 
-                      " --decoder-flags=\'-threads %i\' --working-dir " + path+tuneDir
+                      + " --mertdir " + path + "./moses/bin/ "
+                      + " --batch-mira "
+                      + " --decoder-flags=\'-threads %i\' --working-dir " + path+tuneDir
                       )%(nbThreads)
         return tuneScript, tuneDir
         
