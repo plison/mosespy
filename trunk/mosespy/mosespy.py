@@ -89,6 +89,8 @@ class Experiment:
                + self.system["target"] + " with " + self.system["tm"]["data"]["clean"])
 
         tmScript, tmDir = self.getTrainScript(nbThreads)
+        shutil.rmtree(tmDir, ignore_errors=True)  
+        os.makedirs(tmDir) 
         result = shellutils.run(tmScript)
         if result:
             print "Finished building translation model in directory " + getFileDescription(tmDir)
@@ -121,31 +123,40 @@ class Experiment:
 
                        
 
-    def tuneTranslationModel(self, tuningStem, memoryGb=32, nbCores=16):
-            
-        if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
-            raise RuntimeError("Translation model is not yet trained")
-
-        tuningData = self.processAlignedData(tuningStem)
-        self.system["ttm"] = {"data":tuningData}
-        self.recordState()
+    def tuneTranslationModel(self, tuningStem=None, memoryGb=32, nbThreads=16):
+        
+        if tuningStem:         
+            tuningData = self.processAlignedData(tuningStem)
+            self.system["ttm"] = {"data":tuningData}
+            self.recordState()
+        elif not self.system.has_key("ttm") or not self.system["ttm"].has_key("data"):
+            raise RuntimeError("Aligned tuning data is not yet processed")    
         
         print ("Tuning translation model " + self.system["source"] + "-" 
                + self.system["target"] + " with " + tuningData["clean"])
-        tuneDir = self.system["path"]+"/tunedmodel"
-        path= os.popen("pwd").read().strip()+"/"
-        tuneScript = ("./moses/scripts/training/mert-moses.pl " 
-                      + path+tuningData["clean"] + "." + self.system["source"] + " " 
-                      + path+tuningData["clean"] + "." + self.system["target"] + " "
-                      + "'mpirun " + path+"./moses/bin/moses' " 
-                      + path+self.system["tm"]["dir"] + "/model/moses.ini " 
-                      + "--mertdir " + path + "./moses/bin/ " + 
-                      " --decoder-flags=\'-threads %i\' --working-dir " + path+tuneDir
-                      )%(nbCores)
-        shellutils.run(tuneScript)
+        
+        tuningScript, tuneDir = self.getTuningScript(nbThreads)
+        shellutils.run(tuningScript)
         print "Finished tuning translation model in directory " + getFileDescription(tuneDir)
         self.system["ttm"]["dir"]=tuneDir
         self.recordState()
+        
+        
+    def getTuningScript(self, nbThreads):
+        if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
+            raise RuntimeError("Translation model is not yet trained")
+
+        tuneDir = self.system["path"]+"/tunedmodel"
+        path= os.popen("pwd").read().strip()+"/"
+        tuneScript = ("./moses/scripts/training/mert-moses.pl " 
+                      + path+self.system["ttm"]["data"]["clean"] + "." + self.system["source"] + " " 
+                      + path+self.system["ttm"]["data"]["clean"] + "." + self.system["target"] + " "
+                      + path+"./moses/bin/moses " 
+                      + path+self.system["tm"]["dir"] + "/model/moses.ini " 
+                      + "--mertdir " + path + "./moses/bin/ " + 
+                      " --decoder-flags=\'-threads %i\' --working-dir " + path+tuneDir
+                      )%(nbThreads)
+        return tuneScript, tuneDir
         
                                
 
