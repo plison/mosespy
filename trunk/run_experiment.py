@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*- 
 
 import sys
-from mosespy import slurmutils
+from mosespy import slurmutils, shellutils
 from mosespy.slurmutils import SlurmExperiment
 from mosespy.mosespy import Experiment
 
-slurmutils.initialCmds = ("module load intel ; module load openmpi.intel ; " 
+shellutils.initialCmds = ("module load intel ; module load openmpi.intel ; " 
                           +  "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:" 
                           + "/cluster/home/plison/libs/boost_1_55_0/lib64" 
-                          + ":/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+                          + ":/cluster/home/plison/libs/gperftools-2.2.1/lib/ ;" 
+                          + "export PATH:$PATH:/opt/rocks/bin")
 
 if "--batch" in sys.argv:
     slurmutils.sbatch(__file__, nbTasks=10)
