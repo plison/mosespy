@@ -58,13 +58,12 @@ class SlurmExperiment(Experiment):
         with open(tmDir+"/model/aligned."+self.system["alignment"], 'w') as al:
             for split in range(0, nbSplits):
                 with open(outputDir+ "/" + str(split)+"/model/aligned."+self.system["alignment"]) as part:
-                    partalign = part.read() + "\n"
-                    al.write(partalign)
-        with open(tmDir+"/model/aligned."+self.system["alignment"], 'rw') as al:
-            for line in file:
-                if line.strip():
-                    file.write(line)
-                                               
+                    for partline in part.readlines():
+                        if partline.strip():
+                            al.write(partline)
+                            if '\n' not in partline:
+                                al.write('\n')
+            
         result = shellutils.run(tmScript + " --first-step 4")
 
         if result:
