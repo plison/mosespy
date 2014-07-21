@@ -15,7 +15,8 @@ def run(script, infile=None, outfile=None):
              
     stdin=open(infile) if infile is not None else None
     stdout=open(outfile, 'w') if outfile is not None else None
-      
+
+    print "FULL " + initialCmds + " ; " + script
     result = subprocess.call(initialCmds + " ; " + script, 
                              stdin=stdin, stdout=stdout, shell=True)
        
