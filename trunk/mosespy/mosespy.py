@@ -266,13 +266,17 @@ class Experiment:
 
 def getFileDescription(filename):
     desc = filename + " ("
-    size = os.path.getsize(filename)
-    if size > 1000000000:
-        desc = desc + str(size/1000000000) + " Gb.)"
-    elif size > 1000000:
-        desc = desc + str(size/1000000) + " Mb.)"
-    else:
-        desc = desc + str(size/1000) + " Kb.)"
+    if os.path.isfile(filename):
+        size = os.path.getsize(filename)
+        if size > 1000000000:
+            size = str(size/1000000000) + " G"
+        elif size > 1000000:
+            size = str(size/1000000) + " M"
+        else:
+            size = str(size/1000) + " K"     
+    elif os.path.isdir(filename):
+        size = os.popen('du -sh mydir').read()
+    desc += size + ")"
     return desc
 
 
