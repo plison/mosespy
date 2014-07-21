@@ -11,7 +11,7 @@ slurmutils.initialCmds = ("module load intel ; module load openmpi.intel ; "
                           + ":/cluster/home/plison/libs/gperftools-2.2.1/lib/")
 
 if "--batch" in sys.argv:
-    slurmutils.sbatch(__file__, nbNodes=2)
+    slurmutils.sbatch(__file__, nbTasks=10)
     exit()
 
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";

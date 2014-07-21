@@ -122,7 +122,7 @@ def arrayrun(paramScript, account, nbSplits):
         time.sleep(60)
 
 
-def sbatch(pythonFile, account=None, nbNodes=1, memoryGb=60):
+def sbatch(pythonFile, account=None, nbTasks=1, memoryGb=60):
 
     print "Starting " + pythonFile + " using sbatch"
         
@@ -135,7 +135,7 @@ def sbatch(pythonFile, account=None, nbNodes=1, memoryGb=60):
     if not os.path.exists(pythonFile):
         raise RuntimeError(pythonFile + " must be a python file") 
            
-    batchFile = createBatchFile("python -u " + pythonFile, account, nbNodes=nbNodes, 
+    batchFile = createBatchFile("python -u " + pythonFile, account, nbTasks=nbTasks, 
                                 name=pythonFile, memoryGb=memoryGb)
     shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
     
@@ -168,7 +168,7 @@ def sbatch(pythonFile, account=None, nbNodes=1, memoryGb=60):
      
 
    
-def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, name=None):
+def createBatchFile(script, account, time="5:00:00", nbTasks=1, memoryGb=60, name=None):
       
     if not name:
         name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
@@ -184,15 +184,14 @@ def createBatchFile(script, account, time="5:00:00", nbNodes=1, memoryGb=60, nam
                             #SBATCH --job-name=%s
                             #SBATCH --account=%s
                             #SBATCH --time=%s
-                            #SBATCH --ntasks=1
+                            #SBATCH --ntasks=$i
                             #SBATCH --mem-per-cpu=%s
-                            #SBATCH --nodes=%i
 
                             source /cluster/bin/jobsetup  
                             %s                                  
                             %s 
-                            """%(name, account, time, memoryStr, 
-                                    nbNodes, initialCmds, script))   
+                            """%(name, account, time, nbTasks, memoryStr, 
+                                 initialCmds, script))   
     with open(batchFile, 'w') as f:
         f.write(batch)
     return batchFile
