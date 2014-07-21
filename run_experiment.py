@@ -9,7 +9,7 @@ shellutils.initialCmds = ("module load intel ; module load openmpi.intel ; "
                           +  "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:" 
                           + "/cluster/home/plison/libs/boost_1_55_0/lib64" 
                           + ":/cluster/home/plison/libs/gperftools-2.2.1/lib/ ;" 
-                          + "export PATH:$PATH:/opt/rocks/bin")
+                          + "export PATH=$PATH:/opt/rocks/bin")
 
 if "--batch" in sys.argv:
     slurmutils.sbatch(__file__, nbTasks=10)
@@ -18,7 +18,7 @@ if "--batch" in sys.argv:
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/newstest/newssyscomb2009"
 
-exp = SlurmExperiment("thirdexp", "en", "fr")
+exp = SlurmExperiment("exp-parallel", "en", "fr")
 #exp.trainLanguageModel(trainData+".en")
 #exp.trainTranslationModel(trainData, nbSplits=4)
 exp.tuneTranslationModel(tuningData)
