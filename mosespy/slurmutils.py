@@ -71,34 +71,6 @@ class SlurmExperiment(Experiment):
             shellutils.run("rm -rf " + tmDir)
 
 
-    def tuneTranslationModel(self, tuningStem=None, nbThreads=16):
-        
-        if not shellutils.existsExecutable("mpirun"):
-            print "MPI cannot be used to optimise the tuning process"
-            Experiment.tuneTranslationModel(self, tuningStem, nbThreads)
-            return            
-       
-        if tuningStem:         
-            tuningData = self.processAlignedData(tuningStem)
-            self.system["ttm"] = {"data":tuningData}
-            self.recordState()
-        elif not self.system.has_key("ttm") or not self.system["ttm"].has_key("data"):
-            raise RuntimeError("Aligned tuning data is not yet processed")    
-        
-        print ("Tuning translation model " + self.system["source"] + "-" 
-               + self.system["target"] + " with " + tuningData["clean"] 
-               + " (MPI mode)")
-        
-        tuningScript, tuneDir = self.getTuningScript(nbThreads)
-        splits = tuningScript.split(" ")
-        for split in splits:
-            if "moses/bin/moses" in split:
-                tuningScript = tuningScript.replace("moses/bin/moses", "moses/bin/moses_mpi.sh")
-        shellutils.run(tuningScript)
-        print "Finished tuning translation model in directory " + mosespy.getFileDescription(tuneDir)
-        self.system["ttm"]["dir"]=tuneDir
-        self.recordState()
-
 
 def arrayrun(paramScript, account, nbSplits):
     

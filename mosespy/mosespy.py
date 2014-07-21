@@ -136,6 +136,7 @@ class Experiment:
                + self.system["target"] + " with " + tuningData["clean"])
         
         tuningScript, tuneDir = self.getTuningScript(nbThreads)
+        shutil.rmtree(tuneDir, ignore_errors=True)
         shellutils.run(tuningScript)
         print "Finished tuning translation model in directory " + getFileDescription(tuneDir)
         self.system["ttm"]["dir"]=tuneDir
@@ -146,7 +147,7 @@ class Experiment:
         if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
             raise RuntimeError("Translation model is not yet trained")
 
-        tuneDir = self.system["path"]+"/tunedmodel4"
+        tuneDir = self.system["path"]+"/tunedmodel"
         path= os.popen("pwd").read().strip()+"/"
         tuneScript = ("./moses/scripts/training/mert-moses.pl " 
                       + path+self.system["ttm"]["data"]["clean"] + "." + self.system["source"] + " " 
@@ -228,16 +229,22 @@ class Experiment:
                                 
 
 
-    #def binariseModel(self, tm):
-    #    print "Binarise translation model " + self.system["source"] + " -> " + self.system["target"]
-    #    binaDir = tm["tmDir"].replace("model.", "binmodel.")
-    #    binScript = ("mkdir " + binaDir + "; ./moses/bin/processPhraseTable -ttable 0 0 " + tuneDir + 
-    #                  "/model/phrase-table.gz " + " -nscores 5 -out " + binaDir + "/phrase-table")
-    #    shellutils.run(binScript)            
-    #    binScript2 = ("./moses/bin/processLexicalTable -in " + tuneDir + "/reordering-table.wbe-msd-bidirectional-fe.gz " 
-    #                  + " -out " + binaDir + "/reordering-table")
-    #    shellutils.run(binScript2)
-    #    print "Finished binarising the translation model in directory " + getFileDescription(binaDir)
+    def binariseModel(self):
+        print "Binarise translation model " + self.system["source"] + " -> " + self.system["target"]
+        if self.system.has_key["ttm"] and self.system["ttm"].has_key("dir"):
+            raise RuntimeError("Translation model has not yet been trained and tuned")
+        
+        binaDir = self.system["path"]+"/binmodel"
+        shutil.rmtree(binaDir, ignore_errors=True)
+        os.makedirs(binaDir)
+        binScript = ("./moses/bin/processPhraseTable -ttable 0 0 " + self.system["ttm"]["dir"] + 
+                      "/model/phrase-table.gz " + " -nscores 5 -out " + binaDir + "/phrase-table")
+        shellutils.run(binScript)            
+        binScript2 = ("./moses/bin/processLexicalTable -in " + self.system["ttm"]["dir"] 
+                      + "/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
+                      + " -out " + binaDir + "/reordering-table")
+        shellutils.run(binScript2)
+        print "Finished binarising the translation model in directory " + getFileDescription(binaDir)
             
             
     def recordState(self):
