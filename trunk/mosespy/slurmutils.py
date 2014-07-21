@@ -12,7 +12,7 @@ class SlurmExperiment(Experiment):
         if not shellutils.existsExecutable("sbatch"):
             print "SLURM system not present, some methods might be unavailable"
         elif not account:
-            account = getSlurmAccount()
+            account = getDefaultSlurmAccount()
         if account:
             self.system["slurm_account"] = account
     
@@ -130,7 +130,7 @@ def sbatch(pythonFile, account=None, nbTasks=1, memoryGb=60):
     print "Starting " + pythonFile + " using sbatch"
         
     if not account:
-        account = getSlurmAccount()
+        account = getDefaultSlurmAccount()
     if not account:
         print "could not identify SLURM account for user, switching back to normal mode"
         shellutils.run("python -u " + pythonFile)
@@ -224,7 +224,7 @@ def splitData(dataFile, outputDir, nbSplits):
 
 
 
-def getSlurmAccount():
+def getDefaultSlurmAccount():
     user = (os.popen("whoami")).read().strip()
     result = (os.popen("sacctmgr show User "+user + " -p")).read()
     s = re.search(user+"\|((\S)+?)\|", result)
