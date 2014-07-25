@@ -1559,7 +1559,7 @@ void lmtable::appendbin_level_nommap(int level, fstream &out)
 		//do nothing
 	}
 	
-	VERBOSE(3,"appending " << cursize[level] << " (maxsize:" << maxsize[level] << ") " << level << "-grams" << "   table " << (void*) table << "  table[level] " << (void*) table[level] << " out:" << (void*) out << endl);
+	VERBOSE(3,"appending " << cursize[level] << " (maxsize:" << maxsize[level] << ") " << level << "-grams" << "   table " << (void*) table << "  table[level] " << (void*) table[level] << endl);
 	
 	if (isQtable) {
 		//NOT IMPLEMENTED
@@ -1625,7 +1625,7 @@ void lmtable::savebin_level_nommap(int level, const char* outfilename)
 		//do nothing
 	}
 	
-	VERBOSE(3,"saving " << cursize[level] << "(maxsize:" << maxsize[level] << ") " << level << "-grams in " << nameNgrams << "   table " << (void*) table << "  table[level] " << (void*) table[level] << " out:" << (void*) out << endl);
+	VERBOSE(3,"saving " << cursize[level] << "(maxsize:" << maxsize[level] << ") " << level << "-grams in " << nameNgrams << "   table " << (void*) table << "  table[level] " << (void*) table[level] << endl);
 	if (isQtable) {
 		//NOT IMPLEMENTED
 	}
