@@ -20,7 +20,7 @@ def run(script, infile=None, outfile=None, return_output=False):
         script = initialCmds + " ; " + script
         
     if return_output:
-        return subprocess.check_output(script, stdin=stdin, shell=True)
+        return os.popen(script + " < " + infile if infile else script).read()
     else:
         result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
        
@@ -45,17 +45,15 @@ def existsExecutable(command):
 
 
 def getsize(filename):
-    desc = filename + " ("
     if os.path.isfile(filename):
         size = os.path.getsize(filename)
         if size > 1000000000:
-            size = str(size/1000000000) + " G"
+            return filename +  " (" + str(size/1000000000) + "G)"
         elif size > 1000000:
-            size = str(size/1000000) + " M"
+            return filename +  " ("+str(size/1000000) + "M)"
         else:
-            size = str(size/1000) + " K"     
+             return filename + " ("+str(size/1000) + "K)"     
     elif os.path.isdir(filename):
-        size = os.popen('du -sh ' + filename).read()
-    desc += size + ")"
-    return desc
+        return filename + " (" + os.popen('du -sh ' + filename).read().split(" ")[0] + ")"
+    return "(not found)"
 

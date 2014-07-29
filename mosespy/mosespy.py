@@ -8,7 +8,12 @@ workingDir ="./experiments/"
 defaultAlignment = "grow-diag-final-and"
 defaultReordering = "msd-bidirectional-fe"
 
-class Experiment:
+#Next steps:
+# - copy from one experiment to another
+# - test for BLEU or other metrics
+# - refactor
+
+class Experiment(object):
             
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.system = {}
@@ -55,8 +60,8 @@ class Experiment:
         
         lmFile = self.system["path"] + "/langmodel.lm." + lang
         lmScript = (("export IRSTLM=./irstlm; ./irstlm/bin/build-lm.sh -i %s" +
-                    " -p -s improved-kneser-ney -o %s -n %i -t ./tmp"
-                    )%(sbFile, lmFile, ngram_order))
+                    " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
+                    )%(sbFile, lmFile, ngram_order, self.system["name"])) 
         shellutils.run(lmScript)
         self.system["lm"]["lm"] = lmFile
         self.recordState()
@@ -70,7 +75,7 @@ class Experiment:
         blmFile = self.system["path"] + "/langmodel.blm." + lang
         blmScript = "./moses/bin/build_binary " + arpaFile + " " + blmFile
         shellutils.run(blmScript)
-        print "New Binarised language model: " + shellutils.getsize(blmFile)   
+        print "New binarised language model: " + shellutils.getsize(blmFile)   
         self.system["lm"]["blm"] = blmFile
         self.recordState()
     
@@ -209,8 +214,8 @@ class Experiment:
         return dataset  
     
     
-    
-    def translate(self, text):
+    # Here we should tokenise and truecase
+    def translate(self, text, decoder="./moses/bin/moses", preprocess=True):
         if self.system.has_key("btm"):
             initFile = self.system["btm"]["dir"] + "/moses.ini"
         elif self.system.has_key("ttm"):
@@ -221,10 +226,15 @@ class Experiment:
             initFile = self.system["tm"]["dir"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet trained!")
-        print text
-        transScript = u'echo \"%r\" | ./moses/bin/moses -f %s'%(text,initFile)
+        print ("Translating text: \"" + text + "\" from " + 
+               self.system["source"] + " to " + self.system["target"])
+
+        if preprocess:
+            text = tokenise(text, self.system["source"])
+            text = truecase(text, self.system["truecasing"][self.system["source"]])
+
+        transScript = "echo \"" + text + "\" | " + decoder + " -f " + initFile.encode('utf-8')
         result = shellutils.run(transScript, return_output=True)
-        print result
         return result
         
                                         
@@ -238,18 +248,22 @@ class Experiment:
         binaDir = self.system["path"]+"/binmodel"
         shutil.rmtree(binaDir, ignore_errors=True)
         os.makedirs(binaDir)
-        binScript = ("./moses/bin/processPhraseTable -ttable 0 0 " + self.system["ttm"]["dir"] + 
+        binScript = ("./moses/bin/processPhraseTable -ttable 0 0 " + self.system["tm"]["dir"] + 
                       "/model/phrase-table.gz " + " -nscores 5 -out " + binaDir + "/phrase-table")
-        shellutils.run(binScript)            
-        binScript2 = ("./moses/bin/processLexicalTable -in " + self.system["ttm"]["dir"] 
-                      + "/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
+        result1 = shellutils.run(binScript)
+        if not result1:
+            raise RuntimeError("could not binarise translation model (phrase table process)")
+        binScript2 = ("./moses/bin/processLexicalTable -in " + self.system["tm"]["dir"] 
+                      + "/model/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
                       + " -out " + binaDir + "/reordering-table")
-        shellutils.run(binScript2)
+        result2 = shellutils.run(binScript2)
+        if not result2:
+            raise RuntimeError("could not binarise translation model (lexical table process)")
         with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
                     l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
-                    l = l.replace("tunedmodel", "binmodel")
+                    l = l.replace("/translationmodel", "/binmodel")
                     newConfig.write(l)
         
         self.system["btm"] = {"dir":binaDir}
@@ -285,6 +299,12 @@ def tokeniseFile(inputFile, outputFile):
     print "New tokenised file: " + shellutils.getsize(outputFile)            
     return outputFile
 
+def tokenise(inputText, lang):
+    tokScript = "./moses/scripts/tokenizer/tokenizer.perl -l " + lang
+    tokenisedText = shellutils.run("echo \"" + inputText + "\" | " 
+                                   + tokScript, return_output=True)
+    print tokenisedText
+    return tokenisedText
             
 def trainTruecasingModel(inputFile, modelFile):
     if not os.path.exists(inputFile):
@@ -312,6 +332,14 @@ def truecaseFile(inputFile, outputFile, modelFile):
     print "New truecased file: " + shellutils.getsize(outputFile)
     return outputFile
 
+
+def truecase(inputText, modelFile):
+    if not os.path.exists(modelFile):
+        raise RuntimeError("model file " + modelFile + " does not exist")
+    truecaseScript = "./moses/scripts/recaser/truecase.perl --model " + modelFile
+    return shellutils.run("echo \""+inputText + "\" | " 
+                          + truecaseScript, return_output=True)
+    
    
 def cleanFiles(inputStem, outputStem, source, target, maxLength=80):
                
