@@ -24,9 +24,7 @@ class SlurmExperiment(Experiment):
             return
         
         if not self.system.has_key("slurm_account"):
-            print "SLURM system not present, cannot split model training"
-            Experiment.trainTranslationModel(self, trainStem, nbThreads)
-            return            
+            raise RuntimeError("SLURM system not present, cannot split model training")
        
         if trainStem:         
             trainData = self.processAlignedData(trainStem)
@@ -67,32 +65,17 @@ class SlurmExperiment(Experiment):
         result = shellutils.run(tmScript + " --first-step 4")
 
         if result:
-            print "Finished building translation model in directory " + mosespy.getFileDescription(tmDir)
+            print "Finished building translation model in directory " + shellutils.getsize(tmDir)
             self.system["tm"]["dir"]=tmDir
             self.recordState()
         else:
-            print "Construction of translation model FAILED"
             shellutils.run("rm -rf " + tmDir)
+            raise RuntimeError("Construction of translation model FAILED")
 
 
  
     def translate(self, text):
-        if self.system.has_key("btm"):
-            initFile = self.system["btm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("ttm"):
-            print "Warning: translation model is not yet binarised"
-            initFile = self.system["ttm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("tm"):
-            print "Warning: translation model is not yet tuned!"
-            initFile = self.system["tm"]["dir"] + "/moses.ini"
-        else:
-            raise RuntimeError("Translation model is not yet trained!")
-        print text
-        transScript = u'echo \"%r\" | mpirun ./moses/bin/moses -f %s'%(text,initFile)
-        result = shellutils.run(transScript, return_output=True)
-        print result
-        return result
-        
+        return super(SlurmExperiment, self).translate(text, decoder="mpirun -n 1 ./moses/bin/moses")
 
 
 def arrayrun(paramScript, account, nbSplits):
@@ -166,7 +149,7 @@ def sbatch(pythonFile, account=None, nbTasks=1, memoryGb=60):
      
 
    
-def createBatchFile(script, account, time="5:00:00", nbTasks=1, memoryGb=60, name=None):
+def createBatchFile(script, account, time="6:00:00", nbTasks=1, memoryGb=60, name=None):
       
     if not name:
         name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
