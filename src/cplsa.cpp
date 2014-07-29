@@ -46,25 +46,35 @@ using namespace std;
 		
 		assert (topics>0);
 		
-		W=new double* [dict->size()+1];
-		for (int i=0; i<(dict->size()+1); i++) W[i]=new double [topics];
+		W=new double* [dict->size()];
+		for (int i=0; i<dict->size(); i++){
+            W[i]=new double [topics];
+            memset((void *)W[i],0,topics * sizeof(double));
+        }
 		
-		T=new double* [dict->size()+1];
-		for (int i=0; i<(dict->size()+1); i++) T[i]=new double [topics];
+		T=new double* [dict->size()];
+		for (int i=0; i<dict->size(); i++){
+            T[i]=new double [topics];
+            memset((void *)T[i],0,topics * sizeof(double));
+        }
 		
 		H=new double [topics];
-		
+		memset((void *)H,0,topics * sizeof(double));
+        
 		basefname=baseFile;
 		featfname=featFile;
 		
 		tfname=tFile;
 		wfname=wFile;
+        
 		hinfname=new char[BUFSIZ];
 		sprintf(hinfname,"%s",hFile);
-		
 		houtfname=new char[BUFSIZ];
 		sprintf(houtfname,"%s.out",hinfname);
 		cerr << "Hfile in:" << hinfname << " out:" << houtfname << "\n";
+        
+        srand(100); //consistent generation of random noise
+
 	}
 	
 	plsa::~plsa() {
@@ -79,64 +89,66 @@ using namespace std;
 	}
 	
 	int plsa::initW(double noise,int spectopic)
-	{
-		
-		FILE *f;
-		
-		if (wfname && ((f=fopen(wfname,"r"))!=NULL)) {
-			fclose(f);
-			loadW(wfname);
-		} else {
-			
-			if (spectopic) {
-				//special topic 0: first st words from dict
-				double TotW=0;
-				for (int i=0; i<spectopic; i++)
-					TotW+=W[i][0]=dict->freq(i);
-				for (int i=0; i<(dict->size()+1); i++)
-					W[i][0]/=TotW;
-			}
-			
-			for (int t=(spectopic?1:0); t<topics; t++) {
-				double TotW=0;
-				for (int i=0; i<(dict->size()+1); i++)
-					TotW+=W[i][t]=1 + noise * MY_RAND;
-				for (int i=0; i<(dict->size()+1); i++)
-					W[i][t]/=TotW;
-			}
-		}
-		return 1;
-	}
+    {
+        
+        FILE *f;
+        
+        if (wfname && ((f=fopen(wfname,"r"))!=NULL)) {
+            fclose(f);
+            loadW(wfname);
+        } else {
+            cerr << "Initializing W table\n";
+            if (spectopic) {
+                //special topic 0: first st most frequent
+                //assume dictionary is sorted by frequency!!!
+                double TotW=0;
+                for (int i=0; i<spectopic; i++)
+                    TotW+=W[i][0]=dict->freq(i);
+                for (int i=0; i<spectopic; i++)
+                    W[i][0]/=TotW;
+            }
+           
+            for (int t=(spectopic?1:0); t<topics; t++) {
+                double TotW=0;
+                for (int i=spectopic; i< dict->size(); i++)
+                    TotW+=W[i][t]=1 + noise * MY_RAND;
+                for (int i=spectopic; i< dict->size(); i++)
+                    W[i][t]/=TotW;
+            }
+        }
+        return 1;
+    }
 	
-	int plsa::initH(double noise,int n)
-	{
-		
-		FILE *f;
-		
-		if ((f=fopen(hinfname,"r"))==NULL) {
-			mfstream hinfd(hinfname,ios::out);
-			for (int j=0; j<n; j++) {
-				double TotH=0;
-				for (int t=0; t<topics; t++) TotH+=H[t]=1+noise * MY_RAND;
-				for (int t=0; t<topics; t++) H[t]/=TotH;
-				hinfd.write((const char*)H,topics *sizeof(double));
-			}
-			hinfd.close();
-		} else
-			fclose(f);
-		return 1;
-	}
-	
+    int plsa::initH(double noise,int n){
+        
+        FILE *f;
+        if ((f=fopen(hinfname,"r"))==NULL) {
+            cerr << "Initializing H table\n";
+            
+            mfstream hinfd(hinfname,ios::out);
+            for (int j=0; j<n; j++) {
+                double TotH=0;
+                for (int t=0; t<topics; t++) TotH+=H[t]=1;//+noise * MY_RAND;
+                for (int t=0; t<topics; t++) H[t]/=TotH;
+                hinfd.write((const char*)H,topics *sizeof(double));
+            }
+            hinfd.close();
+        } else
+            fclose(f);
+        return 1;
+    }
+
 	int plsa::saveWtxt(char* fname)
 	{
-		
+        cerr << "Writing text W table into: " << fname << "\n";
 		mfstream out(fname,ios::out);
+        out.precision(5);
 		out << topics << "\n";
 		for (int i=0; i<dict->size(); i++) {
 			out << dict->decode(i) << " " << dict->freq(i);
 			double totW=0;
 			for (int t=0; t<topics; t++) totW+=W[i][t];
-			out <<"totPr:" << totW << ":";
+			out <<"totPr: " << totW << " :";
 			for (int t=0; t<topics; t++)
 				out << " " << W[i][t];
 			out << "\n";
@@ -147,7 +159,7 @@ using namespace std;
 	
 	int plsa::saveW(char* fname)
 	{
-		
+        cerr << "Saving W table into: " << fname << "\n";
 		mfstream out(fname,ios::out);
 		out.write((const char*)&topics,sizeof(int));
 		for (int i=0; i<dict->size(); i++)
@@ -157,62 +169,69 @@ using namespace std;
 	}
 	
 	int plsa::saveT(char* fname)
-	{
-		mfstream out(fname,ios::out);
-		out.write((const char*)&topics,sizeof(int));
-		for (int i=0; i<dict->size(); i++) {
-			double totT=0.0;
-			for (int t=0; t<topics; t++) totT+=T[i][t];
-			if (totT>0.00001) {
-				out.write((const char*)&i,sizeof(int));
-				out.write((const char*)T[i],sizeof(double)*topics);
-			}
-		}
-		out.close();
-		return 1;
-	}
-	
-	
+    {
+        cerr << "Saving T table into: " << fname << "\n";
+        mfstream out(fname,ios::out);
+        out.write((const char*)&topics,sizeof(int));
+        for (int i=0; i<dict->size(); i++) {
+            double totT=0.0;
+            for (int t=0; t<topics; t++) totT+=T[i][t];
+            if (totT>0.0000001){ //approximation
+                out.write((const char*)&i,sizeof(int));
+                out.write((const char*)T[i],sizeof(double)*topics);
+            }
+        }
+        out.close();
+        return 1;
+    }
+
+    int plsa::loadT(char* fname,bool addflag)
+    {
+        double tvec[topics];
+        int to,w;
+        cerr << "Loading T table from: " << fname << "\n";
+        mfstream tin(fname,ios::in);
+        tin.read((char *)&to,sizeof(int));
+        assert(to==topics);
+        
+//        while(!tin.eof()) { does not work properly!e
+        while(tin.read((char *)&w,sizeof(int))){
+            tin.read((char *)tvec,sizeof(double)*topics);
+            for (int t=0; t<topics; t++)
+                T[w][t]=(addflag?T[w][t]:0)+tvec[t];
+            
+        }
+        tin.close();
+        return 1;
+    }
+
+
 	int plsa::combineT(char* tlist)
 	{
 		
-		double *tvec=new double[topics];
-		int w;
-		int to;
+        cerr << "Combining T tables from: " << tlist << "\n";
 		char fname[1000];
-		for (int i=0; i<dict->size(); i++)
-			for (int t=0; t<topics; t++) T[i][t]=0;
-		
+       
+        //initialize T
+        for (int i=0; i< dict->size();i++)
+            memset((void *)T[i],0, topics * sizeof(double));
+        
 		mfstream inp(tlist,ios::in);
-		while (inp >> fname) {
-			mfstream tin(fname,ios::in);
-			tin.read((char *)&to,sizeof(int));
-			assert(to==topics);
-			while(!tin.eof()) {
-				tin.read((char *)&w,sizeof(int));
-				tin.read((char *)tvec,sizeof(double)*topics);
-				for (int t=0; t<topics; t++) T[w][t]+=tvec[t];
-			}
-			tin.close();
-		}
-		
-		delete [] tvec;
-		
-		for (int t=0; t<topics; t++) {
-			double Tsum=0;
-			for (int i=0; i<dict->size(); i++) {
-				if (T[i][t]==0.0) T[i][t]=1e-10; //add some noise
-				Tsum+=T[i][t];
-			}
+		while (inp >> fname) loadT(fname,true);
+    
+		for (int t=0; t<topics; t++){
+			double Tsum=0.0;
+			for (int i=0; i<dict->size(); i++) Tsum+=T[i][t];
 			for (int i=0; i<dict->size(); i++) W[i][t]=T[i][t]/Tsum;
 		}
-		//check
+
 		return 1;
 	}
 	
 	int plsa::loadW(char* fname)
 	{
-		int r;
+        cerr << "Loading W table from: " << fname << "\n";
+        int r;
 		mfstream inp(fname,ios::in);
 		inp.read((char *)&r,sizeof(int)); //number of topics
 		
@@ -272,22 +291,22 @@ using namespace std;
 	}
 	
 	
-	int plsa::train(char *trainfile,int maxiter,double noiseH,int flagW,double noiseW,int spectopic)
+	int plsa::train(char *trainfile,int maxiter,int tit,double noiseH,int flagW,double noiseW,int spectopic)
 	{
 		
 		int dsize=dict->size(); //includes possible OOV
 		
-		srand(100);
-		
 		if (flagW) {
-			//intialize W
+			//intialize W or read it from wfname: be sure that wfile does not exist
+            //in the first round
 			initW(noiseW,spectopic);
 		}
 		
 		doc trset(dict,trainfile);
 		trset.open(); //n is known
 		
-		initH(noiseH,trset.n);
+        if (tit<=1) //multithread training with given hfile
+            initH(noiseH,trset.n);
 		
 		//support array
 		double *WH=new double [dsize];
@@ -318,7 +337,7 @@ using namespace std;
 				
 				while(trset.read()) { //read next doc
 					
-					int m=trset.m;
+					int m=trset.m; //actual # of documents
 					/* unused parameter       int n=trset.n;   */
 					int j=trset.cd; //current document
 					int N=0; // doc length
@@ -339,9 +358,7 @@ using namespace std;
 					if (flagW) {
 						for (int i=0; i<m; i++) {
 							for (int t=0; t<r; t++)
-								T[trset.V[i]][t]+=
-                (trset.N[trset.V[i]] * W[trset.V[i]][t] *
-                 H[t]/WH[trset.V[i]]);
+								T[trset.V[i]][t]+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
 						}
 					}
 					
@@ -350,8 +367,7 @@ using namespace std;
 					for (int t=0; t<r; t++) {
 						double tmpHaj=0;
 						for (int i=0; i<m; i++)
-							tmpHaj+=(trset.N[trset.V[i]] * W[trset.V[i]][t] *
-											 H[t]/WH[trset.V[i]]);
+							tmpHaj+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
 						H[t]=tmpHaj/(double)N;
 						totH+=H[t];
 					}
@@ -362,7 +378,7 @@ using namespace std;
 						exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
 					}
 					
-					//save H
+					//updating H table
 					houtdf.write((const char*)H,topics * sizeof(double));
 					
 					// start a new document
@@ -378,23 +394,34 @@ using namespace std;
 			}
 			
 			
-			if (flagW) {
-				cerr <<"end of train file final update of Wia\n";
-				for (int t=0; t<r; t++) {
+			if (flagW && tit==0){
+                //when tit>1 this step is performed in the last combine call
+              	cerr <<"update of W\n";
+                for (int t=0; t<r; t++) {
 					double Tsum=0;
 					for (int i=0; i<dsize; i++) Tsum+=T[i][t];
 					for (int i=0; i<dsize; i++) W[i][t]=T[i][t]/Tsum;
-					cerr << "end of normalization\n";
 				}
 			}
 			trset.reset();
 			
-			cout << "iteration: " << ++iter << " LL: " << LL << "\n";
+			cerr << "iteration: " << ++iter << " LL: " << LL << "\n";
 			
-			if (flagW) {
-				cerr << "Saving base distributions\n";
-				if (tfname) saveT(tfname);
-				else saveW(basefname);
+			if (flagW){
+            	if (tfname){
+                    saveT(tfname); //multithread training
+//                    loadT(tfname,false);
+//                    for (int t=0; t<r; t++) {
+//                        double Tsum=0;
+//                        for (int i=0; i<dsize; i++) Tsum+=T[i][t];
+//                        for (int i=0; i<dsize; i++) W[i][t]=T[i][t]/Tsum;
+//                    }
+//                    saveWtxt("pippo");
+//                    
+                }
+                else
+                  saveW(basefname);
+                
 			}
 			
 		}

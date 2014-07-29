@@ -202,12 +202,12 @@ int doc::save(char* fname)
   return 1;
 }
 
-
-int doc::save(char* fname, int bsz)
+int doc::save(char* fname, int nbins)
 {
 
   assert((df!=NULL) && (cd==-1));
-
+  //compute size of bin
+  int bsz=(int)ceil((double)n / (double)nbins);
   char name[100];
   int i=0;
 

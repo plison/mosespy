@@ -96,10 +96,11 @@ int main(int argc, char **argv)
   char *txtfile=NULL;
   char *binfile=NULL;
 	
-  int binsize=0;
-  int topics=0;  //number of topics
-  int st=0;      //special topic: first st dict words
-  int it=0;
+  int numbins=0;  //number of document bins for parallel processing
+  int topics=0;   //number of topics
+  int st=0;       //special topic: first st dict words
+  int it=0;       //number of EM iterations to run
+  int tit=0;      //current EM iteration for multi-thread training
   bool help=false;
 	
   DeclareParams((char*)
@@ -110,8 +111,8 @@ int main(int argc, char **argv)
 								"Binary", CMDSTRINGTYPE|CMDMSG, &binfile, "binary file",
 								"b", CMDSTRINGTYPE|CMDMSG, &binfile, "binary file",
 								
-								"SplitData", CMDINTTYPE|CMDMSG, &binsize, "size of binary file; default is unlimited",
-								"sd", CMDINTTYPE|CMDMSG, &binsize, "size of binary file; default is unlimited",
+								"SplitData", CMDINTTYPE|CMDMSG, &numbins, "number of binary files (default 1)",
+								"sd", CMDINTTYPE|CMDMSG, &numbins, "number of binary files (default 1)",
 								
 								"Collection", CMDSTRINGTYPE|CMDMSG, &trainfile, "text collection file",
 								"c", CMDSTRINGTYPE|CMDMSG, &trainfile, "text collection file",
@@ -143,11 +144,15 @@ int main(int argc, char **argv)
 								"Topics", CMDINTTYPE|CMDMSG, &topics, "number of topics; default is 0",
 								"t", CMDINTTYPE|CMDMSG, &topics,"number of topics; default is 0",
 								
-								"SpecialTopic", CMDINTTYPE|CMDMSG, &st, "special topic: first dictionary words; default is 0",
-								"st", CMDINTTYPE|CMDMSG, &st, "special topic: first dictionary words; default is 0",
+								"SpecialTopic", CMDINTTYPE|CMDMSG, &st, "special topic for top st frequent words; default is 0",
+								"st", CMDINTTYPE|CMDMSG, &st, "special topic for top st frequent words; default is 0",
 								
 								"Iterations", CMDINTTYPE|CMDMSG, &it, "number of EM iterations; default is 0",
 								"it", CMDINTTYPE|CMDMSG, &it, "number of EM iterations; default is 0",
+                
+                                "ThreadIteration", CMDINTTYPE|CMDMSG, &tit, "thread iteration number; default is 0",
+                                "tit", CMDINTTYPE|CMDMSG, &tit, "thread iteration number; default is 0",
+
 								
 								"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 								"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
@@ -199,14 +204,13 @@ int main(int argc, char **argv)
 	
   dictionary dict(dictfile);
 	
-  cout << dict.size() << "\n";
+  
   dict.incflag(1);
   dict.encode(dict.BoD());
   dict.encode(dict.EoD());
   dict.incflag(0);
-  if (dict.oovcode()==-1) {
-    dict.oovcode(dict.encode(dict.OOV()));
-  }
+  dict.encode(dict.OOV());
+  cout << "oovcode:"<< dict.oovcode() << "\n";
 	
   cout << dict.size() << "\n";
 	
@@ -214,8 +218,8 @@ int main(int argc, char **argv)
     cout << "opening collection\n";
     doc col(&dict,trainfile);
     col.open();
-    if (binsize)
-      col.save(binfile,binsize);
+    if (numbins)
+      col.save(binfile,numbins);
     else
       col.save(binfile);
     exit_error(IRSTLM_NO_ERROR);
@@ -227,18 +231,20 @@ int main(int argc, char **argv)
 	
   if (ctfile) { //combine t
     tc.combineT(ctfile);
+    if (txtfile) tc.saveWtxt(txtfile);
     tc.saveW(basefile);
+
     exit_error(IRSTLM_NO_ERROR);
   }
 	
-  if (trainfile) {
-    tc.train(trainfile,it,.5,1,0.5,st);
+  if (trainfile){
+    tc.train(trainfile,it,tit,.5,1,0.5,st);
     if (txtfile) tc.saveWtxt(txtfile);
   }
 	
   if (adafile) {
     tc.loadW(basefile);
-    tc.train(adafile,it,.0);
+    tc.train(adafile,it,tit=0,.0);
   }
   if (strcmp(hfile,"hfff")==0)  system("rm -f hfff");
   delete []hfile;

@@ -41,7 +41,7 @@ public:
   int open();
   int save(char* fname);
   int savernd(char* fname,int num);
-  int save(char* fname,int bsz);
+  int save(char* fname,int nbins);
   int reset();
   int read();
 };

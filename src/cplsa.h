@@ -43,11 +43,12 @@
 		int combineT(char* tlist);
 		int saveWtxt(char* fname);
 		int loadW(char* fname);
-		
+		int loadT(char* fname,bool addflag=true);
+        
 		int initW(double noise,int spectopic);
 		int initH(double noise,int maxdoc);
 		
-		int train(char *trainfile,int maxiter,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
+		int train(char *trainfile,int maxiter,int tit,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
 		
 		int saveFeat(char* fname);
 		
