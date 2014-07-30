@@ -9,6 +9,15 @@ class SlurmExperiment(Experiment):
     
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
+        
+        os.popen("module load intel")
+        os.popen("module load openmpi.intel")
+        os.environ["LD_LIBRARY_PATH"] = (os.environ["LD_LIBRARY_PATH"] + ":"
+                                         + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                                         + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        print "Library path: " + os.environ["LD_LIBRARY_PATH"]
+        os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
+
         if not shellutils.existsExecutable("sbatch"):
             print "SLURM system not present, some methods might be unavailable"
         elif not account:
