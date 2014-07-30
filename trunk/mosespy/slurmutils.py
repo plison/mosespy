@@ -1,30 +1,29 @@
 
-import time, shutil, os, shellutils, textwrap, re, sys
-import mosespy
+import time, shutil, os, shellutils, textwrap, re
 from mosespy import Experiment 
-     
-initialCmds = ""
-     
+          
 class SlurmExperiment(Experiment):
+    
+    decoder_cmd = "mpirun " + Experiment.decoder_cmd
     
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
-        
-        os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
-                                         .read().strip('\n') + ":"
-                                         + os.popen("module load openmpi.intel ; echo $LD_LIBRARY_PATH")
-                                         .read().strip('\n') + ":"
-                                         + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
-                                         + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        print "Library path: " + os.environ["LD_LIBRARY_PATH"]
-        os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
-
+  
         if not shellutils.existsExecutable("sbatch"):
             print "SLURM system not present, some methods might be unavailable"
         elif not account:
             account = getDefaultSlurmAccount()
         if account:
             self.system["slurm_account"] = account
+      
+        os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
+                                         .read().strip('\n') + ":"
+                                         + os.popen("module load openmpi.intel ; echo $LD_LIBRARY_PATH")
+                                         .read().strip('\n') + ":"
+                                         + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                                         + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
+
     
   
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
@@ -41,151 +40,102 @@ class SlurmExperiment(Experiment):
             self.system["tm"] = {"data": trainData}
             self.recordState()        
         elif not self.system.has_key("tm") or not self.system["tm"].has_key("data"):
-            raise RuntimeError("Aligned training data is not yet processed")    
+            raise RuntimeError("Aligned training data is not yet processed")  
         
-        trainData = self.system["tm"]["data"]
+        cleanData = self.system["tm"]["data"]["clean"]         
         print ("Building translation model " + self.system["source"] + "-" 
-               + self.system["target"] + " with " + trainData["clean"] 
+               + self.system["target"] + " with " +  cleanData
                + " with " + str(nbSplits) + " splits")
-
-        tmScript, tmDir = self.getTrainScript(nbThreads)
     
-        outputDir = os.path.dirname(tmDir) + "/splits"
-        shutil.rmtree(outputDir, ignore_errors=True)
-        os.makedirs(outputDir)
-        splitData(trainData["clean"] + "." + self.system["source"], outputDir, nbSplits)
-        splitData(trainData["clean"] + "." + self.system["target"], outputDir, nbSplits)
+        splitDir = self.system["path"] + "/splits"
+        shutil.rmtree(splitDir, ignore_errors=True)
+        os.makedirs(splitDir)
+        splitData(cleanData + "." + self.system["source"], splitDir, nbSplits)
+        splitData(cleanData + "." + self.system["target"], splitDir, nbSplits)
 
-        paramScript = (tmScript.replace(tmDir, outputDir + "/" + "$TASK_ID")\
-                                .replace(trainData["clean"], outputDir + "/" +"$TASK_ID")
+        tmDir = self.system["path"] + "/translationmodel"
+        tmScript = self.getTrainScript(nbThreads, tmDir)
+        paramScript = (tmScript.replace(tmDir, splitDir + "/" + "$TASK_ID")\
+                                .replace(cleanData, splitDir + "/" +"$TASK_ID")
                                 + " --last-step 3")
-        arrayrun(paramScript, self.system["slurm_account"], nbSplits)
+        self.arrayrun(paramScript, nbSplits)
         
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
-        with open(tmDir+"/model/aligned."+self.system["alignment"], 'w') as al:
+        alignFile = tmDir+"/model/aligned."+self.system["alignment"]
+        with open(alignFile, 'w') as align:
             for split in range(0, nbSplits):
-                with open(outputDir+ "/" + str(split)+"/model/aligned."+self.system["alignment"]) as part:
+                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+self.system["alignment"]
+                with open(splitFile) as part:
                     for partline in part.readlines():
                         if partline.strip():
-                            al.write(partline)
-                            if '\n' not in partline:
-                                al.write('\n')
-            
+                            align.write(partline.strip('\n') + '\n')
+                            
         result = shellutils.run(tmScript + " --first-step 4")
 
         if result:
-            print "Finished building translation model in directory " + shellutils.getsize(tmDir)
+            print "Finished building translation model in: " + shellutils.getsize(tmDir)
             self.system["tm"]["dir"]=tmDir
             self.recordState()
         else:
             shellutils.run("rm -rf " + tmDir)
-            raise RuntimeError("Construction of translation model FAILED")
 
 
- 
-    def translate(self, text):
-        return super(SlurmExperiment, self).translate(text, decoder="mpirun -n 1 ./moses/bin/moses")
+    def arrayrun(self, paramScript, nbSplits, time="2:00:00", memory="10G"):
 
-
-def arrayrun(paramScript, account, nbSplits):
+        batchFile = self.createBatchFile(paramScript, name="split-$TASK_ID")
     
-    batchFile = createBatchFile(paramScript, account, name="split-$TASK_ID", nbTasks=1)
-
-    shellutils.run("arrayrun 0-%i --job-name=\"split\"  %s &"%(nbSplits-1, batchFile), 
-                 outfile="./logs/out-split.txt")
-    time.sleep(1)
-    jobs = set()
-    with open('./logs/out-split.txt') as out:
-        for l in out.readlines():
-            if "Submitted batch job" in l:
-                jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
-                jobs.add(jobid)
-    time.sleep(1)
-    while True:
-        queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-        if len(set(queue.split()).intersection(jobs)) == 0:
-            break
-        print "Unfinished jobs: " + str(list(jobs))
-        time.sleep(60)
-    print "SLURM array run completed."
-    for job in jobs:
-        shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
-
-
-def sbatch(pythonFile, account=None, nbTasks=1, memoryGb=60):
-
-    print "Starting " + pythonFile + " using sbatch"
-        
-    if not account:
-        account = getDefaultSlurmAccount()
-    if not account:
-        print "could not identify SLURM account for user, switching back to normal mode"
-        shellutils.run("python -u " + pythonFile)
-        
-    if not os.path.exists(pythonFile):
-        raise RuntimeError(pythonFile + " must be a python file") 
-           
-    batchFile = createBatchFile("python -u " + pythonFile, account, nbTasks=nbTasks, 
-                                name=pythonFile, memoryGb=memoryGb)
-    shellutils.run("sbatch " + batchFile, outfile="logs/out.txt")
+        shellutils.run("arrayrun 0-" + str(nbSplits-1)
+                       + " --account " + self.system["slurm_account"]
+                       + " --time " + time 
+                       + " --cpus-per-task " + 16
+                       + " --mem-per-cpu " + memory
+                       + " \"" + paramScript + "\"")       
+        time.sleep(1)
+        jobs = set()
+        with open('./logs/out-split.txt') as out:
+            for l in out.readlines():
+                if "Submitted batch job" in l:
+                    jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
+                    jobs.add(jobid)
+        time.sleep(1)
+        while True:
+            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
+            if len(set(queue.split()).intersection(jobs)) == 0:
+                break
+            print "Unfinished array jobs: " + str(list(jobs))
+            time.sleep(60)
+        print "SLURM array run completed."
+        for job in jobs:
+            shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
+            
     
-    with open('logs/out.txt') as out:
-        text = out.read().strip('\n')
-        if "Submitted batch job" in text:
-            jobid = text.replace("Submitted batch job ", "")
-            print "Waiting for job " + jobid + " to start..."
-            jobfile = "slurm-"+jobid+".out"
-            while not os.path.exists(jobfile):
-                time.sleep(5)
-            print "Job " + jobid + " has now started"
-            with open(jobfile) as slurm:
-                while True:
-                    where = slurm.tell()
-                    line = slurm.readline()
-                    if not line:
-                        time.sleep(1)
-                        slurm.seek(where)
-                    elif "Job " + jobid in line and "completed" in line:
-                        break
-                    else:
-                        print line,  
-            shutil.move(jobfile, "./logs/"+jobfile) 
-        else:
-            print "Cannot start batch script, aborting"
-            exit()
-
-  
-     
-
    
-def createBatchFile(script, account, time="6:00:00", nbTasks=1, memoryGb=60, name=None):
-      
-    if not name:
-        name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
-    #script = script + (" < " + infile if infile else "")  + (" > " + outfile if outfile else "")
-    if memoryGb > 60:
-        memoryStr = str(max(1, memoryGb)) + "G --partition=hugemem"
-    else:
-        memoryStr = str(max(1, memoryGb)) + "G"
-    batchFile = "logs/"+name.replace("$","")+".sh"
- 
-    batch = textwrap.dedent("""\
-                            #!/bin/bash
-                            #SBATCH --job-name=%s
-                            #SBATCH --account=%s
-                            #SBATCH --time=%s
-                            #SBATCH --ntasks=%i
-                            #SBATCH --mem-per-cpu=%s
-
-                            source /cluster/bin/jobsetup  
-                            %s                                  
-                            %s 
-                            """%(name, account, time, nbTasks, memoryStr, 
-                                 shellutils.initialCmds, script))   
-    with open(batchFile, 'w') as f:
-        f.write(batch)
-    return batchFile
+    def createBatchFile(self, script, time="6:00:00", nbTasks=1, memoryGb=60, name=None):
+          
+        if not name:
+            name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
+        if memoryGb > 60:
+            memoryStr = str(max(1, memoryGb)) + "G --partition=hugemem"
+        else:
+            memoryStr = str(max(1, memoryGb)) + "G"
+        batchFile = "logs/"+name.replace("$","")+".sh"
+     
+        batch = textwrap.dedent("""\
+                                #!/bin/bash
+                                #SBATCH --job-name=%s
+                                #SBATCH --account=%s
+                                #SBATCH --time=%s
+                                #SBATCH --ntasks=%i
+                                #SBATCH --mem-per-cpu=%s
+    
+                                source /cluster/bin/jobsetup  
+                                %s 
+                                """%(name, self.system["slurm_account"], time, 
+                                     nbTasks, memoryStr, script))   
+        with open(batchFile, 'w') as f:
+            f.write(batch)
+        return batchFile
 
 
 

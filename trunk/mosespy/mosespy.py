@@ -121,7 +121,8 @@ class Experiment(object):
         print ("Building translation model " + self.system["source"] + "-" 
                + self.system["target"] + " with " + self.system["tm"]["data"]["clean"])
 
-        tmScript, tmDir = self.getTrainScript(nbThreads)
+        tmDir = self.system["path"] + "/translationmodel"
+        tmScript = self.getTrainScript(nbThreads)
         shutil.rmtree(tmDir, ignore_errors=True)  
         os.makedirs(tmDir) 
         result = shellutils.run(tmScript)
@@ -135,12 +136,11 @@ class Experiment(object):
 
 
 
-    def getTrainScript(self ,nbThreads):
+    def getTrainScript(self ,tmDir, nbThreads):
         if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
         
         lmPath = os.popen("pwd").read().strip()+"/" + self.system["lm"]["blm"]
-        tmDir = self.system["path"] + "/translationmodel"
         tmScript = (trainmodel_cmd + " "
                     + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
                     + " -f " + self.system["source"] + " -e " + self.system["target"] 
@@ -150,7 +150,7 @@ class Experiment(object):
                     + " -external-bin-dir " + self.mgizapp_root + "/bin" 
                     + "-cores %i -mgiza -mgiza-cpus %i -parallel"
                     )%(nbThreads, nbThreads)
-        return tmScript, tmDir
+        return tmScript
 
 
 # TODO : reintegrate this
@@ -170,7 +170,8 @@ class Experiment(object):
         print ("Tuning translation model " + self.system["source"] + "-" 
                + self.system["target"] + " with " + tuningData["clean"])
         
-        tuningScript, tuneDir = self.getTuningScript(nbThreads)
+        tuneDir = self.system["path"]+"/tunedmodel"
+        tuningScript = self.getTuningScript(nbThreads)
         shutil.rmtree(tuneDir, ignore_errors=True)
         shellutils.run(tuningScript)
         print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
@@ -178,11 +179,10 @@ class Experiment(object):
         self.recordState()
         
         
-    def getTuningScript(self, nbThreads):
+    def getTuningScript(self, tuneDir, nbThreads):
         if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
             raise RuntimeError("Translation model is not yet trained")
 
-        tuneDir = self.system["path"]+"/tunedmodel"
         tuneScript = (mertmoses_cmd + " " 
                       + self.system["ttm"]["data"]["clean"] + "." + self.system["source"] + " " 
                       + self.system["ttm"]["data"]["clean"] + "." + self.system["target"] + " "
