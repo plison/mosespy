@@ -1,9 +1,5 @@
 
 import os, subprocess
-  
-
-initialCmds = ""
-
 
 
 def run(script, infile=None, outfile=None, return_output=False):
@@ -16,9 +12,6 @@ def run(script, infile=None, outfile=None, return_output=False):
     stdin=open(infile) if infile is not None else None
     stdout=open(outfile, 'w') if outfile is not None else None
 
-    if initialCmds:
-        script = initialCmds + " ; " + script
-        
     if return_output:
         return os.popen(script + " < " + infile if infile else script).read()
     else:
@@ -33,7 +26,7 @@ def run(script, infile=None, outfile=None, return_output=False):
     
     
 def existsExecutable(command):
-    paths = os.popen(initialCmds + " ; echo $PATH").read().strip()
+    paths = os.popen("echo $PATH").read().strip()
     for path in paths.split(os.pathsep):
             path = path.strip('"')
             exe_file = os.path.join(path, command)
