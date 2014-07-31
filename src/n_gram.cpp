@@ -234,6 +234,9 @@ istream& operator>> ( istream& fi , ngram& ng)
 	
 }
 
+
+
+
 ofstream& operator<< (ofstream& fo,ngram& ng)
 {
 	

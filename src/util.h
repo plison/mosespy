@@ -78,6 +78,9 @@ public:
 void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap);
 int Munmap(void	*p,size_t	len,int	sync);
 
+//hash function
+unsigned short crc16(char *data_p, unsigned short length);
+
 
 // A couple of utilities to measure access time
 void ResetUserTime();

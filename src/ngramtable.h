@@ -207,7 +207,7 @@ public:
   }
 
   //  void savetxt(char *filename,int sz=0);
-  void savetxt(char *filename,int sz=0,int googleformat=0);
+  void savetxt(char *filename,int sz=0,bool googleformat=false,bool hashvalue=false);
   void loadtxt(char *filename,int googletable=0);
 
   void savebin(char *filename,int sz=0);

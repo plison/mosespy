@@ -330,40 +330,56 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
   }
 }
 
-void ngramtable::savetxt(char *filename,int depth,int googleformat)
-{
-
-  if (depth>maxlev) {
-		exit_error(IRSTLM_ERROR_DATA,"ngramtable::savetxt: wrong n-gram size");
-  }
-
-  depth=(depth>0?depth:maxlev);
-
-  card=mentr[depth];
-
-  ngram ng(dict);
-
-  if (googleformat)
-    cerr << "savetxt in Google format: nGrAm " <<  depth << " " << card << " " << info << "\n";
-  else
-    cerr << "savetxt: nGrAm " <<  depth << " " << card << " " << info << "\n";
-
-  mfstream out(filename,ios::out );
-
-  if (!googleformat)
-    out << "nGrAm " << depth << " " << card << " " << info << "\n";
-
-  if (!googleformat)
-    dict->save(out);
-
-  scan(ng,INIT,depth);
-
-  while(scan(ng,CONT,depth)) out << ng <<"\n";
-
-  cerr << "\n";
-
-  out.close();
-}
+void ngramtable::savetxt(char *filename,int depth,bool googleformat,bool hashvalue)
+    {
+        char ngstring[10000];
+        
+        if (depth>maxlev) {
+            exit_error(IRSTLM_ERROR_DATA,"ngramtable::savetxt: wrong n-gram size");
+        }
+        
+        depth=(depth>0?depth:maxlev);
+        
+        card=mentr[depth];
+        
+        ngram ng(dict);
+        
+        if (googleformat)
+            cerr << "savetxt in Google format: nGrAm " <<  depth << " " << card << " " << info << "\n";
+        else
+            cerr << "savetxt: nGrAm " <<  depth << " " << card << " " << info << "\n";
+        
+        mfstream out(filename,ios::out );
+        
+        if (!googleformat)
+            out << "nGrAm " << depth << " " << card << " " << info << "\n";
+        
+        if (!googleformat)
+            dict->save(out);
+        
+        scan(ng,INIT,depth);
+        
+        while(scan(ng,CONT,depth)){
+            
+            if (hashvalue){
+               strcpy(ngstring,ng.dict->decode(*ng.wordp(ng.size)));
+                for (int i=ng.size-1; i>0; i--){
+                    strcat(ngstring," ");
+                    strcat(ngstring,ng.dict->decode(*ng.wordp(i)));
+                }
+                out << ngstring << "\t" << ng.freq << "\t" << crc16(ngstring,strlen(ngstring)) << "\n";
+            }
+            else
+                
+                out << ng << "\n";
+            
+            
+        }
+        
+        cerr << "\n";
+        
+        out.close();
+    }
 
 
 void ngramtable::loadtxt(char *filename,int googletable)

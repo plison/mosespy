@@ -72,18 +72,20 @@ int main(int argc, char **argv)
   char *hmask=NULL;        // historymask
   bool inputgoogleformat=false;    //reads ngrams in Google format
   bool outputgoogleformat=false;    //print ngrams in Google format
+  bool outputredisformat=false;    //print ngrams in Redis format
   int ngsz=0;           // n-gram default size
   int dstco=0;          // compute distance co-occurrences
   bool bin=false;
   bool ss=false;            //generate single table
   bool LMflag=false;        //work with LM table
+  bool  saveeach=false;   //save all n-gram orders
   int inplen=0;         //input length for mask generation
   bool tlm=false;           //test lm table
   char* ftlm=NULL;     //file to test LM table
+   
   bool memuse=false;
-	
-	bool help=false;
-
+  bool help=false;
+    
 
   DeclareParams((char*)
                 "Dictionary", CMDSTRINGTYPE|CMDMSG, &dic, "dictionary filename",
@@ -99,6 +101,10 @@ int main(int argc, char **argv)
                 "gooinp", CMDBOOLTYPE|CMDMSG, &inputgoogleformat, "the input file contains data in the n-gram Google format; default is false",
                 "OutputGoogleFormat", CMDBOOLTYPE|CMDMSG, &outputgoogleformat,  "the output file contains data in the n-gram Google format; default is false",
                 "gooout", CMDBOOLTYPE|CMDMSG, &outputgoogleformat,  "the output file contains data in the n-gram Google format; default is false",
+                "OutputRedisFormat", CMDBOOLTYPE|CMDMSG, &outputredisformat,  "as Goolge format plus corresponding CRC.16 hash values; default is false",
+                "redisout", CMDBOOLTYPE|CMDMSG, &outputredisformat,  "as Goolge format plus corresponding CRC.16 hash values; default is false",
+                "SaveEach", CMDBOOLTYPE|CMDMSG, &saveeach,  "save all ngram orders; default is false",
+                "redisout", CMDBOOLTYPE|CMDMSG, &saveeach,  "save all ngram orders; default is false",
                 "SaveBinaryTable", CMDBOOLTYPE|CMDMSG, &bin, "saves into binary format; default is false",
                 "b", CMDBOOLTYPE|CMDMSG, &bin, "saves into binary format; default is false",
                 "LmTable", CMDBOOLTYPE|CMDMSG, &LMflag, "works with LM table; default is false",
@@ -489,8 +495,11 @@ int main(int argc, char **argv)
 
   }
 
-  if (out)
-    bin?ngt->savebin(out,ngsz): ngt->savetxt(out,ngsz,outputgoogleformat);
-
+    if (out){
+    if (bin) ngt->savebin(out,ngsz);
+    else if (outputredisformat) ngt->savetxt(out,ngsz,true,true);
+    else if (outputgoogleformat) ngt->savetxt(out,ngsz,true,false);
+    else ngt->savetxt(out,ngsz,false,false);
+    }
 }
 
