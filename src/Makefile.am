@@ -22,6 +22,7 @@ libirstlm_la_HEADERS = \
         ngramtable.h \
         timer.h \
         util.h \
+	crc.h \
         interplm.h \
         linearlm.h \
         mdiadapt.h \
@@ -47,6 +48,7 @@ libirstlm_la_SOURCES = \
         ngramtable.cpp \
         timer.cpp \
         util.cpp \
+	crc.cpp \
         interplm.cpp \
         linearlm.cpp \
         mdiadapt.cpp \

@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "dictionary.h"
 #include "n_gram.h"
 #include "ngramtable.h"
+#include "crc.h"
 
 using namespace std;
 
@@ -367,7 +368,7 @@ void ngramtable::savetxt(char *filename,int depth,bool googleformat,bool hashval
                     strcat(ngstring," ");
                     strcat(ngstring,ng.dict->decode(*ng.wordp(i)));
                 }
-                out << ngstring << "\t" << ng.freq << "\t" << crc16(ngstring,strlen(ngstring)) << "\n";
+                out << ngstring << "\t" << ng.freq << "\t" << crc16_ccitt(ngstring,strlen(ngstring)) << "\n";
             }
             else
                 
