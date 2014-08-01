@@ -104,7 +104,7 @@ int main(int argc, char **argv)
                 "OutputRedisFormat", CMDBOOLTYPE|CMDMSG, &outputredisformat,  "as Goolge format plus corresponding CRC.16 hash values; default is false",
                 "redisout", CMDBOOLTYPE|CMDMSG, &outputredisformat,  "as Goolge format plus corresponding CRC.16 hash values; default is false",
                 "SaveEach", CMDBOOLTYPE|CMDMSG, &saveeach,  "save all ngram orders; default is false",
-                "redisout", CMDBOOLTYPE|CMDMSG, &saveeach,  "save all ngram orders; default is false",
+                "saveeach", CMDBOOLTYPE|CMDMSG, &saveeach, "save all ngram orders; default is false",
                 "SaveBinaryTable", CMDBOOLTYPE|CMDMSG, &bin, "saves into binary format; default is false",
                 "b", CMDBOOLTYPE|CMDMSG, &bin, "saves into binary format; default is false",
                 "LmTable", CMDBOOLTYPE|CMDMSG, &LMflag, "works with LM table; default is false",
