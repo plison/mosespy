@@ -6,20 +6,23 @@ from mosespy import Experiment
 
 class SlurmExecutor(object):
     
-    def run(self, script, infile=None, outfile=None, return_output=False,
-             time="3:00:00", memory="6G", nbThreads=16):
-        srun_cmd = ("srun --account=" + self.system["slurm_account"]
-                + " --mem-per-cpu=" + memory
-                + " --cpus-per-task="+nbThreads
-                + " --time="+time
+    def __init__(self, account, time="3:00:00", memory="6G", nbThreads=16):
+        self.account = account
+        self.time = time
+        self.memory = memory
+        self.nbThreads = nbThreads
+        
+    def run(self, script, infile=None, outfile=None, return_output=False):
+        srun_cmd = ("srun --account=" + self.account
+                + " --mem-per-cpu=" + self.memory
+                + " --cpus-per-task=" + self.nbThreads
+                + " --time=" + self.time
                 + " " + script)
         shellutils.run(srun_cmd, infile, outfile, return_output)
     
        
 class SlurmExperiment(Experiment):
-        
-    executor = SlurmExecutor()
-    
+            
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
@@ -38,6 +41,8 @@ class SlurmExperiment(Experiment):
                                          + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
+        executor = SlurmExecutor(account)
+
         
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
         
