@@ -15,7 +15,7 @@ class SlurmExecutor(object):
     def run(self, script, infile=None, outfile=None, return_output=False):
         srun_cmd = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + self.memory
-                + " --cpus-per-task=" + self.nbThreads
+                + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time
                 + " " + script)
         shellutils.run(srun_cmd, infile, outfile, return_output)
