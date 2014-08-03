@@ -20,7 +20,6 @@ from xml.dom import minidom
 
 
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-print "HERERHERHEHRHEHRHEHERHEH " + rootDir
 expDir = rootDir + "/experiments/"
 moses_root = rootDir + "/moses" 
 mgizapp_root = rootDir + "/mgizapp"
@@ -38,6 +37,7 @@ class Experiment(object):
         self.system["name"] = expName
         
         self.system["path"] = expDir+self.system["name"]
+        print "Path : " + self.system["path"]
         if not os.path.exists(self.system["path"]):
             os.makedirs(self.system["path"]) 
         elif os.path.exists(self.system["path"]+"/experiment.json"):
