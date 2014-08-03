@@ -6,7 +6,7 @@ from mosespy import Experiment
 
 class SlurmExecutor(object):
     
-    def __init__(self, account, time="3:00:00", memory="3G", nbThreads=16):
+    def __init__(self, account, time="3:00:00", memory="10G", nbThreads=6):
         self.account = account
         self.time = time
         self.memory = memory
@@ -15,6 +15,7 @@ class SlurmExecutor(object):
     def run(self, script, infile=None, outfile=None, return_output=False):
         srun_cmd = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + self.memory
+                +" --exclusive"
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time
                 + " " + script)
