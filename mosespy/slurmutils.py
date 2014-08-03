@@ -21,34 +21,17 @@ class SlurmExecutor(object):
                 + " " + script)
         shellutils.run(srun_cmd, infile, outfile, return_output)
         
-    def arrayrun(self, script, size):
-        arrayrun_cmd = ("arrayrun 0-" + str(size-1)
-                + " --account=" + self.account
-                + " --mem-per-cpu=" + self.memory
-                +" --exclusive"
-                + " --cpus-per-task=" + str(self.nbThreads)
-                + " --time=" + self.time
-                + " " + script)
-        shellutils.run(arrayrun_cmd)
-        time.sleep(1)
-        jobs = set()
-        with open('./logs/out-split.txt') as out:
-            for l in out.readlines():
-                if "Submitted batch job" in l:
-                    jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
-                    jobs.add(jobid)
-        time.sleep(1)
-        while True:
-            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-            if len(set(queue.split()).intersection(jobs)) == 0:
-                break
-            print "Unfinished array jobs: " + str(list(jobs))
-            time.sleep(60)
-        print "SLURM array run completed."
-        for job in jobs:
-            shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
-    
-       
+    def runs(self, scripts, infile=None, outfile=None, return_output=False):
+        for script in scripts:
+            srun_cmd = ("srun --account=" + self.account
+                        + " --mem-per-cpu=" + self.memory
+                        +" --exclusive"
+                        + " --cpus-per-task=" + str(self.nbThreads)
+                        + " --time=" + self.time
+                + " " + script + " ;")
+            shellutils.run(srun_cmd, infile, outfile, return_output)
+
+        
 class SlurmExperiment(Experiment):
             
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
@@ -105,7 +88,7 @@ class SlurmExperiment(Experiment):
             paramScript = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(cleanData, splitDir + "/" +str(i))
                                 + " --last-step 3")
-            self.executor.run(paramScript)
+            self.executor.run(paramScript + " ;")
         
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
