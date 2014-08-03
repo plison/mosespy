@@ -101,7 +101,8 @@ class SlurmExperiment(Experiment):
 
 
     def arrayrun(self, paramScript, nbSplits, time="2:00:00", memory="10G"):
-    
+        print paramScript
+        print nbSplits
         shellutils.run("arrayrun 0-" + str(nbSplits-1)
                        + " --account " + self.system["slurm_account"]
                        + " --time " + time 
