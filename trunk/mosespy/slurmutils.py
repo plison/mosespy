@@ -22,14 +22,32 @@ class SlurmExecutor(object):
         shellutils.run(srun_cmd, infile, outfile, return_output)
         
     def runs(self, scripts, infile=None, outfile=None, return_output=False):
+        jobs = set()
         for script in scripts:
+            outfile = scripts.index(script) + ".out"
             srun_cmd = ("srun --account=" + self.account
                         + " --mem-per-cpu=" + self.memory
                         +" --exclusive"
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
-                + " " + script + " &")
+                + " " + script + " > " + outfile + " &")
             shellutils.run(srun_cmd, infile, outfile, return_output)
+            time.sleep(1)
+            
+            with open(outfile) as out:
+                for l in out.readlines():
+                    if l.strip():
+                        m = re.search("job ((\d)+)", l)
+                        jobs.add(m.group(1))
+                        break
+        while True:
+            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
+            if len(set(queue.split()).intersection(jobs)) == 0:
+                break
+            print "Unfinished jobs: " + str(list(jobs))
+            time.sleep(60)
+            print "SLURM array run completed."
+  
 
         
 class SlurmExperiment(Experiment):
