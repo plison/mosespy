@@ -8,7 +8,7 @@ from mosespy.mosespy import Experiment
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/newstest/newssyscomb2009"
 
-exp = SlurmExperiment("32-tasks", "fr", "en")
+exp = SlurmExperiment("basic", "fr", "en")
 exp.trainLanguageModel(trainData+".en")
 exp.trainTranslationModel(trainData, nbSplits=4)
 exp.tuneTranslationModel(tuningData)
