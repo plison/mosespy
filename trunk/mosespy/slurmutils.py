@@ -24,17 +24,17 @@ class SlurmExecutor(object):
     def runs(self, scripts, infile=None, outfile=None, return_output=False):
         jobs = set()
         for script in scripts:
-            outfile = str(scripts.index(script)+1) + ".out"
+            tmpfile = str(scripts.index(script)+1) + ".out"
             srun_cmd = ("srun --account=" + self.account
                         + " --mem-per-cpu=" + self.memory
                         +" --exclusive"
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
-                + " " + script + " 2> " + outfile + " &")
+                + " " + script + " 2> " + tmpfile + " &")
             shellutils.run(srun_cmd, infile, outfile, return_output)
             time.sleep(1)
             
-            with open(outfile) as out:
+            with open(tmpfile) as out:
                 for l in out.readlines():
                     if l.strip():
                         m = re.search("job ((\d)+)", l)
