@@ -37,7 +37,6 @@ class Experiment(object):
         self.system["name"] = expName
         
         self.system["path"] = expDir+self.system["name"]
-        print "Path : " + self.system["path"]
         if not os.path.exists(self.system["path"]):
             os.makedirs(self.system["path"]) 
         elif os.path.exists(self.system["path"]+"/experiment.json"):
@@ -291,6 +290,7 @@ class Experiment(object):
             
     def recordState(self):
         dump = json.dumps(self.system)
+        print "Path2 : " + self.system["path"]
         with open(self.system["path"]+"/experiment.json", 'w') as jsonFile:
             jsonFile.write(dump)
 
