@@ -42,7 +42,6 @@ class Experiment(object):
         elif os.path.exists(self.system["path"]+"/settings.json"):
             print "Existing experiment, reloading known settings..."
             self.system = json.loads(open(self.system["path"]+"/settings.json").read())
-            print self.system.keys()
         if sourceLang:
             self.system["source"] = sourceLang
             self.system["source_long"] = getLanguage(sourceLang)
@@ -126,8 +125,10 @@ class Experiment(object):
 
 
     def getTrainScript(self ,tmDir, nbThreads):
+        print self.system.keys()
         if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
-            raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
+            raise RuntimeError("Language model for " + self.system["target_long"] 
+                               + " is not yet trained")
         
         print "tmDir now: " + str(tmDir)
         print self.system["alignment"]
