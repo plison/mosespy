@@ -24,7 +24,7 @@ class SlurmExecutor(object):
     def runs(self, scripts, infile=None, outfile=None, return_output=False):
         jobnames = []
         for script in scripts:
-            name = uuid.uuid4()[0:5]
+            name = uuid.uuid4().get_bytes()[0:5]
             srun_cmd = ("srun --account=" + self.account
                         + " --mem-per-cpu=" + self.memory
                         +" --exclusive --job-name=" + name
