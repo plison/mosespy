@@ -20,7 +20,8 @@ from xml.dom import minidom
 
 
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-expDir =rootDir + "/experiments/"
+print "HERERHERHEHRHEHRHEHERHEH " + rootDir
+expDir = rootDir + "/experiments/"
 moses_root = rootDir + "/moses" 
 mgizapp_root = rootDir + "/mgizapp"
 irstlm_root = rootDir + "/irstlm"
