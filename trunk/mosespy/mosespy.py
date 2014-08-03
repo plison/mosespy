@@ -134,7 +134,7 @@ class Experiment(object):
                     + " -alignment " + self.system["alignment"] + " " 
                     + " -reordering " + self.system["reordering"] + " "
                     + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+lmPath+":8" 
-                    + " -external-bin-dir " + self.mgizapp_root + "/bin" 
+                    + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel"
                     + " -sort-buffer-size 6G -sort-batch-size 1021 " 
                     + " -sort-compress gzip -sort-parallel %i"
