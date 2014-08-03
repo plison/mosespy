@@ -41,7 +41,7 @@ class SlurmExperiment(Experiment):
                                          + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
-        executor = SlurmExecutor(account)
+        self.executor = SlurmExecutor(account)
 
         
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
