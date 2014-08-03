@@ -19,9 +19,10 @@ class SlurmExecutor(object):
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time
                 + " " + script)
-        shellutils.run(srun_cmd, infile, outfile, return_output)
+        return shellutils.run(srun_cmd, infile, outfile, return_output)
         
-    def runs(self, scripts, infile=None, outfile=None, return_output=False):
+        
+    def runs(self, scripts, infile=None, outfile=None):
         jobnames = []
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
@@ -31,7 +32,7 @@ class SlurmExecutor(object):
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
                 + " " + script + " &")
-            shellutils.run(srun_cmd, infile, outfile, return_output)
+            shellutils.run(srun_cmd, infile, outfile)
             jobnames.append(name)
         time.sleep(1)
         while True:
@@ -42,7 +43,6 @@ class SlurmExecutor(object):
             time.sleep(60)
         print "SLURM parallel run completed."
   
-
         
 class SlurmExperiment(Experiment):
             
