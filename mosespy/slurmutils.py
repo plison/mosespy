@@ -6,7 +6,7 @@ from mosespy import Experiment
 
 class SlurmExecutor(object):
     
-    def __init__(self, account, time="3:00:00", memory="4G", nbThreads=16):
+    def __init__(self, account, time="3:00:00", memory="3G", nbThreads=16):
         self.account = account
         self.time = time
         self.memory = memory
