@@ -54,6 +54,8 @@ class Experiment(object):
         if not self.system.has_key("reordering"):
             self.system["reordering"] = defaultReordering
             
+        self.decoder = moses_root+"/bin/moses"
+            
         print ("Experiment " + expName + " (" + self.system["source"]  
                + "-" + self.system["target"] + ") successfully started")
 
@@ -180,7 +182,7 @@ class Experiment(object):
         
                                
 
-    def processAlignedData(self, dataStem):
+    def processAlignedData(self, dataStem, maxLength=80):
 
         sourceFile = dataStem+"."+self.system["source"]
         targetFile = dataStem+"."+self.system["target"]
@@ -195,7 +197,7 @@ class Experiment(object):
         
         trueStem = dataset["source"]["true"][:-len(self.system["source"])-1]
         cleanStem = trueStem.replace(".true", ".clean")
-        cleanFiles(trueStem, cleanStem, self.system["source"], self.system["target"])
+        cleanFiles(trueStem, cleanStem, self.system["source"], self.system["target"], maxLength)
         dataset["clean"] = cleanStem
         return dataset
     
@@ -226,31 +228,6 @@ class Experiment(object):
         dataset["true"] = truecaseFile(tokFile, trueFile, modelFile)   
         return dataset  
     
-    
-    def translate(self, text, preprocess=True):
-        if self.system.has_key("btm"):
-            initFile = self.system["btm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("ttm"):
-            print "Warning: translation model is not yet binarised"
-            initFile = self.system["ttm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("tm"):
-            print "Warning: translation model is not yet tuned!"
-            initFile = self.system["tm"]["dir"] + "/moses.ini"
-        else:
-            raise RuntimeError("Translation model is not yet trained!")
-        print ("Translating text: \"" + text + "\" from " + 
-               self.system["source"] + " to " + self.system["target"])
-
-        if preprocess:
-            text = tokenise(text, self.system["source"])
-            text = truecase(text, self.system["truecasing"][self.system["source"]])
-
-        transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
-                       + " -f " + initFile.encode('utf-8'))
-        result = self.executor.run(transScript, return_output=True)
-        return result
-        
-                                        
 
 
     def binariseModel(self):
@@ -283,7 +260,69 @@ class Experiment(object):
         self.system["btm"] = {"dir":binaDir}
         self.recordState()
         print "Finished binarising the translation model in directory " + shellutils.getsize(binaDir)
-            
+      
+   
+    def translate(self, text, preprocess=True, customModel=None, outfile=None):
+        if customModel:
+            if not os.path.exists(customModel+"/moses.init"):
+                raise RuntimeError("Custom model " + customModel + " does not exist")
+            initFile = customModel+"/moses.ini"
+        elif self.system.has_key("btm"):
+            initFile = self.system["btm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("ttm"):
+            print "Warning: translation model is not yet binarised"
+            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet trained!")
+        print ("Translating text: \"" + text + "\" from " + 
+               self.system["source"] + " to " + self.system["target"])
+
+        if preprocess:
+            text = tokenise(text, self.system["source"])
+            text = truecase(text, self.system["truecasing"][self.system["source"]])
+
+        transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
+                       + " -f " + initFile.encode('utf-8'))
+        if outfile:
+            self.executor.run(transScript, outfile=outfile)
+        else:
+            return self.executor.run(transScript, return_output=True)
+        
+                                        
+    
+    def evaluateBLEU(self, testData, preprocess=True):
+ 
+        print ("Evaluating BLEU scores with test data: " + testData)
+        
+        testSource = testData + "." + self.system["source"]
+        testTarget = testData + "." + self.system["target"]
+        if not (os.path.exists(testSource) and os.path.exists(testTarget)):
+            raise RuntimeError("Test data cannot be found")
+
+        if preprocess:
+            testSource = self.processRawData(testSource)["true"]
+            testTarget = self.processRawData(testTarget)["true"]
+                 
+        if self.system.has_key("btm"):
+            initFile = self.system["btm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("ttm"):
+            print "Warning: translation model is not yet binarised"
+            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet tuned")
+
+        filteredPath = self.system["path"]+ "/filteredmodel"
+        filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
+                        + filteredPath + " " + initFile
+                        + testTarget + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
+        self.executor.run(filterScript)
+        
+        translationfile = testTarget.replace(".true.", ".translated.")
+        self.translate(testSource, modelPath=filteredPath, outfile=translationfile)
+       
+        bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
+        self.executor.run(bleuScript, infile=translationfile)
+
             
     def recordState(self):
         dump = json.dumps(self.system)
@@ -353,7 +392,7 @@ def truecase(inputText, modelFile):
                           + truecaseScript, return_output=True)
     
    
-def cleanFiles(inputStem, outputStem, source, target, maxLength=80):
+def cleanFiles(inputStem, outputStem, source, target, maxLength):
                
     cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                    inputStem + " " + source + " " + target + " " 
