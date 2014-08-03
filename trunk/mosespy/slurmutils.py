@@ -73,7 +73,7 @@ class SlurmExperiment(Experiment):
         splitData(cleanData + "." + self.system["target"], splitDir, nbSplits)
 
         tmDir = self.system["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(nbThreads, tmDir)
+        tmScript = self.getTrainScript(tmDir, nbThreads)
         paramScript = (tmScript.replace(tmDir, splitDir + "/" + "$TASK_ID")\
                                 .replace(cleanData, splitDir + "/" +"$TASK_ID")
                                 + " --last-step 3")
