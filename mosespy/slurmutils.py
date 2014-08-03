@@ -27,7 +27,7 @@ class SlurmExperiment(Experiment):
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
-        if not shellutils.existsExecutable("sbatch"):
+        if not shellutils.existsExecutable("srun"):
             print "SLURM system not present, some methods might be unavailable"
             return
         elif not account:
@@ -43,6 +43,7 @@ class SlurmExperiment(Experiment):
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
         self.executor = SlurmExecutor(account)
+        print "PATH: " + self.system["path"]
 
         
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
@@ -126,35 +127,7 @@ class SlurmExperiment(Experiment):
         for job in jobs:
             shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
             
-    
-   
-    def createBatchFile(self, script, time="6:00:00", nbTasks=1, memoryGb=60, name=None):
-          
-        if not name:
-            name = script.split(' ')[0].split("/")[len(script.split(' ')[0].split("/"))-1]
-        if memoryGb > 60:
-            memoryStr = str(max(1, memoryGb)) + "G --partition=hugemem"
-        else:
-            memoryStr = str(max(1, memoryGb)) + "G"
-        batchFile = "logs/"+name.replace("$","")+".sh"
-     
-        batch = textwrap.dedent("""\
-                                #!/bin/bash
-                                #SBATCH --job-name=%s
-                                #SBATCH --account=%s
-                                #SBATCH --time=%s
-                                #SBATCH --ntasks=%i
-                                #SBATCH --mem-per-cpu=%s
-    
-                                source /cluster/bin/jobsetup  
-                                %s 
-                                """%(name, self.system["slurm_account"], time, 
-                                     nbTasks, memoryStr, script))   
-        with open(batchFile, 'w') as f:
-            f.write(batch)
-        return batchFile
-
-   
+      
 
 
 def splitData(dataFile, outputDir, nbSplits):
