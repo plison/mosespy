@@ -1,16 +1,31 @@
 
 import time, shutil, os, shellutils, textwrap, re
 from mosespy import Experiment 
-          
-class SlurmExperiment(Experiment):
+  
+  
+
+class SlurmExecutor(object):
     
-    decoder_cmd = "mpirun " + Experiment.decoder_cmd
+    def run(self, script, infile=None, outfile=None, return_output=False,
+             time="3:00:00", memory="6G", nbThreads=16):
+        srun_cmd = ("srun --account=" + self.system["slurm_account"]
+                + " --mem-per-cpu=" + memory
+                + " --cpus-per-task="+nbThreads
+                + " --time="+time
+                + " " + script)
+        shellutils.run(srun_cmd, infile, outfile, return_output)
+    
+       
+class SlurmExperiment(Experiment):
+        
+    executor = SlurmExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not shellutils.existsExecutable("sbatch"):
             print "SLURM system not present, some methods might be unavailable"
+            return
         elif not account:
             account = getDefaultSlurmAccount()
         if account:
@@ -23,9 +38,7 @@ class SlurmExperiment(Experiment):
                                          + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
-
-    
-  
+        
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
         
         if nbSplits == 1:
@@ -82,8 +95,6 @@ class SlurmExperiment(Experiment):
 
 
     def arrayrun(self, paramScript, nbSplits, time="2:00:00", memory="10G"):
-
-        batchFile = self.createBatchFile(paramScript, name="split-$TASK_ID")
     
         shellutils.run("arrayrun 0-" + str(nbSplits-1)
                        + " --account " + self.system["slurm_account"]
@@ -137,8 +148,7 @@ class SlurmExperiment(Experiment):
             f.write(batch)
         return batchFile
 
-
-
+   
 
 
 def splitData(dataFile, outputDir, nbSplits):

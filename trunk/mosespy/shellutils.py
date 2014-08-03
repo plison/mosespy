@@ -2,29 +2,36 @@
 import os, subprocess
 
 
-def run(script, infile=None, outfile=None, return_output=False):
-    global callincr
-    callincr = callincr + 1 if 'callincr' in globals() else 1
-    print "[" + str(callincr) + "] Running " + script + \
-            (" < " + infile if infile is not None else "") + \
-          (" > " + outfile if outfile is not None else "")
-             
-    stdin=open(infile) if infile is not None else None
-    stdout=open(outfile, 'w') if outfile is not None else None
-
-    if return_output:
-        return os.popen(script + " < " + infile if infile else script).read()
-    else:
-        result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
-       
-        if not result:
-            print "\tTask [" + str(callincr) + "] successful"
-            return True
+class CommandExecutor(object):
+    
+    def run(self, script, infile=None, outfile=None, return_output=False):
+        global callincr
+        callincr = callincr + 1 if 'callincr' in globals() else 1
+        print "[" + str(callincr) + "] Running " + script + \
+                (" < " + infile if infile is not None else "") + \
+              (" > " + outfile if outfile is not None else "")
+                 
+        stdin=open(infile) if infile is not None else None
+        stdout=open(outfile, 'w') if outfile is not None else None
+    
+        if return_output:
+            return os.popen(script + " < " + infile if infile else script).read()
         else:
-            print "\t!!! Task [" + str(callincr) + "] FAILED"
-            return False
-    
-    
+            result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
+           
+            if not result:
+                print "\tTask [" + str(callincr) + "] successful"
+                return True
+            else:
+                print "\t!!! Task [" + str(callincr) + "] FAILED"
+                return False
+        
+ 
+ 
+def run(script, infile=None, outfile=None, return_output=False):
+    return CommandExecutor().run(script, infile, outfile, return_output)
+  
+   
 def existsExecutable(command):
     paths = os.popen("echo $PATH").read().strip()
     for path in paths.split(os.pathsep):

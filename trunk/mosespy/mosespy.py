@@ -21,29 +21,16 @@ from xml.dom import minidom
 
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 expDir =rootDir + "/experiments/"
-irstlm_root = rootDir + "/irstlm"
 moses_root = rootDir + "/moses" 
 mgizapp_root = rootDir + "/mgizapp"
-os.environ["IRSTLM"] = rootDir + "/irstlm"
-
-irstlm_startend_cmd = irstlm_root + "/bin/add-start-end.sh"
-irstlm_buildlm_cmd = irstlm_root + "/bin/build-lm.sh"  
-irstlm_compilelm_cmd = irstlm_root + "/bin/compile-lm"
-binariselm_cmd = moses_root + "/bin/build_binary"
-trainmodel_cmd = moses_root + "/scripts/training/train-model.perl"
-mertmoses_cmd = moses_root + "/scripts/training/mert-moses.pl"
-tokeniser_cmd = moses_root + "/scripts/tokenizer/tokenizer.perl"
-truecaser_train_cmd = moses_root + "/scripts/recaser/train-truecaser.perl"
-truecaser_cmd = moses_root + "/scripts/recaser/truecase.perl"
-cleancorpus_cmd = moses_root + "/scripts/training/clean-corpus-n.perl"
+irstlm_root = rootDir + "/irstlm"
+os.environ["IRSTLM"] = irstlm_root
+defaultAlignment = "grow-diag-final-and"
+defaultReordering = "msd-bidirectional-fe"
 
 class Experiment(object):
-     
-    decoder_cmd = moses_root + "/bin/moses"
-   
-    defaultAlignment = "grow-diag-final-and"
-    defaultReordering = "msd-bidirectional-fe"
-
+    
+    executor = shellutils.CommandExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.system = {}
@@ -63,9 +50,9 @@ class Experiment(object):
             self.system["target_long"] = getLanguage(targetLang)
             
         if not self.system.has_key("alignment"):
-            self.system["alignment"] = self.defaultAlignment
+            self.system["alignment"] = defaultAlignment
         if not self.system.has_key("reordering"):
-            self.system["reordering"] = self.defaultReordering
+            self.system["reordering"] = defaultReordering
             
         print ("Experiment " + expName + " (" + self.system["source"]  
                + "-" + self.system["target"] + ") successfully started")
@@ -82,27 +69,27 @@ class Experiment(object):
         print "Building language model based on " + processedTrain["true"]
         
         sbFile = processedTrain["true"].replace(".true.", ".sb.")
-        shellutils.run(irstlm_startend_cmd, processedTrain["true"], sbFile)
+        self.executor.run(irstlm_root + "/bin/add-start-end.sh", processedTrain["true"], sbFile)
         self.system["lm"]["sb"] = sbFile
         self.recordState()
         
         lmFile = self.system["path"] + "/langmodel.lm." + lang
-        lmScript = ((irstlm_buildlm_cmd + " -i %s" +
+        lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.system["name"])) 
-        shellutils.run(lmScript)
+        self.executor.run(lmScript)
         self.system["lm"]["lm"] = lmFile
         self.recordState()
                            
         arpaFile = self.system["path"] + "/langmodel.arpa." + lang
-        arpaScript = (irstlm_compilelm_cmd + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
-        shellutils.run(arpaScript)  
+        arpaScript = (irstlm_root + "/bin/compile-lm" + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
+        self.executor.run(arpaScript)  
         self.system["lm"]["arpa"] = arpaFile
         self.recordState()
 
         blmFile = self.system["path"] + "/langmodel.blm." + lang
-        blmScript = binariselm_cmd + " " + arpaFile + " " + blmFile + " -w after"
-        shellutils.run(blmScript)
+        blmScript = moses_root + "/bin/build_binary" + " " + arpaFile + " " + blmFile + " -w after"
+        self.executor.run(blmScript)
         print "New binarised language model: " + shellutils.getsize(blmFile)   
         self.system["lm"]["blm"] = blmFile
         self.recordState()
@@ -125,14 +112,14 @@ class Experiment(object):
         tmScript = self.getTrainScript(nbThreads)
         shutil.rmtree(tmDir, ignore_errors=True)  
         os.makedirs(tmDir) 
-        result = shellutils.run(tmScript)
+        result = self.executor.run(tmScript)
         if result:
             print "Finished building translation model in directory " + shellutils.getsize(tmDir)
             self.system["tm"]["dir"]=tmDir
             self.recordState()
         else:
             print "Construction of translation model FAILED"
-            shellutils.run("rm -rf " + tmDir)
+            self.executor.run("rm -rf " + tmDir)
 
 
 
@@ -141,7 +128,7 @@ class Experiment(object):
             raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
         
         lmPath = os.popen("pwd").read().strip()+"/" + self.system["lm"]["blm"]
-        tmScript = (trainmodel_cmd + " "
+        tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
                     + " -f " + self.system["source"] + " -e " + self.system["target"] 
                     + " -alignment " + self.system["alignment"] + " " 
@@ -173,7 +160,7 @@ class Experiment(object):
         tuneDir = self.system["path"]+"/tunedmodel"
         tuningScript = self.getTuningScript(nbThreads)
         shutil.rmtree(tuneDir, ignore_errors=True)
-        shellutils.run(tuningScript)
+        self.executor.run(tuningScript)
         print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
         self.system["ttm"]["dir"]=tuneDir
         self.recordState()
@@ -183,10 +170,10 @@ class Experiment(object):
         if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
             raise RuntimeError("Translation model is not yet trained")
 
-        tuneScript = (mertmoses_cmd + " " 
+        tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + self.system["ttm"]["data"]["clean"] + "." + self.system["source"] + " " 
                       + self.system["ttm"]["data"]["clean"] + "." + self.system["target"] + " "
-                      + self.decoder_cmd
+                      + moses_root + "/bin/moses"
                       + self.system["tm"]["dir"] + "/model/moses.ini " 
                       + " --mertdir " + self.moses_root + "/bin/"
                       + " --batch-mira "
@@ -261,9 +248,9 @@ class Experiment(object):
             text = tokenise(text, self.system["source"])
             text = truecase(text, self.system["truecasing"][self.system["source"]])
 
-        transScript = ("echo \"" + text + "\" | " + self.decoder_cmd 
+        transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
                        + " -f " + initFile.encode('utf-8'))
-        result = shellutils.run(transScript, return_output=True)
+        result = self.executor.run(transScript, return_output=True)
         return result
         
                                         
@@ -277,17 +264,18 @@ class Experiment(object):
         binaDir = self.system["path"]+"/binmodel"
         shutil.rmtree(binaDir, ignore_errors=True)
         os.makedirs(binaDir)
-        binScript = (self.moses_root + "/bin/processPhraseTable -ttable 0 0 " + self.system["tm"]["dir"] + 
+        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + self.system["tm"]["dir"] + 
                       "/model/phrase-table.gz " + " -nscores 5 -out " + binaDir + "/phrase-table")
-        result1 = shellutils.run(binScript)
+        result1 = self.executor.run(binScript)
         if not result1:
             raise RuntimeError("could not binarise translation model (phrase table process)")
-        binScript2 = (self.moses_root + "/bin/processLexicalTable -in " + self.system["tm"]["dir"] 
+        binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + self.system["tm"]["dir"] 
                       + "/model/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
                       + " -out " + binaDir + "/reordering-table")
-        result2 = shellutils.run(binScript2)
+        result2 = self.executor.run(binScript2)
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
+        
         with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
@@ -323,14 +311,14 @@ def tokeniseFile(inputFile, outputFile):
         raise RuntimeError("raw file " + inputFile + " does not exist")
                     
     print "Start tokenisation of file \"" + inputFile + "\""
-    tokScript = tokeniser_cmd + " -l " + lang
+    tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
     shellutils.run(tokScript, inputFile, outputFile)
     print "New tokenised file: " + shellutils.getsize(outputFile)            
     return outputFile
 
 
 def tokenise(inputText, lang):
-    tokScript = tokeniser_cmd + " -l " + lang
+    tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
     return shellutils.run("echo \"" + inputText + "\"|" + tokScript, return_output=True)
             
             
@@ -339,7 +327,7 @@ def trainTruecasingModel(inputFile, modelFile):
         raise RuntimeError("tokenised file " + inputFile + " does not exist")
         
     print "Start building truecasing model based on " + inputFile
-    truecaseModelScript = (truecaser_train_cmd + " --model " + modelFile + " --corpus " + inputFile)
+    truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" + " --model " + modelFile + " --corpus " + inputFile)
     shellutils.run(truecaseModelScript)
     print "New truecasing model: " + shellutils.getsize(modelFile)
     return modelFile
@@ -354,7 +342,7 @@ def truecaseFile(inputFile, outputFile, modelFile):
         raise RuntimeError("model file " + modelFile + " does not exist")
 
     print "Start truecasing of file \"" + inputFile + "\""
-    truecaseScript = truecaser_cmd + " --model " + modelFile
+    truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
     shellutils.run(truecaseScript, inputFile, outputFile)
     print "New truecased file: " + shellutils.getsize(outputFile)
     return outputFile
@@ -363,14 +351,14 @@ def truecaseFile(inputFile, outputFile, modelFile):
 def truecase(inputText, modelFile):
     if not os.path.exists(modelFile):
         raise RuntimeError("model file " + modelFile + " does not exist")
-    truecaseScript = truecaser_cmd + " --model " + modelFile
+    truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
     return shellutils.run("echo \""+inputText + "\" | " 
                           + truecaseScript, return_output=True)
     
    
 def cleanFiles(inputStem, outputStem, source, target, maxLength=80):
                
-    cleanScript = (cleancorpus_cmd + " " + 
+    cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                    inputStem + " " + source + " " + target + " " 
                    + outputStem + " 1 " + str(maxLength))
     shellutils.run(cleanScript)
