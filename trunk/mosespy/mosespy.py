@@ -172,7 +172,7 @@ class Experiment(object):
                       + self.system["ttm"]["data"]["clean"] + "." + self.system["target"] + " "
                       + moses_root + "/bin/moses"
                       + self.system["tm"]["dir"] + "/model/moses.ini " 
-                      + " --mertdir " + self.moses_root + "/bin/"
+                      + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
                       + " --decoder-flags=\'-threads %i\' --working-dir " + tuneDir
                       )%(nbThreads)
