@@ -84,11 +84,11 @@ class SlurmExperiment(Experiment):
 
         tmDir = self.system["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads)
+        scripts = []
         for i in range(0, nbSplits):
-            paramScript = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
+            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(cleanData, splitDir + "/" +str(i))
-                                + " --last-step 3")
-            self.executor.run(paramScript + " ;")
+                                + " --last-step 3"))
         
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
