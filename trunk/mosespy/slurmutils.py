@@ -89,7 +89,7 @@ class SlurmExperiment(Experiment):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(cleanData, splitDir + "/" +str(i))
                                 + " --last-step 3"))
-        
+        self.executor.runs(scripts)
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+self.system["alignment"]
