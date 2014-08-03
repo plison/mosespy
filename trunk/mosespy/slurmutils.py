@@ -1,5 +1,5 @@
 
-import time, shutil, os, shellutils, textwrap, re
+import time, shutil, os, shellutils, textwrap, re, uuid
 from mosespy import Experiment 
   
   
@@ -22,31 +22,25 @@ class SlurmExecutor(object):
         shellutils.run(srun_cmd, infile, outfile, return_output)
         
     def runs(self, scripts, infile=None, outfile=None, return_output=False):
-        jobs = set()
+        jobnames = []
         for script in scripts:
-            tmpfile = str(scripts.index(script)+1) + ".out"
+            name = uuid.uuid4()[0:5]
             srun_cmd = ("srun --account=" + self.account
                         + " --mem-per-cpu=" + self.memory
-                        +" --exclusive"
+                        +" --exclusive --job-name=" + name
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
-                + " " + script + " 2> " + tmpfile + " &")
+                + " " + script + " &")
             shellutils.run(srun_cmd, infile, outfile, return_output)
-            time.sleep(1)
-            
-            with open(tmpfile) as out:
-                for l in out.readlines():
-                    if l.strip():
-                        m = re.search("job ((\d)+)", l)
-                        jobs.add(m.group(1))
-                        break
+            jobnames.append(name)
+        time.sleep(1)
         while True:
             queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-            if len(set(queue.split()).intersection(jobs)) == 0:
+            if len(set(queue.split()).intersection(jobnames)) == 0:
                 break
-            print "Unfinished jobs: " + str(list(jobs))
+            print "Unfinished jobs: " + str(list(jobnames))
             time.sleep(60)
-            print "SLURM array run completed."
+        print "SLURM parallel run completed."
   
 
         
