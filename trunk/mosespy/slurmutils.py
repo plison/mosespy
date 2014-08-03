@@ -20,6 +20,33 @@ class SlurmExecutor(object):
                 + " --time=" + self.time
                 + " " + script)
         shellutils.run(srun_cmd, infile, outfile, return_output)
+        
+    def arrayrun(self, script, size):
+        arrayrun_cmd = ("arrayrun 0-" + str(size-1)
+                + " --account=" + self.account
+                + " --mem-per-cpu=" + self.memory
+                +" --exclusive"
+                + " --cpus-per-task=" + str(self.nbThreads)
+                + " --time=" + self.time
+                + " " + script)
+        shellutils.run(arrayrun_cmd)
+        time.sleep(1)
+        jobs = set()
+        with open('./logs/out-split.txt') as out:
+            for l in out.readlines():
+                if "Submitted batch job" in l:
+                    jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
+                    jobs.add(jobid)
+        time.sleep(1)
+        while True:
+            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
+            if len(set(queue.split()).intersection(jobs)) == 0:
+                break
+            print "Unfinished array jobs: " + str(list(jobs))
+            time.sleep(60)
+        print "SLURM array run completed."
+        for job in jobs:
+            shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
     
        
 class SlurmExperiment(Experiment):
@@ -77,7 +104,7 @@ class SlurmExperiment(Experiment):
         paramScript = (tmScript.replace(tmDir, splitDir + "/" + "$TASK_ID")\
                                 .replace(cleanData, splitDir + "/" +"$TASK_ID")
                                 + " --last-step 3")
-        self.arrayrun(paramScript, nbSplits)
+        self.executor.arrayrun(paramScript, nbSplits)
         
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
@@ -98,35 +125,7 @@ class SlurmExperiment(Experiment):
             self.recordState()
         else:
             shellutils.run("rm -rf " + tmDir)
-
-
-    def arrayrun(self, paramScript, nbSplits, time="2:00:00", memory="10G"):
-        print paramScript
-        print nbSplits
-        shellutils.run("arrayrun 0-" + str(nbSplits-1)
-                       + " --account " + self.system["slurm_account"]
-                       + " --time " + time 
-                       + " --cpus-per-task " + 16
-                       + " --mem-per-cpu " + memory
-                       + " \"" + paramScript + "\"")       
-        time.sleep(1)
-        jobs = set()
-        with open('./logs/out-split.txt') as out:
-            for l in out.readlines():
-                if "Submitted batch job" in l:
-                    jobid = l.split(" ")[len(l.split(" "))-1].strip("\n")
-                    jobs.add(jobid)
-        time.sleep(1)
-        while True:
-            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-            if len(set(queue.split()).intersection(jobs)) == 0:
-                break
-            print "Unfinished array jobs: " + str(list(jobs))
-            time.sleep(60)
-        print "SLURM array run completed."
-        for job in jobs:
-            shutil.move("slurm-"+job+".out", "logs/slurm-"+job+".out")
-            
+          
       
 
 
