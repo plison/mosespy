@@ -30,7 +30,7 @@ class SlurmExecutor(object):
                         +" --exclusive"
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
-                + " " + script + " > " + outfile + " &")
+                + " " + script + " 2> " + outfile + " &")
             shellutils.run(srun_cmd, infile, outfile, return_output)
             time.sleep(1)
             
