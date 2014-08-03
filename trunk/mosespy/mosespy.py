@@ -40,6 +40,7 @@ class Experiment(object):
         if not os.path.exists(self.system["path"]):
             os.makedirs(self.system["path"]) 
         elif os.path.exists(self.system["path"]+"/settings.json"):
+            print "Existing experiment, reloading known settings..."
             self.system = json.loads(open(self.system["path"]+"/settings.json").read())
             
         if sourceLang:
