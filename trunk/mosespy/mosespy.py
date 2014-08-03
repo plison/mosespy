@@ -127,6 +127,10 @@ class Experiment(object):
         if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
         
+        print tmDir
+        print self.system["alignment"]
+        print self.system["lm"]["blm"]
+        print mgizapp_root
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
                     + " -f " + self.system["source"] + " -e " + self.system["target"] 
