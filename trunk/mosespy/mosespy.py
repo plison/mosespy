@@ -176,7 +176,7 @@ class Experiment(object):
                       + " --batch-mira "
                       + " --decoder-flags=\'-threads %i\' --working-dir " + tuneDir
                       )%(nbThreads)
-        return tuneScript, tuneDir
+        return tuneScript
         
                                
 
