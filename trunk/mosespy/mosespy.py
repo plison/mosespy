@@ -42,7 +42,7 @@ class Experiment(object):
         elif os.path.exists(self.system["path"]+"/settings.json"):
             print "Existing experiment, reloading known settings..."
             self.system = json.loads(open(self.system["path"]+"/settings.json").read())
-            
+            print self.system.keys()
         if sourceLang:
             self.system["source"] = sourceLang
             self.system["source_long"] = getLanguage(sourceLang)
