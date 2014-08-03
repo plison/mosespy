@@ -109,7 +109,7 @@ class Experiment(object):
                + self.system["target"] + " with " + self.system["tm"]["data"]["clean"])
 
         tmDir = self.system["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(nbThreads)
+        tmScript = self.getTrainScript(tmDir, nbThreads)
         shutil.rmtree(tmDir, ignore_errors=True)  
         os.makedirs(tmDir) 
         result = self.executor.run(tmScript)
@@ -127,12 +127,6 @@ class Experiment(object):
         if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
         
-        print tmDir
-        print self.system["alignment"]
-        print self.system["lm"]["ngram_order"]
-        print self.system["lm"]["blm"]
-        print self.system["source"]
-        print mgizapp_root
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
                     + " -f " + self.system["source"] + " -e " + self.system["target"] 
@@ -160,7 +154,7 @@ class Experiment(object):
                + self.system["target"] + " with " + tuningData["clean"])
         
         tuneDir = self.system["path"]+"/tunedmodel"
-        tuningScript = self.getTuningScript(nbThreads)
+        tuningScript = self.getTuningScript(tuneDir, nbThreads)
         shutil.rmtree(tuneDir, ignore_errors=True)
         self.executor.run(tuningScript)
         print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
