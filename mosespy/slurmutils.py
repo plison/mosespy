@@ -43,7 +43,6 @@ class SlurmExperiment(Experiment):
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
         self.executor = SlurmExecutor(account)
-        print "PATH: " + self.system["path"]
 
         
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):

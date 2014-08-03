@@ -290,7 +290,6 @@ class Experiment(object):
             
     def recordState(self):
         dump = json.dumps(self.system)
-        print "Path2 : " + self.system["path"]
         with open(self.system["path"]+"/experiment.json", 'w') as jsonFile:
             jsonFile.write(dump)
 
