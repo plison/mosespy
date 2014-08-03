@@ -109,6 +109,7 @@ class Experiment(object):
                + self.system["target"] + " with " + self.system["tm"]["data"]["clean"])
 
         tmDir = self.system["path"] + "/translationmodel"
+        print "tmDir before" + tmDir
         tmScript = self.getTrainScript(tmDir, nbThreads)
         shutil.rmtree(tmDir, ignore_errors=True)  
         os.makedirs(tmDir) 
@@ -127,7 +128,7 @@ class Experiment(object):
         if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
         
-        print tmDir
+        print "tmDir now: " + str(tmDir)
         print self.system["alignment"]
         print self.system["lm"]["blm"]
         print mgizapp_root
