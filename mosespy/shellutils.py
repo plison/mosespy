@@ -20,10 +20,10 @@ class CommandExecutor(object):
             result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
            
             if not result:
-                print "\tTask [" + str(callincr) + "] successful"
+                print "Task [" + str(callincr) + "] successful"
                 return True
             else:
-                print "\t!!! Task [" + str(callincr) + "] FAILED"
+                print "!!! Task [" + str(callincr) + "] FAILED"
                 return False
         
  

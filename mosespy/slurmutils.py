@@ -28,7 +28,7 @@ class SlurmExperiment(Experiment):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not shellutils.existsExecutable("srun"):
-            print "SLURM system not present, some methods might be unavailable"
+            print "SLURM system not present, switching back to standard setup"
             return
         elif not account:
             account = getDefaultSlurmAccount()

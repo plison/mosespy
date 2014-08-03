@@ -39,8 +39,8 @@ class Experiment(object):
         self.system["path"] = expDir+self.system["name"]
         if not os.path.exists(self.system["path"]):
             os.makedirs(self.system["path"]) 
-        elif os.path.exists(self.system["path"]+"/experiment.json"):
-            self.system = json.loads(open(self.system["path"]+"/experiment.json").read())
+        elif os.path.exists(self.system["path"]+"/settings.json"):
+            self.system = json.loads(open(self.system["path"]+"/settings.json").read())
             
         if sourceLang:
             self.system["source"] = sourceLang
@@ -290,7 +290,7 @@ class Experiment(object):
             
     def recordState(self):
         dump = json.dumps(self.system)
-        with open(self.system["path"]+"/experiment.json", 'w') as jsonFile:
+        with open(self.system["path"]+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
 
 
