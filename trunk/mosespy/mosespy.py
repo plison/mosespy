@@ -131,6 +131,7 @@ class Experiment(object):
         print self.system["alignment"]
         print self.system["lm"]["ngram_order"]
         print self.system["lm"]["blm"]
+        print self.system["source"]
         print mgizapp_root
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
