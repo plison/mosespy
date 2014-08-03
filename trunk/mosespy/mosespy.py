@@ -127,14 +127,18 @@ class Experiment(object):
         if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.system["target_long"] + " is not yet trained")
         
-        lmPath = os.popen("pwd").read().strip()+"/" + self.system["lm"]["blm"]
+        print mgizapp_root
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
                     + " -f " + self.system["source"] + " -e " + self.system["target"] 
                     + " -alignment " + self.system["alignment"] + " " 
                     + " -reordering " + self.system["reordering"] + " "
-                    + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+lmPath+":8" 
-                    + " -external-bin-dir " + mgizapp_root + "/bin")
+                    + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+self.system["lm"]["blm"]+":8" 
+                    + " -external-bin-dir " + mgizapp_root + "/bin" 
+                    + " -cores %i -mgiza -mgiza-cpus %i -parallel"
+                    + " -sort-buffer-size 6G -sort-batch-size 1021 " 
+                    + " -sort-compress gzip -sort-parallel %i"
+                    )%(nbThreads, nbThreads, nbThreads)
         return tmScript
                        
 
