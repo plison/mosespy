@@ -135,14 +135,11 @@ class Experiment(object):
                     + " -reordering " + self.system["reordering"] + " "
                     + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+lmPath+":8" 
                     + " -external-bin-dir " + self.mgizapp_root + "/bin" 
-                    + "-cores %i -mgiza -mgiza-cpus %i -parallel"
-                    )%(nbThreads, nbThreads)
+                    + " -cores %i -mgiza -mgiza-cpus %i -parallel"
+                    + " -sort-buffer-size 6G -sort-batch-size 1021 " 
+                    + " -sort-compress gzip -sort-parallel %i"
+                    )%(nbThreads, nbThreads, nbThreads)
         return tmScript
-
-
-# TODO : reintegrate this
-# -sort-buffer-size 8G -sort-batch-size 1021 " 
-#                    + " -sort-compress gzip -sort-parallel %i"
                        
 
     def tuneTranslationModel(self, tuningStem=None, memoryGb=32, nbThreads=16):
