@@ -265,7 +265,7 @@ class Experiment(object):
    
     def translate(self, text, preprocess=True, customModel=None, outfile=None):
         if customModel:
-            if not os.path.exists(customModel+"/moses.init"):
+            if not os.path.exists(customModel+"/moses.ini"):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
             initFile = customModel+"/moses.ini"
         elif self.system.has_key("btm"):
