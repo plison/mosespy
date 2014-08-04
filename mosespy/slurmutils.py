@@ -65,7 +65,7 @@ class SlurmExperiment(Experiment):
                                          .read().strip('\n') + ":"
                                          + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"]
+        os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
         self.executor = SlurmExecutor(account)
 
         
