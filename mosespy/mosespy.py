@@ -53,9 +53,7 @@ class Experiment(object):
             self.system["alignment"] = defaultAlignment
         if not self.system.has_key("reordering"):
             self.system["reordering"] = defaultReordering
-            
-        self.decoder = moses_root+"/bin/moses"
-            
+                        
         print ("Experiment " + expName + " (" + self.system["source"]  
                + "-" + self.system["target"] + ") successfully started")
 
