@@ -236,26 +236,29 @@ class Experiment(object):
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
         binaDir = self.system["path"]+"/binmodel"
-        shutil.rmtree(binaDir, ignore_errors=True)
-        os.makedirs(binaDir)
-        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + self.system["tm"]["dir"] + 
-                      "/model/phrase-table.gz " + " -nscores 5 -out " + binaDir + "/phrase-table")
-        result1 = self.executor.run(binScript)
-        if not result1:
-            raise RuntimeError("could not binarise translation model (phrase table process)")
-        
-        binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + self.system["tm"]["dir"] 
-                      + "/model/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
-                      + " -out " + binaDir + "/reordering-table")
-        result2 = self.executor.run(binScript2)
-        if not result2:
-            raise RuntimeError("could not binarise translation model (lexical table process)")
+        phraseTable = self.system["ttm"]["dir"]+"/model/phrase-table.gz"
+        reorderingTable = (self.system["ttm"]["dir"]+"/model/reordering-table.wbe-" 
+                           + self.system["reordering"] + ".gz ")
+#        shutil.rmtree(binaDir, ignore_errors=True)
+#        os.makedirs(binaDir)
+#        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
+#                     + " -nscores 5 -out " + binaDir + "/phrase-table")
+#        result1 = self.executor.run(binScript)
+#        if not result1:
+#            raise RuntimeError("could not binarise translation model (phrase table process)")
+#        
+#        binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + reorderingTable 
+#                      + " -out " + binaDir + "/reordering-table")
+#        result2 = self.executor.run(binScript2)
+#        if not result2:
+#            raise RuntimeError("could not binarise translation model (lexical table process)")
         
         with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
                     l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
-                    l = l.replace("/translationmodel", "/binmodel")
+                    l = l.replace(phraseTable, binaDir + "/phrase-table")
+                    l = l.replace(reorderingTable, binaDir + "/reordering-table")
                     newConfig.write(l)
         
         self.system["btm"] = {"dir":binaDir}
