@@ -243,6 +243,7 @@ class Experiment(object):
         result1 = self.executor.run(binScript)
         if not result1:
             raise RuntimeError("could not binarise translation model (phrase table process)")
+        
         binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + self.system["tm"]["dir"] 
                       + "/model/reordering-table.wbe-" + self.system["reordering"] + ".gz " 
                       + " -out " + binaDir + "/reordering-table")
@@ -318,7 +319,7 @@ class Experiment(object):
         self.executor.run(filterScript)
         
         translationfile = testTarget.replace(".true.", ".translated.")
-        self.translate(testSource, modelPath=filteredPath, outfile=translationfile)
+        self.translate(testSource, customModel=filteredPath, outfile=translationfile)
        
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
         self.executor.run(bleuScript, infile=translationfile)
