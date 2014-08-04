@@ -334,7 +334,7 @@ class Experiment(object):
         
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
-                        + testTarget + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
+                        + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
         self.executor.run(filterScript)
         
         translationfile = testTarget.replace(".true.", ".translated.")
