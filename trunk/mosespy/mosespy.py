@@ -236,8 +236,8 @@ class Experiment(object):
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
         binaDir = self.system["path"]+"/binmodel"
-        phraseTable = self.system["ttm"]["dir"]+"/model/phrase-table.gz"
-        reorderingTable = self.system["ttm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz "
+        phraseTable = self.system["tm"]["dir"]+"/model/phrase-table.gz"
+        reorderingTable = self.system["tm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz "
         
 #        shutil.rmtree(binaDir, ignore_errors=True)
 #        os.makedirs(binaDir)
