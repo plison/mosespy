@@ -314,7 +314,7 @@ class Experiment(object):
 
         filteredPath = self.system["path"]+ "/filteredmodel"
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
-                        + filteredPath + " " + initFile
+                        + filteredPath + " " + initFile + " "
                         + testTarget + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
         self.executor.run(filterScript)
         
