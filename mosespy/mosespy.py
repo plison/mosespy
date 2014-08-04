@@ -324,10 +324,7 @@ class Experiment(object):
             testSource = self.processRawData(testSource)["true"]
             testTarget = self.processRawData(testTarget)["true"]
                  
-        if self.system.has_key("btm"):
-            initFile = self.system["btm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("ttm"):
-            print "Warning: translation model is not yet binarised"
+        if self.system.has_key("ttm"):
             initFile = self.system["ttm"]["dir"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet tuned")
