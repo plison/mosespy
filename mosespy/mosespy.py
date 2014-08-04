@@ -260,7 +260,9 @@ class Experiment(object):
                 for l in initConfig.readlines():
                     l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
                     l = l.replace(phraseTable, binaDir + "/phrase-table")
+                    print "Start " + l 
                     l = l.replace(reorderingTable, binaDir + "/reordering-table")
+                    print "After " + l
                     newConfig.write(l)
         
         self.system["btm"] = {"dir":binaDir}
