@@ -237,8 +237,8 @@ class Experiment(object):
         
         binaDir = self.system["path"]+"/binmodel"
         phraseTable = self.system["ttm"]["dir"]+"/model/phrase-table.gz"
-        reorderingTable = (self.system["ttm"]["dir"]+"/model/reordering-table.wbe-" 
-                           + self.system["reordering"] + ".gz ")
+        reorderingTable = self.system["ttm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz "
+        
 #        shutil.rmtree(binaDir, ignore_errors=True)
 #        os.makedirs(binaDir)
 #        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
@@ -253,6 +253,8 @@ class Experiment(object):
 #        if not result2:
 #            raise RuntimeError("could not binarise translation model (lexical table process)")
         
+        print phraseTable
+        print reorderingTable
         with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
