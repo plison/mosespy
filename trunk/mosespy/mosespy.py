@@ -336,7 +336,6 @@ class Experiment(object):
 
         filteredDir = self.system["path"]+ "/filteredmodel"
         shutil.rmtree(filteredDir, ignore_errors=True)
-        os.makedirs(filteredDir)
         
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
