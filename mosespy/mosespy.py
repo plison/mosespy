@@ -239,19 +239,19 @@ class Experiment(object):
         phraseTable = self.system["tm"]["dir"]+"/model/phrase-table.gz"
         reorderingTable = self.system["tm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz"
         
-#        shutil.rmtree(binaDir, ignore_errors=True)
-#        os.makedirs(binaDir)
-#        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
-#                     + " -nscores 5 -out " + binaDir + "/phrase-table")
-#        result1 = self.executor.run(binScript)
-#        if not result1:
-#            raise RuntimeError("could not binarise translation model (phrase table process)")
-#        
-#        binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + reorderingTable 
-#                      + " -out " + binaDir + "/reordering-table")
-#        result2 = self.executor.run(binScript2)
-#        if not result2:
-#            raise RuntimeError("could not binarise translation model (lexical table process)")
+        shutil.rmtree(binaDir, ignore_errors=True)
+        os.makedirs(binaDir)
+        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
+                     + " -nscores 5 -out " + binaDir + "/phrase-table")
+        result1 = self.executor.run(binScript)
+        if not result1:
+            raise RuntimeError("could not binarise translation model (phrase table process)")
+        
+        binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + reorderingTable 
+                      + " -out " + binaDir + "/reordering-table")
+        result2 = self.executor.run(binScript2)
+        if not result2:
+            raise RuntimeError("could not binarise translation model (lexical table process)")
         
         with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
@@ -334,14 +334,17 @@ class Experiment(object):
         else:
             raise RuntimeError("Translation model is not yet tuned")
 
-        filteredPath = self.system["path"]+ "/filteredmodel"
+        filteredDir = self.system["path"]+ "/filteredmodel"
+        shutil.rmtree(filteredDir, ignore_errors=True)
+        os.makedirs(filteredDir)
+        
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
-                        + filteredPath + " " + initFile + " "
+                        + filteredDir + " " + initFile + " "
                         + testTarget + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
         self.executor.run(filterScript)
         
         translationfile = testTarget.replace(".true.", ".translated.")
-        self.translateFile(testSource, translationfile, customModel=filteredPath)
+        self.translateFile(testSource, translationfile, customModel=filteredDir)
        
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
         self.executor.run(bleuScript, infile=translationfile)
