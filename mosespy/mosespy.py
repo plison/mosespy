@@ -263,7 +263,7 @@ class Experiment(object):
         print "Finished binarising the translation model in directory " + shellutils.getsize(binaDir)
       
    
-    def translate(self, text, preprocess=True, customModel=None, outfile=None):
+    def translate(self, text, preprocess=True, customModel=None):
         if customModel:
             if not os.path.exists(customModel+"/moses.ini"):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
@@ -284,11 +284,30 @@ class Experiment(object):
 
         transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
                        + " -f " + initFile.encode('utf-8'))
-        if outfile:
-            self.executor.run(transScript, outfile=outfile)
-        else:
-            return self.executor.run(transScript, return_output=True)
+
+        return self.executor.run(transScript, return_output=True)
         
+   
+    def translateFile(self, infile, outfile, preprocess=True, customModel=None):
+        if customModel:
+            if not os.path.exists(customModel+"/moses.ini"):
+                raise RuntimeError("Custom model " + customModel + " does not exist")
+            initFile = customModel+"/moses.ini"
+        elif self.system.has_key("btm"):
+            initFile = self.system["btm"]["dir"] + "/moses.ini"
+        elif self.system.has_key("ttm"):
+            print "Warning: translation model is not yet binarised"
+            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet trained!")
+        print ("Translating file \"" + infile + "\" from " + 
+               self.system["source"] + " to " + self.system["target"])
+
+        if preprocess:
+            infile = self.processRawData(infile)["true"]
+
+        transScript = (moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
+        self.executor.run(transScript, infile=infile, outfile=outfile)
                                         
     
     def evaluateBLEU(self, testData, preprocess=True):
@@ -319,7 +338,7 @@ class Experiment(object):
         self.executor.run(filterScript)
         
         translationfile = testTarget.replace(".true.", ".translated.")
-        self.translate(testSource, customModel=filteredPath, outfile=translationfile)
+        self.translateFile(testSource, translationfile, customModel=filteredPath)
        
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
         self.executor.run(bleuScript, infile=translationfile)
