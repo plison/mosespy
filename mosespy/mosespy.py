@@ -253,16 +253,12 @@ class Experiment(object):
 #        if not result2:
 #            raise RuntimeError("could not binarise translation model (lexical table process)")
         
-        print phraseTable
-        print reorderingTable
         with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
                     l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
                     l = l.replace(phraseTable, binaDir + "/phrase-table")
-                    print "Start " + l 
                     l = l.replace(reorderingTable, binaDir + "/reordering-table")
-                    print "After " + l
                     newConfig.write(l)
         
         self.system["btm"] = {"dir":binaDir}
