@@ -237,7 +237,7 @@ class Experiment(object):
         
         binaDir = self.system["path"]+"/binmodel"
         phraseTable = self.system["tm"]["dir"]+"/model/phrase-table.gz"
-        reorderingTable = self.system["tm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz "
+        reorderingTable = self.system["tm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz"
         
 #        shutil.rmtree(binaDir, ignore_errors=True)
 #        os.makedirs(binaDir)
