@@ -210,7 +210,7 @@ class Experiment(object):
         dataset["raw"] = rawFile
         
         # STEP 1: tokenisation
-        normFile = self.system["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + ".norm" + lang
+        normFile = self.system["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "norm." + lang
         dataset["norm"] = normaliseFile(rawFile, normFile)
         tokFile = normFile.replace(".norm.", ".tok.") 
         dataset["tok"] = tokeniseFile(normFile, tokFile)
