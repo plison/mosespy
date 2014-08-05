@@ -341,10 +341,10 @@ class Experiment(object):
         self.executor.run(filterScript)
         
         translationfile = testTarget.replace(".true.", ".translated.")
-        self.translateFile(testSource, translationfile, customModel=filteredDir)
+        self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
        
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-        self.executor.run(bleuScript, infile=translationfile, preprocess=False)
+        self.executor.run(bleuScript, infile=translationfile)
 
             
     def recordState(self):
