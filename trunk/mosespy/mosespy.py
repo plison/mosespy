@@ -195,7 +195,7 @@ class Experiment(object):
         
         trueStem = dataset["source"]["true"][:-len(self.system["source"])-1]
         cleanStem = trueStem.replace(".true", ".clean")
-        cleanFiles(trueStem, cleanStem, self.system["source"], self.system["target"], maxLength)
+        cutoffFiles(trueStem, cleanStem, self.system["source"], self.system["target"], maxLength)
         dataset["clean"] = cleanStem
         return dataset
     
@@ -210,8 +210,10 @@ class Experiment(object):
         dataset["raw"] = rawFile
         
         # STEP 1: tokenisation
-        tokFile = self.system["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "tok." + lang
-        dataset["tok"] = tokeniseFile(rawFile, tokFile)
+        normFile = self.system["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + ".norm" + lang
+        dataset["norm"] = normaliseFile(rawFile, normFile)
+        tokFile = normFile.replace(".norm.", ".tok.") 
+        dataset["tok"] = tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
         if not self.system.has_key("truecasing"):
@@ -360,7 +362,28 @@ def getLanguage(langcode):
                 return item.attributes['name'].value
     raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
 
+
+
+def normaliseFile(inputFile, outputFile):
+    lang = inputFile.split(".")[len(inputFile.split("."))-1]
+    if not os.path.exists(inputFile):
+        raise RuntimeError("raw file " + inputFile + " does not exist")
+                    
+    cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
+    shellutils.run(cleanScript, inputFile, "tmp-" + outputFile)
     
+    with open("tmp-"+outputFile, 'r') as tmp:
+        with open(outputFile, 'w') as out:
+            for l in tmp.readlines():
+                l = l.replace("&nbsp;", "")
+                out.write(l)
+                l2 = l.replace("&pos;", "").replace("&quot;", "")
+                if "&" in l2:
+                    print "Line with special character: " + l
+    return outputFile
+    
+
+  
 def tokeniseFile(inputFile, outputFile):
     lang = inputFile.split(".")[len(inputFile.split("."))-1]
     if not os.path.exists(inputFile):
@@ -369,6 +392,7 @@ def tokeniseFile(inputFile, outputFile):
     print "Start tokenisation of file \"" + inputFile + "\""
     tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
     shellutils.run(tokScript, inputFile, outputFile)
+    
     print "New tokenised file: " + shellutils.getsize(outputFile)            
     return outputFile
 
@@ -412,7 +436,7 @@ def truecase(inputText, modelFile):
                           + truecaseScript, return_output=True)
     
    
-def cleanFiles(inputStem, outputStem, source, target, maxLength):
+def cutoffFiles(inputStem, outputStem, source, target, maxLength):
                
     cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                    inputStem + " " + source + " " + target + " " 
