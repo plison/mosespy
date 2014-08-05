@@ -6,7 +6,6 @@ from xml.dom import minidom
 
 
 # TODO:
-# - change commands according to Experiment or SlurmExperiment
 # - get things to work independently of start directory (and test)
 # - test whole pipeline with and without Slurm
 # - refactor code
@@ -15,7 +14,6 @@ from xml.dom import minidom
 
 #Next steps:
 # - copy from one experiment to another
-# - test for BLEU or other metrics
 # - refactor
 
 
@@ -387,13 +385,13 @@ def tokeniseFile(inputFile, outputFile):
     
     print "New tokenised file: " + shellutils.getsize(outputFile)    
         
-    specialchars = set()
-    with open(outputFile, 'r') as tmp:
-        for l in tmp.readlines():
-            m = re.search("((\S)*&(\S)*)", l)
-            if m:
-                specialchars.add(m.group(1))
-    print "Special characters: " + str(specialchars)
+#    specialchars = set()
+#    with open(outputFile, 'r') as tmp:
+#        for l in tmp.readlines():
+#            m = re.search("((\S)*&(\S)*)", l)
+#            if m:
+#                specialchars.add(m.group(1))
+#    print "Special characters: " + str(specialchars)
         
     return outputFile
 
