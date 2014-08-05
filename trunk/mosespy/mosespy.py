@@ -372,14 +372,16 @@ def normaliseFile(inputFile, outputFile):
     cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
     shellutils.run(cleanScript, inputFile, outputFile+".tmp")
     
+    specialchars = set()
     with open(outputFile+".tmp", 'r') as tmp:
         with open(outputFile, 'w') as out:
             for l in tmp.readlines():
                 l = l.replace("&nbsp;", "")
                 out.write(l)
-                l2 = l.replace("&pos;", "").replace("&quot;", "")
-                if "&" in l2:
-                    print "Line with special character: " + l
+                m = re.search("(&(\S)+)", l)
+                if m:
+                    specialchars.add(m.group(1))
+    print "Special characters: " + str(specialchars)
     return outputFile
     
 
