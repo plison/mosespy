@@ -371,17 +371,6 @@ def normaliseFile(inputFile, outputFile):
                     
     cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
     shellutils.run(cleanScript, inputFile, outputFile+".tmp")
-    
-    specialchars = set()
-    with open(outputFile+".tmp", 'r') as tmp:
-        with open(outputFile, 'w') as out:
-            for l in tmp.readlines():
-                l = l.replace("&nbsp;", "")
-                out.write(l)
-                m = re.search("(&(\S)+)", l)
-                if m:
-                    specialchars.add(m.group(1))
-    print "Special characters: " + str(specialchars)
     return outputFile
     
 
@@ -395,7 +384,17 @@ def tokeniseFile(inputFile, outputFile):
     tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
     shellutils.run(tokScript, inputFile, outputFile)
     
-    print "New tokenised file: " + shellutils.getsize(outputFile)            
+    print "New tokenised file: " + shellutils.getsize(outputFile)    
+        
+    specialchars = set()
+    with open(outputFile+".tmp", 'r') as tmp:
+        with open(outputFile, 'w') as out:
+            for l in tmp.readlines():
+                m = re.search("(&(\S)+)", l)
+                if m:
+                    specialchars.add(m.group(1))
+    print "Special characters: " + str(specialchars)
+        
     return outputFile
 
 
