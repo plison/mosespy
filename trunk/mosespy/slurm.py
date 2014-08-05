@@ -1,6 +1,7 @@
 
-import time, shutil, os, shellutils, textwrap, re, uuid, mosespy
-from mosespy import Experiment 
+import time, shutil, os, shellutils, textwrap, re, uuid
+from mosespy import moseswrapper
+from mosespy.moseswrapper import Experiment 
   
   
 
@@ -13,15 +14,19 @@ class SlurmExecutor(object):
         self.nbThreads = nbThreads
         
     def run(self, script, infile=None, outfile=None, return_output=False):
-        if script.split()[0] == mosespy.moses_root + "/bin/moses":
-            script = "mpirun " + script
-        srun_cmd = ("srun --account=" + self.account
+        
+        srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + self.memory
                 +" --exclusive"
                 + " --cpus-per-task=" + str(self.nbThreads)
-                + " --time=" + self.time
-                + " " + script)
-        return shellutils.run(srun_cmd, infile, outfile, return_output)
+                + " --time=" + self.time)
+        
+        if script.split()[0] == moseswrapper.moses_root + "/bin/moses":
+            script = "mpirun " + script
+            srun += " --ntasks 3" 
+            
+        cmd = srun = " " + script
+        return shellutils.run(cmd, infile, outfile, return_output)
         
         
     def runs(self, scripts, infile=None, outfile=None):
