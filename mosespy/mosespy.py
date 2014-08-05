@@ -370,7 +370,7 @@ def normaliseFile(inputFile, outputFile):
         raise RuntimeError("raw file " + inputFile + " does not exist")
                     
     cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
-    shellutils.run(cleanScript, inputFile, outputFile+".tmp")
+    shellutils.run(cleanScript, inputFile, outputFile)
     return outputFile
     
 
