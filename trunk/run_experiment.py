@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*- 
 
 import sys
-from mosespy import slurmutils, shellutils
-from mosespy.slurmutils import SlurmExperiment
-from mosespy.mosespy import Experiment
+from mosespy import shellutils
+from mosespy import slurm
+from mosespy.slurm import SlurmExperiment
+from mosespy.moseswrapper import Experiment
 
 trainData = "./data/news-commentary/news-commentary-v8.fr-en";
 tuningData = "./data/newstest/newssyscomb2009"
