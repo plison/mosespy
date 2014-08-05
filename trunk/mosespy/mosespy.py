@@ -389,7 +389,7 @@ def tokeniseFile(inputFile, outputFile):
     specialchars = set()
     with open(outputFile, 'r') as tmp:
         for l in tmp.readlines():
-            m = re.search("(&(\S)+)", l)
+            m = re.search("((\S)*&(\S)*)", l)
             if m:
                 specialchars.add(m.group(1))
     print "Special characters: " + str(specialchars)
