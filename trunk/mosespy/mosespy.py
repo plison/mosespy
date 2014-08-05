@@ -288,6 +288,7 @@ class Experiment(object):
         transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
                        + " -f " + initFile.encode('utf-8'))
 
+        # maybe we should try to untokenise the translation before sending it back?
         return self.executor.run(transScript, return_output=True)
         
    
@@ -343,7 +344,7 @@ class Experiment(object):
         self.translateFile(testSource, translationfile, customModel=filteredDir)
        
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-        self.executor.run(bleuScript, infile=translationfile)
+        self.executor.run(bleuScript, infile=translationfile, preprocess=False)
 
             
     def recordState(self):
