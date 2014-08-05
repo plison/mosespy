@@ -387,12 +387,11 @@ def tokeniseFile(inputFile, outputFile):
     print "New tokenised file: " + shellutils.getsize(outputFile)    
         
     specialchars = set()
-    with open(outputFile+".tmp", 'r') as tmp:
-        with open(outputFile, 'w') as out:
-            for l in tmp.readlines():
-                m = re.search("(&(\S)+)", l)
-                if m:
-                    specialchars.add(m.group(1))
+    with open(outputFile, 'r') as tmp:
+        for l in tmp.readlines():
+            m = re.search("(&(\S)+)", l)
+            if m:
+                specialchars.add(m.group(1))
     print "Special characters: " + str(specialchars)
         
     return outputFile
