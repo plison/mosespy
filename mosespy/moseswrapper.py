@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
 
-import os, shutil, json, time, re
+import os, shutil, json, copy
 import shellutils
 from xml.dom import minidom
 
@@ -31,89 +31,88 @@ class Experiment(object):
     executor = shellutils.CommandExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
-        self.system = {}
-        self.system["name"] = expName
+        self.settings = {}
+        self.settings["name"] = expName
         
-        self.system["path"] = expDir+self.system["name"]
-        if not os.path.exists(self.system["path"]):
-            os.makedirs(self.system["path"]) 
-        elif os.path.exists(self.system["path"]+"/settings.json"):
+        self.settings["path"] = expDir+self.settings["name"]
+        
+        if not os.path.exists(self.settings["path"]):
+            os.makedirs(self.settings["path"]) 
+            if sourceLang:
+                self.settings["source"] = sourceLang
+                self.settings["source_long"] = getLanguage(sourceLang)
+            if targetLang:
+                self.settings["target"] = targetLang
+                self.settings["target_long"] = getLanguage(targetLang)
+                
+        elif os.path.exists(self.settings["path"]+"/settings.json"):
             print "Existing experiment, reloading known settings..."
-            self.system = json.loads(open(self.system["path"]+"/settings.json").read())
-        if sourceLang:
-            self.system["source"] = sourceLang
-            self.system["source_long"] = getLanguage(sourceLang)
-        if targetLang:
-            self.system["target"] = targetLang
-            self.system["target_long"] = getLanguage(targetLang)
-            
-        if not self.system.has_key("alignment"):
-            self.system["alignment"] = defaultAlignment
-        if not self.system.has_key("reordering"):
-            self.system["reordering"] = defaultReordering
-                        
-        print ("Experiment " + expName + " (" + self.system["source"]  
-               + "-" + self.system["target"] + ") successfully started")
-
+            self.settings = json.loads(open(self.settings["path"]+"/settings.json").read())
+                                   
+        print ("Experiment " + expName + " (" + self.settings["source"]  
+               + "-" + self.settings["target"] + ") successfully started")
+        
+    
                       
     
     def trainLanguageModel(self, trainFile, ngram_order=3):
         lang = trainFile.split(".")[len(trainFile.split("."))-1]
 
         processedTrain = self.processRawData(trainFile)
-        self.system["lm"] = {"ngram_order":ngram_order, "data":processedTrain}
+        self.settings["lm"] = {"ngram_order":ngram_order, "data":processedTrain}
         self.recordState()
 
         print "Building language model based on " + processedTrain["true"]
         
         sbFile = processedTrain["true"].replace(".true.", ".sb.")
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", processedTrain["true"], sbFile)
-        self.system["lm"]["sb"] = sbFile
+        self.settings["lm"]["sb"] = sbFile
         self.recordState()
         
-        lmFile = self.system["path"] + "/langmodel.lm." + lang
+        lmFile = self.settings["path"] + "/langmodel.lm." + lang
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
-                    )%(sbFile, lmFile, ngram_order, self.system["name"])) 
+                    )%(sbFile, lmFile, ngram_order, self.settings["name"])) 
         self.executor.run(lmScript)
-        self.system["lm"]["lm"] = lmFile
+        self.settings["lm"]["lm"] = lmFile
         self.recordState()
                            
-        arpaFile = self.system["path"] + "/langmodel.arpa." + lang
+        arpaFile = self.settings["path"] + "/langmodel.arpa." + lang
         arpaScript = (irstlm_root + "/bin/compile-lm" + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
-        self.system["lm"]["arpa"] = arpaFile
+        self.settings["lm"]["arpa"] = arpaFile
         self.recordState()
 
-        blmFile = self.system["path"] + "/langmodel.blm." + lang
-        blmScript = moses_root + "/bin/build_binary" + " " + arpaFile + " " + blmFile + " -w after"
+        blmFile = self.settings["path"] + "/langmodel.blm." + lang
+        blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + shellutils.getsize(blmFile)   
-        self.system["lm"]["blm"] = blmFile
+        self.settings["lm"]["blm"] = blmFile
         self.recordState()
     
     
     
-    def trainTranslationModel(self, trainStem=None, nbThreads=16):
+    def trainTranslationModel(self, trainStem=None, nbThreads=2, alignment=defaultAlignment, 
+                              reordering=defaultReordering):
            
         if trainStem:         
             trainData = self.processAlignedData(trainStem)
-            self.system["tm"] = {"data": trainData}
+            self.settings["tm"] = {"data": trainData}
             self.recordState()        
-        elif not self.system.has_key("tm") or not self.system["tm"].has_key("data"):
+        elif not self.settings.has_key("tm") or not self.settings["tm"].has_key("data"):
             raise RuntimeError("Aligned training data is not yet processed")    
         
-        print ("Building translation model " + self.system["source"] + "-" 
-               + self.system["target"] + " with " + self.system["tm"]["data"]["clean"])
+        print ("Building translation model " + self.settings["source"] + "-" 
+               + self.settings["target"] + " with " + self.settings["tm"]["data"]["clean"])
 
-        tmDir = self.system["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(tmDir, nbThreads)
+        tmDir = self.settings["path"] + "/translationmodel"
+        tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
         shutil.rmtree(tmDir, ignore_errors=True)  
         os.makedirs(tmDir) 
         result = self.executor.run(tmScript)
         if result:
             print "Finished building translation model in directory " + shellutils.getsize(tmDir)
-            self.system["tm"]["dir"]=tmDir
+            self.settings["tm"]["dir"]=tmDir
             self.recordState()
         else:
             print "Construction of translation model FAILED"
@@ -121,20 +120,20 @@ class Experiment(object):
 
 
 
-    def getTrainScript(self ,tmDir, nbThreads):
-        if not self.system.has_key("lm") or not self.system["lm"].has_key("blm"): 
-            raise RuntimeError("Language model for " + self.system["target_long"] 
+    def getTrainScript(self ,tmDir, nbThreads, alignment, reordering):
+        if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"): 
+            raise RuntimeError("Language model for " + self.settings["target_long"] 
                                + " is not yet trained")
 
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
-                    + "--root-dir " + tmDir + " -corpus " +  self.system["tm"]["data"]["clean"]
-                    + " -f " + self.system["source"] + " -e " + self.system["target"] 
-                    + " -alignment " + self.system["alignment"] + " " 
-                    + " -reordering " + self.system["reordering"] + " "
-                    + " -lm 0:" +str(self.system["lm"]["ngram_order"])+":"+self.system["lm"]["blm"]+":8" 
+                    + "--root-dir " + tmDir + " -corpus " +  self.settings["tm"]["data"]["clean"]
+                    + " -f " + self.settings["source"] + " -e " + self.settings["target"] 
+                    + " -alignment " + alignment + " " 
+                    + " -reordering " + reordering + " "
+                    + " -lm 0:" +str(self.settings["lm"]["ngram_order"])+":"+self.settings["lm"]["blm"]+":8" 
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel"
-                    + " -sort-buffer-size 6G -sort-batch-size 1021 " 
+                    + " -sort-buffer-size 6G -sort-batch-size 253 " 
                     + " -sort-compress gzip -sort-parallel %i"
                     )%(nbThreads, nbThreads, nbThreads)
         return tmScript
@@ -144,32 +143,32 @@ class Experiment(object):
         
         if tuningStem:         
             tuningData = self.processAlignedData(tuningStem)
-            self.system["ttm"] = {"data":tuningData}
+            self.settings["ttm"] = {"data":tuningData}
             self.recordState()
-        elif not self.system.has_key("ttm") or not self.system["ttm"].has_key("data"):
+        elif not self.settings.has_key("ttm") or not self.settings["ttm"].has_key("data"):
             raise RuntimeError("Aligned tuning data is not yet processed")    
         
-        print ("Tuning translation model " + self.system["source"] + "-" 
-               + self.system["target"] + " with " + tuningData["clean"])
+        print ("Tuning translation model " + self.settings["source"] + "-" 
+               + self.settings["target"] + " with " + tuningData["clean"])
         
-        tuneDir = self.system["path"]+"/tunedmodel"
+        tuneDir = self.settings["path"]+"/tunedmodel"
         tuningScript = self.getTuningScript(tuneDir, nbThreads)
         shutil.rmtree(tuneDir, ignore_errors=True)
         self.executor.run(tuningScript)
         print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
-        self.system["ttm"]["dir"]=tuneDir
+        self.settings["ttm"]["dir"]=tuneDir
         self.recordState()
         
         
     def getTuningScript(self, tuneDir, nbThreads):
-        if not self.system.has_key("tm") or not self.system["tm"].has_key("dir"): 
+        if not self.settings.has_key("tm") or not self.settings["tm"].has_key("dir"): 
             raise RuntimeError("Translation model is not yet trained")
 
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
-                      + self.system["ttm"]["data"]["clean"] + "." + self.system["source"] + " " 
-                      + self.system["ttm"]["data"]["clean"] + "." + self.system["target"] + " "
+                      + self.settings["ttm"]["data"]["clean"] + "." + self.settings["source"] + " " 
+                      + self.settings["ttm"]["data"]["clean"] + "." + self.settings["target"] + " "
                       + moses_root + "/bin/moses" + " "
-                      + self.system["tm"]["dir"] + "/model/moses.ini " 
+                      + self.settings["tm"]["dir"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
                       + " --decoder-flags=\'-threads %i\' --working-dir " + tuneDir
@@ -180,8 +179,8 @@ class Experiment(object):
 
     def processAlignedData(self, dataStem, maxLength=80):
 
-        sourceFile = dataStem+"."+self.system["source"]
-        targetFile = dataStem+"."+self.system["target"]
+        sourceFile = dataStem+"."+self.settings["source"]
+        targetFile = dataStem+"."+self.settings["target"]
         if not os.path.exists(sourceFile):
             raise RuntimeError("File " + sourceFile + " cannot be found, aborting")
         elif not os.path.exists(targetFile):
@@ -191,51 +190,51 @@ class Experiment(object):
                    "source":self.processRawData(sourceFile), 
                    "target":self.processRawData(targetFile)} 
         
-        trueStem = dataset["source"]["true"][:-len(self.system["source"])-1]
+        trueStem = dataset["source"]["true"][:-len(self.settings["source"])-1]
         cleanStem = trueStem.replace(".true", ".clean")
-        cutoffFiles(trueStem, cleanStem, self.system["source"], self.system["target"], maxLength)
+        cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
         dataset["clean"] = cleanStem
         return dataset
     
     
 
     def processRawData(self, rawFile):
-        if self.system.has_key("lm") and self.system["lm"]["data"]["raw"] == rawFile:
-            return self.system["lm"]["data"]
+        if self.settings.has_key("lm") and self.settings["lm"]["data"]["raw"] == rawFile:
+            return self.settings["lm"]["data"]
          
         lang = rawFile.split(".")[len(rawFile.split("."))-1]
         dataset = {}
         dataset["raw"] = rawFile
         
         # STEP 1: tokenisation
-        normFile = self.system["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "norm." + lang
+        normFile = self.settings["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "norm." + lang
         dataset["norm"] = normaliseFile(rawFile, normFile)
         tokFile = normFile.replace(".norm.", ".tok.") 
         dataset["tok"] = tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
-        if not self.system.has_key("truecasing"):
-            self.system["truecasing"] = {}
-        if not self.system["truecasing"].has_key(lang):
-            self.system["truecasing"][lang] = trainTruecasingModel(tokFile, self.system["path"]
+        if not self.settings.has_key("truecasing"):
+            self.settings["truecasing"] = {}
+        if not self.settings["truecasing"].has_key(lang):
+            self.settings["truecasing"][lang] = trainTruecasingModel(tokFile, self.settings["path"]
                                                                     + "/truecasingmodel."+lang)
          
         # STEP 3: truecasing   
         trueFile = tokFile.replace(".tok.", ".true.") 
-        modelFile = self.system["truecasing"][lang]       
+        modelFile = self.settings["truecasing"][lang]       
         dataset["true"] = truecaseFile(tokFile, trueFile, modelFile)   
         return dataset  
     
 
 
     def binariseModel(self):
-        print "Binarise translation model " + self.system["source"] + " -> " + self.system["target"]
-        if not self.system.has_key("ttm") or not self.system["ttm"].has_key("dir"):
+        print "Binarise translation model " + self.settings["source"] + " -> " + self.settings["target"]
+        if not self.settings.has_key("ttm") or not self.settings["ttm"].has_key("dir"):
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
-        binaDir = self.system["path"]+"/binmodel"
-        phraseTable = self.system["tm"]["dir"]+"/model/phrase-table.gz"
-        reorderingTable = self.system["tm"]["dir"]+"/model/reordering-table.wbe-" + self.system["reordering"] + ".gz"
+        binaDir = self.settings["path"]+"/binmodel"
+        phraseTable = self.settings["tm"]["dir"]+"/model/phrase-table.gz"
+        reorderingTable = self.settings["tm"]["dir"]+"/model/reordering-table.wbe-" + self.settings["reordering"] + ".gz"
         
         shutil.rmtree(binaDir, ignore_errors=True)
         os.makedirs(binaDir)
@@ -251,7 +250,7 @@ class Experiment(object):
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
         
-        with open(self.system["ttm"]["dir"]+"/moses.ini") as initConfig:
+        with open(self.settings["ttm"]["dir"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
                     l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
@@ -259,7 +258,7 @@ class Experiment(object):
                     l = l.replace(reorderingTable, binaDir + "/reordering-table")
                     newConfig.write(l)
         
-        self.system["btm"] = {"dir":binaDir}
+        self.settings["btm"] = {"dir":binaDir}
         self.recordState()
         print "Finished binarising the translation model in directory " + shellutils.getsize(binaDir)
       
@@ -269,19 +268,19 @@ class Experiment(object):
             if not os.path.exists(customModel+"/moses.ini"):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
             initFile = customModel+"/moses.ini"
-        elif self.system.has_key("btm"):
-            initFile = self.system["btm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("ttm"):
+        elif self.settings.has_key("btm"):
+            initFile = self.settings["btm"]["dir"] + "/moses.ini"
+        elif self.settings.has_key("ttm"):
             print "Warning: translation model is not yet binarised"
-            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet trained!")
         print ("Translating text: \"" + text + "\" from " + 
-               self.system["source"] + " to " + self.system["target"])
+               self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
-            text = tokenise(text, self.system["source"])
-            text = truecase(text, self.system["truecasing"][self.system["source"]])
+            text = tokenise(text, self.settings["source"])
+            text = truecase(text, self.settings["truecasing"][self.settings["source"]])
 
         transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
                        + " -f " + initFile.encode('utf-8'))
@@ -295,15 +294,15 @@ class Experiment(object):
             if not os.path.exists(customModel+"/moses.ini"):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
             initFile = customModel+"/moses.ini"
-        elif self.system.has_key("btm"):
-            initFile = self.system["btm"]["dir"] + "/moses.ini"
-        elif self.system.has_key("ttm"):
+        elif self.settings.has_key("btm"):
+            initFile = self.settings["btm"]["dir"] + "/moses.ini"
+        elif self.settings.has_key("ttm"):
             print "Warning: translation model is not yet binarised"
-            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet trained!")
         print ("Translating file \"" + infile + "\" from " + 
-               self.system["source"] + " to " + self.system["target"])
+               self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
             infile = self.processRawData(infile)["true"]
@@ -312,12 +311,12 @@ class Experiment(object):
         self.executor.run(transScript, infile=infile, outfile=outfile)
                                         
     
-    def evaluateBLEU(self, testData, preprocess=True):
+    def evaluateBLEU(self, testData=None, preprocess=True):
  
         print ("Evaluating BLEU scores with test data: " + testData)
         
-        testSource = testData + "." + self.system["source"]
-        testTarget = testData + "." + self.system["target"]
+        testSource = testData + "." + self.settings["source"]
+        testTarget = testData + "." + self.settings["target"]
         if not (os.path.exists(testSource) and os.path.exists(testTarget)):
             raise RuntimeError("Test data cannot be found")
 
@@ -325,12 +324,12 @@ class Experiment(object):
             testSource = self.processRawData(testSource)["true"]
             testTarget = self.processRawData(testTarget)["true"]
                  
-        if self.system.has_key("ttm"):
-            initFile = self.system["ttm"]["dir"] + "/moses.ini"
+        if self.settings.has_key("ttm"):
+            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet tuned")
 
-        filteredDir = self.system["path"]+ "/filteredmodel"
+        filteredDir = self.settings["path"]+ "/filteredmodel"
         shutil.rmtree(filteredDir, ignore_errors=True)
         
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
@@ -346,10 +345,15 @@ class Experiment(object):
 
             
     def recordState(self):
-        dump = json.dumps(self.system)
-        with open(self.system["path"]+"/settings.json", 'w') as jsonFile:
+        dump = json.dumps(self.settings)
+        with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
-
+            
+    
+    def copy(self, nexExpName):
+        newexp = Experiment(nexExpName, self.settings["source"], self.settings["target"])
+        newexp.settings = copy.deepcopy(self.settings)
+        newexp.recordState()
 
 
 def getLanguage(langcode):
@@ -447,6 +451,38 @@ def cutoffFiles(inputStem, outputStem, source, target, maxLength):
                                    shellutils.getsize(outputTarget))
     return outputSource, outputTarget
 
+
+
+def divideData(fullData, nbTuning=1000, nbTesting=3000):
+    if not os.path.exists(fullData):
+        raise RuntimeError("Data " + fullData + " does not exist")
+    datasize = int(shellutils.run("wc -l " + fullData, return_output=True).split()[0])
+    if datasize <= nbTuning + nbTesting:
+        raise RuntimeError("Data " + fullData + " is too small")
+    
+    lang = fullData.split(".")[len(fullData.split("."))-1]
+    trainFile = fullData[:-len(lang)] + "train." + lang
+    tuningFile = fullData[:-len(lang)] + "tune." + lang
+    testFile = fullData[:-len(lang)] + "test." + lang
+    data = open(fullData, 'r')
+    train = open(trainFile, 'w')
+    tune = open(tuningFile, 'w')
+    test = open(testFile, 'w')
+    i = 0
+    for l in data.readlines():
+        if l.strip():
+            if i < (datasize  - nbTuning - nbTesting):
+                train.write(l)
+            elif i < (datasize - nbTesting):
+                tune.write(l)
+            else:
+                test.write(l)
+            i += 1
+    data.close()
+    train.close()
+    tune.close()
+    test.close()
+    return trainFile, tuningFile, testFile
 
    
  
