@@ -194,7 +194,8 @@ class Experiment(object):
         
         trueStem = dataset["source"]["true"][:-len(self.settings["source"])-1]
         cleanStem = trueStem.replace(".true", ".clean")
-        cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
+        self.cutoffFiles(trueStem, cleanStem, self.settings["source"], 
+                         self.settings["target"], maxLength)
         dataset["clean"] = cleanStem
         return dataset
     
@@ -210,21 +211,21 @@ class Experiment(object):
         
         # STEP 1: tokenisation
         normFile = self.settings["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "norm." + lang
-        dataset["norm"] = normaliseFile(rawFile, normFile)
+        dataset["norm"] = self.normaliseFile(rawFile, normFile)
         tokFile = normFile.replace(".norm.", ".tok.") 
-        dataset["tok"] = tokeniseFile(normFile, tokFile)
+        dataset["tok"] = self.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
         if not self.settings.has_key("truecasing"):
             self.settings["truecasing"] = {}
         if not self.settings["truecasing"].has_key(lang):
-            self.settings["truecasing"][lang] = trainTruecasingModel(tokFile, self.settings["path"]
+            self.settings["truecasing"][lang] = self.trainTruecasingModel(tokFile, self.settings["path"]
                                                                     + "/truecasingmodel."+lang)
          
         # STEP 3: truecasing   
         trueFile = tokFile.replace(".tok.", ".true.") 
         modelFile = self.settings["truecasing"][lang]       
-        dataset["true"] = truecaseFile(tokFile, trueFile, modelFile)   
+        dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile)   
         return dataset  
     
 
@@ -281,8 +282,8 @@ class Experiment(object):
                self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
-            text = tokenise(text, self.settings["source"])
-            text = truecase(text, self.settings["truecasing"][self.settings["source"]])
+            text = self.tokenise(text, self.settings["source"])
+            text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
 
         transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
                        + " -f " + initFile.encode('utf-8'))
@@ -355,106 +356,95 @@ class Experiment(object):
     def copy(self, nexExpName):
         newexp = Experiment(nexExpName, self.settings["source"], self.settings["target"])
         newexp.settings = copy.deepcopy(self.settings)
-        newexp.recordState()
-
-
-def getLanguage(langcode):
-    isostandard = minidom.parse(os.path.dirname(__file__)+"/iso639.xml")
-    itemlist = isostandard.getElementsByTagName('iso_639_entry') 
-    for item in itemlist :
-        if (item.attributes.has_key('iso_639_1_code') 
-            and item.attributes[u'iso_639_1_code'].value == langcode):
-                return item.attributes['name'].value
-    raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
-
-
-
-def normaliseFile(inputFile, outputFile):
-    lang = inputFile.split(".")[len(inputFile.split("."))-1]
-    if not os.path.exists(inputFile):
-        raise RuntimeError("raw file " + inputFile + " does not exist")
-                    
-    cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
-    shellutils.run(cleanScript, inputFile, outputFile)
-    return outputFile
+        newexp.recordState()    
     
-
-  
-def tokeniseFile(inputFile, outputFile):
-    lang = inputFile.split(".")[len(inputFile.split("."))-1]
-    if not os.path.exists(inputFile):
-        raise RuntimeError("raw file " + inputFile + " does not exist")
-                    
-    print "Start tokenisation of file \"" + inputFile + "\""
-    tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-    shellutils.run(tokScript, inputFile, outputFile)
     
-    print "New tokenised file: " + shellutils.getsize(outputFile)    
+    def normaliseFile(self, inputFile, outputFile):
+        lang = inputFile.split(".")[len(inputFile.split("."))-1]
+        if not os.path.exists(inputFile):
+            raise RuntimeError("raw file " + inputFile + " does not exist")
+                        
+        cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
+        self.executor.run(cleanScript, inputFile, outputFile)
+        return outputFile
         
-#    specialchars = set()
-#    with open(outputFile, 'r') as tmp:
-#        for l in tmp.readlines():
-#            m = re.search("((\S)*&(\S)*)", l)
-#            if m:
-#                specialchars.add(m.group(1))
-#    print "Special characters: " + str(specialchars)
+    
+      
+    def tokeniseFile(self, inputFile, outputFile):
+        lang = inputFile.split(".")[len(inputFile.split("."))-1]
+        if not os.path.exists(inputFile):
+            raise RuntimeError("raw file " + inputFile + " does not exist")
+                        
+        print "Start tokenisation of file \"" + inputFile + "\""
+        tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
+        self.executor.run(tokScript, inputFile, outputFile)
         
-    return outputFile
-
-
-def tokenise(inputText, lang):
-    tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-    return shellutils.run("echo \"" + inputText + "\"|" + tokScript, return_output=True)
+        print "New tokenised file: " + shellutils.getsize(outputFile)    
             
+    #    specialchars = set()
+    #    with open(outputFile, 'r') as tmp:
+    #        for l in tmp.readlines():
+    #            m = re.search("((\S)*&(\S)*)", l)
+    #            if m:
+    #                specialchars.add(m.group(1))
+    #    print "Special characters: " + str(specialchars)
             
-def trainTruecasingModel(inputFile, modelFile):
-    if not os.path.exists(inputFile):
-        raise RuntimeError("tokenised file " + inputFile + " does not exist")
+        return outputFile
+    
+    
+    def tokenise(self, inputText, lang):
+        tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
+        return self.executor.run("echo \"" + inputText + "\"|" + tokScript, return_output=True)
+                
+                
+    def trainTruecasingModel(self, inputFile, modelFile):
+        if not os.path.exists(inputFile):
+            raise RuntimeError("tokenised file " + inputFile + " does not exist")
+            
+        print "Start building truecasing model based on " + inputFile
+        truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" + " --model " + modelFile + " --corpus " + inputFile)
+        self.executor.run(truecaseModelScript)
+        print "New truecasing model: " + shellutils.getsize(modelFile)
+        return modelFile
         
-    print "Start building truecasing model based on " + inputFile
-    truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" + " --model " + modelFile + " --corpus " + inputFile)
-    shellutils.run(truecaseModelScript)
-    print "New truecasing model: " + shellutils.getsize(modelFile)
-    return modelFile
+        
+    def truecaseFile(self, inputFile, outputFile, modelFile):
+       
+        if not os.path.exists(inputFile):
+            raise RuntimeError("tokenised file " + inputFile + " does not exist")
+    
+        if not os.path.exists(modelFile):
+            raise RuntimeError("model file " + modelFile + " does not exist")
+    
+        print "Start truecasing of file \"" + inputFile + "\""
+        truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
+        self.executor.run(truecaseScript, inputFile, outputFile)
+        print "New truecased file: " + shellutils.getsize(outputFile)
+        return outputFile
     
     
-def truecaseFile(inputFile, outputFile, modelFile):
-   
-    if not os.path.exists(inputFile):
-        raise RuntimeError("tokenised file " + inputFile + " does not exist")
-
-    if not os.path.exists(modelFile):
-        raise RuntimeError("model file " + modelFile + " does not exist")
-
-    print "Start truecasing of file \"" + inputFile + "\""
-    truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-    shellutils.run(truecaseScript, inputFile, outputFile)
-    print "New truecased file: " + shellutils.getsize(outputFile)
-    return outputFile
-
-
-def truecase(inputText, modelFile):
-    if not os.path.exists(modelFile):
-        raise RuntimeError("model file " + modelFile + " does not exist")
-    truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-    return shellutils.run("echo \""+inputText + "\" | " 
-                          + truecaseScript, return_output=True)
+    def truecase(self, inputText, modelFile):
+        if not os.path.exists(modelFile):
+            raise RuntimeError("model file " + modelFile + " does not exist")
+        truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
+        return self.executor.run("echo \""+inputText + "\" | " 
+                              + truecaseScript, return_output=True)
+        
+       
+    def cutoffFiles(self, inputStem, outputStem, source, target, maxLength):
+                   
+        cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
+                       inputStem + " " + source + " " + target + " " 
+                       + outputStem + " 1 " + str(maxLength))
+        self.executor.run(cleanScript)
+        outputSource = outputStem+"."+source
+        outputTarget = outputStem+"."+target
+        print "New cleaned files: " + (shellutils.getsize(outputSource) + " and " + 
+                                       shellutils.getsize(outputTarget))
+        return outputSource, outputTarget
     
-   
-def cutoffFiles(inputStem, outputStem, source, target, maxLength):
-               
-    cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
-                   inputStem + " " + source + " " + target + " " 
-                   + outputStem + " 1 " + str(maxLength))
-    shellutils.run(cleanScript)
-    outputSource = outputStem+"."+source
-    outputTarget = outputStem+"."+target
-    print "New cleaned files: " + (shellutils.getsize(outputSource) + " and " + 
-                                   shellutils.getsize(outputTarget))
-    return outputSource, outputTarget
-
-
-
+    
+    
 def divideData(fullData, nbTuning=1000, nbTesting=3000):
     if not os.path.exists(fullData):
         raise RuntimeError("Data " + fullData + " does not exist")
@@ -486,6 +476,16 @@ def divideData(fullData, nbTuning=1000, nbTesting=3000):
     test.close()
     return trainFile, tuningFile, testFile
 
+
+
+def getLanguage(langcode):
+    isostandard = minidom.parse(os.path.dirname(__file__)+"/iso639.xml")
+    itemlist = isostandard.getElementsByTagName('iso_639_entry') 
+    for item in itemlist :
+        if (item.attributes.has_key('iso_639_1_code') 
+            and item.attributes[u'iso_639_1_code'].value == langcode):
+                return item.attributes['name'].value
+    raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
    
  
 
