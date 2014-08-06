@@ -36,7 +36,11 @@ class Experiment(object):
         
         self.settings["path"] = expDir+self.settings["name"]
         
-        if not os.path.exists(self.settings["path"]):
+        if os.path.exists(self.settings["path"]+"/settings.json"):
+            print "Existing experiment, reloading known settings..."
+            self.settings = json.loads(open(self.settings["path"]+"/settings.json").read())
+
+        else:
             os.makedirs(self.settings["path"]) 
             if sourceLang:
                 self.settings["source"] = sourceLang
@@ -45,9 +49,6 @@ class Experiment(object):
                 self.settings["target"] = targetLang
                 self.settings["target_long"] = getLanguage(targetLang)
                 
-        elif os.path.exists(self.settings["path"]+"/settings.json"):
-            print "Existing experiment, reloading known settings..."
-            self.settings = json.loads(open(self.settings["path"]+"/settings.json").read())
                                    
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
