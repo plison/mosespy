@@ -25,7 +25,7 @@ class SlurmExecutor(object):
             script = "mpirun " + script
             srun += " --ntasks 3" 
             
-        cmd = srun = " " + script
+        cmd = srun + " " + script
         return shellutils.run(cmd, infile, outfile, return_output)
         
         
