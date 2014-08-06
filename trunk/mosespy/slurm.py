@@ -62,7 +62,7 @@ class SlurmExperiment(Experiment):
         elif not account:
             account = getDefaultSlurmAccount()
         if account:
-            self.system["slurm_account"] = account
+            self.settings["slurm_account"] = account
       
         os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
                                          .read().strip('\n') + ":"
@@ -74,35 +74,37 @@ class SlurmExperiment(Experiment):
         self.executor = SlurmExecutor(account)
 
         
-    def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16):
+    def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16, 
+                              alignment=moseswrapper.defaultAlignment, 
+                              reordering=moseswrapper.defaultReordering):
         
         if nbSplits == 1:
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
         
-        if not self.system.has_key("slurm_account"):
+        if not self.settings.has_key("slurm_account"):
             raise RuntimeError("SLURM system not present, cannot split model training")
        
         if trainStem:         
             trainData = self.processAlignedData(trainStem)
-            self.system["tm"] = {"data": trainData}
+            self.settings["tm"] = {"data": trainData}
             self.recordState()        
-        elif not self.system.has_key("tm") or not self.system["tm"].has_key("data"):
+        elif not self.settings.has_key("tm") or not self.settings["tm"].has_key("data"):
             raise RuntimeError("Aligned training data is not yet processed")  
         
-        cleanData = self.system["tm"]["data"]["clean"]         
-        print ("Building translation model " + self.system["source"] + "-" 
-               + self.system["target"] + " with " +  cleanData
+        cleanData = self.settings["tm"]["data"]["clean"]         
+        print ("Building translation model " + self.settings["source"] + "-" 
+               + self.settings["target"] + " with " +  cleanData
                + " with " + str(nbSplits) + " splits")
     
-        splitDir = self.system["path"] + "/splits"
+        splitDir = self.settings["path"] + "/splits"
         shutil.rmtree(splitDir, ignore_errors=True)
         os.makedirs(splitDir)
-        splitData(cleanData + "." + self.system["source"], splitDir, nbSplits)
-        splitData(cleanData + "." + self.system["target"], splitDir, nbSplits)
+        splitData(cleanData + "." + self.settings["source"], splitDir, nbSplits)
+        splitData(cleanData + "." + self.settings["target"], splitDir, nbSplits)
 
-        tmDir = self.system["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(tmDir, nbThreads)
+        tmDir = self.settings["path"] + "/translationmodel"
+        tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
         scripts = []
         for i in range(0, nbSplits):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
@@ -111,10 +113,10 @@ class SlurmExperiment(Experiment):
         self.executor.runs(scripts)
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
-        alignFile = tmDir+"/model/aligned."+self.system["alignment"]
+        alignFile = tmDir+"/model/aligned."+self.settings["alignment"]
         with open(alignFile, 'w') as align:
             for split in range(0, nbSplits):
-                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+self.system["alignment"]
+                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+self.settings["alignment"]
                 with open(splitFile) as part:
                     for partline in part.readlines():
                         if partline.strip():
@@ -124,7 +126,7 @@ class SlurmExperiment(Experiment):
 
         if result:
             print "Finished building translation model in: " + shellutils.getsize(tmDir)
-            self.system["tm"]["dir"]=tmDir
+            self.settings["tm"]["dir"]=tmDir
             self.recordState()
         else:
             shellutils.run("rm -rf " + tmDir)
