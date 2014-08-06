@@ -50,6 +50,7 @@ class Experiment(object):
                 self.settings["target_long"] = getLanguage(targetLang)
                 
                                    
+        self.recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
         
