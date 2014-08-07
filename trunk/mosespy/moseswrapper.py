@@ -398,7 +398,7 @@ class Experiment(object):
     
     def tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-        return shellutils.run("echo \'" + inputText + "\' |" + tokScript, return_output=True)
+        return shellutils.run("echo \'" + inputText + "\' |" + tokScript, return_output=True).strip()
                 
                 
     def trainTruecasingModel(self, inputFile, modelFile):
