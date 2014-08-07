@@ -20,7 +20,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
             return self.run_mpi(script, infile, outfile, return_output) 
 
         srun = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + self.memory + "G"
+                + " --mem-per-cpu=" + str(self.memory) + "G"
                 +" --exclusive"
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time)
@@ -31,7 +31,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
      
     def run_mpi(self, script, infile=None, outfile=None, return_output=False):   
         srun = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + self.memory*3 + "G"
+                + " --mem-per-cpu=" + str(self.memory*3) + "G"
                 +" --exclusive"
                 + " --cpus-per-task=" + str(max(self.nbThreads/3))
                 + " --time=" + self.time
