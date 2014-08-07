@@ -1,11 +1,11 @@
 
-import time, shutil, os, shellutils, textwrap, re, uuid
+import time, os, shellutils, textwrap, re, uuid
 from mosespy import moseswrapper
 from mosespy.moseswrapper import Experiment 
   
   
 
-class SlurmExecutor(object):
+class SlurmExecutor(shellutils.CommandExecutor):
     
     def __init__(self, account, time="6:00:00", memory="10G", nbThreads=6):
         self.account = account
@@ -26,7 +26,7 @@ class SlurmExecutor(object):
             srun += " --ntasks 3" 
             
         cmd = srun + " " + script
-        return shellutils.run(cmd, infile, outfile, return_output)
+        return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
         
         
     def runs(self, scripts, infile=None, outfile=None):
@@ -39,7 +39,7 @@ class SlurmExecutor(object):
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
                 + " " + script + " &")
-            shellutils.run(srun_cmd, infile, outfile)
+            super(SlurmExecutor,self).run(srun_cmd, infile, outfile)
             jobnames.append(name)
         time.sleep(1)
         while True:
@@ -98,10 +98,20 @@ class SlurmExperiment(Experiment):
                + " with " + str(nbSplits) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
+        shellutils.resetDir(splitDir)
+        splitData(cleanData + "." + self.settings["source"], splitDir, nbSplits)
+        splitData(cleanData + "." + self.settings["target"], splitDir, nbSplits)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
-        shutil.rmtree(tmDir, ignore_errors=True)   
+        scripts = []
+        for i in range(0, nbSplits):
+            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
+                                .replace(cleanData, splitDir + "/" +str(i))
+                                + " --last-step 3"))
+        self.executor.runs(scripts)
+        
+        shellutils.resetDir(tmDir)
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
@@ -112,14 +122,16 @@ class SlurmExperiment(Experiment):
                         if partline.strip():
                             align.write(partline.strip('\n') + '\n')
                             
-        result = shellutils.run(tmScript + " --first-step 4")
+        tmScript +=  (" -sort-buffer-size 10G -sort-batch-size 1024 " 
+                    + " -sort-compress gzip -sort-parallel " + nbThreads)              
+        result = self.executor.run(tmScript + " --first-step 4")
 
         if result:
             print "Finished building translation model in: " + shellutils.getsize(tmDir)
             self.settings["tm"]["dir"]=tmDir
             self.recordState()
         else:
-            shellutils.run("rm -rf " + tmDir)
+            self.executor.run("rm -rf " + tmDir)
             
             
     def tokeniseFile(self, inputFile, outputFile, nbThreads=16):
