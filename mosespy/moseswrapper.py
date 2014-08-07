@@ -370,13 +370,14 @@ class Experiment(object):
         
     
       
-    def tokeniseFile(self, inputFile, outputFile):
+    def tokeniseFile(self, inputFile, outputFile, nbThreads=2):
         lang = inputFile.split(".")[len(inputFile.split("."))-1]
         if not os.path.exists(inputFile):
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
         print "Start tokenisation of file \"" + inputFile + "\""
-        tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
+        tokScript = (moses_root + "/scripts/tokenizer/tokenizer.perl" 
+                     + " -l " + lang + " -threads " + str(nbThreads))
         self.executor.run(tokScript, inputFile, outputFile)
         
         print "New tokenised file: " + shellutils.getsize(outputFile)    
