@@ -130,6 +130,10 @@ class SlurmExperiment(Experiment):
             self.recordState()
         else:
             shellutils.run("rm -rf " + tmDir)
+            
+            
+    def tokeniseFile(self, inputFile, outputFile, nbThreads=16):
+        Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nbThreads)
           
       
 
