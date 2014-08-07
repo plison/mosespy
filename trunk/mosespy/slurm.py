@@ -35,9 +35,9 @@ class SlurmExecutor(shellutils.CommandExecutor):
                 +" --exclusive "
                 + " --cpus-per-task=" + str(max(1, self.nbThreads/3))
                 + " --time=" + self.time
-                + " --ntasks 1")
+                + " --ntasks 3")
         
-    #    script = script.replace(decoder, "mpirun " + decoder)
+        script = script.replace(decoder, "mpirun " + decoder)
         cmd = srun + " " + script
         return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
    
