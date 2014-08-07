@@ -280,11 +280,10 @@ class Experiment(object):
             text = self.tokenise(text, self.settings["source"])
             text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
 
-        transScript = ("echo \'" + text + "\' | " + moses_root + "/bin/moses" 
-                       + " -f " + initFile.encode('utf-8'))
+        transScript = (moses_root + "/bin/moses -f " + initFile.encode('utf-8'))
 
         # maybe we should try to untokenise the translation before sending it back?
-        return self.executor.run(transScript, return_output=True)
+        return self.executor.run_output(transScript, stdin=text)
         
    
     def translateFile(self, infile, outfile, preprocess=True, customModel=None):
@@ -306,7 +305,7 @@ class Experiment(object):
             infile = self.processRawData(infile)["true"]
 
         transScript = (moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
-        self.executor.run(transScript, infile=infile, outfile=outfile)
+        self.executor.run(transScript, stdin=infile, outfile=outfile)
                                         
     
     def evaluateBLEU(self, testData=None, preprocess=True):
@@ -339,7 +338,7 @@ class Experiment(object):
         self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
        
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-        self.executor.run(bleuScript, infile=translationfile)
+        self.executor.run(bleuScript, stdin=translationfile)
 
             
     def recordState(self):
@@ -398,7 +397,7 @@ class Experiment(object):
     
     def tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-        return shellutils.run("echo \'" + inputText + "\' |" + tokScript, return_output=True).strip()
+        return shellutils.run_output(tokScript, stdin=inputText).strip()
                 
                 
     def trainTruecasingModel(self, inputFile, modelFile):
@@ -437,8 +436,7 @@ class Experiment(object):
         if not os.path.exists(modelFile):
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-        return shellutils.run("echo \'"+inputText + "\' | " 
-                              + truecaseScript, return_output=True)
+        return shellutils.run_output(truecaseScript, stdin=inputText)
         
        
     def cutoffFiles(self, inputStem, outputStem, source, target, maxLength):
@@ -460,7 +458,7 @@ class Experiment(object):
 def divideData(fullData, nbTuning=1000, nbTesting=3000):
     if not os.path.exists(fullData):
         raise RuntimeError("Data " + fullData + " does not exist")
-    datasize = int(shellutils.run("wc -l " + fullData, return_output=True).split()[0])
+    datasize = int(shellutils.run_output("wc -l " + fullData).split()[0])
     if datasize <= nbTuning + nbTesting:
         raise RuntimeError("Data " + fullData + " is too small")
     
