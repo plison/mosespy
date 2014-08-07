@@ -62,154 +62,154 @@ static Enum_T SLmTypeEnum [] = {
 
 mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ipfile,char* opfile):
   mdiadaptlm((char *)NULL,depth)
-{
-
-  prunethresh=prunefreq;
-  ipfname=ipfile;
-  opfname=opfile;
-  usefulltable=fulltable;
-
-  mfstream inp(sublminfo,ios::in );
-  if (!inp) {
-		std::stringstream ss_msg;
-		ss_msg << "cannot open " << sublminfo;
-		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
-  }
-
-	char line[MAX_LINE];
-	inp.getline(line,MAX_LINE);
-	
-	sscanf(line,"%d",&numslm);
-	
-  sublm=new interplm* [numslm];
-
-  cerr << "WARNING: Parameters PruneSingletons (ps) and PruneTopSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
-
-  int max_npar=6;
-  for (int i=0; i<numslm; i++) {
-    char **par=new char*[max_npar];
-    par[0]=new char[BUFSIZ];
-    par[0][0]='\0';
-		
-		inp.getline(line,MAX_LINE);
-		
-		const char *const wordSeparators = " \t\r\n";
-		char *word = strtok(line, wordSeparators);
-		int j = 1;
-		
-		while (word){
-			if (i>max_npar){
-				std::stringstream ss_msg;
-				ss_msg << "Too many parameters (expected " << max_npar << ")";
-				exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
-			}
-			par[j] = new char[MAX_LINE];
-			strcpy(par[j],word);
-//			std::cerr << "par[j]:|" << par[j] << "|" << std::endl;
-		  word = strtok(0, wordSeparators);
-			j++;
-		}
-	
-    int actual_npar = j;	
-		
-    char *subtrainfile;
-    int slmtype;
-    bool subprunesingletons;
-    bool subprunetopsingletons;
-    int subprunefreq;
-
-    DeclareParams((char*)
-      "SubLanguageModelType",CMDENUMTYPE|CMDMSG, &slmtype, SLmTypeEnum, "type of the sub LM",
-			"slm",CMDENUMTYPE|CMDMSG, &slmtype, SLmTypeEnum, "type of the sub LM",
-			"sTrainOn",CMDSTRINGTYPE|CMDMSG, &subtrainfile, "training file of the sub LM",
-      "str",CMDSTRINGTYPE|CMDMSG, &subtrainfile, "training file of the sub LM",
-      "sPruneThresh",CMDSUBRANGETYPE|CMDMSG, &subprunefreq, 0, 1000, "threshold for pruning the sub LM",
-      "sp",CMDSUBRANGETYPE|CMDMSG, &subprunefreq, 0, 1000, "threshold for pruning the sub LM",									
-      "sPruneSingletons",CMDBOOLTYPE|CMDMSG, &subprunesingletons,  "boolean flag for pruning of singletons of the sub LM (default is true)",
-      "sps",CMDBOOLTYPE|CMDMSG, &subprunesingletons, "boolean flag for pruning of singletons of the sub LM (default is true)",
-      "sPruneTopSingletons",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",
-      "spts",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",				
-			(char *)NULL  );
-
-    subtrainfile=NULL;
-    slmtype=0;
-    subprunefreq=-1;
-    subprunesingletons=true;
-    subprunetopsingletons=false;
-
-		GetParams(&actual_npar, &par, (char*) NULL);
-		
-
-    if (!slmtype) {
-			std::stringstream ss_msg;
-			ss_msg << "The type (-slm) for sub LM number " << i+1 << "  is not specified" ;
-			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
-    }
-
-		if (!subtrainfile) {
-			std::stringstream ss_msg;
-			ss_msg << "The file (-str) for sub lm number " << i+1 << " is not specified";
-			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
-    }
-
-		if (subprunefreq==-1) {
-			std::stringstream ss_msg;
-			ss_msg << "The prune threshold (-sp) for sub lm number " << i+1 << "  is not specified";
-			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
-    }
-
-		switch (slmtype) {
-
-    case LINEAR_WB:
-      sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-      break;
-
-    case SHIFT_BETA:
-      sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
-      break;
-
-    case SHIFT_ONE:
-      sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
-      break;
-
-    case MOD_SHIFT_BETA:
-      sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-      break;
-
-    case MIXTURE:
-      sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
-      break;
-
-    default:
-				exit_error(IRSTLM_ERROR_DATA, "not implemented yet");
+    {
+        
+        prunethresh=prunefreq;
+        ipfname=ipfile;
+        opfname=opfile;
+        usefulltable=fulltable;
+        
+        mfstream inp(sublminfo,ios::in );
+        if (!inp) {
+            std::stringstream ss_msg;
+            ss_msg << "cannot open " << sublminfo;
+            exit_error(IRSTLM_ERROR_IO, ss_msg.str());
+        }
+        
+        char line[MAX_LINE];
+        inp.getline(line,MAX_LINE);
+        
+        sscanf(line,"%d",&numslm);
+        
+        sublm=new interplm* [numslm];
+        
+        cerr << "WARNING: Parameters PruneSingletons (ps) and PruneTopSingletons (pts) are not taken into account for this type of LM (mixture); please specify the singleton pruning policy for each submodel using parameters \"-sps\" and \"-spts\" in the configuraton file\n";
+        
+        int max_npar=6;
+        for (int i=0; i<numslm; i++) {
+            char **par=new char*[max_npar];
+            par[0]=new char[BUFSIZ];
+            par[0][0]='\0';
+            
+            inp.getline(line,MAX_LINE);
+            
+            const char *const wordSeparators = " \t\r\n";
+            char *word = strtok(line, wordSeparators);
+            int j = 1;
+            
+            while (word){
+                if (i>max_npar){
+                    std::stringstream ss_msg;
+                    ss_msg << "Too many parameters (expected " << max_npar << ")";
+                    exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
+                }
+                par[j] = new char[MAX_LINE];
+                strcpy(par[j],word);
+                //			std::cerr << "par[j]:|" << par[j] << "|" << std::endl;
+                word = strtok(0, wordSeparators);
+                j++;
+            }
+            
+            int actual_npar = j;
+            
+            char *subtrainfile;
+            int slmtype;
+            bool subprunesingletons;
+            bool subprunetopsingletons;
+            int subprunefreq;
+            
+            DeclareParams((char*)
+                          "SubLanguageModelType",CMDENUMTYPE|CMDMSG, &slmtype, SLmTypeEnum, "type of the sub LM",
+                          "slm",CMDENUMTYPE|CMDMSG, &slmtype, SLmTypeEnum, "type of the sub LM",
+                          "sTrainOn",CMDSTRINGTYPE|CMDMSG, &subtrainfile, "training file of the sub LM",
+                          "str",CMDSTRINGTYPE|CMDMSG, &subtrainfile, "training file of the sub LM",
+                          "sPruneThresh",CMDSUBRANGETYPE|CMDMSG, &subprunefreq, 0, 1000, "threshold for pruning the sub LM",
+                          "sp",CMDSUBRANGETYPE|CMDMSG, &subprunefreq, 0, 1000, "threshold for pruning the sub LM",
+                          "sPruneSingletons",CMDBOOLTYPE|CMDMSG, &subprunesingletons,  "boolean flag for pruning of singletons of the sub LM (default is true)",
+                          "sps",CMDBOOLTYPE|CMDMSG, &subprunesingletons, "boolean flag for pruning of singletons of the sub LM (default is true)",
+                          "sPruneTopSingletons",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",
+                          "spts",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",
+                          (char *)NULL  );
+            
+            subtrainfile=NULL;
+            slmtype=0;
+            subprunefreq=0;
+            subprunesingletons=true;
+            subprunetopsingletons=false;
+            
+            GetParams(&actual_npar, &par, (char*) NULL);
+            
+            
+            if (!slmtype) {
+                std::stringstream ss_msg;
+                ss_msg << "The type (-slm) for sub LM number " << i+1 << "  is not specified" ;
+                exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
+            }
+            
+            if (!subtrainfile) {
+                std::stringstream ss_msg;
+                ss_msg << "The file (-str) for sub lm number " << i+1 << " is not specified";
+                exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
+            }
+            
+            if (subprunefreq==-1) {
+                std::stringstream ss_msg;
+                ss_msg << "The prune threshold (-sp) for sub lm number " << i+1 << "  is not specified";
+                exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
+            }
+            
+            switch (slmtype) {
+                    
+                case LINEAR_WB:
+                    sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+                    break;
+                    
+                case SHIFT_BETA:
+                    sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
+                    break;
+                    
+                case SHIFT_ONE:
+                    sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
+                    break;
+                    
+                case MOD_SHIFT_BETA:
+                    sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
+                    break;
+                    
+                case MIXTURE:
+                    sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
+                    break;
+                    
+                default:
+                    exit_error(IRSTLM_ERROR_DATA, "not implemented yet");
+            };
+            
+            sublm[i]->prunesingletons(subprunesingletons==true);
+            sublm[i]->prunetopsingletons(subprunetopsingletons==true);
+            
+            if (subprunetopsingletons==true)
+                //apply most specific pruning method
+                sublm[i]->prunesingletons(false);
+            
+            
+            cerr << "eventually generate OOV code of sub lm[" << i << "]\n";
+            sublm[i]->dict->genoovcode();
+            
+            //create super dictionary
+            dict->augment(sublm[i]->dict);
+            
+            //creates the super n-gram table
+            if(usefulltable) augment(sublm[i]);
+            
+        }
+        
+        cerr << "eventually generate OOV code of the mixture\n";
+        dict->genoovcode();
+        cerr << "dict size of the mixture:" << dict->size() << "\n";
+        //tying parameters
+        k1=2;
+        k2=10;
     };
-
-    sublm[i]->prunesingletons(subprunesingletons==true);
-    sublm[i]->prunetopsingletons(subprunetopsingletons==true);
-
-    if (subprunetopsingletons==true)
-      //apply most specific pruning method
-      sublm[i]->prunesingletons(false);
-
-
-    cerr << "eventually generate OOV code of sub lm[" << i << "]\n";
-    sublm[i]->dict->genoovcode();
-
-    //create super dictionary
-    dict->augment(sublm[i]->dict);
-
-    //creates the super n-gram table
-    if(usefulltable) augment(sublm[i]);
-
-  }
-	
-	cerr << "eventually generate OOV code of the mixture\n";
-  dict->genoovcode();
-  cerr << "dict size of the mixture:" << dict->size() << "\n";
-  //tying parameters
-  k1=2;
-  k2=10;
-};
 
 double mixture::reldist(double *l1,double *l2,int n)
 {
