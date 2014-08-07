@@ -98,25 +98,15 @@ class SlurmExperiment(Experiment):
                + " with " + str(nbSplits) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
-        shutil.rmtree(splitDir, ignore_errors=True)
-        os.makedirs(splitDir)
-        splitData(cleanData + "." + self.settings["source"], splitDir, nbSplits)
-        splitData(cleanData + "." + self.settings["target"], splitDir, nbSplits)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
-        scripts = []
-        for i in range(0, nbSplits):
-            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
-                                .replace(cleanData, splitDir + "/" +str(i))
-                                + " --last-step 3"))
-        self.executor.runs(scripts)
         shutil.rmtree(tmDir, ignore_errors=True)   
         os.makedirs(tmDir+"/model")
-        alignFile = tmDir+"/model/aligned."+self.settings["alignment"]
+        alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
             for split in range(0, nbSplits):
-                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+self.settings["alignment"]
+                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
                 with open(splitFile) as part:
                     for partline in part.readlines():
                         if partline.strip():
