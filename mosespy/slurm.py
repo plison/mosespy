@@ -37,7 +37,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
                 + " --time=" + self.time
                 + " --ntasks 1")
         
-    #ß    script = script.replace(decoder, "mpirun " + decoder)
+    #    script = script.replace(decoder, "mpirun " + decoder)
         cmd = srun + " " + script
         return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
    
