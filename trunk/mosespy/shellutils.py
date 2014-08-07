@@ -1,5 +1,5 @@
 
-import os, subprocess
+import os, subprocess, shutil
 
 
 class CommandExecutor(object):
@@ -42,6 +42,9 @@ def existsExecutable(command):
     return False
         
 
+def resetDir(dirName):
+    shutil.rmtree(dirName, ignore_errors=True)   
+    os.makedirs(dirName)
 
 
 def getsize(filename):
