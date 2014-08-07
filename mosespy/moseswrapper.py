@@ -437,7 +437,7 @@ class Experiment(object):
         if not os.path.exists(modelFile):
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-        return shellutils.run("echo \""+inputText + "\" | " 
+        return shellutils.run("echo \'"+inputText + "\' | " 
                               + truecaseScript, return_output=True)
         
        
