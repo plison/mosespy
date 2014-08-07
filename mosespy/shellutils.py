@@ -4,33 +4,49 @@ import os, subprocess, shutil
 
 class CommandExecutor(object):
     
-    def run(self, script, infile=None, outfile=None, return_output=False):
+    def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
         print "[" + str(callincr) + "] Running " + script + \
-                (" < " + infile if infile is not None else "") + \
-              (" > " + outfile if outfile is not None else "")
-                 
-        stdin=open(infile) if infile is not None else None
-        stdout=open(outfile, 'w') if outfile is not None else None
-    
-        if return_output:
-            return os.popen(script + " < " + infile if infile else script).read()
+                (" < " + stdin if isinstance(stdin, basestring) else "") + \
+              (" > " + stdout if isinstance(stdout, basestring) else "")
+                  
+        if os.path.exists(str(stdin)):
+            stdin_popen = file(stdin, 'r')
+        elif isinstance(stdin, basestring):
+            stdin_popen = subprocess.PIPE
         else:
-            result = subprocess.call(script, stdin=stdin, stdout=stdout, shell=True)
-           
-            if not result:
-                print "Task [" + str(callincr) + "] successful"
-                return True
-            else:
-                print "!!! Task [" + str(callincr) + "] FAILED"
-                return False
+            stdin_popen = None
+            
+        if os.path.exists(os.path.dirname(str(stdout))):
+            stdout_popen = file(stdout, 'w')
+        elif stdout is not None and not stdout:
+            stdout_popen = subprocess.PIPE
+        else:
+            stdout_popen = None
+            
+        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
+        out_popen = p.communicate(stdin)[0]
         
+        print "Task [" + str(callincr) + "] " + ("successful" if not p.returncode else "FAILED")
+            
+        if stdout_popen == subprocess.PIPE:
+            return out_popen
+        else:
+            return not p.returncode
+        
+    
+    def run_output(self, script, stdin=None):
+        return self.run(script, stdin, stdout=False)
+               
  
  
-def run(script, infile=None, outfile=None, return_output=False):
-    return CommandExecutor().run(script, infile, outfile, return_output)
+def run(script, stdin=None, stdout=None):
+    return CommandExecutor().run(script, stdin, stdout)
   
+def run_output(script, stdin=None):
+    return CommandExecutor().run_output(script, stdin)
+
    
 def existsExecutable(command):
     paths = os.popen("echo $PATH").read().strip()

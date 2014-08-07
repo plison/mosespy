@@ -14,10 +14,10 @@ class SlurmExecutor(shellutils.CommandExecutor):
         self.memory = memory
         self.nbThreads = nbThreads
         
-    def run(self, script, infile=None, outfile=None, return_output=False):
+    def run(self, script, stdin=None, stdout=None):
         
         if decoder in script:
-            return self.run_mpi(script, infile, outfile, return_output) 
+            return self.run_mpi(script, stdin, stdout) 
 
         srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(self.memory) + "G"
@@ -25,11 +25,11 @@ class SlurmExecutor(shellutils.CommandExecutor):
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time)
         
-        cmd = srun + " \"" + script + "\""
-        return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
+        cmd = srun + " " + script 
+        return super(SlurmExecutor,self).run(cmd, stdin, stdout)
     
      
-    def run_mpi(self, script, infile=None, outfile=None, return_output=False):  
+    def run_mpi(self, script, stdin=None, stdout=None):  
         srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(self.memory*3) + "G"
                 +" --exclusive "
@@ -38,11 +38,11 @@ class SlurmExecutor(shellutils.CommandExecutor):
                 + " --ntasks 3")
         
         script = script.replace(decoder, "mpirun " + decoder)
-        cmd = srun + " \"" + script + "\""
-        return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
+        cmd = srun + " " + script
+        return super(SlurmExecutor,self).run(cmd, stdin, stdout)
    
         
-    def runs(self, scripts, infile=None, outfile=None):
+    def runs(self, scripts, stdin=None, stdout=None):
         jobnames = []
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
@@ -52,7 +52,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
                 + " " + script + " &")
-            super(SlurmExecutor,self).run(srun_cmd, infile, outfile)
+            super(SlurmExecutor,self).run(srun_cmd, stdin, stdout)
             jobnames.append(name)
         time.sleep(1)
         while True:
