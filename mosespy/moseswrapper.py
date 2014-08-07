@@ -280,7 +280,7 @@ class Experiment(object):
             text = self.tokenise(text, self.settings["source"])
             text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
 
-        transScript = ("echo \"" + text + "\" | " + moses_root + "/bin/moses" 
+        transScript = ("echo \'" + text + "\' | " + moses_root + "/bin/moses" 
                        + " -f " + initFile.encode('utf-8'))
 
         # maybe we should try to untokenise the translation before sending it back?
@@ -398,7 +398,7 @@ class Experiment(object):
     
     def tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-        return shellutils.run("echo \"" + inputText + "\"|" + tokScript, return_output=True)
+        return shellutils.run("echo \'" + inputText + "\' |" + tokScript, return_output=True)
                 
                 
     def trainTruecasingModel(self, inputFile, modelFile):
