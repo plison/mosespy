@@ -34,8 +34,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
                 + " --mem-per-cpu=" + str(self.memory*3) + "G"
                 +" --exclusive "
                 + " --cpus-per-task=" + str(max(1, self.nbThreads/3))
-                + " --time=" + self.time
-                + " --ntasks 3")
+                + " --time=" + self.time)
         
         script = script.replace(decoder, decoder)
         cmd = srun + " " + script
