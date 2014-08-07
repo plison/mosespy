@@ -4,9 +4,10 @@ from mosespy import moseswrapper
 from mosespy.moseswrapper import Experiment 
   
   
+decoder = moseswrapper.moses_root + "/bin/moses -f"
 
 class SlurmExecutor(shellutils.CommandExecutor):
-    
+        
     def __init__(self, account, time="6:00:00", memory="10G", nbThreads=6):
         self.account = account
         self.time = time
@@ -15,19 +16,31 @@ class SlurmExecutor(shellutils.CommandExecutor):
         
     def run(self, script, infile=None, outfile=None, return_output=False):
         
+        if decoder in script:
+            return self.run_mpi(script, infile, outfile, return_output) 
+
         srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + self.memory
                 +" --exclusive"
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time)
         
-        if script.split()[0] == moseswrapper.moses_root + "/bin/moses":
-            script = "mpirun " + script
-            srun += " --ntasks 3" 
-            
         cmd = srun + " " + script
         return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
+    
+     
+    def run_mpi(self, script, infile=None, outfile=None, return_output=False):   
+        srun = ("srun --account=" + self.account
+                + " --mem-per-cpu=" + self.memory*3
+                +" --exclusive"
+                + " --cpus-per-task=" + str(max(self.nbThreads/3))
+                + " --time=" + self.time
+                + " --ntasks 3")
         
+        script = script.replace(decoder, "mpirun " + decoder)
+        cmd = srun + " " + script
+        return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
+   
         
     def runs(self, scripts, infile=None, outfile=None):
         jobnames = []
