@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*- 
 
-import os, shutil, json, copy
+import os, json, copy
 import shellutils
 from xml.dom import minidom
 
@@ -109,8 +109,7 @@ class Experiment(object):
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
-        shutil.rmtree(tmDir, ignore_errors=True)  
-        os.makedirs(tmDir) 
+        shellutils.resetDir(tmDir)
         result = self.executor.run(tmScript)
         if result:
             print "Finished building translation model in directory " + shellutils.getsize(tmDir)
@@ -132,12 +131,11 @@ class Experiment(object):
                     + " -f " + self.settings["source"] + " -e " + self.settings["target"] 
                     + " -alignment " + alignment + " " 
                     + " -reordering " + reordering + " "
-                    + " -lm 0:" +str(self.settings["lm"]["ngram_order"])+":"+self.settings["lm"]["blm"]+":8" 
+                    + " -lm 0:" +str(self.settings["lm"]["ngram_order"])
+                    +":"+self.settings["lm"]["blm"]+":8"                        # 8 because binarised with KenLM
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel"
-                    + " -sort-buffer-size 6G -sort-batch-size 253 " 
-                    + " -sort-compress gzip -sort-parallel %i"
-                    )%(nbThreads, nbThreads, nbThreads)
+                    )%(nbThreads, nbThreads)
         return tmScript
                        
 
@@ -155,7 +153,7 @@ class Experiment(object):
         
         tuneDir = self.settings["path"]+"/tunedmodel"
         tuningScript = self.getTuningScript(tuneDir, nbThreads)
-        shutil.rmtree(tuneDir, ignore_errors=True)
+        shellutils.resetDir(tuneDir)
         self.executor.run(tuningScript)
         print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
         self.settings["ttm"]["dir"]=tuneDir
@@ -202,8 +200,6 @@ class Experiment(object):
     
 
     def processRawData(self, rawFile):
-        if self.settings.has_key("lm") and self.settings["lm"]["data"]["raw"] == rawFile:
-            return self.settings["lm"]["data"]
          
         lang = rawFile.split(".")[len(rawFile.split("."))-1]
         dataset = {}
@@ -239,8 +235,7 @@ class Experiment(object):
         phraseTable = self.settings["tm"]["dir"]+"/model/phrase-table.gz"
         reorderingTable = self.settings["tm"]["dir"]+"/model/reordering-table.wbe-" + self.settings["reordering"] + ".gz"
         
-        shutil.rmtree(binaDir, ignore_errors=True)
-        os.makedirs(binaDir)
+        shellutils.resetDir(binaDir)
         binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
                      + " -nscores 5 -out " + binaDir + "/phrase-table")
         result1 = self.executor.run(binScript)
@@ -333,7 +328,7 @@ class Experiment(object):
             raise RuntimeError("Translation model is not yet tuned")
 
         filteredDir = self.settings["path"]+ "/filteredmodel"
-        shutil.rmtree(filteredDir, ignore_errors=True)
+        shellutils.resetDir(filteredDir)
         
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
@@ -355,9 +350,12 @@ class Experiment(object):
     
     def copy(self, nexExpName):
         newexp = Experiment(nexExpName, self.settings["source"], self.settings["target"])
-        newexp.settings = copy.deepcopy(self.settings)
-        newexp.recordState()    
-    
+        settingscopy = copy.deepcopy(self.settings)
+        for k in settingscopy.keys():
+            if k != "name" and k!= "path":
+                newexp.settings[k] = settingscopy[k]
+        newexp.recordState()   
+        return newexp
     
     def normaliseFile(self, inputFile, outputFile):
         lang = inputFile.split(".")[len(inputFile.split("."))-1]
@@ -365,7 +363,10 @@ class Experiment(object):
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
         cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
-        self.executor.run(cleanScript, inputFile, outputFile)
+        result = self.executor.run(cleanScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Cleaning of aligned files has failed")
+
         return outputFile
         
     
@@ -378,8 +379,10 @@ class Experiment(object):
         print "Start tokenisation of file \"" + inputFile + "\""
         tokScript = (moses_root + "/scripts/tokenizer/tokenizer.perl" 
                      + " -l " + lang + " -threads " + str(nbThreads))
-        self.executor.run(tokScript, inputFile, outputFile)
-        
+        result = self.executor.run(tokScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Cleaning of aligned files has failed")
+
         print "New tokenised file: " + shellutils.getsize(outputFile)    
             
     #    specialchars = set()
@@ -395,7 +398,7 @@ class Experiment(object):
     
     def tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-        return self.executor.run("echo \"" + inputText + "\"|" + tokScript, return_output=True)
+        return shellutils.run("echo \"" + inputText + "\"|" + tokScript, return_output=True)
                 
                 
     def trainTruecasingModel(self, inputFile, modelFile):
@@ -404,7 +407,10 @@ class Experiment(object):
             
         print "Start building truecasing model based on " + inputFile
         truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" + " --model " + modelFile + " --corpus " + inputFile)
-        self.executor.run(truecaseModelScript)
+        result = self.executor.run(truecaseModelScript)
+        if not result:
+            raise RuntimeError("Cleaning of aligned files has failed")
+
         print "New truecasing model: " + shellutils.getsize(modelFile)
         return modelFile
         
@@ -419,7 +425,10 @@ class Experiment(object):
     
         print "Start truecasing of file \"" + inputFile + "\""
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-        self.executor.run(truecaseScript, inputFile, outputFile)
+        result = self.executor.run(truecaseScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Cleaning of aligned files has failed")
+
         print "New truecased file: " + shellutils.getsize(outputFile)
         return outputFile
     
@@ -428,7 +437,7 @@ class Experiment(object):
         if not os.path.exists(modelFile):
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-        return self.executor.run("echo \""+inputText + "\" | " 
+        return shellutils.run("echo \""+inputText + "\" | " 
                               + truecaseScript, return_output=True)
         
        
@@ -437,7 +446,9 @@ class Experiment(object):
         cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                        inputStem + " " + source + " " + target + " " 
                        + outputStem + " 1 " + str(maxLength))
-        self.executor.run(cleanScript)
+        result = self.executor.run(cleanScript)
+        if not result:
+            raise RuntimeError("Cleaning of aligned files has failed")
         outputSource = outputStem+"."+source
         outputTarget = outputStem+"."+target
         print "New cleaned files: " + (shellutils.getsize(outputSource) + " and " + 
