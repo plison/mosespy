@@ -29,10 +29,11 @@ class SlurmExecutor(shellutils.CommandExecutor):
         return super(SlurmExecutor,self).run(cmd, infile, outfile, return_output)
     
      
-    def run_mpi(self, script, infile=None, outfile=None, return_output=False):   
+    def run_mpi(self, script, infile=None, outfile=None, return_output=False):  
+        print self.memory 
         srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(self.memory*3) + "G"
-                +" --exclusive"
+                +" --exclusive "
                 + " --cpus-per-task=" + str(max(self.nbThreads/3))
                 + " --time=" + self.time
                 + " --ntasks 3")
