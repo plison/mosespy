@@ -8,7 +8,7 @@ decoder = moseswrapper.moses_root + "/bin/moses -f"
 
 class SlurmExecutor(shellutils.CommandExecutor):
         
-    def __init__(self, account, time="6:00:00", memory=10, nbThreads=6):
+    def __init__(self, account, time="6:00:00", memory=3936, nbThreads=16):
         self.account = account
         self.time = time
         self.memory = memory
@@ -21,8 +21,8 @@ class SlurmExecutor(shellutils.CommandExecutor):
 
         name = str(uuid.uuid4())[0:5]
         srun = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + str(self.memory) + "G"
-                +" --exclusive --job-name=" + name
+                + " --mem-per-cpu=" + str(self.memory) + "M"
+                +" --job-name=" + name
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time)
         
@@ -33,8 +33,8 @@ class SlurmExecutor(shellutils.CommandExecutor):
     def run_mpi(self, script, stdin=None, stdout=None):  
         name = str(uuid.uuid4())[0:5]
         srun = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + str(self.memory) + "G"
-                +" --exclusive --job-name=" + name
+                + " --mem-per-cpu=" + str(self.memory) + "M"
+                +"  --job-name=" + name
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time)
         
