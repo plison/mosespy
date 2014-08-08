@@ -28,6 +28,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
        
         
     def runs(self, scripts, stdins=None, stdouts=None):
+        print scripts
         jobnames = []
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
@@ -36,9 +37,10 @@ class SlurmExecutor(shellutils.CommandExecutor):
                         +" --exclusive --job-name=" + name
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
-                + " " + script + " &")
+                        + " " + script + " &")
             stdin = stdins[scripts.index(script)] if isinstance(stdins, list) else None
             stdout = stdouts[scripts.index(script)] if isinstance(stdouts, list) else None
+            
             super(SlurmExecutor,self).run(srun_cmd, stdin=stdin, stdout=stdout)
             jobnames.append(name)
         time.sleep(1)
