@@ -19,9 +19,10 @@ class SlurmExecutor(shellutils.CommandExecutor):
         if decoder in script:
             return self.run_mpi(script, stdin, stdout) 
 
+        name = str(uuid.uuid4())[0:5]
         srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(self.memory) + "G"
-                +" --exclusive"
+                +" --exclusive --job-name=" + name
                 + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time)
         
@@ -30,9 +31,10 @@ class SlurmExecutor(shellutils.CommandExecutor):
     
      
     def run_mpi(self, script, stdin=None, stdout=None):  
+        name = str(uuid.uuid4())[0:5]
         srun = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(self.memory*3) + "G"
-                +" --exclusive "
+                +" --exclusive --job-name=" + name
                 + " --cpus-per-task=" + str(max(1, self.nbThreads/3))
                 + " --time=" + self.time)
         
