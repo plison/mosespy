@@ -107,7 +107,7 @@ class SlurmExperiment(Experiment):
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
         scripts = []
         for i in range(0, nbSplits):
-            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
+            scripts.append((tmScript(tmDir, splitDir + "/" + str(i))\
                                 .replace(cleanData, splitDir + "/" +str(i))
                                 + " --last-step 3"))
         self.executor.runs(scripts)
@@ -161,7 +161,7 @@ class SlurmExperiment(Experiment):
         splitDir = self.settings["path"] + "/splits-"+os.path.basename(infile)
         shellutils.resetDir(splitDir)
         infiles = splitData(infile, splitDir, nbSplits)
-        outfiles = [i.replace(self.settings["source"], self.settings["target"]) for i in infiles]
+        outfiles = [splitDir + "/" + i + "." + self.settings["target"] for i in range(0, nbSplits)]
         
         transScript = (moseswrapper.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
         self.executor.runs([transScript]*nbSplits, infiles, outfiles)
