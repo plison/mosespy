@@ -305,10 +305,10 @@ class Experiment(object):
             infile = self.processRawData(infile)["true"]
 
         transScript = (moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
-        self.executor.run(transScript, stdin=infile, outfile=outfile)
+        self.executor.run(transScript, stdin=infile, stdout=outfile)
                                         
     
-    def evaluateBLEU(self, testData=None, preprocess=True):
+    def evaluateBLEU(self, testData, preprocess=True):
  
         print ("Evaluating BLEU scores with test data: " + testData)
         
@@ -320,19 +320,8 @@ class Experiment(object):
         if preprocess:
             testSource = self.processRawData(testSource)["true"]
             testTarget = self.processRawData(testTarget)["true"]
-                 
-        if self.settings.has_key("ttm"):
-            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
-        else:
-            raise RuntimeError("Translation model is not yet tuned")
-
-        filteredDir = self.settings["path"]+ "/filteredmodel"
-        shellutils.rmDir(filteredDir)
         
-        filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
-                        + filteredDir + " " + initFile + " "
-                        + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
-        self.executor.run(filterScript)
+        filteredDir = self.getFilteredModel(testData)
         
         translationfile = testTarget.replace(".true.", ".translated.")
         self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
@@ -340,7 +329,26 @@ class Experiment(object):
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
         self.executor.run(bleuScript, stdin=translationfile)
 
+
+    def getFilteredModel(self, testSource):
+        
+        if self.settings.has_key("ttm"):
+            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet tuned")
+
+        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource
+        
+        if not os.path.exists(filteredDir):
+            shellutils.rmDir(filteredDir)
             
+            filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
+                            + filteredDir + " " + initFile + " "
+                            + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
+            self.executor.run(filterScript)
+        return filteredDir
+            
+    
     def recordState(self):
         dump = json.dumps(self.settings)
         with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
