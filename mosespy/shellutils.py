@@ -1,6 +1,6 @@
 
 import os, subprocess, shutil
-
+from datetime import datetime
 
 
 class CommandExecutor(object):
@@ -25,12 +25,13 @@ class CommandExecutor(object):
             stdout_popen = subprocess.PIPE
         else:
             stdout_popen = None
-            
+        
+        inittime = datetime.now()
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
         
         print "Task [" + str(callincr) + "] " + ("successful" if not p.returncode else "FAILED")
-            
+        print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]  
         if stdout_popen == subprocess.PIPE:
             return out_popen
         else:
