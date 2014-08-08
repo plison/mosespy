@@ -33,9 +33,9 @@ class SlurmExecutor(shellutils.CommandExecutor):
     def run_mpi(self, script, stdin=None, stdout=None):  
         name = str(uuid.uuid4())[0:5]
         srun = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + str(self.memory*3) + "M"
+                + " --mem-per-cpu=" + str(self.memory) + "M"
                 +"  --job-name=" + name
-                + " --cpus-per-task=" + str(self.nbThreads*3)
+                + " --cpus-per-task=" + str(self.nbThreads)
                 + " --time=" + self.time
                 + " --ntasks=" + str(3))
         
