@@ -164,7 +164,7 @@ class SlurmExperiment(Experiment):
         
         transScript = (moseswrapper.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
         self.executor.runs([transScript]*nbSplits, infiles, outfiles)
-        
+     
         with open(outfile, 'w') as out:
             for outfile_part in outfiles:
                 with open(outfile_part, 'r') as part:
