@@ -37,7 +37,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
                         +"  --job-name=" + name
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
-                        + " " + script + " &")
+                        + " " + script )
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
             
