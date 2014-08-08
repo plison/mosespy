@@ -28,13 +28,12 @@ class SlurmExecutor(shellutils.CommandExecutor):
        
         
     def runs(self, scripts, stdins=None, stdouts=None):
-        print scripts
         jobnames = []
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
             srun_cmd = ("srun --account=" + self.account
-                        + " --mem-per-cpu=" + self.memory
-                        +" --exclusive --job-name=" + name
+                        + " --mem-per-cpu=" + str(self.memory) + "M"
+                        +"  --job-name=" + name
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
                         + " " + script + " &")
