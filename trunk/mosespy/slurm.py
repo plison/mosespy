@@ -27,7 +27,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
         return super(SlurmExecutor,self).run(cmd, stdin, stdout)
        
         
-    def runs(self, scripts, stdin=None, stdout=None):
+    def runs(self, scripts, stdins=None, stdouts=None):
         jobnames = []
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
@@ -37,7 +37,9 @@ class SlurmExecutor(shellutils.CommandExecutor):
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
                 + " " + script + " &")
-            super(SlurmExecutor,self).run(srun_cmd, stdin, stdout)
+            stdin = stdins[scripts.index(script)] if isinstance(stdins, list) else None
+            stdout = stdouts[scripts.index(script)] if isinstance(stdouts, list) else None
+            super(SlurmExecutor,self).run(srun_cmd, stdin=stdin, stdout=stdout)
             jobnames.append(name)
         time.sleep(1)
         while True:
@@ -123,6 +125,7 @@ class SlurmExperiment(Experiment):
         tmScript +=  (" -sort-buffer-size 10G -sort-batch-size 1024 " 
                     + " -sort-compress gzip -sort-parallel " + nbThreads)              
         result = self.executor.run(tmScript + " --first-step 4")
+        shellutils.rmDir(splitDir)
 
         if result:
             print "Finished building translation model in: " + shellutils.getsize(tmDir)
@@ -136,6 +139,40 @@ class SlurmExperiment(Experiment):
         Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nbThreads)
           
       
+    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbSplits=4):
+        if customModel:
+            if not os.path.exists(customModel+"/moses.ini"):
+                raise RuntimeError("Custom model " + customModel + " does not exist")
+            initFile = customModel+"/moses.ini"
+        elif self.settings.has_key("btm"):
+            initFile = self.settings["btm"]["dir"] + "/moses.ini"
+        elif self.settings.has_key("ttm"):
+            print "Warning: translation model is not yet binarised"
+            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet trained!")
+        print ("Translating file \"" + infile + "\" from " + 
+               self.settings["source"] + " to " + self.settings["target"])
+
+        if preprocess:
+            infile = self.processRawData(infile)["true"]
+        
+        splitDir = self.settings["path"] + "/splits-"+os.path.basename(infile)
+        shellutils.resetDir(splitDir)
+        infiles = splitData(infile, splitDir, nbSplits)
+        outfiles = [i.replace(self.settings["source"], self.settings["target"]) for i in infiles]
+        
+        transScript = (moseswrapper.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
+        self.executor.runs([transScript]*nbSplits, infiles, outfiles)
+        
+        with open(outfile, 'w') as out:
+            for outfile_part in outfiles:
+                with open(outfile_part, 'r') as part:
+                    for partline in part.readlines():
+                        if partline.strip():
+                            out.write(partline.strip('\n') + '\n')
+ 
+
 
 
 def splitData(dataFile, outputDir, nbSplits):
@@ -143,9 +180,11 @@ def splitData(dataFile, outputDir, nbSplits):
     extension = dataFile.split(".")[len(dataFile.split("."))-1]
     totalLines = int(os.popen("wc -l " + dataFile).read().strip().split(" ")[0])
 
+    filenames = []
     with open(dataFile) as fullFile:
         curSplit = 0
-        curFile = open(outputDir + "/" + str(curSplit) + "." + extension, 'w')
+        filename = outputDir + "/" + str(curSplit) + "." + extension
+        curFile = open(filename, 'w')
         nbLines = 0
         for l in fullFile.readlines():
             curFile.write(l)
@@ -156,6 +195,8 @@ def splitData(dataFile, outputDir, nbSplits):
                 curSplit += 1
                 curFile = open(outputDir + "/" + str(curSplit) + "." + extension, 'w')
         curFile.close()
+        filenames.append(filename)
+    return filenames
 
 
 
