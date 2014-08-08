@@ -56,10 +56,14 @@ def existsExecutable(command):
             if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
                 return True
     return False
+
+
+def rmDir(dirName):
+    shutil.rmtree(dirName, ignore_errors=True)   
         
 
 def resetDir(dirName):
-    shutil.rmtree(dirName, ignore_errors=True)   
+    rmDir(dirName)  
     os.makedirs(dirName)
 
 
