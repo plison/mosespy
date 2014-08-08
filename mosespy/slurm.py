@@ -29,6 +29,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
         
     def runs(self, scripts, stdins=None, stdouts=None):
         jobnames = []
+        i = 0
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
             srun_cmd = ("srun --account=" + self.account
@@ -37,11 +38,13 @@ class SlurmExecutor(shellutils.CommandExecutor):
                         + " --cpus-per-task=" + str(self.nbThreads)
                         + " --time=" + self.time
                         + " " + script + " &")
-            stdin = stdins[scripts.index(script)] if isinstance(stdins, list) else None
-            stdout = stdouts[scripts.index(script)] if isinstance(stdouts, list) else None
+            stdin = stdins[i] if isinstance(stdins, list) else None
+            stdout = stdouts[i] if isinstance(stdouts, list) else None
             
             super(SlurmExecutor,self).run(srun_cmd, stdin=stdin, stdout=stdout)
             jobnames.append(name)
+            i += 1
+            
         time.sleep(1)
         while True:
             queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
