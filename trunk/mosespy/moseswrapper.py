@@ -321,7 +321,7 @@ class Experiment(object):
             testSource = self.processRawData(testSource)["true"]
             testTarget = self.processRawData(testTarget)["true"]
         
-        filteredDir = self.getFilteredModel(testData)
+        filteredDir = self.getFilteredModel(testSource)
         
         translationfile = testTarget.replace(".true.", ".translated.")
         self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
