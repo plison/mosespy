@@ -30,8 +30,6 @@ class SlurmExecutor(shellutils.CommandExecutor):
     def runs(self, scripts, stdins=None, stdouts=None):
         jobnames = []
         i = 0
-        print stdins
-        print stdouts
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
             srun_cmd = ("srun --account=" + self.account
@@ -191,6 +189,7 @@ def splitData(dataFile, outputDir, nbSplits):
     with open(dataFile) as fullFile:
         curSplit = 0
         filename = outputDir + "/" + str(curSplit) + "." + extension
+        filenames.append(filename)
         curFile = open(filename, 'w')
         nbLines = 0
         for l in fullFile.readlines():
@@ -200,9 +199,11 @@ def splitData(dataFile, outputDir, nbSplits):
                 nbLines = 0
                 curFile.close()
                 curSplit += 1
-                curFile = open(outputDir + "/" + str(curSplit) + "." + extension, 'w')
+                filename = outputDir + "/" + str(curSplit) + "." + extension
+                curFile = open(filename, 'w')
+                filenames.append(filename)
+        filename = outputDir + "/" + str(curSplit) + "." + extension
         curFile.close()
-        filenames.append(filename)
     return filenames
 
 
