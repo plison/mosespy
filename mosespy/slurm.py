@@ -1,5 +1,5 @@
 
-import time, os, shellutils, textwrap, re, uuid
+import time, os, shellutils, textwrap, re, uuid, threading
 from mosespy import moseswrapper
 from mosespy.moseswrapper import Experiment 
   
@@ -40,8 +40,10 @@ class SlurmExecutor(shellutils.CommandExecutor):
                         + " " + script )
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
-            
-            super(SlurmExecutor,self).run(srun_cmd, stdin=stdin, stdout=stdout)
+    
+            t = threading.Thread(target=super(SlurmExecutor,self).
+                                 run(srun_cmd, stdin=stdin, stdout=stdout))
+            t.start()
             jobnames.append(name)
             i += 1
             
