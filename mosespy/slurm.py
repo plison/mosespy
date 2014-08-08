@@ -41,8 +41,8 @@ class SlurmExecutor(shellutils.CommandExecutor):
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
     
-            t = threading.Thread(target=super(SlurmExecutor,self).
-                                 run(srun_cmd, stdin=stdin, stdout=stdout))
+            t = threading.Thread(target=super(SlurmExecutor,self).run, 
+                                 args=(srun_cmd, stdin, stdout))
             t.start()
             jobnames.append(name)
             i += 1
