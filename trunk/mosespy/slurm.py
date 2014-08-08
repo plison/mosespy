@@ -40,7 +40,7 @@ class SlurmExecutor(shellutils.CommandExecutor):
                 + " --ntasks=" + str(3))
         
         script = script.replace(decoder, decoder)
-        cmd = srun + " mpirun " + script
+        cmd = srun + " mpirun -np 3 " + script
         return super(SlurmExecutor,self).run(cmd, stdin, stdout)
    
         
