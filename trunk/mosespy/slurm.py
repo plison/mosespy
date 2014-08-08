@@ -30,6 +30,8 @@ class SlurmExecutor(shellutils.CommandExecutor):
     def runs(self, scripts, stdins=None, stdouts=None):
         jobnames = []
         i = 0
+        print stdins
+        print stdouts
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
             srun_cmd = ("srun --account=" + self.account
