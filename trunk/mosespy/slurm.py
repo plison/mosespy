@@ -161,7 +161,8 @@ class SlurmExperiment(Experiment):
         splitDir = self.settings["path"] + "/splits-"+os.path.basename(infile)
         shellutils.resetDir(splitDir)
         infiles = splitData(infile, splitDir, nbSplits)
-        outfiles = [splitDir + "/" + i + "." + self.settings["target"] for i in range(0, nbSplits)]
+        outfiles = [splitDir + "/" + str(i) + "." + self.settings["target"] 
+                    for i in range(0, nbSplits)]
         
         transScript = (moseswrapper.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
         self.executor.runs([transScript]*nbSplits, infiles, outfiles)
