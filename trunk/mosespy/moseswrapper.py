@@ -337,7 +337,7 @@ class Experiment(object):
         else:
             raise RuntimeError("Translation model is not yet tuned")
 
-        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource
+        filteredDir = self.settings["path"]+ "/filteredmodel-" +  os.path.basename(testSource)
         
         if not os.path.exists(filteredDir):
             shellutils.rmDir(filteredDir)
