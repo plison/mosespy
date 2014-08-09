@@ -2,17 +2,19 @@
 
 import sys
 from mosespy.slurm import SlurmExperiment
-from mosespy.moseswrapper import Experiment
+from mosespy.experiment import Experiment
 
-lmData = "./data/opensubtitles/OpenSubtitles2013.en"
-trainData = "./data/opensubtitles/OpenSubtitles2013.en-fr.train"
-tuningData ="./data/opensubtitles/OpenSubtitles2013.en-fr.tune"
-testData = "./data/opensubtitles/OpenSubtitles2013.en-fr.test"
+lmData = "./data/news-commentary/news-commentary-v8.fr-en.en"
+trainData = "./data/news-commentary/news-commentary-v8.fr-en"
 
-exp = SlurmExperiment("opensub1", "fr", "en")
-exp.trainLanguageModel(lmData)
-exp.trainTranslationModel(trainData, nbSplits=8)
-exp.tuneTranslationModel(tuningData)
+
+exp = Experiment("test", "fr", "en")
+lines = exp.divideData(trainData, lmData)
+
+#exp2 = exp.copy("opensub2")
+#exp.trainLanguageModel(lmData)
+#exp2.trainTranslationModel(trainData)
+#exp.tuneTranslationModel(tuningData)
 #exp.binariseModel()
-print exp.translate("Faire revenir les militants sur le terrain et convaincre que le vote est utile.")
-exp.evaluateBLEU(testData)
+#print exp2.translate("Faire revenir les militants sur le terrain et convaincre que le vote est utile.")
+#exp.evaluateBLEU(testData)
