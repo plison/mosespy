@@ -1,10 +1,10 @@
 
 import time, os, shellutils, textwrap, re, uuid, threading
-from mosespy import moseswrapper
-from mosespy.moseswrapper import Experiment 
+from mosespy import experiment
+from mosespy.experiment import Experiment 
   
   
-decoder = moseswrapper.moses_root + "/bin/moses -f"
+decoder = experiment.moses_root + "/bin/moses -f"
 
 class SlurmExecutor(shellutils.CommandExecutor):
         
@@ -81,8 +81,8 @@ class SlurmExperiment(Experiment):
 
         
     def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16, 
-                              alignment=moseswrapper.defaultAlignment, 
-                              reordering=moseswrapper.defaultReordering):
+                              alignment=experiment.defaultAlignment, 
+                              reordering=experiment.defaultReordering):
         
         if nbSplits == 1:
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
@@ -169,7 +169,7 @@ class SlurmExperiment(Experiment):
         outfiles = [splitDir + "/" + str(i) + "." + self.settings["target"] 
                     for i in range(0, nbSplits)]
         
-        transScript = (moseswrapper.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
+        transScript = (experiment.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
         self.executor.runs([transScript]*nbSplits, infiles, outfiles)
      
         with open(outfile, 'w') as out:
@@ -178,6 +178,7 @@ class SlurmExperiment(Experiment):
                     for partline in part.readlines():
                         if partline.strip():
                             out.write(partline.strip('\n') + '\n')
+        shellutils.rmDir(splitDir)
  
 
 
