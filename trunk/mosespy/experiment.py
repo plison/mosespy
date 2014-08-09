@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*- 
 
-import os, json, copy
-import shellutils
-from xml.dom import minidom
+import os, json, copy, random
+from mosespy import utils
 
 
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -16,7 +15,7 @@ defaultReordering = "msd-bidirectional-fe"
 
 class Experiment(object):
     
-    executor = shellutils.CommandExecutor()
+    executor = utils.CommandExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.settings = {}
@@ -32,10 +31,10 @@ class Experiment(object):
             os.makedirs(self.settings["path"]) 
             if sourceLang:
                 self.settings["source"] = sourceLang
-                self.settings["source_long"] = getLanguage(sourceLang)
+                self.settings["source_long"] = utils.getLanguage(sourceLang)
             if targetLang:
                 self.settings["target"] = targetLang
-                self.settings["target_long"] = getLanguage(targetLang)
+                self.settings["target_long"] = utils.getLanguage(targetLang)
                 
                                    
         self.recordState()
@@ -56,30 +55,27 @@ class Experiment(object):
         
         sbFile = processedTrain["true"].replace(".true.", ".sb.")
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", processedTrain["true"], sbFile)
-        self.settings["lm"]["sb"] = sbFile
-        self.recordState()
         
         lmFile = self.settings["path"] + "/langmodel.lm." + lang
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.settings["name"])) 
         self.executor.run(lmScript)
-        self.settings["lm"]["lm"] = lmFile
-        self.recordState()
                            
         arpaFile = self.settings["path"] + "/langmodel.arpa." + lang
         arpaScript = (irstlm_root + "/bin/compile-lm" + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
-        self.settings["lm"]["arpa"] = arpaFile
-        self.recordState()
 
         blmFile = self.settings["path"] + "/langmodel.blm." + lang
         blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
-        print "New binarised language model: " + shellutils.getsize(blmFile)   
+        print "New binarised language model: " + utils.getsize(blmFile)   
         self.settings["lm"]["blm"] = blmFile
+
         self.recordState()
-    
+        os.remove(sbFile)
+        os.remove(lmFile)
+        os.remove(arpaFile)
     
     
     def trainTranslationModel(self, trainStem=None, nbThreads=2, alignment=defaultAlignment, 
@@ -97,15 +93,14 @@ class Experiment(object):
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
-        shellutils.resetDir(tmDir)
+        utils.resetDir(tmDir)
         result = self.executor.run(tmScript)
         if result:
-            print "Finished building translation model in directory " + shellutils.getsize(tmDir)
+            print "Finished building translation model in directory " + utils.getsize(tmDir)
             self.settings["tm"]["dir"]=tmDir
             self.recordState()
         else:
             print "Construction of translation model FAILED"
-            self.executor.run("rm -rf " + tmDir)
 
 
 
@@ -141,9 +136,9 @@ class Experiment(object):
         
         tuneDir = self.settings["path"]+"/tunedmodel"
         tuningScript = self.getTuningScript(tuneDir, nbThreads)
-        shellutils.resetDir(tuneDir)
+        utils.resetDir(tuneDir)
         self.executor.run(tuningScript)
-        print "Finished tuning translation model in directory " + shellutils.getsize(tuneDir)
+        print "Finished tuning translation model in directory " + utils.getsize(tuneDir)
         self.settings["ttm"]["dir"]=tuneDir
         self.recordState()
         
@@ -195,9 +190,9 @@ class Experiment(object):
         
         # STEP 1: tokenisation
         normFile = self.settings["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "norm." + lang
-        dataset["norm"] = self.normaliseFile(rawFile, normFile)
+        self.normaliseFile(rawFile, normFile)
         tokFile = normFile.replace(".norm.", ".tok.") 
-        dataset["tok"] = self.tokeniseFile(normFile, tokFile)
+        self.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
         if not self.settings.has_key("truecasing"):
@@ -205,11 +200,12 @@ class Experiment(object):
         if not self.settings["truecasing"].has_key(lang):
             self.settings["truecasing"][lang] = self.trainTruecasingModel(tokFile, self.settings["path"]
                                                                     + "/truecasingmodel."+lang)
-         
         # STEP 3: truecasing   
         trueFile = tokFile.replace(".tok.", ".true.") 
         modelFile = self.settings["truecasing"][lang]       
-        dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile)   
+        dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile) 
+        os.remove(normFile)  
+        os.remove(tokFile)
         return dataset  
     
 
@@ -223,7 +219,7 @@ class Experiment(object):
         phraseTable = self.settings["tm"]["dir"]+"/model/phrase-table.gz"
         reorderingTable = self.settings["tm"]["dir"]+"/model/reordering-table.wbe-" + self.settings["reordering"] + ".gz"
         
-        shellutils.resetDir(binaDir)
+        utils.resetDir(binaDir)
         binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
                      + " -nscores 5 -out " + binaDir + "/phrase-table")
         result1 = self.executor.run(binScript)
@@ -246,7 +242,7 @@ class Experiment(object):
         
         self.settings["btm"] = {"dir":binaDir}
         self.recordState()
-        print "Finished binarising the translation model in directory " + shellutils.getsize(binaDir)
+        print "Finished binarising the translation model in directory " + utils.getsize(binaDir)
       
    
     def translate(self, text, preprocess=True, customModel=None):
@@ -325,15 +321,13 @@ class Experiment(object):
         else:
             raise RuntimeError("Translation model is not yet tuned")
 
-        filteredDir = self.settings["path"]+ "/filteredmodel-" +  os.path.basename(testSource)
-        
-        if not os.path.exists(filteredDir):
-            shellutils.rmDir(filteredDir)
+        filteredDir = self.settings["path"]+ "/filteredmodel-" +  os.path.basename(testSource) 
+        utils.resetDir(filteredDir)
             
-            filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
-                            + filteredDir + " " + initFile + " "
-                            + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
-            self.executor.run(filterScript)
+        filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
+                        + filteredDir + " " + initFile + " "
+                        + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
+        self.executor.run(filterScript)
         return filteredDir
             
     
@@ -378,7 +372,7 @@ class Experiment(object):
         if not result:
             raise RuntimeError("Cleaning of aligned files has failed")
 
-        print "New tokenised file: " + shellutils.getsize(outputFile)    
+        print "New tokenised file: " + utils.getsize(outputFile)    
             
     #    specialchars = set()
     #    with open(outputFile, 'r') as tmp:
@@ -393,7 +387,7 @@ class Experiment(object):
     
     def tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-        return shellutils.run_output(tokScript, stdin=inputText).strip()
+        return utils.run_output(tokScript, stdin=inputText).strip()
                 
                 
     def trainTruecasingModel(self, inputFile, modelFile):
@@ -406,7 +400,7 @@ class Experiment(object):
         if not result:
             raise RuntimeError("Cleaning of aligned files has failed")
 
-        print "New truecasing model: " + shellutils.getsize(modelFile)
+        print "New truecasing model: " + utils.getsize(modelFile)
         return modelFile
         
         
@@ -424,7 +418,7 @@ class Experiment(object):
         if not result:
             raise RuntimeError("Cleaning of aligned files has failed")
 
-        print "New truecased file: " + shellutils.getsize(outputFile)
+        print "New truecased file: " + utils.getsize(outputFile)
         return outputFile
     
     
@@ -432,7 +426,7 @@ class Experiment(object):
         if not os.path.exists(modelFile):
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
-        return shellutils.run_output(truecaseScript, stdin=inputText)
+        return utils.run_output(truecaseScript, stdin=inputText)
         
        
     def cutoffFiles(self, inputStem, outputStem, source, target, maxLength):
@@ -445,53 +439,110 @@ class Experiment(object):
             raise RuntimeError("Cleaning of aligned files has failed")
         outputSource = outputStem+"."+source
         outputTarget = outputStem+"."+target
-        print "New cleaned files: " + (shellutils.getsize(outputSource) + " and " + 
-                                       shellutils.getsize(outputTarget))
+        print "New cleaned files: " + (utils.getsize(outputSource) + " and " + 
+                                       utils.getsize(outputTarget))
         return outputSource, outputTarget
     
     
     
-def divideData(fullData, nbTuning=1000, nbTesting=3000):
-    if not os.path.exists(fullData):
-        raise RuntimeError("Data " + fullData + " does not exist")
-    datasize = int(shellutils.run_output("wc -l " + fullData).split()[0])
-    if datasize <= nbTuning + nbTesting:
-        raise RuntimeError("Data " + fullData + " is too small")
-    
-    lang = fullData.split(".")[len(fullData.split("."))-1]
-    trainFile = fullData[:-len(lang)] + "train." + lang
-    tuningFile = fullData[:-len(lang)] + "tune." + lang
-    testFile = fullData[:-len(lang)] + "test." + lang
-    data = open(fullData, 'r')
-    train = open(trainFile, 'w')
-    tune = open(tuningFile, 'w')
-    test = open(testFile, 'w')
-    i = 0
-    for l in data.readlines():
-        if l.strip():
-            if i < (datasize  - nbTuning - nbTesting):
-                train.write(l)
-            elif i < (datasize - nbTesting):
-                tune.write(l)
+    def divideData(self, alignedData, lmData, nbTuning=1000, nbTesting=3000):
+        
+        fullSource = alignedData + "." + self.settings["source"]
+        fullTarget = alignedData + "." + self.settings["target"]
+        
+        if not os.path.exists(fullSource) or not os.path.exists(fullTarget):
+            raise RuntimeError("Data " + alignedData + " does not exist")
+        
+        nbLinesSource = int(utils.run_output("wc -l " + fullSource).split()[0])
+        nbLinesTarget = int(utils.run_output("wc -l " + fullTarget).split()[0])
+        if nbLinesSource != nbLinesTarget:
+            raise RuntimeError("Number of lines for source and target are different")
+        if nbLinesSource <= nbTuning + nbTesting:
+            raise RuntimeError("Data " + alignedData + " is too small")
+         
+        fullSource = open(fullSource, 'r')
+        fullTarget = open(fullTarget, 'r')
+        trainSource = open(alignedData + ".train." + self.settings["source"], 'w')
+        trainTarget = open(alignedData + ".train." + self.settings["target"], 'w')
+        tuneSource = open(alignedData + ".tune." + self.settings["source"], 'w')
+        tuneTarget = open(alignedData + ".tune." + self.settings["target"], 'w')
+        testSource = open(alignedData + ".test." + self.settings["source"], 'w')
+        testTarget = open(alignedData + ".test." + self.settings["target"], 'w')
+        
+        tuningLines = []
+        while len(tuningLines) < nbTuning:
+            choice = random.randrange(2, nbLinesSource)
+            if choice not in tuningLines:
+                tuningLines.append(choice)
+        
+        testingLines = []
+        while len(testingLines) < nbTesting:
+            choice = random.randrange(2, nbLinesSource)
+            if choice not in tuningLines and choice not in testingLines:
+                testingLines.append(choice)
+          
+        i = 0
+        print "Dividing source data..."
+        for l in fullSource.readlines():
+            if i in tuningLines:
+                tuneSource.write(l)
+            elif i in testingLines:
+                testSource.write(l)
             else:
-                test.write(l)
+                trainSource.write(l)
             i += 1
-    data.close()
-    train.close()
-    tune.close()
-    test.close()
-    return trainFile, tuningFile, testFile
-
-
-
-def getLanguage(langcode):
-    isostandard = minidom.parse(os.path.dirname(__file__)+"/iso639.xml")
-    itemlist = isostandard.getElementsByTagName('iso_639_entry') 
-    for item in itemlist :
-        if (item.attributes.has_key('iso_639_1_code') 
-            and item.attributes[u'iso_639_1_code'].value == langcode):
-                return item.attributes['name'].value
-    raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
-   
- 
-
+        i = 0
+        print "Dividing target data..."
+        for l in fullTarget.readlines():
+            if i in tuningLines:
+                tuneTarget.write(l)
+            elif i in testingLines:
+                testTarget.write(l)
+            else:
+                trainTarget.write(l)
+            i += 1
+         
+        for f in [fullSource, fullTarget, trainSource, trainTarget,
+                  tuneSource, tuneTarget, testSource, testTarget]:
+            f.close()
+         
+        inData = open(lmData, 'r')
+        outData = open(lmData[:-len(self.settings["target"])] 
+                       + "wotest." + self.settings["target"], 'w')
+        
+        fullTarget = open(fullTarget.name, 'r')
+      
+        print "Filtering language model to remove test sentences..."
+        prev2Lines = []
+        prevLines = []
+        lines = []
+        i = 0
+        for l in fullTarget.readlines():
+            if (i+2) in testingLines:
+                prev2Lines.append(l)
+            if (i+1) in testingLines:
+                prevLines.append(l)
+            if i in testingLines:
+                lines.append(l)
+            i += 1
+                
+        prev2Line = None
+        prevLine = None
+        skippedLines = []
+        for l in inData.readlines():
+            toDelete = False
+            if l in lines:
+                indices = [i for i, x in enumerate(lines) if x == l]
+                for i in indices:
+                    if prev2Line == prev2Lines[i] and prevLine == prevLines[i]:
+                        toDelete = True
+            if not toDelete:
+                outData.write(l)
+            else:
+                skippedLines.append(l)
+                                
+            prev2Line = prevLine
+            prevLine = l
+        
+        print "Number of skipped lines in language model: " + str(len(skippedLines))
+            

@@ -1,12 +1,13 @@
 
-import time, os, shellutils, textwrap, re, uuid, threading
+import time, os, textwrap, re, uuid, threading
+from mosespy import utils
 from mosespy import experiment
 from mosespy.experiment import Experiment 
   
   
 decoder = experiment.moses_root + "/bin/moses -f"
 
-class SlurmExecutor(shellutils.CommandExecutor):
+class SlurmExecutor(utils.CommandExecutor):
         
     def __init__(self, account, time="6:00:00", memory=3936, nbThreads=16):
         self.account = account
@@ -62,7 +63,7 @@ class SlurmExperiment(Experiment):
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
-        if not shellutils.existsExecutable("srun"):
+        if not utils.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
         elif not account:
@@ -104,7 +105,7 @@ class SlurmExperiment(Experiment):
                + " with " + str(nbSplits) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
-        shellutils.resetDir(splitDir)
+        utils.resetDir(splitDir)
         splitData(cleanData + "." + self.settings["source"], splitDir, nbSplits)
         splitData(cleanData + "." + self.settings["target"], splitDir, nbSplits)
 
@@ -117,7 +118,7 @@ class SlurmExperiment(Experiment):
                                 + " --last-step 3"))
         self.executor.runs(scripts)
         
-        shellutils.resetDir(tmDir)
+        utils.resetDir(tmDir)
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
@@ -131,10 +132,10 @@ class SlurmExperiment(Experiment):
         tmScript +=  (" -sort-buffer-size 10G -sort-batch-size 1024 " 
                     + " -sort-compress gzip -sort-parallel " + nbThreads)              
         result = self.executor.run(tmScript + " --first-step 4")
-        shellutils.rmDir(splitDir)
+        utils.rmDir(splitDir)
 
         if result:
-            print "Finished building translation model in: " + shellutils.getsize(tmDir)
+            print "Finished building translation model in: " + utils.getsize(tmDir)
             self.settings["tm"]["dir"]=tmDir
             self.recordState()
         else:
@@ -164,7 +165,7 @@ class SlurmExperiment(Experiment):
             infile = self.processRawData(infile)["true"]
         
         splitDir = self.settings["path"] + "/splits-"+os.path.basename(infile)
-        shellutils.resetDir(splitDir)
+        utils.resetDir(splitDir)
         infiles = splitData(infile, splitDir, nbSplits)
         outfiles = [splitDir + "/" + str(i) + "." + self.settings["target"] 
                     for i in range(0, nbSplits)]
@@ -178,7 +179,7 @@ class SlurmExperiment(Experiment):
                     for partline in part.readlines():
                         if partline.strip():
                             out.write(partline.strip('\n') + '\n')
-        shellutils.rmDir(splitDir)
+        utils.rmDir(splitDir)
  
 
 
