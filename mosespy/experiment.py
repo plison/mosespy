@@ -40,9 +40,18 @@ class Experiment(object):
         self.recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
-        
+      
     
-                      
+    
+    def doWholeShibang(self, alignedData, lmData=None):
+        if not lmData:
+            lmData = alignedData + "." + self.settings["target"]
+        trainStem, tuneStem, testStem, lmData = self.divideData(alignedData, lmData)
+        self.trainLanguageModel(lmData)
+        self.trainTranslationModel(trainStem)
+        self.tuneTranslationModel(tuneStem)
+        self.evaluateBLEU(testStem)
+                    
     
     def trainLanguageModel(self, trainFile, ngram_order=3):
         lang = trainFile.split(".")[len(trainFile.split("."))-1]
@@ -74,7 +83,7 @@ class Experiment(object):
 
         self.recordState()
         os.remove(sbFile)
-        os.remove(lmFile)
+        os.remove(lmFile) + ".gz"
         os.remove(arpaFile)
     
     
@@ -462,12 +471,15 @@ class Experiment(object):
          
         fullSource = open(fullSource, 'r')
         fullTarget = open(fullTarget, 'r')
-        trainSource = open(alignedData + ".train." + self.settings["source"], 'w')
-        trainTarget = open(alignedData + ".train." + self.settings["target"], 'w')
-        tuneSource = open(alignedData + ".tune." + self.settings["source"], 'w')
-        tuneTarget = open(alignedData + ".tune." + self.settings["target"], 'w')
-        testSource = open(alignedData + ".test." + self.settings["source"], 'w')
-        testTarget = open(alignedData + ".test." + self.settings["target"], 'w')
+        trainStem = alignedData + ".train"
+        trainSource = open(trainStem + ". " + self.settings["source"], 'w')
+        trainTarget = open(trainStem + ". " + self.settings["target"], 'w')
+        tuneStem = alignedData + ".tune"
+        tuneSource = open(tuneStem + "." + self.settings["source"], 'w')
+        tuneTarget = open(tuneStem + "." + self.settings["target"], 'w')
+        testStem = alignedData + ".test"
+        testSource = open(testStem + "." + self.settings["source"], 'w')
+        testTarget = open(testStem + "." + self.settings["target"], 'w')
         
         tuningLines = []
         while len(tuningLines) < nbTuning:
@@ -507,8 +519,8 @@ class Experiment(object):
             f.close()
          
         inData = open(lmData, 'r')
-        outData = open(lmData[:-len(self.settings["target"])] 
-                       + "wotest." + self.settings["target"], 'w')
+        newLmFile = lmData[:-len(self.settings["target"])] + "wotest." + self.settings["target"]
+        outData = open(newLmFile, 'w')
         
         fullTarget = open(fullTarget.name, 'r')
       
@@ -545,4 +557,5 @@ class Experiment(object):
             prevLine = l
         
         print "Number of skipped lines in language model: " + str(len(skippedLines))
+        return trainStem, tuneStem, testStem, newLmFile
             
