@@ -83,7 +83,7 @@ class Experiment(object):
 
         self.recordState()
         os.remove(sbFile)
-        os.remove(lmFile) + ".gz"
+        os.remove(lmFile+ ".gz") 
         os.remove(arpaFile)
     
     
