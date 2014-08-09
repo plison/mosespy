@@ -1,6 +1,7 @@
 
 import os, subprocess, shutil
 from datetime import datetime
+from xml.dom import minidom
 
 
 class CommandExecutor(object):
@@ -81,4 +82,18 @@ def getsize(filename):
     elif os.path.isdir(filename):
         return filename + " (" + os.popen('du -sh ' + filename).read().split(" ")[0] + ")"
     return "(not found)"
+
+
+
+def getLanguage(langcode):
+    rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    isostandard = minidom.parse(rootDir+"/data/iso639.xml")
+    itemlist = isostandard.getElementsByTagName('iso_639_entry') 
+    for item in itemlist :
+        if (item.attributes.has_key('iso_639_1_code') 
+            and item.attributes[u'iso_639_1_code'].value == langcode):
+                return item.attributes['name'].value
+    raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
+   
+ 
 
