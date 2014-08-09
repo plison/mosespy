@@ -472,8 +472,8 @@ class Experiment(object):
         fullSource = open(fullSource, 'r')
         fullTarget = open(fullTarget, 'r')
         trainStem = alignedData + ".train"
-        trainSource = open(trainStem + ". " + self.settings["source"], 'w')
-        trainTarget = open(trainStem + ". " + self.settings["target"], 'w')
+        trainSource = open(trainStem + "." + self.settings["source"], 'w')
+        trainTarget = open(trainStem + "." + self.settings["target"], 'w')
         tuneStem = alignedData + ".tune"
         tuneSource = open(tuneStem + "." + self.settings["source"], 'w')
         tuneTarget = open(tuneStem + "." + self.settings["target"], 'w')
