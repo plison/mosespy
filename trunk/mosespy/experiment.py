@@ -5,18 +5,6 @@ import shellutils
 from xml.dom import minidom
 
 
-# TODO:
-# - get things to work independently of start directory (and test)
-# - test whole pipeline with and without Slurm
-# - refactor code
-# - add bleu evaluation
-# - copy from previous experiments
-
-#Next steps:
-# - copy from one experiment to another
-# - refactor
-
-
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 expDir = rootDir + "/experiments/"
 moses_root = rootDir + "/moses" 
