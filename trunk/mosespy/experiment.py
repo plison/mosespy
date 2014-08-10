@@ -551,7 +551,6 @@ class Experiment(object):
         for l in inData.readlines():
             if l in linesdict:
                 for lineinfo in linesdict[l]:
-                    print lineinfo
                     if prev2Line == lineinfo["i-2"] and prevLine == lineinfo["i-1"]:
                         skippedLines.append(l)
                         continue
