@@ -88,7 +88,7 @@ class SlurmExperiment(Experiment):
             return
              
         if preprocess:         
-            trainStem = self.processAlignedData(trainStem)
+            trainStem = self.processAlignedData(trainStem)["clean"]
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  trainStem
