@@ -119,7 +119,8 @@ class SlurmExperiment(Experiment):
                         if partline.strip():
                             align.write(partline.strip('\n') + '\n')
                             
-        tmScript +=  (" -sort-buffer-size 10G -sort-batch-size 1024 " 
+        tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
+                      + "-sort-batch-size 1024 " 
                     + " -sort-compress gzip -sort-parallel " + nodeCpus)              
         result = self.executor.run(tmScript + " --first-step 4")
         utils.rmDir(splitDir)
