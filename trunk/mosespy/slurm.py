@@ -108,7 +108,7 @@ class SlurmExperiment(Experiment):
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
         scripts = []
         for i in range(0, nbSplits):
-            scripts.append((tmScript(tmDir, splitDir + "/" + str(i))\
+            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3"))
         self.executor.runs(scripts)
