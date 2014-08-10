@@ -87,18 +87,14 @@ class Experiment(object):
         os.remove(arpaFile)
     
     
-    def trainTranslationModel(self, trainStem=None, nbThreads=2, alignment=defaultAlignment, 
-                              reordering=defaultReordering):
+    def trainTranslationModel(self, trainStem, nbThreads=2, alignment=defaultAlignment, 
+                              reordering=defaultReordering, preprocess=True):
            
-        if trainStem:         
-            trainData = self.processAlignedData(trainStem)
-            self.settings["tm"] = {"data": trainData}
-            self.recordState()        
-        elif not self.settings.has_key("tm") or not self.settings["tm"].has_key("data"):
-            raise RuntimeError("Aligned training data is not yet processed")    
-        
+        if preprocess:         
+            trainStem = self.processAlignedData(trainStem)["clean"]
+       
         print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + self.settings["tm"]["data"]["clean"])
+               + self.settings["target"] + " with " + trainStem)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)

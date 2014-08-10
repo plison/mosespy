@@ -81,7 +81,7 @@ class SlurmExperiment(Experiment):
         self.executor = SlurmExecutor(account)
 
         
-    def trainTranslationModel(self, trainStem=None, nbSplits=1, nbThreads=16, 
+    def trainTranslationModel(self, trainStem, preprocess=True, nbSplits=8, nbThreads=16, 
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
         
@@ -92,29 +92,24 @@ class SlurmExperiment(Experiment):
         if not self.settings.has_key("slurm_account"):
             raise RuntimeError("SLURM system not present, cannot split model training")
        
-        if trainStem:         
-            trainData = self.processAlignedData(trainStem)
-            self.settings["tm"] = {"data": trainData}
-            self.recordState()        
-        elif not self.settings.has_key("tm") or not self.settings["tm"].has_key("data"):
-            raise RuntimeError("Aligned training data is not yet processed")  
+        if preprocess:         
+            trainStem = self.processAlignedData(trainStem)
         
-        cleanData = self.settings["tm"]["data"]["clean"]         
         print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " +  cleanData
+               + self.settings["target"] + " with " +  trainStem
                + " with " + str(nbSplits) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        splitData(cleanData + "." + self.settings["source"], splitDir, nbSplits)
-        splitData(cleanData + "." + self.settings["target"], splitDir, nbSplits)
+        splitData(trainStem + "." + self.settings["source"], splitDir, nbSplits)
+        splitData(trainStem + "." + self.settings["target"], splitDir, nbSplits)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
         scripts = []
         for i in range(0, nbSplits):
             scripts.append((tmScript(tmDir, splitDir + "/" + str(i))\
-                                .replace(cleanData, splitDir + "/" +str(i))
+                                .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3"))
         self.executor.runs(scripts)
         
