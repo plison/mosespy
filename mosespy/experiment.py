@@ -539,21 +539,22 @@ class Experiment(object):
         
         
         linesdict = {}
-        for l in lines:
-            if l["i"] not in linesdict:
-                linesdict[l["i"]] = [l]
+        for lineinfo in lines:
+            if lineinfo["i"] not in linesdict:
+                linesdict[lineinfo["i"]] = [lineinfo]
             else:
-                linesdict[l["i"]].append(l)    
+                linesdict[lineinfo["i"]].append(lineinfo)    
         
-                
         prev2Line = None
         prevLine = None
         skippedLines = []
         for l in inData.readlines():
             if l in linesdict:
-                if prev2Line == linesdict[l]["i-2"] and prevLine == linesdict[l]["i-1"]:
-                    skippedLines.append(l)
-                    continue
+                for lineinfo in linesdict[l]:
+                    print lineinfo
+                    if prev2Line == lineinfo["i-2"] and prevLine == lineinfo["i-1"]:
+                        skippedLines.append(l)
+                        continue
             outData.write(l)                                
             prev2Line = prevLine
             prevLine = l
