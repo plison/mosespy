@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*- 
 
 import os, json, copy, random
-from mosespy import utils
+import utils
 
 
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -159,7 +159,7 @@ class Experiment(object):
                       + self.settings["tm"]["dir"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
-                      + " --decoder-flags=\'-threads %i\' --working-dir " + tuneDir
+                      + " --decoder-flags=\'-threads %i\ -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
         
@@ -458,8 +458,8 @@ class Experiment(object):
         if not os.path.exists(fullSource) or not os.path.exists(fullTarget):
             raise RuntimeError("Data " + alignedData + " does not exist")
         
-        nbLinesSource = int(utils.run_output("wc -l " + fullSource).split()[0])
-        nbLinesTarget = int(utils.run_output("wc -l " + fullTarget).split()[0])
+        nbLinesSource = utils.countNbLines(fullSource)
+        nbLinesTarget = utils.countNbLines(fullTarget)
         if nbLinesSource != nbLinesTarget:
             raise RuntimeError("Number of lines for source and target are different")
         if nbLinesSource <= nbTuning + nbTesting:
