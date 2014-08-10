@@ -115,7 +115,7 @@ def splitData(data, outputDir, nbSplits):
         lines = fullFile.readlines()
         fullFile.close()
     else:
-        print data.__name__
+        print data
         raise RuntimeError("cannot split the content")
         
     totalLines = len(lines) 
