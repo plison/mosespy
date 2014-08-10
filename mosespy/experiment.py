@@ -534,7 +534,7 @@ class Experiment(object):
                 curLine["i-1"] = l
             if i in testingLines:
                 curLine["i"] = l
-                lines.append(l)
+                lines.append(curLine)
             i += 1
         
         
