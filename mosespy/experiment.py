@@ -549,12 +549,14 @@ class Experiment(object):
         prevLine = None
         skippedLines = []
         for l in inData.readlines():
+            toSkip = False
             if l in linesdict:
                 for lineinfo in linesdict[l]:
                     if prev2Line == lineinfo["i-2"] and prevLine == lineinfo["i-1"]:
                         skippedLines.append(l)
-                        continue
-            outData.write(l)                                
+                        toSkip = True
+            if not toSkip:
+                outData.write(l)                                
             prev2Line = prevLine
             prevLine = l
         
