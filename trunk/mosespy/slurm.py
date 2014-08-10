@@ -100,7 +100,7 @@ class SlurmExperiment(Experiment):
         utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(tmDir, nodeCpus, alignment, reordering)
+        tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
         scripts = []
         for i in range(0, self.nbJobs):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\

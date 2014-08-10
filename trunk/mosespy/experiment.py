@@ -97,7 +97,7 @@ class Experiment(object):
                + self.settings["target"] + " with " + trainStem)
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
+        tmScript = self.getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
         utils.resetDir(tmDir)
         result = self.executor.run(tmScript)
         if result:
@@ -109,13 +109,13 @@ class Experiment(object):
 
 
 
-    def getTrainScript(self ,tmDir, nbThreads, alignment, reordering):
+    def getTrainScript(self ,tmDir, trainData, nbThreads, alignment, reordering):
         if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.settings["target_long"] 
                                + " is not yet trained")
 
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
-                    + "--root-dir " + tmDir + " -corpus " +  self.settings["tm"]["data"]["clean"]
+                    + "--root-dir " + tmDir + " -corpus " +  trainData
                     + " -f " + self.settings["source"] + " -e " + self.settings["target"] 
                     + " -alignment " + alignment + " " 
                     + " -reordering " + reordering + " "
