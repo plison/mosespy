@@ -1,29 +1,27 @@
 
-import time, os, re, uuid, threading
+import os, re, uuid, threading, time
 import utils, experiment, moses_parallel
 from experiment import Experiment 
   
-  
-decoder = experiment.moses_root + "/bin/moses -f"
+nodeMemory=62000
+nodeCpus = 16
+nodeTime = "8:00:00"
 
 class SlurmExecutor(utils.CommandExecutor):
         
-    def __init__(self, account=None, time="6:00:00", memory=3936, nbThreads=16):
+    def __init__(self, account=None):
         if not account:
             account = getDefaultSlurmAccount()
         self.account = account
-        self.time = time
-        self.memory = memory
-        self.nbThreads = nbThreads
         
     def run(self, script, stdin=None, stdout=None):
         
         name = str(uuid.uuid4())[0:5]
         srun = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + str(self.memory) + "M"
+                + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
                 +" --job-name=" + name
-                + " --cpus-per-task=" + str(self.nbThreads)
-                + " --time=" + self.time)
+                + " --cpus-per-task=" + str(nodeCpus)
+                + " --time=" + nodeTime)
         
         cmd = srun + " " + script 
         return super(SlurmExecutor,self).run(cmd, stdin, stdout)
@@ -35,10 +33,10 @@ class SlurmExecutor(utils.CommandExecutor):
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
             srun_cmd = ("srun --account=" + self.account
-                        + " --mem-per-cpu=" + str(self.memory) + "M"
+                        + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
                         +"  --job-name=" + name
-                        + " --cpus-per-task=" + str(self.nbThreads)
-                        + " --time=" + self.time
+                        + " --cpus-per-task=" + str(nodeCpus)
+                        + " --time=" + nodeTime
                         + " " + script )
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
@@ -61,7 +59,8 @@ class SlurmExecutor(utils.CommandExecutor):
         
 class SlurmExperiment(Experiment):
             
-    def __init__(self, expName, sourceLang=None, targetLang=None, account=None):
+    def __init__(self, expName, sourceLang=None, targetLang=None, 
+                 account=None, nbJobs=8):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not utils.existsExecutable("srun"):
@@ -76,14 +75,16 @@ class SlurmExperiment(Experiment):
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
         self.executor = SlurmExecutor(account)
+        self.nbJobs = nbJobs
+        self.decoder = moses_parallel.__file__
 
         
-    def trainTranslationModel(self, trainStem, preprocess=True, nbSplits=8, nbThreads=16, 
+    def trainTranslationModel(self, trainStem, preprocess=True,
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
         
-        if nbSplits == 1:
-            Experiment.trainTranslationModel(self, trainStem, nbThreads)
+        if self.nbJobs == 1:
+            Experiment.trainTranslationModel(self, trainStem, nodeCpus)
             return
              
         if preprocess:         
@@ -91,17 +92,17 @@ class SlurmExperiment(Experiment):
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  trainStem
-               + " with " + str(nbSplits) + " splits")
+               + " with " + str(self.nbJobs) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        utils.splitData(trainStem + "." + self.settings["source"], splitDir, nbSplits)
-        utils.splitData(trainStem + "." + self.settings["target"], splitDir, nbSplits)
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
+        tmScript = self.getTrainScript(tmDir, nodeCpus, alignment, reordering)
         scripts = []
-        for i in range(0, nbSplits):
+        for i in range(0, self.nbJobs):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3"))
@@ -111,7 +112,7 @@ class SlurmExperiment(Experiment):
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
-            for split in range(0, nbSplits):
+            for split in range(0, self.nbJobs):
                 splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
                 with open(splitFile) as part:
                     for partline in part.readlines():
@@ -119,7 +120,7 @@ class SlurmExperiment(Experiment):
                             align.write(partline.strip('\n') + '\n')
                             
         tmScript +=  (" -sort-buffer-size 10G -sort-batch-size 1024 " 
-                    + " -sort-compress gzip -sort-parallel " + nbThreads)              
+                    + " -sort-compress gzip -sort-parallel " + nodeCpus)              
         result = self.executor.run(tmScript + " --first-step 4")
         utils.rmDir(splitDir)
 
@@ -130,54 +131,26 @@ class SlurmExperiment(Experiment):
         else:
             self.executor.run("rm -rf " + tmDir)
     
-    
-    def getTuningScript(self, tuneDir, nbThreads):
-        script = super(SlurmExperiment, self).getTuningScript(tuneDir, nbThreads)
-        script.replace(experiment.moses_root + "/bin/moses", moses_parallel.__file__)
-        return script
- 
-            
-    def tokeniseFile(self, inputFile, outputFile, nbThreads=16):
-        Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nbThreads)
+                
+    def tokeniseFile(self, inputFile, outputFile):
+        Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nodeCpus)
           
-      
-    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbSplits=4):
-        if customModel:
-            if not os.path.exists(customModel+"/moses.ini"):
-                raise RuntimeError("Custom model " + customModel + " does not exist")
-            initFile = customModel+"/moses.ini"
-        elif self.settings.has_key("btm"):
-            initFile = self.settings["btm"]["dir"] + "/moses.ini"
-        elif self.settings.has_key("ttm"):
-            print "Warning: translation model is not yet binarised"
-            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
-        else:
-            raise RuntimeError("Translation model is not yet trained!")
-        print ("Translating file \"" + infile + "\" from " + 
-               self.settings["source"] + " to " + self.settings["target"])
 
-        if preprocess:
-            infile = self.processRawData(infile)["true"]
+    def getTuningScript(self, tuneDir):
+        script = super(SlurmExperiment, self).getTuningScript(tuneDir, nodeCpus)
+        script.replace("--decoder-flags=\'", "--decoder-flags=\'-njobs " + self.nbJobs + " ")
+        return script
+
+
+    def translate(self, text, preprocess=True, customModel=None, nbThreads=2):
+        return super(SlurmExperiment, self).translate(text, preprocess, customModel, nodeCpus)
+    
+    
+    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=2):
         
-        splitDir = self.settings["path"] + "/splits-"+os.path.basename(infile)
-        utils.resetDir(splitDir)
-        infiles = utils.splitData(infile, splitDir, nbSplits)
-        outfiles = [splitDir + "/" + str(i) + "." + self.settings["target"] 
-                    for i in range(0, nbSplits)]
-        
-        transScript = (experiment.moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
-        self.executor.runs([transScript]*nbSplits, infiles, outfiles)
-     
-        with open(outfile, 'w') as out:
-            for outfile_part in outfiles:
-                with open(outfile_part, 'r') as part:
-                    for partline in part.readlines():
-                        if partline.strip():
-                            out.write(partline.strip('\n') + '\n')
-        utils.rmDir(splitDir)
- 
-
-
+        return super(SlurmExperiment, self).translateFile(infile, outfile, preprocess, 
+                                                          customModel, nodeCpus)
+    
 
 
 def getDefaultSlurmAccount():

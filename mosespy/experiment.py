@@ -36,7 +36,7 @@ class Experiment(object):
                 self.settings["target"] = targetLang
                 self.settings["target_long"] = utils.getLanguage(targetLang)
                 
-                                   
+        self.decoder = moses_root + "/bin/moses"         
         self.recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
@@ -120,14 +120,14 @@ class Experiment(object):
                     + " -alignment " + alignment + " " 
                     + " -reordering " + reordering + " "
                     + " -lm 0:" +str(self.settings["lm"]["ngram_order"])
-                    +":"+self.settings["lm"]["blm"]+":8"                        # 8 because binarised with KenLM
+                    +":"+self.settings["lm"]["blm"]+":8"       # 8 because binarised with KenLM
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel"
                     )%(nbThreads, nbThreads)
         return tmScript
                        
 
-    def tuneTranslationModel(self, tuningStem=None, memoryGb=32, nbThreads=16):
+    def tuneTranslationModel(self, tuningStem=None, nbThreads=2):
         
         if tuningStem:         
             tuningData = self.processAlignedData(tuningStem)
@@ -250,7 +250,7 @@ class Experiment(object):
         print "Finished binarising the translation model in directory " + utils.getsize(binaDir)
       
    
-    def translate(self, text, preprocess=True, customModel=None):
+    def translate(self, text, preprocess=True, customModel=None, nbThreads=2):
         if customModel:
             if not os.path.exists(customModel+"/moses.ini"):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
@@ -269,13 +269,14 @@ class Experiment(object):
             text = self.tokenise(text, self.settings["source"])
             text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
 
-        transScript = (moses_root + "/bin/moses -f " + initFile.encode('utf-8'))
+        transScript = (self.decoder + " -f " + initFile.encode('utf-8') 
+                       + " -threads " + str(nbThreads))
 
         # maybe we should try to untokenise the translation before sending it back?
         return self.executor.run_output(transScript, stdin=text)
         
    
-    def translateFile(self, infile, outfile, preprocess=True, customModel=None):
+    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=2):
         if customModel:
             if not os.path.exists(customModel+"/moses.ini"):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
@@ -293,7 +294,8 @@ class Experiment(object):
         if preprocess:
             infile = self.processRawData(infile)["true"]
 
-        transScript = (moses_root + "/bin/moses" + " -f " + initFile.encode('utf-8'))
+        transScript = (self.decoder + " -f " + initFile.encode('utf-8')
+                        + " -threads " + str(nbThreads))
         self.executor.run(transScript, stdin=infile, stdout=outfile)
                                         
     
@@ -361,9 +363,7 @@ class Experiment(object):
         if not result:
             raise RuntimeError("Cleaning of aligned files has failed")
 
-        return outputFile
-        
-    
+        return outputFile   
       
     def tokeniseFile(self, inputFile, outputFile, nbThreads=2):
         lang = inputFile.split(".")[len(inputFile.split("."))-1]
