@@ -60,7 +60,7 @@ class SlurmExecutor(utils.CommandExecutor):
 class SlurmExperiment(Experiment):
             
     def __init__(self, expName, sourceLang=None, targetLang=None, 
-                 account=None, nbJobs=8):
+                 account=None, nbJobs=4):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not utils.existsExecutable("srun"):
