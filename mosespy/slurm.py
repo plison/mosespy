@@ -1,15 +1,16 @@
 
-import time, os, textwrap, re, uuid, threading
-from mosespy import utils
-from mosespy import experiment
-from mosespy.experiment import Experiment 
+import time, os, re, uuid, threading
+import utils, experiment, moses_parallel
+from experiment import Experiment 
   
   
 decoder = experiment.moses_root + "/bin/moses -f"
 
 class SlurmExecutor(utils.CommandExecutor):
         
-    def __init__(self, account, time="6:00:00", memory=3936, nbThreads=16):
+    def __init__(self, account=None, time="6:00:00", memory=3936, nbThreads=16):
+        if not account:
+            account = getDefaultSlurmAccount()
         self.account = account
         self.time = time
         self.memory = memory
@@ -66,11 +67,7 @@ class SlurmExperiment(Experiment):
         if not utils.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
-        elif not account:
-            account = getDefaultSlurmAccount()
-        if account:
-            self.settings["slurm_account"] = account
-      
+    
         os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
                                          .read().strip('\n') + ":"
                                          + os.popen("module load openmpi.intel ; echo $LD_LIBRARY_PATH")
@@ -88,10 +85,7 @@ class SlurmExperiment(Experiment):
         if nbSplits == 1:
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
-        
-        if not self.settings.has_key("slurm_account"):
-            raise RuntimeError("SLURM system not present, cannot split model training")
-       
+             
         if preprocess:         
             trainStem = self.processAlignedData(trainStem)
         
@@ -101,8 +95,8 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        splitData(trainStem + "." + self.settings["source"], splitDir, nbSplits)
-        splitData(trainStem + "." + self.settings["target"], splitDir, nbSplits)
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, nbSplits)
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, nbSplits)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, nbThreads, alignment, reordering)
@@ -135,7 +129,13 @@ class SlurmExperiment(Experiment):
             self.recordState()
         else:
             self.executor.run("rm -rf " + tmDir)
-            
+    
+    
+    def getTuningScript(self, tuneDir, nbThreads):
+        script = super(SlurmExperiment, self).getTuningScript(tuneDir, nbThreads)
+        script.replace(experiment.moses_root + "/bin/moses", moses_parallel.__file__)
+        return script
+ 
             
     def tokeniseFile(self, inputFile, outputFile, nbThreads=16):
         Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nbThreads)
@@ -161,7 +161,7 @@ class SlurmExperiment(Experiment):
         
         splitDir = self.settings["path"] + "/splits-"+os.path.basename(infile)
         utils.resetDir(splitDir)
-        infiles = splitData(infile, splitDir, nbSplits)
+        infiles = utils.splitData(infile, splitDir, nbSplits)
         outfiles = [splitDir + "/" + str(i) + "." + self.settings["target"] 
                     for i in range(0, nbSplits)]
         
@@ -179,33 +179,6 @@ class SlurmExperiment(Experiment):
 
 
 
-def splitData(dataFile, outputDir, nbSplits):
-        
-    extension = dataFile.split(".")[len(dataFile.split("."))-1]
-    totalLines = int(os.popen("wc -l " + dataFile).read().strip().split(" ")[0])
-
-    filenames = []
-    with open(dataFile) as fullFile:
-        curSplit = 0
-        filename = outputDir + "/" + str(curSplit) + "." + extension
-        filenames.append(filename)
-        curFile = open(filename, 'w')
-        nbLines = 0
-        for l in fullFile.readlines():
-            curFile.write(l)
-            nbLines += 1
-            if nbLines >= (totalLines / nbSplits + 1):
-                nbLines = 0
-                curFile.close()
-                curSplit += 1
-                filename = outputDir + "/" + str(curSplit) + "." + extension
-                curFile = open(filename, 'w')
-                filenames.append(filename)
-        filename = outputDir + "/" + str(curSplit) + "." + extension
-        curFile.close()
-    return filenames
-
-
 
 def getDefaultSlurmAccount():
     user = (os.popen("whoami")).read().strip()
@@ -215,7 +188,7 @@ def getDefaultSlurmAccount():
         account = s.group(1)
         print "Using SLURM account \"" + account + "\"..."
         return account
-    return None
+    raise RuntimeError("cannot find default SLURM account")
 
 
 

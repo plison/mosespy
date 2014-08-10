@@ -85,6 +85,12 @@ def getsize(filename):
 
 
 
+def countNbLines(filename):
+    if not os.path.exists(filename):
+        return RuntimeError("File does not exist")
+    return int(run_output("wc -l " + filename).split()[0])
+
+
 def getLanguage(langcode):
     rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     isostandard = minidom.parse(rootDir+"/data/iso639.xml")
@@ -94,6 +100,44 @@ def getLanguage(langcode):
             and item.attributes[u'iso_639_1_code'].value == langcode):
                 return item.attributes['name'].value
     raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
-   
- 
 
+
+
+
+def splitData(data, outputDir, nbSplits):
+    
+    if isinstance(data, file):
+        extension = ""
+        lines = data.readlines()
+    elif os.path.exists(data):  
+        extension = "." + data.split(".")[len(data.split("."))-1]
+        fullFile = open(data, 'r')
+        lines = fullFile.readlines()
+        fullFile.close()
+    else:
+        print data.__name__
+        raise RuntimeError("cannot split the content")
+        
+    totalLines = len(lines) 
+    nbSplits = min(nbSplits, totalLines)
+    
+    filenames = []
+    curSplit = 0
+    filename = outputDir + "/" + str(curSplit) + extension
+    filenames.append(filename)
+    curFile = open(filename, 'w')
+    nbLines = 0
+    for l in lines:
+        curFile.write(l)
+        nbLines += 1
+        if nbLines >= (totalLines / nbSplits + 1):
+            nbLines = 0
+            curFile.close()
+            curSplit += 1
+            filename = outputDir + "/" + str(curSplit) + extension
+            curFile = open(filename, 'w')
+            filenames.append(filename)
+    curFile.close()
+    return filenames
+
+ 
