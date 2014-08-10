@@ -52,7 +52,7 @@ class SlurmExecutor(utils.CommandExecutor):
             queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
             if len(set(queue.split()).intersection(jobnames)) == 0:
                 break
-            print "Unfinished jobs: " + str(list(jobnames))
+            print "Unfinished jobs: " + str(set(queue.split()).intersection(jobnames))
             time.sleep(60)
         print "SLURM parallel run completed."
   
@@ -96,8 +96,8 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
-        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
+        #utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
+        #utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
@@ -106,7 +106,7 @@ class SlurmExperiment(Experiment):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3"))
-        self.executor.runs(scripts)
+        #self.executor.runs(scripts)
         
         utils.resetDir(tmDir)
         os.makedirs(tmDir+"/model")
@@ -121,7 +121,7 @@ class SlurmExperiment(Experiment):
                             
         tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
                       + "-sort-batch-size 1024 " 
-                    + " -sort-compress gzip -sort-parallel " + nodeCpus)              
+                    + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
         result = self.executor.run(tmScript + " --first-step 4")
         utils.rmDir(splitDir)
 
@@ -148,7 +148,6 @@ class SlurmExperiment(Experiment):
     
     
     def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=2):
-        
         return super(SlurmExperiment, self).translateFile(infile, outfile, preprocess, 
                                                           customModel, nodeCpus)
     
