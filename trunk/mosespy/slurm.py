@@ -96,8 +96,8 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        #utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
-        #utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
@@ -106,7 +106,7 @@ class SlurmExperiment(Experiment):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3"))
-        #self.executor.runs(scripts)
+        self.executor.runs(scripts)
         
         utils.resetDir(tmDir)
         os.makedirs(tmDir+"/model")
