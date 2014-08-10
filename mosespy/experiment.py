@@ -472,8 +472,8 @@ class Experiment(object):
         fullSource = open(fullSource, 'r')
         fullTarget = open(fullTarget, 'r')
         trainStem = alignedData + ".train"
-        trainSource = open(trainStem + "." + self.settings["source"], 'w')
-        trainTarget = open(trainStem + "." + self.settings["target"], 'w')
+        trainSource = open(trainStem + "." + self.settings["source"], 'w', 1000000)
+        trainTarget = open(trainStem + "." + self.settings["target"], 'w', 1000000)
         tuneStem = alignedData + ".tune"
         tuneSource = open(tuneStem + "." + self.settings["source"], 'w')
         tuneTarget = open(tuneStem + "." + self.settings["target"], 'w')
@@ -481,18 +481,17 @@ class Experiment(object):
         testSource = open(testStem + "." + self.settings["source"], 'w')
         testTarget = open(testStem + "." + self.settings["target"], 'w')
         
-        tuningLines = []
+        tuningLines = set()
         while len(tuningLines) < nbTuning:
             choice = random.randrange(2, nbLinesSource)
-            if choice not in tuningLines:
-                tuningLines.append(choice)
+            tuningLines.add(choice)
         
-        testingLines = []
+        testingLines = set()
         while len(testingLines) < nbTesting:
             choice = random.randrange(2, nbLinesSource)
-            if choice not in tuningLines and choice not in testingLines:
-                testingLines.append(choice)
-          
+            if choice not in tuningLines:
+                testingLines.add(choice)
+         
         i = 0
         print "Dividing source data..."
         for l in fullSource.readlines():
@@ -520,39 +519,42 @@ class Experiment(object):
          
         inData = open(lmData, 'r')
         newLmFile = lmData[:-len(self.settings["target"])] + "wotest." + self.settings["target"]
-        outData = open(newLmFile, 'w')
+        outData = open(newLmFile, 'w', 1000000)
         
         fullTarget = open(fullTarget.name, 'r')
       
         print "Filtering language model to remove test sentences..."
-        prev2Lines = []
-        prevLines = []
+        
         lines = []
         i = 0
         for l in fullTarget.readlines():
             if (i+2) in testingLines:
-                prev2Lines.append(l)
+                curLine = {"i-2": l}
             if (i+1) in testingLines:
-                prevLines.append(l)
+                curLine["i-1"] = l
             if i in testingLines:
+                curLine["i"] = l
                 lines.append(l)
             i += 1
+        
+        
+        linesdict = {}
+        for l in lines:
+            if l["i"] not in linesdict:
+                linesdict[l["i"]] = [l]
+            else:
+                linesdict[l["i"]].append(l)    
+        
                 
         prev2Line = None
         prevLine = None
         skippedLines = []
         for l in inData.readlines():
-            toDelete = False
-            if l in lines:
-                indices = [i for i, x in enumerate(lines) if x == l]
-                for i in indices:
-                    if prev2Line == prev2Lines[i] and prevLine == prevLines[i]:
-                        toDelete = True
-            if not toDelete:
-                outData.write(l)
-            else:
-                skippedLines.append(l)
-                                
+            if l in linesdict:
+                if prev2Line == linesdict[l]["i-2"] and prevLine == linesdict[l]["i-1"]:
+                    skippedLines.append(l)
+                    continue
+            outData.write(l)                                
             prev2Line = prevLine
             prevLine = l
         
