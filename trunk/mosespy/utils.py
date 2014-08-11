@@ -9,6 +9,7 @@ class CommandExecutor(object):
     def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
+        print str(stdin) + " -- " + str(stdout)
         sys.stderr.write("[" + str(callincr) + "] Running " + script + \
                 (" < " + stdin if isinstance(stdin, basestring) else "") + \
               (" > " + stdout if isinstance(stdout, basestring) else "")+"\n")
