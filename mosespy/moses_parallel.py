@@ -11,6 +11,7 @@ def main():
     arguments = []
     for i in range(1, len(sys.argv)):
         arg = sys.argv[i]
+        arg = arg if " " not in arg else "\'" + arg + "\'"
         if "-jobs" in sys.argv[i-1]:
             nbJobs = int(arg)
         elif not "-jobs" in arg:
@@ -31,6 +32,10 @@ def main():
     
     executor = slurm.SlurmExecutor()
  
+    for k in os.environ:
+        if "SLURM" in k:
+            os.environ[k] = ""
+
     if not lines:
         sys.stderr.write("(no input provided)\n")
         executor.run(transScript)
