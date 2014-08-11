@@ -29,26 +29,28 @@ def main():
     
     transScript = moses_root + "/bin/moses " + arguments
     
+    executor = slurm.SlurmExecutor()
+    if len(os.popen("echo $SCRATCH").read().strip()) > 0:
+        executor = super(slurm.SlurmExecutor, executor)
+        
     if not lines:
         sys.stderr.write("(no input provided)\n")
-        slurm.SlurmExecutor().run(transScript)
+        executor.run(transScript)
     else:
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
         
-        sys.stderr.write("lines: " + str(lines))
         infiles = utils.splitData(lines, splitDir, nbJobs)
         
         outfiles = [splitDir + "/" + str(i) + ".translated" for i in range(0, len(infiles))]
                 
-        slurm.SlurmExecutor().runs([transScript]*len(infiles), infiles, outfiles)
+        executor.runs([transScript]*len(infiles), infiles, outfiles)
             
         for outfile_part in outfiles:
             with open(outfile_part, 'r') as part:
                 for partline in part.readlines():
                     if partline.strip():
-                        sys.stderr.write("adding " + partline)
                         sys.stdout.write(partline.strip('\n') + '\n')
         utils.rmDir(splitDir)
 
