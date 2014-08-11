@@ -3,7 +3,7 @@ import os, re, uuid, threading, time, sys
 import utils, experiment, moses_parallel
 from experiment import Experiment 
   
-nodeMemory=52000
+nodeMemory=62000
 nodeCpus = 16
 nodeTime = "8:00:00"
 
@@ -34,16 +34,18 @@ class SlurmExecutor(utils.CommandExecutor):
         
     
     def run(self, script, stdin=None, stdout=None):  
-        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout)
-       
-        
-    def runs(self, scripts, stdins=None, stdouts=None):
-        jobs = []
-        
+        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout, self.getenv())
+    
+    
+    def getenv(self):
         newenv = {}
         for k in os.environ:
             if "SLURM" not in k:
                 newenv[k] = os.environ[k]
+        return newenv
+        
+    def runs(self, scripts, stdins=None, stdouts=None):
+        jobs = []
         
         for script in scripts:
             script = self.getScript(script)
@@ -51,7 +53,7 @@ class SlurmExecutor(utils.CommandExecutor):
             stdout = stdouts[len(jobs)] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
-                                 args=(script, stdin, stdout, newenv))
+                                 args=(script, stdin, stdout, self.getenv()))
             jobs.append(t)
             t.start()
             
