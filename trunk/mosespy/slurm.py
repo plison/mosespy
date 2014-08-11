@@ -79,7 +79,6 @@ class SlurmExperiment(Experiment):
         self.settings["nbJobs"] = nbJobs
         self.executor = SlurmExecutor(account)
         self.decoder = decoder
-        print self.decoder
 
     
     def copy(self, nexExpName):
@@ -88,7 +87,8 @@ class SlurmExperiment(Experiment):
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
-        newexp.recordState()  
+        newexp.recordState()
+        newexp.decoder = decoder
         return newexp
     
     
@@ -151,7 +151,6 @@ class SlurmExperiment(Experiment):
           
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        print self.decoder
         script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
         if "moses_parallel" in self.decoder:
             script = script.replace("--decoder-flags=\'", 
