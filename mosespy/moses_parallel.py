@@ -17,13 +17,14 @@ def main():
             arguments.append(arg)
     
     arguments = " ".join(arguments)
-    sys.stderr.write("Running moses with %i jobs and following arguments: %s"%(nbJobs, arguments))
+    sys.stderr.write("Running moses with following arguments: %s"%(nbJobs, arguments))
     
     transScript = moses_root + "/bin/moses " + arguments
    
     if sys.stdin.isatty():
-        slurm.SlurmExecutor().run(transScript)
+        utils.run(transScript)
     else:
+        sys.stderr.write("Splitting data into %i jobs"%(nbJobs))
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
         
