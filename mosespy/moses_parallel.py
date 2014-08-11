@@ -22,7 +22,7 @@ def main():
     lines = []
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         line = sys.stdin.readline()
-        if line:
+        if line.strip():
             lines.append(line)
         else:
             break
@@ -30,13 +30,12 @@ def main():
     transScript = moses_root + "/bin/moses " + arguments
     
     executor = slurm.SlurmExecutor()
-    if len(os.popen("echo $SCRATCH").read().strip()) > 0:
-        executor = super(slurm.SlurmExecutor, executor)
-        
+ 
     if not lines:
         sys.stderr.write("(no input provided)\n")
         executor.run(transScript)
     else:
+        sys.stderr.write("Number of input lines: " + str(len(lines)))
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
