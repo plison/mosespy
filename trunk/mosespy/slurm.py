@@ -62,7 +62,7 @@ class SlurmExecutor(utils.CommandExecutor):
                 break
             sys.stderr.write("Unfinished jobs: " + str(list(unfinished)) + "\n")
             time.sleep(60)
-        print "SLURM parallel run completed."
+        sys.stderr.write("SLURM parallel run completed.")
   
         
 class SlurmExperiment(Experiment):

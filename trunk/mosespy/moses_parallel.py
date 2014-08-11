@@ -37,6 +37,7 @@ def main():
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
         
+        sys.stderr.write("lines: " + str(lines))
         infiles = utils.splitData(lines, splitDir, nbJobs)
         
         outfiles = [splitDir + "/" + str(i) + ".translated" for i in range(0, len(infiles))]
@@ -47,6 +48,7 @@ def main():
             with open(outfile_part, 'r') as part:
                 for partline in part.readlines():
                     if partline.strip():
+                        sys.stderr.write("adding " + partline)
                         sys.stdout.write(partline.strip('\n') + '\n')
         utils.rmDir(splitDir)
 
