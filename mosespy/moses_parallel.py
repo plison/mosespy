@@ -19,7 +19,7 @@ def main():
     sys.stderr.write("Running moses with %i jobs and following arguments: %s"%(nbJobs, arguments))
     
     transScript = moses_root + "/bin/moses " + arguments
-    if "-show-weights" in arguments:
+    if "-show-weights" not in arguments:
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
         
