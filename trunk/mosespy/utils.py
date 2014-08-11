@@ -28,7 +28,7 @@ class CommandExecutor(object):
             stdout_popen = None
         
         inittime = datetime.now()
-        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
+        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen, env = {})
         out_popen = p.communicate(stdin)[0]
         
         sys.stderr.write("Task [" + str(callincr) + "] " + ("successful" if not p.returncode 
