@@ -321,7 +321,7 @@ class Experiment(object):
             raise RuntimeError("Translation model is not yet tuned")
 
         filteredDir = self.settings["path"]+ "/filteredmodel-" +  os.path.basename(testSource) 
-        utils.resetDir(filteredDir)
+        utils.rmDir(filteredDir)
             
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
