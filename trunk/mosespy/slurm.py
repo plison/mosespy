@@ -76,7 +76,7 @@ class SlurmExperiment(Experiment):
     
         self.executor = SlurmExecutor(account)
         self.nbJobs = nbJobs
-        self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
+     #   self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
 
     
     def copy(self, nexExpName):
