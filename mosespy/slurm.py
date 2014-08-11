@@ -13,6 +13,14 @@ class SlurmExecutor(utils.CommandExecutor):
         if not account:
             account = getDefaultSlurmAccount()
         self.account = account
+        os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
+                                         .read().strip('\n') + ":"
+                                         + os.popen("module load openmpi.intel ; echo $LD_LIBRARY_PATH")
+                                         .read().strip('\n') + ":"
+                                         + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                                         + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
+
         
     def run(self, script, stdin=None, stdout=None):
         
@@ -67,13 +75,6 @@ class SlurmExperiment(Experiment):
             print "SLURM system not present, switching back to standard setup"
             return
     
-        os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
-                                         .read().strip('\n') + ":"
-                                         + os.popen("module load openmpi.intel ; echo $LD_LIBRARY_PATH")
-                                         .read().strip('\n') + ":"
-                                         + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
-                                         + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
         self.executor = SlurmExecutor(account)
         self.nbJobs = nbJobs
         self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
