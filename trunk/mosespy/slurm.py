@@ -78,6 +78,7 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.settings["nbJobs"] = nbJobs
         self.executor = SlurmExecutor(account)
+        print decoder
         self.decoder = decoder
 
     
