@@ -19,12 +19,8 @@ def main():
     arguments = " ".join(arguments)
     sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
     
-    if select.select([sys.stdin,],[],[],0.0)[0]:
-        sys.stderr.write("DATA\n")
-    else:
-        sys.stderr.write("NO ! DATA\n")
     transScript = moses_root + "/bin/moses " + arguments
-    if sys.stdin.isatty():
+    if not select.select([sys.stdin,],[],[],0.0)[0]:
         slurm.SlurmExecutor().run(transScript)
     else:
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
