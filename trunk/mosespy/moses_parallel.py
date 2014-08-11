@@ -21,6 +21,7 @@ def main():
     
     transScript = moses_root + "/bin/moses " + arguments
     if not select.select([sys.stdin,],[],[],0.0)[0]:
+        sys.stderr.write("(no input provided)\n")
         slurm.SlurmExecutor().run(transScript)
     else:
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
