@@ -49,7 +49,7 @@ class SlurmExecutor(utils.CommandExecutor):
             stdout = stdouts[i] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
-                                 args=(stdin, stdin, stdout))
+                                 args=(script, stdin, stdout))
             t.start()
             jobnames.append(name)
             i += 1
