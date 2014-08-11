@@ -51,13 +51,14 @@ class SlurmExecutor(utils.CommandExecutor):
             
         time.sleep(1)
         counter = 0
+        sys.stderr.write("Number of created threads : " + str(len(jobs))  + "\n")
         while True:
             running = [t for t in jobs if t.is_alive()]
             if len(running) > 0:
                 time.sleep(1)
                 counter += 1
                 if not (counter % 60):
-                    sys.stderr.write("Number of running threads: " + str(len(running)))
+                    sys.stderr.write("Number of running threads: " + str(len(running)) + "\n")
             else:
                 break
         sys.stderr.write("SLURM parallel run completed.\n")
