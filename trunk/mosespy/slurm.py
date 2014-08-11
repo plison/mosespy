@@ -88,7 +88,7 @@ class SlurmExperiment(Experiment):
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
         newexp.recordState()
-        newexp.decoder = decoder
+        newexp.decoder = self.decoder
         return newexp
     
     
