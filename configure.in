@@ -23,8 +23,8 @@ AC_PROG_LIBTOOL
 AC_CHECK_TOOL(PDFLATEX,pdflatex,"no")
 AC_CHECK_TOOL(BIBTEX,bibtex,"no")
 
-AC_ARG_ENABLE([trace],
-    AS_HELP_STRING([--enable-trace|--disable-trace], [Enable or Disable (default) trace]))
+#AC_ARG_ENABLE([trace],
+#    AS_HELP_STRING([--enable-trace|--disable-trace], [Enable (default) or Disable trace]))
 
 AC_ARG_ENABLE([debugging],
     AS_HELP_STRING([--enable-debugging|--disable-debugging], [Enable or Disable (default) compilation with debugging "-g -O2" info]))
@@ -50,6 +50,13 @@ AC_ARG_WITH(zlib,
             [with_zlib=no]
            )
 
+AC_ARG_WITH(traceLevel,
+            [AC_HELP_STRING([--with-traceLevel=INT], [(optional) level of tracing; 0 (default) or higher, -1 to fully disable any tracing])],
+            [with_traceLevel=$withval],
+            [with_traceLevel=0]
+           )
+
+
 AM_CONDITIONAL([am__fastdepCC], false)
 AM_CONDITIONAL([WITH_THREADS],false)
 
@@ -58,14 +65,18 @@ AM_CONDITIONAL([WITH_THREADS],false)
 #### Use this if you want that the default is no
 #### if test "x$enable_foo" = 'xyes'
 
+CPPFLAGS="$CPPFLAGS -DTRACE_LEVEL=${with_traceLevel}" 
+AC_MSG_NOTICE([trace Level: ${with_traceLevel}])
 
-if test "x$enable_trace" = 'xyes'
-then
-    AC_MSG_NOTICE([trace enabled])
-    CPPFLAGS="$CPPFLAGS -DTRACE_ENABLE=1" 
-else
-    AC_MSG_NOTICE([trace disabled (default), most regression tests will fail])
-fi
+
+#if test "x$enable_trace" = 'xno'
+#then
+#    AC_MSG_NOTICE([trace disabled, most regression tests will fail])
+#    CPPFLAGS="$CPPFLAGS" 
+#else
+#    AC_MSG_NOTICE([trace enabled (default)])
+#    CPPFLAGS="$CPPFLAGS -DTRACE_ENABLE" 
+#fi
 
 if test "x$enable_debugging" = 'xyes'
 then

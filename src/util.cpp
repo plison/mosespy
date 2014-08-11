@@ -310,33 +310,34 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 }
 
 void exit_error(int err, const std::string &msg){
-	if (msg != "") { VERBOSE(0,msg); }
+	if (msg != "") {
+		VERBOSE(0,msg+"\n";);
+	}
 	else{
 		switch(err){
 			case IRSTLM_NO_ERROR:
-				VERBOSE(0,"No error");
+				VERBOSE(0,"No error\n");
 				break;
 			case IRSTLM_ERROR_GENERIC:
-				VERBOSE(0,"Generic error");
+				VERBOSE(0,"Generic error\n");
 				break;
 			case IRSTLM_ERROR_IO:
-				VERBOSE(0,"Input/Output error");
+				VERBOSE(0,"Input/Output error\n");
 				break;
 			case IRSTLM_ERROR_MEMORY:
-				VERBOSE(0,"Allocation memory error");
+				VERBOSE(0,"Allocation memory error\n");
 				break;
 			case IRSTLM_ERROR_DATA:
-				VERBOSE(0,"Data format error");
+				VERBOSE(0,"Data format error\n");
 				break;
 			case IRSTLM_ERROR_MODEL:
-				VERBOSE(0,"Model computation error");
+				VERBOSE(0,"Model computation error\n");
 				break;
 			default:
-				VERBOSE(0,"Undefined error");
+				VERBOSE(0,"Undefined error\n");
 				break;
 		}
 	}
-	VERBOSE(0,"\n");
 	exit(err);
 };
 
