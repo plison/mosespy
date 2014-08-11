@@ -30,35 +30,36 @@ class SlurmExecutor(utils.CommandExecutor):
                 + " --cpus-per-task=" + str(nodeCpus)
                 + " --time=" + nodeTime 
                 + " " + script)
-        return script, name
+        return script
         
     
     def run(self, script, stdin=None, stdout=None):  
-        return super(SlurmExecutor,self).run(self.getScript(script)[0], stdin, stdout)
+        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout)
        
         
     def runs(self, scripts, stdins=None, stdouts=None):
-        jobnames = []
-        i = 0
+        jobs = []
         for script in scripts:
-            script, name = self.getScript(script)
-            stdin = stdins[i] if isinstance(stdins, list) else None
-            stdout = stdouts[i] if isinstance(stdouts, list) else None
+            script = self.getScript(script)
+            stdin = stdins[len(jobs)] if isinstance(stdins, list) else None
+            stdout = stdouts[len(jobs)] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
                                  args=(script, stdin, stdout))
             t.start()
-            jobnames.append(name)
-            i += 1
+            jobs.append(t)
             
         time.sleep(1)
+        counter = 0
         while True:
-            queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-            unfinished = set(queue.split()).intersection(jobnames)
-            if len(unfinished) == 0:
+            running = [t for t in jobs if t.is_alive()]
+            if len(running) > 0:
+                time.sleep(1)
+                counter += 1
+                if not (counter % 60):
+                    sys.stderr.write("Number of running threads: " + str(len(running)))
+            else:
                 break
-            sys.stderr.write("Unfinished jobs: " + str(list(unfinished)) + "\n")
-            time.sleep(60)
         sys.stderr.write("SLURM parallel run completed.\n")
   
         
