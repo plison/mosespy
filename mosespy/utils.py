@@ -49,7 +49,7 @@ class CommandExecutor(object):
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
     
-            t = threading.Thread(run, args=(script, stdin, stdout))
+            t = threading.Thread(target=run, args=(script, stdin, stdout))
             t.start()
             threads.append(t)
             i += 1
