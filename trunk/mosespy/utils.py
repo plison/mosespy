@@ -11,7 +11,7 @@ class CommandExecutor(object):
         callincr = callincr + 1 if 'callincr' in globals() else 1
         sys.stderr.write("[" + str(callincr) + "] Running " + script + \
                 (" < " + stdin if isinstance(stdin, basestring) else "") + \
-              (" > " + stdout if isinstance(stdout, basestring) else ""))
+              (" > " + stdout if isinstance(stdout, basestring) else "")+"\n")
                   
         if os.path.exists(str(stdin)):
             stdin_popen = file(stdin, 'r')
@@ -32,8 +32,8 @@ class CommandExecutor(object):
         out_popen = p.communicate(stdin)[0]
         
         sys.stderr.write("Task [" + str(callincr) + "] " + ("successful" if not p.returncode 
-                                                            else "FAILED"))
-        sys.stderr.write("Execution time: " + (str(datetime.now() - inittime)).split(".")[0])
+                                                            else "FAILED")+"\n")
+        sys.stderr.write("Execution time: " + (str(datetime.now() - inittime)).split(".")[0]+"\n")
         if stdout_popen == subprocess.PIPE:
             return out_popen
         else:
