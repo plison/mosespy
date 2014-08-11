@@ -24,27 +24,24 @@ class SlurmExecutor(utils.CommandExecutor):
     
     def getScript(self, script):
         name = str(uuid.uuid4())[0:5]
-        if len(os.popen("echo $SCRATCH").read().strip()) > 0:
-            return script
-        else:
-            return ("srun --account=" + self.account
+        script = ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
                 +" --job-name=" + name
                 + " --cpus-per-task=" + str(nodeCpus)
                 + " --time=" + nodeTime 
                 + " " + script)
+        return script, name
         
     
     def run(self, script, stdin=None, stdout=None):  
-        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout)
+        return super(SlurmExecutor,self).run(self.getScript(script)[0], stdin, stdout)
        
         
     def runs(self, scripts, stdins=None, stdouts=None):
         jobnames = []
         i = 0
         for script in scripts:
-            name = str(uuid.uuid4())[0:5]
-            script = self.getScript(script)
+            script, name = self.getScript(script)
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
     

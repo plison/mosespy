@@ -1,5 +1,5 @@
 
-import os, subprocess, shutil, sys
+import os, subprocess, shutil, sys, threading, time
 from datetime import datetime
 from xml.dom import minidom
 
@@ -38,6 +38,32 @@ class CommandExecutor(object):
             return out_popen
         else:
             return not p.returncode
+        
+           
+        
+    def runs(self, scripts, stdins=None, stdouts=None):
+        i = 0
+        threads = []
+        for script in scripts:
+            script = self.getScript(script)
+            stdin = stdins[i] if isinstance(stdins, list) else None
+            stdout = stdouts[i] if isinstance(stdouts, list) else None
+    
+            t = threading.Thread(run, args=(script, stdin, stdout))
+            t.start()
+            threads.append(t)
+            i += 1
+            
+        time.sleep(1)
+        while True:
+            allFinished = True
+            for t in threads:
+                if t.is_alive():
+                    allFinished = False
+            if not allFinished:
+                time.sleep(60)
+        sys.stderr.write("Parallel run completed.")
+
         
     
     def run_output(self, script, stdin=None):
