@@ -322,7 +322,7 @@ class Experiment(object):
 
         filteredDir = self.settings["path"]+ "/filteredmodel-" +  os.path.basename(testSource) 
         utils.rmDir(filteredDir)
-            
+        print "directory exists? " + str(os.path.exists(filteredDir))
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
                         + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
