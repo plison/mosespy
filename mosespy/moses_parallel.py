@@ -17,7 +17,7 @@ def main():
             arguments.append(arg)
     
     arguments = " ".join(arguments)
-    sys.stderr.write("Running moses with following arguments: %s"%(nbJobs, arguments))
+    sys.stderr.write("Running moses with following arguments: " + str(arguments))
     
     transScript = moses_root + "/bin/moses " + arguments
    
