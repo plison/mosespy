@@ -9,7 +9,7 @@ class CommandExecutor(object):
     def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
-        self.stderr.write(str(stdin) + " -- " + str(stdout))
+        sys.stderr.write(str(stdin) + " -- " + str(stdout))
         sys.stderr.write("[" + str(callincr) + "] Running " + script + \
                 (" < " + stdin if isinstance(stdin, basestring) else "") + \
               (" > " + stdout if isinstance(stdout, basestring) else "")+"\n")
@@ -43,17 +43,16 @@ class CommandExecutor(object):
            
         
     def runs(self, scripts, stdins=None, stdouts=None):
-        i = 0
+
         threads = []
         for script in scripts:
             script = self.getScript(script)
-            stdin = stdins[i] if isinstance(stdins, list) else None
-            stdout = stdouts[i] if isinstance(stdouts, list) else None
+            stdin = stdins[len(threads)] if isinstance(stdins, list) else None
+            stdout = stdouts[len(threads)] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=run, args=(script, stdin, stdout))
             t.start()
             threads.append(t)
-            i += 1
             
         time.sleep(1)
         counter = 0
