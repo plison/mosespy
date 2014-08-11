@@ -1,5 +1,5 @@
 
-import os, subprocess, shutil
+import os, subprocess, shutil, sys
 from datetime import datetime
 from xml.dom import minidom
 
@@ -9,9 +9,9 @@ class CommandExecutor(object):
     def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
-        print "[" + str(callincr) + "] Running " + script + \
+        sys.stderr.write("[" + str(callincr) + "] Running " + script + \
                 (" < " + stdin if isinstance(stdin, basestring) else "") + \
-              (" > " + stdout if isinstance(stdout, basestring) else "")
+              (" > " + stdout if isinstance(stdout, basestring) else ""))
                   
         if os.path.exists(str(stdin)):
             stdin_popen = file(stdin, 'r')
@@ -31,8 +31,9 @@ class CommandExecutor(object):
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
         
-        print "Task [" + str(callincr) + "] " + ("successful" if not p.returncode else "FAILED")
-        print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]  
+        sys.stderr.write("Task [" + str(callincr) + "] " + ("successful" if not p.returncode 
+                                                            else "FAILED"))
+        sys.stderr.write("Execution time: " + (str(datetime.now() - inittime)).split(".")[0])
         if stdout_popen == subprocess.PIPE:
             return out_popen
         else:
