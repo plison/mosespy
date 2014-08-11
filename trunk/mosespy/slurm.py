@@ -60,7 +60,7 @@ class SlurmExecutor(utils.CommandExecutor):
             queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
             if len(set(queue.split()).intersection(jobnames)) == 0:
                 break
-            print "Unfinished jobs: " + str(set(queue.split()).intersection(jobnames))
+            print "Unfinished jobs: " + str(list(set(queue.split()).intersection(jobnames)))
             time.sleep(60)
         print "SLURM parallel run completed."
   
