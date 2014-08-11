@@ -1,5 +1,5 @@
 
-import os, re, uuid, threading, time
+import os, re, uuid, threading, time, sys
 import utils, experiment, moses_parallel
 from experiment import Experiment 
   
@@ -58,9 +58,10 @@ class SlurmExecutor(utils.CommandExecutor):
         time.sleep(1)
         while True:
             queue = os.popen("squeue -u " + os.popen("whoami").read()).read()
-            if len(set(queue.split()).intersection(jobnames)) == 0:
+            unfinished = set(queue.split()).intersection(jobnames)
+            if len(unfinished) == 0:
                 break
-            print "Unfinished jobs: " + str(list(set(queue.split()).intersection(jobnames)))
+            sys.stderr.write("Unfinished jobs: " + str(list(unfinished)) + "\n")
             time.sleep(60)
         print "SLURM parallel run completed."
   
@@ -141,7 +142,7 @@ class SlurmExperiment(Experiment):
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
         script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
         script = script.replace("--decoder-flags=\'", 
-                                "--decoder-flags=\'-njobs " + str(self.nbJobs) + " ")
+                                "--decoder-flags=\'-jobs " + str(self.nbJobs) + " ")
         return script
 
 
