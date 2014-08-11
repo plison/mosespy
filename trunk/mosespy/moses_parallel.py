@@ -39,7 +39,7 @@ def main():
  
     for k in os.environ:
         if "SLURM" in k:
-            os.environ[k] = ""
+            del os.environ[k] 
 
     if not lines:
         sys.stderr.write("(no input provided)\n")
