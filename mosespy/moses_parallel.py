@@ -35,7 +35,7 @@ def main():
         sys.stderr.write("(no input provided)\n")
         executor.run(transScript)
     else:
-        sys.stderr.write("Number of input lines: " + str(len(lines)))
+        sys.stderr.write("Number of input lines: " + str(len(lines))+"\n")
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
@@ -43,7 +43,7 @@ def main():
         infiles = utils.splitData(lines, splitDir, nbJobs)
         
         outfiles = [splitDir + "/" + str(i) + ".translated" for i in range(0, len(infiles))]
-                
+        sys.stderr.write("ENV: " + str(os.environ.keys()))
         executor.runs([transScript]*len(infiles), infiles, outfiles)
             
         for outfile_part in outfiles:
