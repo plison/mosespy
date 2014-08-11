@@ -23,6 +23,7 @@ def main():
     if not select.select([sys.stdin,],[],[],0.0)[0]:
         sys.stderr.write("(no input provided)\n")
         slurm.SlurmExecutor().run(transScript)
+        sys.stderr.write("(run is finished)\n")
     else:
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
