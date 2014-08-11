@@ -9,10 +9,9 @@ class CommandExecutor(object):
     def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
-        sys.stderr.write(str(script) + ": " + str(stdin) + " -- " + str(stdout) + "\n")
         sys.stderr.write("[" + str(callincr) + "] Running " + script + \
-                (" < " + str(stdin) if isinstance(stdin, basestring) else "") + \
-              (" > " + str(stdout) if isinstance(stdout, basestring) else "")+"\n")
+                (" < " + stdin if isinstance(stdin, basestring) else "") + \
+              (" > " + stdout if isinstance(stdout, basestring) else "")+"\n")
                   
         if os.path.exists(str(stdin)):
             stdin_popen = file(stdin, 'r')
@@ -46,7 +45,7 @@ class CommandExecutor(object):
 
         threads = []
         for script in scripts:
-            script = self.getScript(script)
+            sys.stderr.write("SC " + script)
             stdin = stdins[len(threads)] if isinstance(stdins, list) else None
             stdout = stdouts[len(threads)] if isinstance(stdouts, list) else None
     
