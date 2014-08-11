@@ -19,8 +19,16 @@ def main():
     arguments = " ".join(arguments)
     sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
     
+    lines = []
+    while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+        line = sys.stdin.readline()
+        if line:
+            lines.append(line)
+        else:
+            break
+    
     transScript = moses_root + "/bin/moses " + arguments
-    if not select.select([sys.stdin,],[],[],0.0)[0]:
+    if not lines:
         sys.stderr.write("(no input provided)\n")
         slurm.SlurmExecutor().run(transScript)
         sys.stderr.write("(run is finished)\n")
