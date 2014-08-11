@@ -36,7 +36,7 @@ def main():
                         sys.stdout.write(partline.strip('\n') + '\n')
         utils.rmDir(splitDir)
     else:
-        slurm.SlurmExecutor.run(transScript)
+        slurm.SlurmExecutor().run(transScript)
 
 
 if __name__ == "__main__":
