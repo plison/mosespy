@@ -3,7 +3,7 @@ import os, re, uuid, threading, time, sys
 import utils, experiment, moses_parallel
 from experiment import Experiment 
   
-nodeMemory=62000
+nodeMemory=52000
 nodeCpus = 16
 nodeTime = "8:00:00"
 
