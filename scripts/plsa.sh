@@ -9,25 +9,42 @@ function usage()
 cmnd=$(basename $0);
 cat<<EOF
 
-$cmnd - training of a probabilistic latent semantic model
+$cmnd - train and/or test a probabilistic latent semantic model
 
 USAGE:
 $cmnd [options]
 
-OPTIONS:
--h        Show this message
--c        Collection of document e.g. 'gunzip -c docs.gz'
--m        Output model, e.g. model
--r        Model in readable format e.g. model.txt
--k        Number of splits (default 5)
--n        Number of topics (default 100)
--i        Number of training iterations (default 20)
--t        Temporary working directory (default ./stat_PID)
--d        Specific dictionary to use (optional)
--p        Pruning threshold for infrequent words (default 2)
--s        Pruning threshold for frequent words (optional)
--l        Log file (optional)
+TRAINING OPTIONS:
+
+-c arg    Collection of training documents e.g. 'gunzip -c docs.gz'
+-d arg    Dictionary file (default dictionary)
+-f        Force to use existing dictionary
+-m arg    Output model file e.g. model
+-n arg    Number of topics (default 100)
+-i arg    Number of training iterations (default 20)
+-t arg    Temporary working directory (default ./stat_PID)
+-p arg    Prune words with counts < arg (default 2)
+-k arg    Number of processes (default 5)
+
+-r arg    Model output file in readable format
+-s arg    Put top arg frequent words in special topic 0
+-l arg    Log file (optional)
 -v        Verbose
+-h        Show this message
+
+
+TESTING OPTIONS
+
+-c arg    Testing documents e.g. test
+-d arg    Dictionary file (default dictionary)
+-m arg    Output model file e.g. model
+-u  arg   Output unigram distribution
+-i arg    Number of training iterations (default 20)
+-t arg    Temporary working directory (default ./stat_PID)
+-l arg    Log file (optional)
+-v        Verbose
+-h        Show this message
+
 
 EOF
 }
@@ -55,12 +72,14 @@ prunefreq=2
 spectopics=0
 logfile="/dev/null"
 verbose=""
+unigram=""
 
-dict=""
+dict="dictionary"
+forcedict=""
 model=""
 txtfile="/dev/null"
 
-while getopts "hvc:m:r:k:i:n:t:d:p:s:l:" OPTION
+while getopts "hvfc:m:r:k:i:n:t:d:p:s:l:u:" OPTION
 do
 case $OPTION in
 h)
@@ -91,15 +110,25 @@ tmpdir=$OPTARG
 d)
 dict=$OPTARG
 ;;
+f)
+forcedict="TRUE"
+;;
 p)
 prunefreq=$OPTARG
 ;;
 s)
 spectopics=$OPTARG
 ;;
+n)
+topics=$OPTARG
+;;
 l)
 logfile=$OPTARG
 ;;
+u)
+unigram=$OPTARG
+;;
+
 ?)
 usage
 exit 1
@@ -108,37 +137,58 @@ esac
 done
 
 if [ $verbose ]; then
-echo data=$data  model=$model  topics=$topics iter=$iter
+echo data=$data  model=$model  topics=$topics iter=$iter dict=$dict
 logfile="/dev/stdout"
 fi
 
+if [ ! $unigram ]; then
+
+#training branch
 
 if [ ! "$data" -o ! "$model" ]; then
 usage
-exit 5
+exit 1
 fi
 
 if [ -e $model ]; then
 echo "Output file $model already exists! either remove or rename it."
-exit 6
+exit 1
 fi
 
 if [ -e $txtfile -a $txtfile != "/dev/null" ]; then
 echo "Output file $txtfile already exists! either remove or rename it."
-exit 6
+exit 1
 fi
 
 
 if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
 echo "Logfile $logfile already exists! either remove or rename it."
-exit 7
+exit 1
 fi
+
+if [ ! -e $dict ]; then
+echo extract dictionary >> $logfile
+$bin/dict -i="$data" -o=$dict -PruneFreq=$prunefreq -f=y >> $logfile 2>&1
+if [ `head -1 $dict| cut -d " " -f 3` -lt 10 ]; then
+echo "Dictionary contains errors"
+exit 2;
+fi
+else
+echo "Warning: dictionary file already exists."
+if [ $forcedict ]; then
+echo "Warning: authorization to use it."
+else
+echo "No authorization to use it (see option -f)."
+exit 1
+fi
+fi
+
+
 
 #check tmpdir
 tmpdir_created=0;
 if [ ! -d $tmpdir ]; then
-echo "Temporary directory $tmpdir does not exist";
-echo "creating $tmpdir"
+echo "Creating temporary working directory $tmpdir"
 mkdir -p $tmpdir;
 tmpdir_created=1;
 else
@@ -149,12 +199,8 @@ echo "Warning: some temporary files could not be removed"
 fi
 fi
 
-
-echo extract dictionary >> $logfile
-$bin/dict -i=$"$data" -o=$tmpdir/dict -PruneFreq=$prunefreq -f=y >> $logfile 2>&1
-
 echo split documents >> $logfile
-$bin/plsa -c="$data" -d=$tmpdir/dict -b=$tmpdir/data -sd=$splits >> $logfile 2>&1
+$bin/plsa -c="$data" -d=$dict -b=$tmpdir/data -sd=$splits >> $logfile 2>&1
 
 #rm $tmpdir/Tlist
 for sp in `seq 1 1 $splits`; do echo $tmpdir/data.T.$sp >> $tmpdir/Tlist 2>&1; done
@@ -162,13 +208,14 @@ for sp in `seq 1 1 $splits`; do echo $tmpdir/data.T.$sp >> $tmpdir/Tlist 2>&1; d
 for it in `seq 1 1 $iter` ; do
 for sp in `seq 1 1 $splits`; do
 date; echo it $it split $sp
-$bin/plsa -c=$tmpdir/data.$sp -d=$tmpdir/dict -st=$spectopics -hf=$tmpdir/data.H.$sp -tf=$tmpdir/data.T.$sp -wf=$model -m=$model -t=$topics -it=1 -tit=$it > /dev/null 2>&1 &
+$bin/plsa -c=$tmpdir/data.$sp -d=$dict -st=$spectopics -hf=$tmpdir/data.H.$sp -tf=$tmpdir/data.T.$sp -wf=$model -m=$model -t=$topics -it=1 -tit=$it >> $logfile 2>&1 &
 done
 while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
 date; echo recombination
 
-$bin/plsa -ct=$tmpdir/Tlist -c="$data" -d=$tmpdir/dict -hf=$tmpdir/data.H -m=$model -t=$topics -it=1 -txt=$txtfile >> $logfile 2>&1 &
+$bin/plsa -ct=$tmpdir/Tlist -c="$data" -d=$dict -hf=$tmpdir/data.H -m=$model -t=$topics -it=1 -txt=$txtfile >> $logfile 2>&1
+
 done
 date; echo End of training
 
@@ -182,5 +229,27 @@ if [ $? != 0 ]; then
 echo "Warning: the temporary directory could not be removed."
 fi
 fi
+exit 0
+#testing branch
+else
+
+if [ ! $model -o ! -e $model ]; then
+echo "Need to specify existing model"
+exit 1;
+fi
+
+
+if [ ! $dict  -o ! -e $dict  ]; then
+echo "Need to specify dictionary file of the model"
+exit 1;
+fi
+
+$bin/plsa -inf="$data" -d=$dict -m=$model -hf=hfff.out$$ -t=$topics -it=$iter -f=$unigram >> $logfile 2>&1
+
+rm hfff.out$$
+
+fi
+
+
 
 exit 0
