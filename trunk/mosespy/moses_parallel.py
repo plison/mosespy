@@ -46,8 +46,7 @@ def main():
             del os.environ[k] 
 
     if not lines:
-        sys.stderr.write("(no input provided)\n")
-        executor.run(transScript)
+        executor.run(transScript)        
     else:
         sys.stderr.write("Number of input lines: " + str(len(lines))+"\n")
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
