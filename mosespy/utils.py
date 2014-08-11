@@ -9,10 +9,10 @@ class CommandExecutor(object):
     def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
-        sys.stderr.write(str(stdin) + " -- " + str(stdout))
+        sys.stderr.write(str(script) + ": " + str(stdin) + " -- " + str(stdout) + "\n")
         sys.stderr.write("[" + str(callincr) + "] Running " + script + \
-                (" < " + stdin if isinstance(stdin, basestring) else "") + \
-              (" > " + stdout if isinstance(stdout, basestring) else "")+"\n")
+                (" < " + str(stdin) if isinstance(stdin, basestring) else "") + \
+              (" > " + str(stdout) if isinstance(stdout, basestring) else "")+"\n")
                   
         if os.path.exists(str(stdin)):
             stdin_popen = file(stdin, 'r')
