@@ -137,8 +137,8 @@ class SlurmExperiment(Experiment):
         Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nodeCpus)
           
 
-    def getTuningScript(self, tuneDir):
-        script = super(SlurmExperiment, self).getTuningScript(tuneDir, nodeCpus)
+    def getTuningScript(self, tuneDir, tuningStem, nbThreads):
+        script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
         script.replace("--decoder-flags=\'", "--decoder-flags=\'-njobs " + self.nbJobs + " ")
         return script
 
