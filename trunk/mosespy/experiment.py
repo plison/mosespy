@@ -102,7 +102,7 @@ class Experiment(object):
         result = self.executor.run(tmScript)
         if result:
             print "Finished building translation model in directory " + utils.getsize(tmDir)
-            self.settings["tm"]["dir"]=tmDir
+            self.settings["tm"]=tmDir
             self.recordState()
         else:
             print "Construction of translation model FAILED"
@@ -127,36 +127,30 @@ class Experiment(object):
         return tmScript
                        
 
-    def tuneTranslationModel(self, tuningStem=None, nbThreads=2):
+    def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=2):
         
-        if tuningStem:         
-            tuningData = self.processAlignedData(tuningStem)
-            self.settings["ttm"] = {"data":tuningData}
-            self.recordState()
-        elif not self.settings.has_key("ttm") or not self.settings["ttm"].has_key("data"):
-            raise RuntimeError("Aligned tuning data is not yet processed")    
+        if preprocess:         
+            tuningStem = self.processAlignedData(tuningStem)["clean"]
         
         print ("Tuning translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + tuningData["clean"])
+               + self.settings["target"] + " with " + tuningStem)
         
         tuneDir = self.settings["path"]+"/tunedmodel"
-        tuningScript = self.getTuningScript(tuneDir, nbThreads)
+        tuningScript = self.getTuningScript(tuneDir, tuningStem, nbThreads)
         utils.resetDir(tuneDir)
         self.executor.run(tuningScript)
         print "Finished tuning translation model in directory " + utils.getsize(tuneDir)
-        self.settings["ttm"]["dir"]=tuneDir
+        self.settings["ttm"]=tuneDir
         self.recordState()
         
         
-    def getTuningScript(self, tuneDir, nbThreads):
-        if not self.settings.has_key("tm") or not self.settings["tm"].has_key("dir"): 
-            raise RuntimeError("Translation model is not yet trained")
+    def getTuningScript(self, tuneDir, tuningStem, nbThreads):
 
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
-                      + self.settings["ttm"]["data"]["clean"] + "." + self.settings["source"] + " " 
-                      + self.settings["ttm"]["data"]["clean"] + "." + self.settings["target"] + " "
+                      + tuningStem + "." + self.settings["source"] + " " 
+                      + tuningStem + "." + self.settings["target"] + " "
                       + moses_root + "/bin/moses" + " "
-                      + self.settings["tm"]["dir"] + "/model/moses.ini " 
+                      + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
                       + " --decoder-flags=\'-threads %i\ -v 0' --working-dir " + tuneDir
@@ -217,12 +211,12 @@ class Experiment(object):
 
     def binariseModel(self):
         print "Binarise translation model " + self.settings["source"] + " -> " + self.settings["target"]
-        if not self.settings.has_key("ttm") or not self.settings["ttm"].has_key("dir"):
+        if not self.settings.has_key("ttm"):
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
         binaDir = self.settings["path"]+"/binmodel"
-        phraseTable = self.settings["tm"]["dir"]+"/model/phrase-table.gz"
-        reorderingTable = self.settings["tm"]["dir"]+"/model/reordering-table.wbe-" + self.settings["reordering"] + ".gz"
+        phraseTable = self.settings["tm"]+"/model/phrase-table.gz"
+        reorderingTable = self.settings["tm"]+"/model/reordering-table.wbe-" + self.settings["reordering"] + ".gz"
         
         utils.resetDir(binaDir)
         binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
@@ -237,7 +231,7 @@ class Experiment(object):
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
         
-        with open(self.settings["ttm"]["dir"]+"/moses.ini") as initConfig:
+        with open(self.settings["ttm"]+"/moses.ini") as initConfig:
             with open(binaDir+"/moses.ini", 'w') as newConfig:
                 for l in initConfig.readlines():
                     l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
@@ -245,7 +239,7 @@ class Experiment(object):
                     l = l.replace(reorderingTable, binaDir + "/reordering-table")
                     newConfig.write(l)
         
-        self.settings["btm"] = {"dir":binaDir}
+        self.settings["btm"] = binaDir
         self.recordState()
         print "Finished binarising the translation model in directory " + utils.getsize(binaDir)
       
@@ -256,10 +250,10 @@ class Experiment(object):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
             initFile = customModel+"/moses.ini"
         elif self.settings.has_key("btm"):
-            initFile = self.settings["btm"]["dir"] + "/moses.ini"
+            initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
             print "Warning: translation model is not yet binarised"
-            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
+            initFile = self.settings["ttm"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet trained!")
         print ("Translating text: \"" + text + "\" from " + 
@@ -282,10 +276,10 @@ class Experiment(object):
                 raise RuntimeError("Custom model " + customModel + " does not exist")
             initFile = customModel+"/moses.ini"
         elif self.settings.has_key("btm"):
-            initFile = self.settings["btm"]["dir"] + "/moses.ini"
+            initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
             print "Warning: translation model is not yet binarised"
-            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
+            initFile = self.settings["ttm"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet trained!")
         print ("Translating file \"" + infile + "\" from " + 
@@ -324,7 +318,7 @@ class Experiment(object):
     def getFilteredModel(self, testSource):
         
         if self.settings.has_key("ttm"):
-            initFile = self.settings["ttm"]["dir"] + "/moses.ini"
+            initFile = self.settings["ttm"] + "/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet tuned")
 
