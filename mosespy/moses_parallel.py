@@ -22,7 +22,7 @@ def main():
     transScript = moses_root + "/bin/moses " + arguments
    
     if sys.stdin.isatty():
-        utils.run(transScript)
+        slurm.SlurmExecutor().run(transScript)
     else:
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs))
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
