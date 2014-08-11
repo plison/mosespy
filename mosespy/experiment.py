@@ -57,7 +57,7 @@ class Experiment(object):
         lang = trainFile.split(".")[len(trainFile.split("."))-1]
 
         processedTrain = self.processRawData(trainFile)
-        self.settings["lm"] = {"ngram_order":ngram_order, "data":processedTrain}
+        self.settings["lm"] = {"ngram_order":ngram_order}
         self.recordState()
 
         print "Building language model based on " + processedTrain["true"]
@@ -153,7 +153,7 @@ class Experiment(object):
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
-                      + " --decoder-flags=\'-threads %i\ -v 0' --working-dir " + tuneDir
+                      + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
         
@@ -252,10 +252,9 @@ class Experiment(object):
         elif self.settings.has_key("btm"):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
-            print "Warning: translation model is not yet binarised"
             initFile = self.settings["ttm"] + "/moses.ini"
         else:
-            raise RuntimeError("Translation model is not yet trained!")
+            raise RuntimeError("Translation model is not yet trained and tuned!")
         print ("Translating text: \"" + text + "\" from " + 
                self.settings["source"] + " to " + self.settings["target"])
 
@@ -278,10 +277,9 @@ class Experiment(object):
         elif self.settings.has_key("btm"):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
-            print "Warning: translation model is not yet binarised"
             initFile = self.settings["ttm"] + "/moses.ini"
         else:
-            raise RuntimeError("Translation model is not yet trained!")
+            raise RuntimeError("Translation model is not yet trained and tuned!")
         print ("Translating file \"" + infile + "\" from " + 
                self.settings["source"] + " to " + self.settings["target"])
 
