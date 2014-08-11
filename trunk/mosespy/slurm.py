@@ -139,7 +139,7 @@ class SlurmExperiment(Experiment):
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
         script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
-        script.replace("--decoder-flags=\'", "--decoder-flags=\'-njobs " + self.nbJobs + " ")
+        script.replace("--decoder-flags=\'", "--decoder-flags=\'-njobs " + str(self.nbJobs) + " ")
         return script
 
 
