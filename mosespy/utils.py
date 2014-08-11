@@ -116,7 +116,6 @@ def splitData(data, outputDir, nbSplits):
         fullFile = open(data, 'r')
         lines = fullFile.readlines()
         fullFile.close()
-        lines = data.split()
     else:
         raise RuntimeError("cannot split the content for data " + str(data))
         
