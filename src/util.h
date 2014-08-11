@@ -36,12 +36,12 @@
 #ifdef TRACE_LEVEL
 #define _DEBUG_LEVEL TRACE_LEVEL
 #else
-#define _DEBUG_LEVEL 0
+#define _DEBUG_LEVEL 1
 #endif
 
 #define TRACE_ERR(str) { std::cerr << str; }
-#define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
-#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
+#define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL > level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
+#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL > level)
 
 
 #define LMTMAXLEV  20

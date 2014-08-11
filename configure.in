@@ -51,9 +51,9 @@ AC_ARG_WITH(zlib,
            )
 
 AC_ARG_WITH(traceLevel,
-            [AC_HELP_STRING([--with-traceLevel=INT], [(optional) level of tracing; 0 (default) or higher, -1 to fully disable any tracing])],
+            [AC_HELP_STRING([--with-traceLevel=INT], [(optional) level of tracing; 0 disable tracing, 1 (default) or higher enable increasing tracing])],
             [with_traceLevel=$withval],
-            [with_traceLevel=0]
+            [with_traceLevel=1]
            )
 
 
