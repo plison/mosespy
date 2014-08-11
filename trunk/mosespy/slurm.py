@@ -39,6 +39,7 @@ class SlurmExecutor(utils.CommandExecutor):
         
     def runs(self, scripts, stdins=None, stdouts=None):
         jobs = []
+        sys.stderr.write("Number of scripts : " + str(len(scripts))  + "\n")       
         for script in scripts:
             script = self.getScript(script)
             stdin = stdins[len(jobs)] if isinstance(stdins, list) else None
@@ -46,8 +47,8 @@ class SlurmExecutor(utils.CommandExecutor):
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
                                  args=(script, stdin, stdout))
-            t.start()
             jobs.append(t)
+            t.start()
             
         time.sleep(1)
         counter = 0
