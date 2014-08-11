@@ -46,7 +46,13 @@ def main():
             del os.environ[k] 
 
     if not lines:
-        executor.run(transScript)        
+        executor.run(transScript)
+    elif nbJobs == 1:
+        tmpInputFile = "./tmp" + str(uuid.uuid4())[0:5]
+        with open(tmpInputFile, 'w') as tmpInput:
+            for line in lines:
+                tmpInput.write(line.strip("\n") + "\n")
+        executor.run(transScript, tmpInputFile)
     else:
         sys.stderr.write("Number of input lines: " + str(len(lines))+"\n")
         sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")

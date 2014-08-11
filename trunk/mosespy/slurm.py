@@ -67,28 +67,27 @@ class SlurmExecutor(utils.CommandExecutor):
 class SlurmExperiment(Experiment):
             
     def __init__(self, expName, sourceLang=None, targetLang=None, 
-                 account=None, nbJobs=4):
+                 account=None, nbJobs=4, 
+                 decoder=(str(moses_parallel.__file__).replace("pyc", "py"))):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not utils.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
     
-        self.account = account
+        self.settings["account"] = account
+        self.settings["nbJobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-        self.nbJobs = nbJobs
-     #   self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
+        self.decoder = decoder
 
     
     def copy(self, nexExpName):
-        newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.account)
+        newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.settings["account"])
         settingscopy = copy.deepcopy(self.settings)
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
         newexp.recordState()  
-        newexp.nbJobs = self.nbJobs
-        newexp.decoder = self.decoder
         return newexp
     
     
@@ -96,7 +95,7 @@ class SlurmExperiment(Experiment):
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
         
-        if self.nbJobs == 1:
+        if self.settings["nbJobs"] == 1:
             Experiment.trainTranslationModel(self, trainStem, nodeCpus)
             return
              
@@ -105,17 +104,17 @@ class SlurmExperiment(Experiment):
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  trainStem
-               + " with " + str(self.nbJobs) + " splits")
+               + " with " + str(self.settings["nbJobs"]) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
-        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbJobs"])
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbJobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
         scripts = []
-        for i in range(0, self.nbJobs):
+        for i in range(0, self.settings["nbJobs"]):
             scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3"))
@@ -125,7 +124,7 @@ class SlurmExperiment(Experiment):
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
-            for split in range(0, self.nbJobs):
+            for split in range(0, self.settings["nbJobs"]):
                 splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
                 with open(splitFile) as part:
                     for partline in part.readlines():
@@ -152,8 +151,9 @@ class SlurmExperiment(Experiment):
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
         script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
-  #      script = script.replace("--decoder-flags=\'", 
-  #                              "--decoder-flags=\'-jobs " + str(self.nbJobs) + " ")
+        if "moses_parallel" in self.decoder:
+            script = script.replace("--decoder-flags=\'", 
+                                    "--decoder-flags=\'-jobs " + str(self.settings["nbJobs"]) + " ")
         return script
 
 
