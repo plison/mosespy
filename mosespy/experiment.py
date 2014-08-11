@@ -149,7 +149,7 @@ class Experiment(object):
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.settings["source"] + " " 
                       + tuningStem + "." + self.settings["target"] + " "
-                      + moses_root + "/bin/moses" + " "
+                      + self.decoder + " "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
