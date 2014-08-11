@@ -107,16 +107,16 @@ def getLanguage(langcode):
 
 def splitData(data, outputDir, nbSplits):
     
-    if os.path.exists(data):  
+    if isinstance(data, list):
+        lines = data
+    elif isinstance(data, basestring) and os.path.exists(data):  
         extension = "." + data.split(".")[len(data.split("."))-1]
         fullFile = open(data, 'r')
         lines = fullFile.readlines()
         fullFile.close()
-    elif isinstance(data, basestring):
         lines = data.split()
     else:
-        print data
-        raise RuntimeError("cannot split the content")
+        raise RuntimeError("cannot split the content for data " + str(data))
         
     totalLines = len(lines) 
     nbSplits = min(nbSplits, totalLines)
