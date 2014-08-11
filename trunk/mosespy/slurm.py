@@ -78,7 +78,13 @@ class SlurmExperiment(Experiment):
         self.nbJobs = nbJobs
         self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
 
-        
+    
+    def copy(self, nexExpName):
+        cp = Experiment.copy(self, nexExpName)
+        cp.nbJobs = self.nbJobs
+        cp.decoder = self.decoder
+    
+    
     def trainTranslationModel(self, trainStem, preprocess=True,
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
