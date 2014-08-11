@@ -79,6 +79,7 @@ def main():
                 for partline in part.readlines():
                     if partline.strip():
                         sys.stdout.write(partline.strip('\n') + '\n')
+        sys.stdout.close()
         
         if nbestout:
             with open(nbestout, 'w') as nbestout_full:
@@ -88,7 +89,7 @@ def main():
                             if bestline.strip():
                                 nbestout_full.write(bestline.strip('\n')+'\n')
                                 
-        utils.rmDir(splitDir)
+       # utils.rmDir(splitDir)
                     
            
 
