@@ -3,9 +3,9 @@ import os, re, uuid, threading, time, sys
 import utils, experiment, moses_parallel
 from experiment import Experiment 
   
-nodeMemory=62000
-nodeCpus = 16
-nodeTime = "8:00:00"
+nodeMemory=1000
+nodeCpus = 1
+nodeTime = "1:00:00"
 
 class SlurmExecutor(utils.CommandExecutor):
         
