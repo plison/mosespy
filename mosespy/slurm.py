@@ -4,7 +4,7 @@ import utils, experiment, moses_parallel
 from experiment import Experiment 
   
 nodeMemory=62000
-nodeCpus = 16
+nodeCpus = 4
 nodeTime = "8:00:00"
 
 class SlurmExecutor(utils.CommandExecutor):
