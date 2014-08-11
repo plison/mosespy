@@ -24,7 +24,7 @@ class SlurmExecutor(utils.CommandExecutor):
     
     def getScript(self, script):
         name = str(uuid.uuid4())[0:5]
-        if len(super(SlurmExecutor,self).run_output("echo $SCRATCH").strip()) > 0:
+        if len(utils.run_output("echo $SCRATCH").strip()) > 0:
             return script
         else:
             return ("srun --account=" + self.account
