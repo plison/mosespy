@@ -28,6 +28,8 @@ def main():
             break
     
     transScript = moses_root + "/bin/moses " + arguments
+    print os.popen("echo $SCRATCH").read()
+    
     if not lines:
         sys.stderr.write("(no input provided)\n")
         slurm.SlurmExecutor().run(transScript)
