@@ -79,6 +79,7 @@ def main():
                 for partline in part.readlines():
                     if partline.strip():
                         sys.stdout.write(partline.strip('\n') + '\n')
+                        sys.stdout.flush()
         sys.stdout.close()
         
         if nbestout:
