@@ -152,7 +152,6 @@ class Experiment(object):
                       + self.decoder + " "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
-                      + " --batch-mira "
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
@@ -322,7 +321,7 @@ class Experiment(object):
 
         filteredDir = self.settings["path"]+ "/filteredmodel-" +  os.path.basename(testSource) 
         utils.rmDir(filteredDir)
-        print "directory exists? " + str(os.path.exists(filteredDir))
+
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
                         + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
