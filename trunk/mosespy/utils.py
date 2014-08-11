@@ -28,7 +28,8 @@ class CommandExecutor(object):
             stdout_popen = None
         
         inittime = datetime.now()
-        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
+        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen, 
+                             creationflags=subprocess.CREATE_NEW_CONSOLE)
         out_popen = p.communicate(stdin)[0]
         
         sys.stderr.write("Task [" + str(callincr) + "] " + ("successful" if not p.returncode 
@@ -39,34 +40,7 @@ class CommandExecutor(object):
         else:
             return not p.returncode
         
-           
-        
-    def runs(self, scripts, stdins=None, stdouts=None):
 
-        threads = []
-        for script in scripts:
-            sys.stderr.write("SC " + script)
-            stdin = stdins[len(threads)] if isinstance(stdins, list) else None
-            stdout = stdouts[len(threads)] if isinstance(stdouts, list) else None
-    
-            t = threading.Thread(target=run, args=(script, stdin, stdout))
-            t.start()
-            threads.append(t)
-            
-        time.sleep(1)
-        counter = 0
-        while True:
-            running = [t for t in threads if t.is_alive()]
-            if len(running) > 0:
-                time.sleep(1)
-                counter += 1
-                if not (counter % 60):
-                    sys.stderr.write("Number of running threads: " + str(len(running)))
-            else:
-                break
-        sys.stderr.write("Parallel run completed.")
-
-        
     
     def run_output(self, script, stdin=None):
         return self.run(script, stdin, stdout=False)
@@ -107,7 +81,7 @@ def getsize(filename):
         elif size > 1000000:
             return filename +  " ("+str(size/1000000) + "M)"
         else:
-             return filename + " ("+str(size/1000) + "K)"     
+            return filename + " ("+str(size/1000) + "K)"     
     elif os.path.isdir(filename):
         return filename + " (" + os.popen('du -sh ' + filename).read().split(" ")[0] + ")"
     return "(not found)"
