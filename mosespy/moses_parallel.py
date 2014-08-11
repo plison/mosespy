@@ -43,7 +43,6 @@ def main():
         infiles = utils.splitData(lines, splitDir, nbJobs)
         
         outfiles = [splitDir + "/" + str(i) + ".translated" for i in range(0, len(infiles))]
-        sys.stderr.write("ENV: " + str(os.environ.keys()))
         executor.runs([transScript]*len(infiles), infiles, outfiles)
             
         for outfile_part in outfiles:
