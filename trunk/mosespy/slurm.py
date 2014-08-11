@@ -161,7 +161,6 @@ def getDefaultSlurmAccount():
     s = re.search(user+"\|((\S)+?)\|", result)
     if s:
         account = s.group(1)
-        print "Using SLURM account \"" + account + "\"..."
         return account
     raise RuntimeError("cannot find default SLURM account")
 
