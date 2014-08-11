@@ -55,13 +55,16 @@ class CommandExecutor(object):
             i += 1
             
         time.sleep(1)
+        counter = 0
         while True:
-            allFinished = True
-            for t in threads:
-                if t.is_alive():
-                    allFinished = False
-            if not allFinished:
-                time.sleep(60)
+            running = [t for t in threads if t.is_alive()]
+            if len(running) > 0:
+                time.sleep(1)
+                counter += 1
+                if (counter % 60):
+                    sys.stderr.write("Number of running threads: " + str(len(running)))
+            else:
+                break
         sys.stderr.write("Parallel run completed.")
 
         
