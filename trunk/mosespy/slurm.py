@@ -1,6 +1,6 @@
 
 import os, re, uuid, threading, time, sys, copy
-import utils, experiment
+import utils, experiment, moses_parallel
 from experiment import Experiment 
   
 nodeMemory=62000
@@ -77,7 +77,7 @@ class SlurmExperiment(Experiment):
         self.account = account
         self.executor = SlurmExecutor(account)
         self.nbJobs = nbJobs
-    #    self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
+        self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
 
     
     def copy(self, nexExpName):
@@ -152,8 +152,8 @@ class SlurmExperiment(Experiment):
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
         script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
-  #      script = script.replace("--decoder-flags=\'", 
-  #                              "--decoder-flags=\'-jobs " + str(self.nbJobs) + " ")
+        script = script.replace("--decoder-flags=\'", 
+                                "--decoder-flags=\'-jobs " + str(self.nbJobs) + " ")
         return script
 
 
