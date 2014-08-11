@@ -37,7 +37,8 @@ def main():
     
     executor = slurm.SlurmExecutor()
  
-    for k in os.environ:
+    
+    for k in list(os.environ):
         if "SLURM" in k:
             del os.environ[k] 
 
