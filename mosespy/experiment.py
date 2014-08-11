@@ -153,7 +153,6 @@ class Experiment(object):
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
-                      + " --no-filter-phrase-table "
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
