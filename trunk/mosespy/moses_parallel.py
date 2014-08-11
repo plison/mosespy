@@ -3,11 +3,7 @@
 import sys, utils,os, uuid, slurm 
 
 def main():      
-        
-    print sys.stdin.isatty()
 
-
-def other():
     rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     moses_root = rootDir + "/moses" 
 
@@ -25,7 +21,9 @@ def other():
     
     transScript = moses_root + "/bin/moses " + arguments
    
-    if "-show-weights" not in arguments:
+    if sys.stdin.isatty():
+        slurm.SlurmExecutor().run(transScript)
+    else:
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
         
@@ -41,8 +39,6 @@ def other():
                     if partline.strip():
                         sys.stdout.write(partline.strip('\n') + '\n')
         utils.rmDir(splitDir)
-    else:
-        slurm.SlurmExecutor().run(transScript)
 
 
 if __name__ == "__main__":
