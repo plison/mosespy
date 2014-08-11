@@ -9,18 +9,23 @@ def main():
 
     nbJobs = 4
     arguments = []
+    lines = []
     for i in range(1, len(sys.argv)):
         arg = sys.argv[i]
         arg = arg if " " not in arg else "\'" + arg + "\'"
         if "-jobs" in sys.argv[i-1]:
             nbJobs = int(arg)
-        elif not "-jobs" in arg:
+        elif "-input-file" in sys.argv[i-1]:
+            f = open(arg, 'r')
+            for line in f.readlines():
+                if line.strip():
+                    lines.append(line)
+        elif not "-jobs" in arg and not "-input-file" in arg:
             arguments.append(arg)
     
     arguments = " ".join(arguments)
     sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
     
-    lines = []
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         line = sys.stdin.readline()
         if line.strip():

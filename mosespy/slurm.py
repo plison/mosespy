@@ -34,16 +34,9 @@ class SlurmExecutor(utils.CommandExecutor):
         
     
     def run(self, script, stdin=None, stdout=None):  
-        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout, self.getenv())
+        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout)
     
-    
-    def getenv(self):
-        newenv = {}
-        for k in os.environ:
-            if "SLURM" not in k:
-                newenv[k] = os.environ[k]
-        return newenv
-        
+            
     def runs(self, scripts, stdins=None, stdouts=None):
         jobs = []
         
@@ -53,7 +46,7 @@ class SlurmExecutor(utils.CommandExecutor):
             stdout = stdouts[len(jobs)] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
-                                 args=(script, stdin, stdout, self.getenv()))
+                                 args=(script, stdin, stdout))
             jobs.append(t)
             t.start()
             

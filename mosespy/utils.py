@@ -6,7 +6,7 @@ from xml.dom import minidom
 
 class CommandExecutor(object):
     
-    def run(self, script, stdin=None, stdout=None, env=os.environ):
+    def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
         sys.stderr.write("[" + str(callincr) + "] Running " + script + \
@@ -28,7 +28,7 @@ class CommandExecutor(object):
             stdout_popen = None
         
         inittime = datetime.now()
-        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen, env=env)
+        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
         
         sys.stderr.write("Task [" + str(callincr) + "] " + ("successful" if not p.returncode 
