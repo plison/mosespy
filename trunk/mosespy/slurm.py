@@ -31,10 +31,8 @@ class SlurmExecutor(utils.CommandExecutor):
                 + " --cpus-per-task=" + str(nodeCpus)
                 + " --time=" + nodeTime)
         
-        if "mert-moses" in script:
-            cmd = script
-        else:
-            cmd = srun + " " + script 
+
+        cmd = srun + " " + script 
         return super(SlurmExecutor,self).run(cmd, stdin, stdout)
        
         
