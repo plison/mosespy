@@ -83,6 +83,7 @@ class SlurmExperiment(Experiment):
         cp = Experiment.copy(self, nexExpName)
         cp.nbJobs = self.nbJobs
         cp.decoder = self.decoder
+        return cp
     
     
     def trainTranslationModel(self, trainStem, preprocess=True,
