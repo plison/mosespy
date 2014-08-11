@@ -83,8 +83,48 @@ class SlurmExperiment(Experiment):
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
         
+        if self.nbJobs == 1:
+            Experiment.trainTranslationModel(self, trainStem, nodeCpus)
+            return
+             
+        if preprocess:         
+            trainStem = self.processAlignedData(trainStem)["clean"]
+        
+        print ("Building translation model " + self.settings["source"] + "-" 
+               + self.settings["target"] + " with " +  trainStem
+               + " with " + str(self.nbJobs) + " splits")
+    
+        splitDir = self.settings["path"] + "/splits"
+        utils.resetDir(splitDir)
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.nbJobs)
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.nbJobs)
+
         tmDir = self.settings["path"] + "/translationmodel"
-        result = True
+        tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
+        scripts = []
+        for i in range(0, self.nbJobs):
+            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
+                                .replace(trainStem, splitDir + "/" +str(i))
+                                + " --last-step 3"))
+        self.executor.runs(scripts)
+        
+        utils.resetDir(tmDir)
+        os.makedirs(tmDir+"/model")
+        alignFile = tmDir+"/model/aligned."+alignment
+        with open(alignFile, 'w') as align:
+            for split in range(0, self.nbJobs):
+                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
+                with open(splitFile) as part:
+                    for partline in part.readlines():
+                        if partline.strip():
+                            align.write(partline.strip('\n') + '\n')
+                            
+        tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
+                      + "-sort-batch-size 1024 " 
+                    + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
+        result = self.executor.run(tmScript + " --first-step 4")
+        utils.rmDir(splitDir)
+
         if result:
             print "Finished building translation model in: " + utils.getsize(tmDir)
             self.settings["tm"]=tmDir
