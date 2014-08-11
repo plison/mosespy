@@ -39,20 +39,24 @@ class SlurmExecutor(utils.CommandExecutor):
         
     def runs(self, scripts, stdins=None, stdouts=None):
         jobs = []
-        sys.stderr.write("Number of scripts : " + str(len(scripts))  + "\n")       
+        
+        newenv = {}
+        for k in os.environ:
+            if "SLURM" not in k:
+                newenv[k] = os.environ[k]
+        
         for script in scripts:
             script = self.getScript(script)
             stdin = stdins[len(jobs)] if isinstance(stdins, list) else None
             stdout = stdouts[len(jobs)] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
-                                 args=(script, stdin, stdout))
+                                 args=(script, stdin, stdout, newenv))
             jobs.append(t)
             t.start()
             
         time.sleep(1)
         counter = 0
-        sys.stderr.write("Number of created threads : " + str(len(jobs))  + "\n")
         while True:
             running = [t for t in jobs if t.is_alive()]
             if len(running) > 0:
