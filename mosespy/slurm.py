@@ -31,7 +31,7 @@ class SlurmExecutor(utils.CommandExecutor):
                 + " --cpus-per-task=" + str(nodeCpus)
                 + " --time=" + nodeTime)
         
-        cmd = srun + " " + script 
+        cmd = script 
         return super(SlurmExecutor,self).run(cmd, stdin, stdout)
        
         
