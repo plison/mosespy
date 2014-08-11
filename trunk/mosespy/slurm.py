@@ -3,9 +3,9 @@ import os, re, uuid, threading, time, sys
 import utils, experiment, moses_parallel
 from experiment import Experiment 
   
-nodeMemory=1000
-nodeCpus = 1
-nodeTime = "1:00:00"
+nodeMemory=62000
+nodeCpus = 16
+nodeTime = "8:00:00"
 
 class SlurmExecutor(utils.CommandExecutor):
         
@@ -21,19 +21,22 @@ class SlurmExecutor(utils.CommandExecutor):
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
 
-        
-    def run(self, script, stdin=None, stdout=None):
-        
+    
+    def getScript(self, script):
         name = str(uuid.uuid4())[0:5]
-        srun = ("srun --account=" + self.account
+        if len(super(SlurmExecutor,self).run_output("echo $SCRATCH").strip()) > 0:
+            return script
+        else:
+            return ("srun --account=" + self.account
                 + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
                 +" --job-name=" + name
                 + " --cpus-per-task=" + str(nodeCpus)
-                + " --time=" + nodeTime)
+                + " --time=" + nodeTime 
+                + " " + script)
         
-
-        cmd = srun + " " + script 
-        return super(SlurmExecutor,self).run(cmd, stdin, stdout)
+    
+    def run(self, script, stdin=None, stdout=None):  
+        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout)
        
         
     def runs(self, scripts, stdins=None, stdouts=None):
@@ -41,17 +44,12 @@ class SlurmExecutor(utils.CommandExecutor):
         i = 0
         for script in scripts:
             name = str(uuid.uuid4())[0:5]
-            srun_cmd = ("srun --account=" + self.account
-                        + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
-                        +"  --job-name=" + name
-                        + " --cpus-per-task=" + str(nodeCpus)
-                        + " --time=" + nodeTime
-                        + " " + script )
+            script = self.getScript(script)
             stdin = stdins[i] if isinstance(stdins, list) else None
             stdout = stdouts[i] if isinstance(stdouts, list) else None
     
             t = threading.Thread(target=super(SlurmExecutor,self).run, 
-                                 args=(srun_cmd, stdin, stdout))
+                                 args=(stdin, stdin, stdout))
             t.start()
             jobnames.append(name)
             i += 1
