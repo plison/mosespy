@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, utils,os, uuid, slurm 
+import sys, utils,os, uuid, slurm, select
 
 def main():      
 
@@ -19,7 +19,10 @@ def main():
     arguments = " ".join(arguments)
     sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
     
-    print "STd in " + str(sys.stdin.read())
+    if select.select([sys.stdin,],[],[],0.0)[0]:
+        print "DATA"
+    else:
+        print "No data"
     transScript = moses_root + "/bin/moses " + arguments
    
     if sys.stdin.isatty():
