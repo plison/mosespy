@@ -76,7 +76,7 @@ class SlurmExperiment(Experiment):
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
         self.executor = SlurmExecutor(account)
         self.nbJobs = nbJobs
-        self.decoder = moses_parallel.__file__
+        self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
 
         
     def trainTranslationModel(self, trainStem, preprocess=True,
