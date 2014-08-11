@@ -60,7 +60,7 @@ class CommandExecutor(object):
             if len(running) > 0:
                 time.sleep(1)
                 counter += 1
-                if (counter % 60):
+                if not (counter % 60):
                     sys.stderr.write("Number of running threads: " + str(len(running)))
             else:
                 break
