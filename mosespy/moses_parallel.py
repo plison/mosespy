@@ -22,10 +22,11 @@ def main():
             for line in f.readlines():
                 if line.strip():
                     lines.append(line)
-        elif "-n-best-list" in sys.argv[i-1]:
-            nbestout = arg
         elif not "-jobs" in arg and not "-input-file" in arg:
             arguments.append(arg)
+            
+        if "-n-best-list" in sys.argv[i-1]:
+            nbestout = arg
     
     arguments = " ".join(arguments)
     sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
