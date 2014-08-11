@@ -38,6 +38,7 @@ TESTING OPTIONS
 -c arg    Testing documents e.g. test
 -d arg    Dictionary file (default dictionary)
 -m arg    Output model file e.g. model
+-n arg    Number of topics (default 100)
 -u  arg   Output unigram distribution
 -i arg    Number of training iterations (default 20)
 -t arg    Temporary working directory (default ./stat_PID)
