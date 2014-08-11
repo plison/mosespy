@@ -108,6 +108,7 @@ def getLanguage(langcode):
 def splitData(data, outputDir, nbSplits):
     
     if isinstance(data, list):
+        extension = ""
         lines = data
     elif isinstance(data, basestring) and os.path.exists(data):  
         extension = "." + data.split(".")[len(data.split("."))-1]
