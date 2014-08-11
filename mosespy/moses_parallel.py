@@ -19,6 +19,7 @@ def main():
     arguments = " ".join(arguments)
     sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
     
+    print "STd in " + str(sys.stdin.read())
     transScript = moses_root + "/bin/moses " + arguments
    
     if sys.stdin.isatty():
