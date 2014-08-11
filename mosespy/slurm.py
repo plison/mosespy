@@ -1,6 +1,6 @@
 
-import os, re, uuid, threading, time, sys
-import utils, experiment, moses_parallel
+import os, re, uuid, threading, time, sys, copy
+import utils, experiment
 from experiment import Experiment 
   
 nodeMemory=62000
@@ -74,16 +74,22 @@ class SlurmExperiment(Experiment):
             print "SLURM system not present, switching back to standard setup"
             return
     
+        self.account = account
         self.executor = SlurmExecutor(account)
         self.nbJobs = nbJobs
     #    self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
 
     
     def copy(self, nexExpName):
-        cp = Experiment.copy(self, nexExpName)
-        cp.nbJobs = self.nbJobs
-        cp.decoder = self.decoder
-        return cp
+        newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.account)
+        settingscopy = copy.deepcopy(self.settings)
+        for k in settingscopy.keys():
+            if k != "name" and k!= "path":
+                newexp.settings[k] = settingscopy[k]
+        newexp.recordState()  
+        newexp.nbJobs = self.nbJobs
+        newexp.decoder = self.decoder
+        return newexp
     
     
     def trainTranslationModel(self, trainStem, preprocess=True,
