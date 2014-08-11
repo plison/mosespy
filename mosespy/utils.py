@@ -121,7 +121,7 @@ def splitData(data, outputDir, nbSplits):
         
     totalLines = len(lines) 
     nbSplits = min(nbSplits, totalLines)
-    
+    sys.stderr.write("Splitting " + str(totalLines)  + " with " + str(nbSplits)+"\n")
     filenames = []
     curSplit = 0
     filename = outputDir + "/" + str(curSplit) + extension
@@ -139,6 +139,7 @@ def splitData(data, outputDir, nbSplits):
             curFile = open(filename, 'w')
             filenames.append(filename)
     curFile.close()
+    sys.stderr.write("filenames: " + str(filenames)+"\n")
     return filenames
 
  
