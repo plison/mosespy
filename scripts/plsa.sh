@@ -200,8 +200,10 @@ echo "Warning: some temporary files could not be removed"
 fi
 fi
 
+#####
 echo split documents >> $logfile
 $bin/plsa -c="$data" -d=$dict -b=$tmpdir/data -sd=$splits >> $logfile 2>&1
+
 
 #rm $tmpdir/Tlist
 for sp in `seq 1 1 $splits`; do echo $tmpdir/data.T.$sp >> $tmpdir/Tlist 2>&1; done
