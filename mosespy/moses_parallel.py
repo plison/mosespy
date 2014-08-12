@@ -14,7 +14,6 @@ def getInput():
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         line = sys.stdin.readline()
         if line.strip():
-            print "New line: " + line
             lines.append(line)
         else:
             break  
