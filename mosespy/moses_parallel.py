@@ -4,11 +4,6 @@ import sys, utils,os, uuid, slurm, select, threading, time
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 
-try:
-    executor = slurm.SlurmExecutor()
-except RuntimeError:
-    executor = utils.CommandExecutor()
-
 
 def getInput():
     lines = []
@@ -92,23 +87,32 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
                         nbestout_full.write(partline)
             localCount = 0
             globalCount += 1
+   
+
+def getExecutor(nbJobs):
+    if slurm.getDefaultSlurmAccount():
+        if nbJobs > 1:
+            for k in list(os.environ):
+                if "SLURM" in k:
+                    del os.environ[k] 
+            return slurm.SlurmExecutor()
+        elif "SLURM" not in str(os.environ.keys()):
+            return slurm.SlurmExecutor()            
+    return utils.CommandExecutor()    
         
         
-def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
+def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs, executor):
             
     command = moses_root + "/bin/moses " + basicArgs
     command += (" -n-best-list " + nbestOutFile) if nbestOutFile else ""
     
-    for k in list(os.environ):
-        if "SLURM" in k:
-            del os.environ[k] 
-
     if not inputFile:
         executor.run(command, stdout=outStream)
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
         executor.run(command, stdin=inputFile, stdout=outStream)
     else:
+        
         print "Splitting data into %i jobs"%(nbJobs)
         splitDir = "./tmp" + str(uuid.uuid4())[0:6]
         utils.resetDir(splitDir)
@@ -119,7 +123,8 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
             infile = infiles[i]
             outfile = splitDir + "/" + str(i) + ".translated"
             nbestOutFile2 = splitDir + "/" + str(i) + ".nbest" if nbestOutFile else None
-            t = threading.Thread(target=runParallelMoses, args=(infile, basicArgs, outfile, nbestOutFile2, 1))
+            t = threading.Thread(target=runParallelMoses, 
+                                 args=(infile, basicArgs, outfile,nbestOutFile2, 1, executor))
             t.start()
             jobs[t.ident] = {"thread":t, "in":infile, "out":outfile, "nbestout":nbestOutFile2}
             
@@ -131,8 +136,7 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
         utils.rmDir(splitDir)
     
     
-                    
-           
+                          
 
 def main():      
    
@@ -142,8 +146,9 @@ def main():
     nbJobs = getNbJobs()
     arguments = getMosesArguments()
     inputFile = getInput()
+    executor = getExecutor(nbJobs)
     
-    runParallelMoses(inputFile, arguments, stdout, getNbestOut(), nbJobs)
+    runParallelMoses(inputFile, arguments, stdout, getNbestOut(), nbJobs, executor)
     
     if inputFile and "tmp" in inputFile:
         os.remove(inputFile)
