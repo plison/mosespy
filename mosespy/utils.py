@@ -9,9 +9,9 @@ class CommandExecutor(object):
     def run(self, script, stdin=None, stdout=None):
         global callincr
         callincr = callincr + 1 if 'callincr' in globals() else 1
-        sys.stderr.write("[" + str(callincr) + "] Running " + script + \
+        print "[" + str(callincr) + "] Running " + script + \
                 (" < " + stdin if isinstance(stdin, basestring) else "") + \
-              (" > " + stdout if isinstance(stdout, basestring) else "")+"\n")
+              (" > " + stdout if isinstance(stdout, basestring) else "")
                   
         if os.path.exists(str(stdin)):
             stdin_popen = file(stdin, 'r')
@@ -31,9 +31,8 @@ class CommandExecutor(object):
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
         
-        sys.stderr.write("Task [" + str(callincr) + "] " + ("successful" if not p.returncode 
-                                                            else "FAILED")+"\n")
-        sys.stderr.write("Execution time: " + (str(datetime.now() - inittime)).split(".")[0]+"\n")
+        print "Task [" + str(callincr) + "] " + ("successful" if not p.returncode else "FAILED")
+        print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]
         if stdout_popen == subprocess.PIPE:
             return out_popen
         else:
@@ -121,7 +120,7 @@ def splitData(data, outputDir, nbSplits):
         
     totalLines = len(lines) 
     nbSplits = min(nbSplits, totalLines)
-    sys.stderr.write("Splitting " + str(totalLines)  + " with " + str(nbSplits)+"\n")
+    print "Splitting " + str(totalLines)  + " with " + str(nbSplits)
     filenames = []
     curSplit = 0
     filename = outputDir + "/" + str(curSplit) + extension
@@ -139,7 +138,6 @@ def splitData(data, outputDir, nbSplits):
             curFile = open(filename, 'w')
             filenames.append(filename)
     curFile.close()
-    sys.stderr.write("filenames: " + str(filenames)+"\n")
     return filenames
 
  
