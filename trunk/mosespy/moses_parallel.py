@@ -95,7 +95,7 @@ def main():
                                 if newCount == localCount + 1:
                                     localCount += 1
                                     globalCount += 1
-                                bestline = bestline.replace(newCount, globalCount, 1).strip("\n")+"\n"
+                                bestline = bestline.replace(str(newCount), str(globalCount), 1).strip("\n")+"\n"
                                 nbestout_full.write(bestline)
                     localCount = 0
                     globalCount += 1
