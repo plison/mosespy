@@ -107,7 +107,7 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
     if not inputFile:
         executor.run(command, stdout=outStream)
         
-    elif nbJobs == 1:
+    elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
         executor.run(command, stdin=inputFile, stdout=outStream)
     else:
         print "Splitting data into %i jobs"%(nbJobs)
