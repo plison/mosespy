@@ -143,7 +143,7 @@ class SlurmExperiment(Experiment):
         with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
             config = iniFile.read()
         with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
-            iniFile.write(config.replace("[jobs]\n"+str(self.settings["nbJobs"])), "")
+            iniFile.write(config.replace("[jobs]\n"+str(self.settings["nbJobs"]), ""))
         
     
 
