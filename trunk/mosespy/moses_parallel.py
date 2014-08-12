@@ -6,6 +6,9 @@ def main():
 
     rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     moses_root = rootDir + "/moses" 
+     
+    stdout = sys.stdout
+    sys.stdout = sys.stderr
 
     nbJobs = 4
     arguments = []
@@ -29,7 +32,7 @@ def main():
             nbestout = arg
     
     arguments = " ".join(arguments)
-    sys.stderr.write("Running moses with following arguments: " + str(arguments)+"\n")
+    print "Running moses with following arguments: " + str(arguments)
     
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         line = sys.stdin.readline()
@@ -54,13 +57,12 @@ def main():
                 tmpInput.write(line.strip("\n") + "\n")
         executor.run(transScript, tmpInputFile)
     else:
-        sys.stderr.write("Number of input lines: " + str(len(lines))+"\n")
-        sys.stderr.write("Splitting data into %i jobs"%(nbJobs)+"\n")
+        print "Number of input lines: " + str(len(lines))
+        print "Splitting data into %i jobs"%(nbJobs)
         splitDir = "./tmp" + str(uuid.uuid4())[0:5]
         utils.resetDir(splitDir)
         
         infiles = utils.splitData(lines, splitDir, nbJobs)
-        
         
         outfiles = [splitDir + "/" + str(i) + ".translated" for i in range(0, len(infiles))]
         
@@ -78,9 +80,8 @@ def main():
             with open(outfile_part, 'r') as part:
                 for partline in part.readlines():
                     if partline.strip():
-                        sys.stdout.write(partline.strip('\n') + '\n')
-                        sys.stdout.flush()
-        sys.stdout.close()
+                        stdout.write(partline.strip('\n') + '\n')
+        stdout.close()
         
         localCount = 0
         globalCount = 0

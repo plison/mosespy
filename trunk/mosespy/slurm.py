@@ -58,10 +58,10 @@ class SlurmExecutor(utils.CommandExecutor):
                 time.sleep(1)
                 counter += 1
                 if not (counter % 60):
-                    sys.stderr.write("Number of running threads: " + str(len(running)) + "\n")
+                    print "Number of running processes: " + str(len(running))
             else:
                 break
-        sys.stderr.write("SLURM parallel run completed.\n")
+        print "SLURM parallel run completed"
   
         
 class SlurmExperiment(Experiment):
