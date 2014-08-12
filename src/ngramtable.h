@@ -134,238 +134,238 @@ public:
 
 class ngramtable:tabletype
 {
-
-  node            tree; // ngram table root
+    
+    node            tree; // ngram table root
 	int           maxlev; // max storable n-gram
-  NODETYPE   treeflags;
-  char       info[100]; //information put in the header
-  int       resolution; //max resolution for probabilities
-  double         decay; //decay constant
-
-  storage*         mem; //memory storage class
-
-  int*          memory; // memory load per level
-  int*       occupancy; // memory occupied per level
-  long long*     mentr; // multiple entries per level
-  long long       card; //entries at maxlev
-
-  int              idx[MAX_NGRAM+1];
-
-  int           oov_code,oov_size,du_code, bo_code; //used by prob;
-
-  int             backoff_state; //used by prob;
-
+    NODETYPE   treeflags;
+    char       info[100]; //information put in the header
+    int       resolution; //max resolution for probabilities
+    double         decay; //decay constant
+    
+    storage*         mem; //memory storage class
+    
+    long long*    memory; // memory load per level
+    long long* occupancy; // memory occupied per level
+    long long*     mentr; // multiple entries per level
+    long long       card; //entries at maxlev
+    
+    int idx[MAX_NGRAM+1];
+    
+    int  oov_code,oov_size,du_code, bo_code; //used by prob
+    
+    int             backoff_state; //used by prob;
+    
 public:
-
-  int         corrcounts; //corrected counters flag
-
-  dictionary     *dict; // dictionary
-
-  // filtering dictionary:
-  // if the first word of the ngram does not belong to filterdict
-  // do not insert the ngram
-  dictionary     *filterdict;
-
-  ngramtable(char* filename,int maxl,char* is,
-			 dictionary* extdict,
-             char* filterdictfile,
-             int googletable=0,
-             int dstco=0,char* hmask=NULL,int inplen=0,
-             TABLETYPE tt=FULL,int codesize=DEFCODESIZE);
-
-  inline char* ngtype(char *str=NULL) {
-    if (str!=NULL) strcpy(info,str);
-    return info;
-  }
-
-  virtual ~ngramtable();
-
-  inline void freetree() {
-    freetree(tree);
-  };
-
-  void freetree(node nd);
-
-  void resetngramtable();
-
-  void stat(int level=4);
-
-  inline long long totfreq(long long v=-1) {
-    return (v==-1?freq(tree,INODE):freq(tree,INODE,v));
-  }
-
-  inline long long btotfreq(long long v=-1) {
-    return (v==-1?getfreq(tree,treeflags,1):setfreq(tree,treeflags,v,1));
-  }
-
-  inline long long entries(int lev) const {
-    return mentr[lev];
-  }
-
-  inline int maxlevel() const {
-    return maxlev;
-  }
-
-  //  void savetxt(char *filename,int sz=0);
-  void savetxt(char *filename,int sz=0,bool googleformat=false,bool hashvalue=false);
-  void loadtxt(char *filename,int googletable=0);
-
-  void savebin(char *filename,int sz=0);
-  void savebin(mfstream& out);
-  void savebin(mfstream& out,node nd,NODETYPE ndt,int lev,int mlev);
-
-  void loadbin(const char *filename);
-  void loadbin(mfstream& inp);
-  void loadbin(mfstream& inp,node nd,NODETYPE ndt,int lev);
-
-  void loadbinold(char *filename);
-  void loadbinold(mfstream& inp,node nd,NODETYPE ndt,int lev);
-
-  void generate(char *filename,dictionary *extdict=NULL);
-  void generate_dstco(char *filename,int dstco);
-  void generate_hmask(char *filename,char* hmask,int inplen=0);
-
-  void augment(ngramtable* ngt);
-
-  inline int scan(ngram& ng,ACTION action=CONT,int maxlev=-1) {
-    return scan(tree,INODE,0,ng,action,maxlev);
-  }
-
-  inline int succscan(ngram& h,ngram& ng,ACTION action,int lev) {
-    //return scan(h.link,h.info,h.lev,ng,action,lev);
-    return scan(h.link,h.info,lev-1,ng,action,lev);
-  }
-
-  double prob(ngram ng);
-
-  int scan(node nd,NODETYPE ndt,int lev,ngram& ng,ACTION action=CONT,int maxl=-1);
-
-  void show();
-
-  void *search(table *tb,NODETYPE ndt,int lev,int n,int sz,int *w,
-               ACTION action,char **found=(char **)NULL);
-
-  int mybsearch(char *ar, int n, int size, unsigned char *key, int *idx);
-
-  int put(ngram& ng);
-  int put(ngram& ng,node nd,NODETYPE ndt,int lev);
-
-  inline int get(ngram& ng) {
-    return get(ng,maxlev,maxlev);
-  }
-  virtual int get(ngram& ng,int n,int lev);
-
-  int comptbsize(int n);
-  table *grow(table *tb,NODETYPE ndt,int lev,int n,int sz,NODETYPE oldndt=0);
-
-  bool check_dictsize_bound();
-
-  int putmem(char* ptr,int value,int offs,int size);
-  int getmem(char* ptr,int* value,int offs,int size);
-  long putmem(char* ptr,long long value,int offs,int size);
-  long getmem(char* ptr,long long* value,int offs,int size);
-
-  inline void tb2ngcpy(int* wordp,char* tablep,int n=1);
-  inline void ng2tbcpy(char* tablep,int* wordp,int n=1);
-  inline int ngtbcmp(int* wordp,char* tablep,int n=1);
-
-  inline int word(node nd,int value) {
-    putmem(nd,value,WORD_OFFS,CODESIZE);
-    return value;
-  }
-
-  inline int word(node nd) {
-    int v;
-    getmem(nd,&v,WORD_OFFS,CODESIZE);
-    return v;
-  }
-
-  inline unsigned char mtflags(node nd,unsigned char value) {
-    return *(unsigned char *)(nd+FLAGS_OFFS)=value;
-  }
-
-  inline unsigned char mtflags(node nd) const {
-    return *(unsigned char *)(nd+FLAGS_OFFS);
-  }
-
-  int codecmp(char * a,char *b);
-
-  inline int codediff(node a,node b) {
-    return word(a)-word(b);
-  };
-
-
-  int update(ngram ng);
-
-  long long freq(node nd,NODETYPE ndt,long long value);
-  long long freq(node nd,NODETYPE ndt);
-
-  long long setfreq(node nd,NODETYPE ndt,long long value,int index=0);
-  long long getfreq(node nd,NODETYPE ndt,int index=0);
-
-  double boff(node nd) {
-    int value=0;
-    getmem(nd,&value,BOFF_OFFS,INTSIZE);
-
-    return double (value/(double)1000000000.0);
-  }
-
-
-  double myround(double x) {
-    long int i=(long int)(x);
-    return (x-i)>0.500?i+1.0:(double)i;
-  }
-
-  int boff(node nd,double value) {
-    int v=(int)myround(value * 1000000000.0);
-    putmem(nd,v,BOFF_OFFS,INTSIZE);
-
-    return 1;
-  }
-
-  int succ2(node nd,int value) {
-    putmem(nd,value,SUCC2_OFFS,CODESIZE);
-    return value;
-  }
-
-  int succ2(node nd) {
-    int value=0;
-    getmem(nd,&value,SUCC2_OFFS,CODESIZE);
-    return value;
-  }
-
-  int succ1(node nd,int value) {
-    putmem(nd,value,SUCC1_OFFS,CODESIZE);
-    return value;
-  }
-
-  int succ1(node nd) {
-    int value=0;
-    getmem(nd,&value,SUCC1_OFFS,CODESIZE);
-    return value;
-  }
-
-  int msucc(node nd,int value) {
-    putmem(nd,value,MSUCC_OFFS,CODESIZE);
-    return value;
-  }
-
-  int msucc(node nd) {
-    int value;
-    getmem(nd,&value,MSUCC_OFFS,CODESIZE);
-    return value;
-  }
-
-  table mtable(node nd);
-  table mtable(node nd,table value);
-  int mtablesz(node nd);
-
-  inline int bo_state() {
-    return backoff_state;
-  }
-  inline int bo_state(int value) {
-    return backoff_state=value;
-  }
+    
+    int         corrcounts; //corrected counters flag
+    
+    dictionary     *dict; // dictionary
+    
+    // filtering dictionary:
+    // if the first word of the ngram does not belong to filterdict
+    // do not insert the ngram
+    dictionary     *filterdict;
+    
+    ngramtable(char* filename,int maxl,char* is,
+               dictionary* extdict,
+               char* filterdictfile,
+               int googletable=0,
+               int dstco=0,char* hmask=NULL,int inplen=0,
+               TABLETYPE tt=FULL,int codesize=DEFCODESIZE);
+    
+    inline char* ngtype(char *str=NULL) {
+        if (str!=NULL) strcpy(info,str);
+        return info;
+    }
+    
+    virtual ~ngramtable();
+    
+    inline void freetree() {
+        freetree(tree);
+    };
+    
+    void freetree(node nd);
+    
+    void resetngramtable();
+    
+    void stat(int level=4);
+    
+    inline long long totfreq(long long v=-1) {
+        return (v==-1?freq(tree,INODE):freq(tree,INODE,v));
+    }
+    
+    inline long long btotfreq(long long v=-1) {
+        return (v==-1?getfreq(tree,treeflags,1):setfreq(tree,treeflags,v,1));
+    }
+    
+    inline long long entries(int lev) const {
+        return mentr[lev];
+    }
+    
+    inline int maxlevel() const {
+        return maxlev;
+    }
+    
+    //  void savetxt(char *filename,int sz=0);
+    void savetxt(char *filename,int sz=0,bool googleformat=false,bool hashvalue=false,int startfrom=0);
+    void loadtxt(char *filename,int googletable=0);
+    
+    void savebin(char *filename,int sz=0);
+    void savebin(mfstream& out);
+    void savebin(mfstream& out,node nd,NODETYPE ndt,int lev,int mlev);
+    
+    void loadbin(const char *filename);
+    void loadbin(mfstream& inp);
+    void loadbin(mfstream& inp,node nd,NODETYPE ndt,int lev);
+    
+    void loadbinold(char *filename);
+    void loadbinold(mfstream& inp,node nd,NODETYPE ndt,int lev);
+    
+    void generate(char *filename,dictionary *extdict=NULL);
+    void generate_dstco(char *filename,int dstco);
+    void generate_hmask(char *filename,char* hmask,int inplen=0);
+    
+    void augment(ngramtable* ngt);
+    
+    inline int scan(ngram& ng,ACTION action=CONT,int maxlev=-1) {
+        return scan(tree,INODE,0,ng,action,maxlev);
+    }
+    
+    inline int succscan(ngram& h,ngram& ng,ACTION action,int lev) {
+        //return scan(h.link,h.info,h.lev,ng,action,lev);
+        return scan(h.link,h.info,lev-1,ng,action,lev);
+    }
+    
+    double prob(ngram ng);
+    
+    int scan(node nd,NODETYPE ndt,int lev,ngram& ng,ACTION action=CONT,int maxl=-1);
+    
+    void show();
+    
+    void *search(table *tb,NODETYPE ndt,int lev,int n,int sz,int *w,
+                 ACTION action,char **found=(char **)NULL);
+    
+    int mybsearch(char *ar, int n, int size, unsigned char *key, int *idx);
+    
+    int put(ngram& ng);
+    int put(ngram& ng,node nd,NODETYPE ndt,int lev);
+    
+    inline int get(ngram& ng) {
+        return get(ng,maxlev,maxlev);
+    }
+    virtual int get(ngram& ng,int n,int lev);
+    
+    int comptbsize(int n);
+    table *grow(table *tb,NODETYPE ndt,int lev,int n,int sz,NODETYPE oldndt=0);
+    
+    bool check_dictsize_bound();
+    
+    int putmem(char* ptr,int value,int offs,int size);
+    int getmem(char* ptr,int* value,int offs,int size);
+    long putmem(char* ptr,long long value,int offs,int size);
+    long getmem(char* ptr,long long* value,int offs,int size);
+    
+    inline void tb2ngcpy(int* wordp,char* tablep,int n=1);
+    inline void ng2tbcpy(char* tablep,int* wordp,int n=1);
+    inline int ngtbcmp(int* wordp,char* tablep,int n=1);
+    
+    inline int word(node nd,int value) {
+        putmem(nd,value,WORD_OFFS,CODESIZE);
+        return value;
+    }
+    
+    inline int word(node nd) {
+        int v;
+        getmem(nd,&v,WORD_OFFS,CODESIZE);
+        return v;
+    }
+    
+    inline unsigned char mtflags(node nd,unsigned char value) {
+        return *(unsigned char *)(nd+FLAGS_OFFS)=value;
+    }
+    
+    inline unsigned char mtflags(node nd) const {
+        return *(unsigned char *)(nd+FLAGS_OFFS);
+    }
+    
+    int codecmp(char * a,char *b);
+    
+    inline int codediff(node a,node b) {
+        return word(a)-word(b);
+    };
+    
+    
+    int update(ngram ng);
+    
+    long long freq(node nd,NODETYPE ndt,long long value);
+    long long freq(node nd,NODETYPE ndt);
+    
+    long long setfreq(node nd,NODETYPE ndt,long long value,int index=0);
+    long long getfreq(node nd,NODETYPE ndt,int index=0);
+    
+    double boff(node nd) {
+        int value=0;
+        getmem(nd,&value,BOFF_OFFS,INTSIZE);
+        
+        return double (value/(double)1000000000.0);
+    }
+    
+    
+    double myround(double x) {
+        long int i=(long int)(x);
+        return (x-i)>0.500?i+1.0:(double)i;
+    }
+    
+    int boff(node nd,double value) {
+        int v=(int)myround(value * 1000000000.0);
+        putmem(nd,v,BOFF_OFFS,INTSIZE);
+        
+        return 1;
+    }
+    
+    int succ2(node nd,int value) {
+        putmem(nd,value,SUCC2_OFFS,CODESIZE);
+        return value;
+    }
+    
+    int succ2(node nd) {
+        int value=0;
+        getmem(nd,&value,SUCC2_OFFS,CODESIZE);
+        return value;
+    }
+    
+    int succ1(node nd,int value) {
+        putmem(nd,value,SUCC1_OFFS,CODESIZE);
+        return value;
+    }
+    
+    int succ1(node nd) {
+        int value=0;
+        getmem(nd,&value,SUCC1_OFFS,CODESIZE);
+        return value;
+    }
+    
+    int msucc(node nd,int value) {
+        putmem(nd,value,MSUCC_OFFS,CODESIZE);
+        return value;
+    }
+    
+    int msucc(node nd) {
+        int value;
+        getmem(nd,&value,MSUCC_OFFS,CODESIZE);
+        return value;
+    }
+    
+    table mtable(node nd);
+    table mtable(node nd,table value);
+    int mtablesz(node nd);
+    
+    inline int bo_state() {
+        return backoff_state;
+    }
+    inline int bo_state(int value) {
+        return backoff_state=value;
+    }
 };
 
 #endif

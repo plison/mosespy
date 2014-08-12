@@ -497,7 +497,8 @@ int main(int argc, char **argv)
 
     if (out){
     if (bin) ngt->savebin(out,ngsz);
-    else if (outputredisformat) ngt->savetxt(out,ngsz,true,true);
+    else if (outputredisformat) ngt->savetxt(out,ngsz,true,true,
+                                             1);
     else if (outputgoogleformat) ngt->savetxt(out,ngsz,true,false);
     else ngt->savetxt(out,ngsz,false,false);
     }

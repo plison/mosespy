@@ -96,7 +96,7 @@ int main(int argc, char **argv)
   char *txtfile=NULL;
   char *binfile=NULL;
 	
-  int numbins=0;  //number of document bins for parallel processing
+  int numbins=1;  //number of document bins for parallel processing
   int topics=0;   //number of topics
   int st=0;       //special topic: first st dict words
   int it=0;       //number of EM iterations to run
@@ -174,23 +174,25 @@ int main(int argc, char **argv)
 	
   if (!dictfile) {
     usage();
-		exit_error(IRSTLM_ERROR_DATA,"Missing parameters dictionary");
+		exit_error(IRSTLM_ERROR_DATA,"Missing dictionary file");
   };
-	
-  if (!adafile & (!trainfile || !binfile) && (!trainfile || !it || !topics || !basefile)) {
+    
+    
+  if ((trainfile && !binfile) && (!it || !topics || !basefile)) {
     usage();
-		exit_error(IRSTLM_ERROR_DATA,"Missing parameters for training");
+	exit_error(IRSTLM_ERROR_DATA,"Missing training parameters");
   }
 	
-  if ((!trainfile && basefile) && (!featurefile || !adafile || !it || !topics)) {
-    usage();
-		exit_error(IRSTLM_ERROR_DATA,"Missing parameters for adapting");
+  if (ctfile && (!it || !topics || !basefile)) {
+        usage();
+		exit_error(IRSTLM_ERROR_DATA,"Missing recombination step parameters");
   }
-	
-  if ((adafile) && (!featurefile)) {
+    
+  if (adafile && !(basefile || !featurefile || !it || !topics)) {
     usage();
-		exit_error(IRSTLM_ERROR_DATA,"Missing parameters for adapting 2");
+		exit_error(IRSTLM_ERROR_DATA,"Missing inference parameters");
   }
+    
 	
   if (!tmphfile) {
     //set default value

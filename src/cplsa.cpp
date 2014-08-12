@@ -238,7 +238,7 @@ using namespace std;
 		if (topics>0 && r != topics) {
 			std::stringstream ss_msg;
 			ss_msg << "incompatible number of topics: " << r;
-			exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
+            exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
 		} else
 			topics=r;
 		

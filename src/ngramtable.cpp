@@ -277,8 +277,8 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
   mem=new storage(256,10000);
 
   mentr=new long long[maxlev+1];
-  memory= new int[maxlev+1];
-  occupancy= new int[maxlev+1];
+  memory= new long long[maxlev+1];
+  occupancy= new long long[maxlev+1];
 
 //Book keeping of occupied memory
   mentr[0]=1;
@@ -331,39 +331,46 @@ ngramtable::ngramtable(char* filename,int maxl,char* /* unused parameter: is */,
   }
 }
 
-void ngramtable::savetxt(char *filename,int depth,bool googleformat,bool hashvalue)
-    {
-        char ngstring[10000];
+void ngramtable::savetxt(char *filename,int depth,bool googleformat,bool hashvalue,int startfrom)
+{
+    char ngstring[10000];
+    
+    if (depth>maxlev) {
+        exit_error(IRSTLM_ERROR_DATA,"ngramtable::savetxt: wrong n-gram size");
+    }
+    
+    if (startfrom>0 && !googleformat) {
+        exit_error(IRSTLM_ERROR_DATA,
+                   "ngramtable::savetxt: multilevel output only allowed in googleformat");
+    }
+    
+    depth=(depth>0?depth:maxlev);
+    
+    card=mentr[depth];
+    
+    ngram ng(dict);
+    
+    if (googleformat)
+    cerr << "savetxt in Google format: nGrAm " <<  depth << " " << card << " " << info << "\n";
+    else
+    cerr << "savetxt: nGrAm " <<  depth << " " << card << " " << info << "\n";
+    
+    mfstream out(filename,ios::out );
+    
+    if (!googleformat){
+        out << "nGrAm " << depth << " " << card << " " << info << "\n";
+        dict->save(out);
+    }
+    
+    if (startfrom<=0 || startfrom > depth) startfrom=depth;
+    
+    for (int d=startfrom;d<=depth;d++){
+        scan(ng,INIT,d);
         
-        if (depth>maxlev) {
-            exit_error(IRSTLM_ERROR_DATA,"ngramtable::savetxt: wrong n-gram size");
-        }
-        
-        depth=(depth>0?depth:maxlev);
-        
-        card=mentr[depth];
-        
-        ngram ng(dict);
-        
-        if (googleformat)
-            cerr << "savetxt in Google format: nGrAm " <<  depth << " " << card << " " << info << "\n";
-        else
-            cerr << "savetxt: nGrAm " <<  depth << " " << card << " " << info << "\n";
-        
-        mfstream out(filename,ios::out );
-        
-        if (!googleformat)
-            out << "nGrAm " << depth << " " << card << " " << info << "\n";
-        
-        if (!googleformat)
-            dict->save(out);
-        
-        scan(ng,INIT,depth);
-        
-        while(scan(ng,CONT,depth)){
+        while(scan(ng,CONT,d)){
             
             if (hashvalue){
-               strcpy(ngstring,ng.dict->decode(*ng.wordp(ng.size)));
+                strcpy(ngstring,ng.dict->decode(*ng.wordp(ng.size)));
                 for (int i=ng.size-1; i>0; i--){
                     strcat(ngstring," ");
                     strcat(ngstring,ng.dict->decode(*ng.wordp(i)));
@@ -371,16 +378,16 @@ void ngramtable::savetxt(char *filename,int depth,bool googleformat,bool hashval
                 out << ngstring << "\t" << ng.freq << "\t" << crc16_ccitt(ngstring,strlen(ngstring)) << "\n";
             }
             else
-                
-                out << ng << "\n";
+            
+            out << ng << "\n";
             
             
         }
-        
-        cerr << "\n";
-        
-        out.close();
     }
+    cerr << "\n";
+    
+    out.close();
+}
 
 
 void ngramtable::loadtxt(char *filename,int googletable)
@@ -1546,8 +1553,8 @@ ngramtable::~ngramtable()
 
 void ngramtable::stat(int level)
 {
-  int totmem=0;
-  int totwaste=0;
+  long long totmem=0;
+  long long totwaste=0;
   float mega=1024 * 1024;
 
   cout.precision(2);
