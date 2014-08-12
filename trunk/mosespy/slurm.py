@@ -1,6 +1,6 @@
 
 import os, re, uuid, threading, time, sys, copy
-import utils, experiment, moses_parallel
+import utils, experiment
 from experiment import Experiment 
   
 nodeMemory=62000
@@ -66,7 +66,7 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.settings["nbJobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-        self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
+        self.decoder = experiment.rootDir + "/mosespy/moses_parallel.py"
 
     
     def copy(self, nexExpName):
