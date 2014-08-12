@@ -5,7 +5,7 @@ from experiment import Experiment
   
 nodeMemory=62000
 nodeCpus = 16
-nodeTime = "8:00:00"
+nodeTime = "6:00:00"
 
 class SlurmExecutor(utils.CommandExecutor):
         
@@ -38,8 +38,8 @@ class SlurmExecutor(utils.CommandExecutor):
     
             
     def runs(self, scripts, stdins=None, stdouts=None):
-        jobs = []
         
+        jobs = []  
         for script in scripts:
             script = self.getScript(script)
             stdin = stdins[len(jobs)] if isinstance(stdins, list) else None
@@ -50,25 +50,13 @@ class SlurmExecutor(utils.CommandExecutor):
             jobs.append(t)
             t.start()
             
-        time.sleep(1)
-        counter = 0
-        while True:
-            running = [t for t in jobs if t.is_alive()]
-            if len(running) > 0:
-                time.sleep(1)
-                counter += 1
-                if not (counter % 60):
-                    print "Number of running processes: " + str(len(running))
-            else:
-                break
-        print "SLURM parallel run completed"
+        utils.waitForCompletion(jobs)
   
         
 class SlurmExperiment(Experiment):
             
     def __init__(self, expName, sourceLang=None, targetLang=None, 
-                 account=None, nbJobs=4, 
-                 decoder=(str(moses_parallel.__file__).replace("pyc", "py"))):
+                 account=None, nbJobs=4):
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not utils.existsExecutable("srun"):
@@ -78,7 +66,7 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.settings["nbJobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-        self.decoder = decoder
+        self.decoder = str(moses_parallel.__file__).replace("pyc", "py")
 
     
     def copy(self, nexExpName):
@@ -148,22 +136,29 @@ class SlurmExperiment(Experiment):
                 
     def tokeniseFile(self, inputFile, outputFile):
         Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nodeCpus)
-          
+       
+    
+    def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
+        Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
+        with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
+            config = iniFile.read()
+        with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
+            iniFile.write(config.replace("[jobs]\n"+str(self.settings["nbjobs"])), "")
+        
+    
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        script = super(SlurmExperiment, self).getTuningScript(tuneDir, tuningStem, nodeCpus)
-        if "moses_parallel" in self.decoder:
-            script = script.replace("--decoder-flags=\'", 
-                                    "--decoder-flags=\'-jobs " + str(self.settings["nbJobs"]) + " ")
-        return script
+        script = Experiment.getTuningScript(tuneDir, tuningStem, nodeCpus)
+        return script.replace("--decoder-flags=\'", 
+                              "--decoder-flags=\'-jobs " + str(self.settings["nbJobs"]) + " ")
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=2):
-        return super(SlurmExperiment, self).translate(text, preprocess, customModel, nodeCpus)
+        return Experiment.translate(text, preprocess, customModel, nodeCpus)
     
     
     def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=2):
-        return super(SlurmExperiment, self).translateFile(infile, outfile, preprocess, 
+        return Experiment.translateFile(infile, outfile, preprocess, 
                                                           customModel, nodeCpus)
     
 
