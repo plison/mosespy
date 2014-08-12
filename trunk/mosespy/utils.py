@@ -105,12 +105,23 @@ def getLanguage(langcode):
 
 
 
+def waitForCompletion(jobs):
+    print "Parallel run of " + str(len(jobs)) + " processes"
+    time.sleep(0.1)
+    for counter in range(0, 10000):
+        running = [t for t in jobs if t.is_alive()]
+        if len(running) > 0:
+            time.sleep(1)
+            if not (counter % 60):
+                print "Number of running processes: " + str(len(running))
+        else:
+            break
+    print "Parallel processes completed"  
+
+
 def splitData(data, outputDir, nbSplits):
-    
-    if isinstance(data, list):
-        extension = ""
-        lines = data
-    elif isinstance(data, basestring) and os.path.exists(data):  
+
+    if isinstance(data, basestring) and os.path.exists(data):  
         extension = "." + data.split(".")[len(data.split("."))-1]
         fullFile = open(data, 'r')
         lines = fullFile.readlines()
