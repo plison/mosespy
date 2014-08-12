@@ -14,6 +14,7 @@ def getInput():
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         line = sys.stdin.readline()
         if line.strip():
+            print "New line: " + line
             lines.append(line)
         else:
             break  
@@ -22,7 +23,7 @@ def getInput():
         print "Number of input lines: " + str(len(lines))
         tmpInputFile = "./tmp" + str(uuid.uuid4())[0:6] + ".source"
         with open(tmpInputFile, 'w') as tmpInput:
-            tmpInput.write(line.strip("\n") + "\n")
+            tmpInput.writelines(lines)
         return tmpInputFile
     else:
         return None
@@ -121,7 +122,7 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
             nbestOutFile2 = splitDir + "/" + str(i) + ".nbest" if nbestOutFile else None
             t = threading.Thread(target=runParallelMoses, args=(infile, basicArgs, outfile, nbestOutFile2, 1))
             t.start()
-            jobs[t.ident()] = {"thread":t, "in":infile, "out":outfile, "nbestout":nbestOutFile2}
+            jobs[t.ident] = {"thread":t, "in":infile, "out":outfile, "nbestout":nbestOutFile2}
             
         utils.waitForCompletion([jobs[k]["thread"] for k in jobs])
         mergeOutFiles([jobs[k]["out"] for k in jobs], outStream)
@@ -129,6 +130,8 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
             mergeNbestOutFiles([jobs[k]["nbestout"] for k in jobs], nbestOutFile)
      
         utils.rmDir(splitDir)
+    
+    
                     
            
 
@@ -142,6 +145,9 @@ def main():
     inputFile = getInput()
     
     runParallelMoses(inputFile, arguments, stdout, getNbestOut(), nbJobs)
+    
+    if inputFile and "tmp" in inputFile:
+        os.remove(inputFile)
 
 
 
