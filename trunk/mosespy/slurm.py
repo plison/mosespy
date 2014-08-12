@@ -139,7 +139,7 @@ class SlurmExperiment(Experiment):
        
     
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
-        Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
+   #     Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
         with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
             config = iniFile.read()
         with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
