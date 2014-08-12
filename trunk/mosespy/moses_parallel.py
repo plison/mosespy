@@ -82,15 +82,23 @@ def main():
                         sys.stdout.flush()
         sys.stdout.close()
         
+        localCount = 0
+        globalCount = 0
         if nbestout:
             with open(nbestout, 'w') as nbestout_full:
                 for i in range(0, len(infiles)):
                     with open(splitDir + "/" + str(i) + ".nbest", 'r') as nbestout_part:
                         for bestline in nbestout_part.readlines():
                             if bestline.strip():
-                                nbestout_full.write(bestline.strip('\n')+'\n')
-                                
-       # utils.rmDir(splitDir)
+                                newCount = int(bestline.split(" ")[0])
+                                if newCount == localCount + 1:
+                                    localCount += 1
+                                    globalCount += 1
+                                bestline = bestline.replace(newCount, globalCount, 1).strip("\n")+"\n"
+                                nbestout_full.write(bestline)
+                    localCount = 0
+                    globalCount += 1
+        utils.rmDir(splitDir)
                     
            
 
