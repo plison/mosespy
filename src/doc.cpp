@@ -42,7 +42,7 @@ doc::doc(dictionary* d,char* docfname)
   cd=-1;
   dfname=docfname;
   df=NULL;
-	binary=false;
+  binary=false;
 };
 
 doc::~doc()
@@ -90,41 +90,40 @@ int doc::reset()
 
 int doc::read()
 {
-
+    static int eod=dict->encode(dict->EoD());
+    static int bod=dict->encode(dict->BoD());
+    static int w=0;
 
   if (cd >=(n-1))
     return 0;
 
   m=0;
-
-  for (int i=0; i<dict->size(); i++) N[i]=0;
+  
+  memset(N,0,dict->size()*sizeof(int));
+  //for (int i=0; i<dict->size(); i++) N[i]=0;
 
   if (binary) {
     df->read((char *)&m,sizeof(int));
     df->read((char *)V,m * sizeof(int));
     df->read((char *)T,m * sizeof(int));
-    for (int i=0; i<m; i++) {
-      N[V[i]]=T[i];
-    }
+    for (int i=0; i<m; i++) N[V[i]]=T[i];
   } else {
-
-    int eod=dict->encode(dict->EoD());
-    int bod=dict->encode(dict->BoD());
 
     ngram ng(dict);
 
     while((*df) >> ng) {
+      w=*ng.wordp(1);
       if (ng.size>0) {
-        if (*ng.wordp(1)==bod) {
+        if (w==bod) {
           ng.size=0;
           continue;
         }
-        if (*ng.wordp(1)==eod) {
+        if (w==eod) {
           ng.size=0;
           break;
         }
-        N[*ng.wordp(1)]++;
-        if (N[*ng.wordp(1)]==1)V[m++]=*ng.wordp(1);
+        N[w]++;
+        if (N[w]==1) V[m++]=w; //new word
       }
     }
   }
@@ -221,7 +220,7 @@ int doc::save(char* fname, int nbins)
       out.write((const char*)&m,sizeof(int));
       out.write((const char*)V,m * sizeof(int));
       for (int i=0; i<m; i++)
-        out.write((const char*)&N[V[i]],sizeof(int));
+         out.write((const char*)&N[V[i]],sizeof(int));
     }
     out.close();
   }
