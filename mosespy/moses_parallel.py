@@ -91,7 +91,11 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
         
 def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
     
-    executor = slurm.SlurmExecutor()
+    try:
+        executor = slurm.SlurmExecutor()
+    except RuntimeError:
+        executor = utils.CommandExecutor()
+        
     command = moses_root + "/bin/moses " + basicArgs
     command += (" -n-best-list " + nbestOutFile) if nbestOutFile else ""
     
@@ -116,8 +120,8 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
             outfile = splitDir + "/" + str(i) + ".translated"
             nbestOutFile2 = splitDir + "/" + str(i) + ".nbest" if nbestOutFile else None
             t = threading.Thread(target=runParallelMoses, args=(infile, basicArgs, outfile, nbestOutFile2, 1))
-            jobs[t.ident()] = {"thread":t, "in":infile, "out":outfile, "nbestout":nbestOutFile2}
             t.start()
+            jobs[t.ident()] = {"thread":t, "in":infile, "out":outfile, "nbestout":nbestOutFile2}
             
         utils.waitForCompletion([jobs[k]["thread"] for k in jobs])
         mergeOutFiles([jobs[k]["out"] for k in jobs], outStream)
