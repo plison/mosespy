@@ -5,6 +5,12 @@ import sys, utils,os, uuid, slurm, select, threading, time
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 
+try:
+    executor = slurm.SlurmExecutor()
+except RuntimeError:
+    executor = utils.CommandExecutor()
+
+
 def getInput():
     lines = []
     for i in range(1, len(sys.argv)):
@@ -90,12 +96,7 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
         
         
 def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs):
-    
-    try:
-        executor = slurm.SlurmExecutor()
-    except RuntimeError:
-        executor = utils.CommandExecutor()
-        
+            
     command = moses_root + "/bin/moses " + basicArgs
     command += (" -n-best-list " + nbestOutFile) if nbestOutFile else ""
     

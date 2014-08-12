@@ -286,7 +286,7 @@ class Experiment(object):
         if preprocess:
             infile = self.processRawData(infile)["true"]
 
-        transScript = (self.decoder + " -f " + initFile.encode('utf-8')
+        transScript = (self.decoder + "-v 0 -f " + initFile.encode('utf-8')
                         + " -threads " + str(nbThreads))
         self.executor.run(transScript, stdin=infile, stdout=outfile)
                                         
