@@ -12,6 +12,8 @@ class SlurmExecutor(utils.CommandExecutor):
     def __init__(self, account=None):
         if not account:
             account = getDefaultSlurmAccount()
+        if not account:
+            raise RuntimeError("cannot find default SLURM account")
         self.account = account
         os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
                                          .read().strip('\n') + ":"
@@ -171,7 +173,7 @@ def getDefaultSlurmAccount():
     if s:
         account = s.group(1)
         return account
-    raise RuntimeError("cannot find default SLURM account")
+    return None
 
 
 
