@@ -2,7 +2,6 @@
 
 import sys, utils,os, uuid, slurm, select, threading, time
 
-
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 
 try:
