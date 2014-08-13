@@ -564,11 +564,7 @@ class Experiment(object):
         for f in [fullSource, fullTarget, trainSource, trainTarget,
                   tuneSource, tuneTarget, testSource, testTarget]:
             f.close()
-         
-        inData = open(lmData, 'r')
-        newLmFile = lmData[:-len(self.settings["target"])] + "wotest." + self.settings["target"]
-        outData = open(newLmFile, 'w', 1000000)
-              
+                       
         print "Filtering language model to remove sentences from test set..."
         
         linesdict = {}
@@ -583,6 +579,12 @@ class Experiment(object):
                     linesdict[l] = [curLine]
                 else:
                     linesdict[l].append(curLine)
+
+        inData = open(lmData, 'r')
+        extension = "." + lmData.split(".")[len(lmData.split("."))-1]
+        newLmFile = (self.settings["path"] + "/" + os.path.basename(lmData[:len(extension)])
+                     + "wotest." + extension)        
+        outData = open(newLmFile, 'w', 1000000)
                            
         prev2Line = None
         prevLine = None
