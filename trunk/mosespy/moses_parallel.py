@@ -39,13 +39,13 @@ def getNbJobs():
 
 
 def getMosesArguments():
-    argumentsToAvoid = ["-jobs", "-input-file", "-n-best-file"]
+    argsToRemove = ["-jobs", "-input-file", "-n-best-list"]
     arguments = []
     for i in range(1, len(sys.argv)):
         curArg = sys.argv[i].strip()
         curArg = curArg if " " not in curArg else "\'" + curArg + "\'"
         prevArg = sys.argv[i-1].strip()
-        if not curArg in argumentsToAvoid and not prevArg in argumentsToAvoid:
+        if not curArg in argsToRemove and not prevArg in argsToRemove:
             arguments.append(curArg)
     
     arguments = " ".join(arguments)
