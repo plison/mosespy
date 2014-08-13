@@ -148,7 +148,7 @@ class SlurmExperiment(Experiment):
 
     def getNbDecodingJobs(self, sourceFile):
         nblines = utils.countNbLines(sourceFile)
-        return min(self.settings["nbjobs"], nblines/1000)
+        return min(self.settings["nbjobs"], max(1,nblines/1000))
 
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
