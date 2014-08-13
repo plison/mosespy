@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-import sys, utils,os, uuid, slurm, select, threading, time
+import sys, utils,os, uuid, slurm, select, threading
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 
+executor = slurm.SlurmExecutor()
 
 def getInput():
     lines = []
@@ -39,7 +40,7 @@ def getNbJobs():
 
 
 def getMosesArguments():
-    argsToRemove = ["-jobs", "-input-file", "-n-best-list"]
+    argsToRemove = ["-jobs", "-input-file"]
     arguments = []
     for i in range(1, len(sys.argv)):
         curArg = sys.argv[i].strip()
@@ -52,13 +53,6 @@ def getMosesArguments():
     return arguments
 
 
-def getNbestOut():
-    nbestout = None
-    for i in range(1, len(sys.argv)):
-        if "-n-best-list" in sys.argv[i-1]:
-            nbestout = sys.argv[i].strip()
-    return nbestout
-    
 
 def mergeOutFiles(outfiles, outStream):
     for outfile_part in outfiles:
@@ -67,7 +61,14 @@ def mergeOutFiles(outfiles, outStream):
                     if partline.strip():
                         outStream.write(partline.strip('\n') + '\n')
     outStream.close()
-    
+       
+       
+def getArgumentValue(args, key):
+    split = args.split(' ')
+    for i in range(0, len(split)):
+        if i > 0 and key == split[i-1].strip():
+            return split[i].strip()
+    return None
 
 def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
            
@@ -88,56 +89,57 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
             globalCount += 1
    
 
-def getExecutor(nbJobs):
-    if slurm.getDefaultSlurmAccount():
-        if nbJobs > 1:
-            for k in list(os.environ):
-                if "SLURM" in k:
-                    del os.environ[k] 
-            return slurm.SlurmExecutor()
-        elif "SLURM" not in str(os.environ.keys()):
-            return slurm.SlurmExecutor()            
-    return utils.CommandExecutor()    
-        
-        
-def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs, executor):
-            
-    command = moses_root + "/bin/moses " + basicArgs
-    command += (" -n-best-list " + nbestOutFile) if nbestOutFile else ""
+def splitDecoding(inputFile, mosesArgs, nbJobs):
+    splitDir = "./tmp" + str(uuid.uuid4())[0:6]
+    utils.resetDir(splitDir)
+    infiles = utils.splitData(inputFile, splitDir, nbJobs)  
+    print "Data split in " + str(len(infiles))
     
-    if not inputFile:
-        print "Running decoder: " + command
-        executor.run(command, stdout=outStream)
-        
-    elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
-        print "Running decoder: " + command + " < " + inputFile
-        executor.run(command, stdin=inputFile, stdout=outStream)
-    else:
-        
-        print "Splitting data into %i jobs"%(nbJobs)
-        splitDir = "./tmp" + str(uuid.uuid4())[0:6]
-        utils.resetDir(splitDir)
-        
-        infiles = utils.splitData(inputFile, splitDir, nbJobs)  
-        jobs = {}     
-        for i in range(0, len(infiles)):
+    splits = {"dir":splitDir}
+    for i in range(0, len(infiles)):
             infile = infiles[i]
             outfile = splitDir + "/" + str(i) + ".translated"
-            nbestOutFile2 = splitDir + "/" + str(i) + ".nbest" if nbestOutFile else None
-            t = threading.Thread(target=runParallelMoses, 
-                                 args=(infile, basicArgs, outfile,nbestOutFile2, 1, executor))
-            t.start()
-            jobs[t.ident] = {"thread":t, "in":infile, "out":outfile, "nbestout":nbestOutFile2}
             
-        utils.waitForCompletion([jobs[k]["thread"] for k in jobs])
-        mergeOutFiles([jobs[k]["out"] for k in jobs], outStream)
-        if nbestOutFile:
-            mergeNbestOutFiles([jobs[k]["nbestout"] for k in jobs], nbestOutFile)
+            newArgs = str(mosesArgs)
+            nbestout = getArgumentValue(mosesArgs, "-n-best-list")
+            if nbestout:
+                newArgs = newArgs.replace(nbestout, splitDir + "/" + str(i) + ".translated" )
+                
+            splits[i] = {"in": infile, "out":outfile, "args":newArgs}
+    return splits
+    
+        
+        
+def runParallelMoses(inputFile, args, outStream, nbJobs):
+            
+    decoder = moses_root + "/bin/moses "
+    
+    if not inputFile:
+        print "Running decoder: " + decoder + args
+        executor.run(decoder + args, stdout=outStream)
+        
+    elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
+        print "Running decoder: " + decoder + args + " < " + inputFile
+        executor.run(decoder + args, stdin=inputFile, stdout=outStream)
+    else:
+        
+        splits = splitDecoding(inputFile, args, nbJobs)
+        for s in splits:
+            split = splits[s]
+            args = (decoder + split["args"], split["in"], split["out"], 1)
+            t = threading.Thread(target=runParallelMoses, args)
+            t.start()
+            split["thread"] = t
+            
+        utils.waitForCompletion([splits[k]["thread"] for k in splits])
+        mergeOutFiles([splits[k]["out"] for k in splits], outStream)
+        
+        if "-n-best-list" in args:
+            mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits], 
+                               getArgumentValue(args, "-n-best-list"))
      
-        utils.rmDir(splitDir)
-    
-    
-                          
+        utils.rmDir(splits["dir"])
+                         
 
 def main():      
    
@@ -147,9 +149,8 @@ def main():
     nbJobs = getNbJobs()
     arguments = getMosesArguments()
     inputFile = getInput()
-    executor = getExecutor(nbJobs)
     
-    runParallelMoses(inputFile, arguments, stdout, getNbestOut(), nbJobs, executor)
+    runParallelMoses(inputFile, arguments, stdout, nbJobs)
     
     if inputFile and "tmp" in inputFile:
         os.remove(inputFile)

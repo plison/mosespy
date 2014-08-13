@@ -1,5 +1,5 @@
 
-import os, re, uuid, threading, time, sys, copy
+import os, re, uuid, threading, copy
 import utils, experiment
 from experiment import Experiment 
   
@@ -13,7 +13,7 @@ class SlurmExecutor(utils.CommandExecutor):
         if not account:
             account = getDefaultSlurmAccount()
         if not account:
-            raise RuntimeError("cannot find default SLURM account")
+            print "Warning: no SLURM account found, switching to normal execution"
         self.account = account
         os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
                                          .read().strip('\n') + ":"
@@ -24,19 +24,24 @@ class SlurmExecutor(utils.CommandExecutor):
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
 
     
-    def getScript(self, script):
-        name = str(uuid.uuid4())[0:5]
-        script = ("srun --account=" + self.account
-                + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
-                +" --job-name=" + name
-                + " --cpus-per-task=" + str(nodeCpus)
-                + " --time=" + nodeTime 
-                + " " + script)
+    def getScript(self, script, allowForks):    
+        if self.account and (allowForks or "SLURM" not in str(os.environ.keys())):
+            name = str(uuid.uuid4())[0:5]
+            script = ("srun --account=" + self.account
+                      + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
+                      +" --job-name=" + name
+                      + " --cpus-per-task=" + str(nodeCpus)
+                      + " --time=" + nodeTime 
+                      + " " + script)  
+            for k in list(os.environ):
+                if "SLURM" in k:
+                    del os.environ[k]     
         return script
         
     
-    def run(self, script, stdin=None, stdout=None):  
-        return super(SlurmExecutor,self).run(self.getScript(script), stdin, stdout)
+    def run(self, script, stdin=None, stdout=None, allowForks=False):
+        script = self.getScript(script, allowForks)  
+        return super(SlurmExecutor,self).run(script, stdin, stdout)
     
             
     def runs(self, scripts, stdins=None, stdouts=None):

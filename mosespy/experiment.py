@@ -244,6 +244,7 @@ class Experiment(object):
         self.settings["btm"] = binaDir
         self.recordState()
         print "Finished binarising the translation model in directory " + utils.getsize(binaDir)
+
       
    
     def translate(self, text, preprocess=True, customModel=None, nbThreads=2):
@@ -394,7 +395,8 @@ class Experiment(object):
             raise RuntimeError("tokenised file " + inputFile + " does not exist")
             
         print "Start building truecasing model based on " + inputFile
-        truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" + " --model " + modelFile + " --corpus " + inputFile)
+        truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" 
+                               + " --model " + modelFile + " --corpus " + inputFile)
         result = self.executor.run(truecaseModelScript)
         if not result:
             raise RuntimeError("Cleaning of aligned files has failed")
