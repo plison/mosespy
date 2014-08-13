@@ -76,8 +76,53 @@ class SlurmExperiment(Experiment):
     def trainTranslationModel(self, trainStem, preprocess=True,
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
+        
+        if self.settings["nbJobs"] == 1:
+            Experiment.trainTranslationModel(self, trainStem, nodeCpus)
+            return
+             
+        if preprocess:         
+            trainStem = self.processAlignedData(trainStem)["clean"]
+        
+        print ("Building translation model " + self.settings["source"] + "-" 
+               + self.settings["target"] + " with " +  trainStem
+               + " with " + str(self.settings["nbJobs"]) + " splits")
+    
+        splitDir = self.settings["path"] + "/splits"
+        utils.resetDir(splitDir)
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbJobs"])
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbJobs"])
+
         tmDir = self.settings["path"] + "/translationmodel"
-        result = True
+        tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
+       
+        jobs = []
+        for i in range(0, self.settings["nbJobs"]):
+            script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
+                                .replace(trainStem, splitDir + "/" +str(i))
+                                + " --last-step 3")
+            t = threading.Thread(target=self.executor.run, args=(script, None, None, True))
+            jobs.append(t)
+            t.start()
+        utils.waitForCompletion(jobs)
+         
+        utils.resetDir(tmDir)
+        os.makedirs(tmDir+"/model")
+        alignFile = tmDir+"/model/aligned."+alignment
+        with open(alignFile, 'w') as align:
+            for split in range(0, self.settings["nbJobs"]):
+                splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
+                with open(splitFile) as part:
+                    for partline in part.readlines():
+                        if partline.strip():
+                            align.write(partline.strip('\n') + '\n')
+                            
+        tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
+                      + "-sort-batch-size 1024 " 
+                    + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
+        result = self.executor.run(tmScript + " --first-step 4")
+        utils.rmDir(splitDir)
+
         if result:
             print "Finished building translation model in: " + utils.getsize(tmDir)
             self.settings["tm"]=tmDir
@@ -94,11 +139,11 @@ class SlurmExperiment(Experiment):
     
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
         Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
-
-        with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
-            config = iniFile.read()
-        with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
-            iniFile.write(config.replace("[jobs]\n"+str(self.settings["nbJobs"]), ""))
+        if self.settings.has_key("ttm"):
+            with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
+                config = iniFile.read()
+            with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
+                iniFile.write(config.replace("[jobs]\n"+str(self.settings["nbJobs"]), ""))
         
     
 
@@ -108,14 +153,18 @@ class SlurmExperiment(Experiment):
                               "--decoder-flags=\'-jobs " + str(self.settings["nbJobs"]) + " ")
 
 
-    def translate(self, text, preprocess=True, customModel=None, nbThreads=2):
-        return Experiment.translate(self, text, preprocess, customModel, nodeCpus)
+    def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
+        return Experiment.translate(self, text, preprocess, customModel, nbThreads)
     
     
-    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=2):
+    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=nodeCpus):
         return Experiment.translateFile(self, infile, outfile, preprocess, 
-                                        customModel, nodeCpus)
-    
+                                        customModel, nbThreads)
+   
+    def getTranslateScript(self, initFile, nbThreads):
+        return (self.decoder + " -f " + initFile.encode('utf-8') 
+                + " -threads " + str(nbThreads) + " -jobs " + self.settings["nbJobs"]) 
+  
 
 
 def getDefaultSlurmAccount():
