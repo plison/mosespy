@@ -531,13 +531,13 @@ class Experiment(object):
          
         fullSource = open(fullSource, 'r')
         fullTarget = open(fullTarget, 'r')
-        trainStem = self.settings["path"] + os.path.basename(alignedData) + ".train"
+        trainStem = self.settings["path"] + "/" + os.path.basename(alignedData) + ".train"
         trainSource = open(trainStem + "." + self.settings["source"], 'w', 1000000)
         trainTarget = open(trainStem + "." + self.settings["target"], 'w', 1000000)
-        tuneStem = self.settings["path"] + os.path.basename(alignedData) + ".tune"
+        tuneStem = self.settings["path"] + "/" + os.path.basename(alignedData) + ".tune"
         tuneSource = open(tuneStem + "." + self.settings["source"], 'w')
         tuneTarget = open(tuneStem + "." + self.settings["target"], 'w')
-        testStem = self.settings["path"] + os.path.basename(alignedData) + ".test"
+        testStem = self.settings["path"]+ "/" + os.path.basename(alignedData) + ".test"
         testSource = open(testStem + "." + self.settings["source"], 'w')
         testTarget = open(testStem + "." + self.settings["target"], 'w')
         
