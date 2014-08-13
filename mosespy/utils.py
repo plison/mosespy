@@ -89,7 +89,7 @@ def getsize(filename):
 def countNbLines(filename):
     if not os.path.exists(filename):
         return RuntimeError("File does not exist")
-    return int(run_output("wc -l " + filename).split()[0])
+    return int(os.popen("wc -l " + filename).read().split()[0])
 
 
 def getLanguage(langcode):
