@@ -103,9 +103,30 @@ class Experiment(object):
         if result:
             print "Finished building translation model in directory " + utils.getsize(tmDir)
             self.settings["tm"]=tmDir
+            self.prunePhraseTable()
             self.recordState()
         else:
             print "Construction of translation model FAILED"
+            
+    
+    def prunePhraseTable(self):
+        
+        if not self.settings.has_key("tm"):
+            raise RuntimeError("Translation model is not yet constructed")
+        
+        phrasetable = self.settings["tm"]+"/model/phrase-table.gz"
+        newtable = phrasetable.replace(".gz", ".reduced.gz")
+        pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
+                       + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
+                       )%(phrasetable, newtable)
+        result = self.executor.run(pruneScript)
+        if result:
+            print "Finished pruning translation table " + phrasetable
+            self.settings["tm"]=newtable
+            self.recordState()
+        else:
+            print "Pruning of translation table FAILED"
+        
 
 
 
@@ -154,7 +175,7 @@ class Experiment(object):
                       + self.decoder + " "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
-              #        + " --batch-mira "
+                      + " --batch-mira "
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
@@ -315,6 +336,9 @@ class Experiment(object):
         bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
         self.executor.run(bleuScript, stdin=translationfile)
 
+
+    def analyseErrors(self, testData, preprocess=True):
+        print ("Perform error analysis with test data: " + testData)
 
     def getFilteredModel(self, testSource):
         
