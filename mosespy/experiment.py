@@ -581,8 +581,8 @@ class Experiment(object):
                     linesdict[l].append(curLine)
 
         inData = open(lmData, 'r')
-        extension = "." + lmData.split(".")[len(lmData.split("."))-1]
-        newLmFile = (self.settings["path"] + "/" + os.path.basename(lmData[:len(extension)])
+        extension = lmData.split(".")[len(lmData.split("."))-1]
+        newLmFile = (self.settings["path"] + "/" + os.path.basename(lmData[:-len(extension)])
                      + "wotest." + extension)        
         outData = open(newLmFile, 'w', 1000000)
                            
