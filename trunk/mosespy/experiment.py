@@ -122,8 +122,10 @@ class Experiment(object):
         result = self.executor.run(pruneScript)
         if result:
             print "Finished pruning translation table " + phrasetable
-            self.settings["tm"]=newtable
-            self.recordState()
+            with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
+                initContent = iniFile.read()
+            with open(self.settings["tm"]+"/model/moses.ini", 'w') as iniFile:
+                iniFile.write(initContent.replace(phrasetable, newtable))
         else:
             print "Pruning of translation table FAILED"
         
@@ -339,6 +341,37 @@ class Experiment(object):
 
     def analyseErrors(self, testData, preprocess=True):
         print ("Perform error analysis with test data: " + testData)
+        
+        testSource = testData + "." + self.settings["source"]
+        testTarget = testData + "." + self.settings["target"]
+        if not (os.path.exists(testSource) and os.path.exists(testTarget)):
+            raise RuntimeError("Test data cannot be found")
+
+        if preprocess:
+            testSource = self.processRawData(testSource)["true"]
+            testTarget = self.processRawData(testTarget)["true"]
+        
+        filteredDir = self.getFilteredModel(testSource)
+        
+        translationfile = testTarget.replace(".true.", ".translated.")
+        self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
+        
+        self.analyseShortWords(testTarget, translationfile)
+
+
+
+    def analyseShortWords(self, trueTarget, translation):
+        if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
+            raise RuntimeError("Number of lines in actual and reference translations are different")
+
+        with open(trueTarget, 'r') as trueT:
+            trueLines = trueT.readlines()
+        with open(translation, 'r') as actualT:
+            actualLines = actualT.readlines()
+            
+        for i in range(0, utils.countNbLines(trueTarget)):
+            trueLine = trueLines[i]
+            actualLine = actualLines[i]
 
     def getFilteredModel(self, testSource):
         
