@@ -147,10 +147,9 @@ class SlurmExperiment(Experiment):
    
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        nbJobs = max(1, self.settings["nbjobs"]/4)
         script = Experiment.getTuningScript(self, tuneDir, tuningStem, nodeCpus)
-        return script.replace("--decoder-flags=\'", 
-                              "--decoder-flags=\'-jobs " + str(nbJobs) + " ")
+        return script #.replace("--decoder-flags=\'", 
+                      #        "--decoder-flags=\'-jobs " + str(self.settings["nbjobs"]) + " ")
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
@@ -162,10 +161,9 @@ class SlurmExperiment(Experiment):
                                         customModel, nbThreads)
    
    
-    def getTranslateScript(self, initFile, nbThreads):
-        nbJobs = max(1, self.settings["nbjobs"]/4)
-        return (self.decoder + " -f " + initFile.encode('utf-8') 
-                + " -threads " + str(nbThreads) + " -jobs " + str(nbJobs)) 
+  #  def getTranslateScript(self, initFile, nbThreads):
+  #      return (self.decoder + " -f " + initFile.encode('utf-8') 
+  #              + " -threads " + str(nbThreads) + " -jobs " + str(self.settings["nbjobs"])) 
   
 
 

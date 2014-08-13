@@ -10,6 +10,7 @@ def analyseShortWords(self, trueTarget, translation):
     with open(translation, 'r') as actualT:
         actualLines = actualT.readlines()
     
+    print "Analysis of short words"
     print "----------------------"
     for i in range(0, len(trueLines)):
         trueLine = trueLines[i].strip()
@@ -21,6 +22,28 @@ def analyseShortWords(self, trueTarget, translation):
             print "Current line (actual):\t\t" + actualLine
             print "----------------------"
    
+
+
+def analyseQuestions(self, trueTarget, translation):
+    if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
+        raise RuntimeError("Number of lines in actual and reference translations are different")
+
+    with open(trueTarget, 'r') as trueT:
+        trueLines = trueT.readlines()
+    with open(translation, 'r') as actualT:
+        actualLines = actualT.readlines()
+    
+    print "Analysis of questions"
+    print "----------------------"
+    for i in range(0, len(trueLines)):
+        trueLine = trueLines[i].strip()
+        actualLine = actualLines[i].strip()
+        WER = getWER(trueLine, actualLine)
+        if "?" in trueLine and WER >= 0.25:
+            print "Current line (reference):\t" + trueLine
+            print "Current line (actual):\t\t" + actualLine
+            print "----------------------"
+
     
 def extractNgrams(tokens, size):
     ngrams = []
