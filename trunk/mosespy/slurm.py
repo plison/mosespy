@@ -43,21 +43,7 @@ class SlurmExecutor(utils.CommandExecutor):
         script = self.getScript(script, allowForks)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
-            
-    def runs(self, scripts, stdins=None, stdouts=None):
-        
-        jobs = []  
-        for script in scripts:
-            script = self.getScript(script)
-            stdin = stdins[len(jobs)] if isinstance(stdins, list) else None
-            stdout = stdouts[len(jobs)] if isinstance(stdouts, list) else None
-    
-            t = threading.Thread(target=super(SlurmExecutor,self).run, 
-                                 args=(script, stdin, stdout))
-            jobs.append(t)
-            t.start()
-            
-        utils.waitForCompletion(jobs)
+              
   
         
 class SlurmExperiment(Experiment):
@@ -109,13 +95,17 @@ class SlurmExperiment(Experiment):
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
-        scripts = []
+       
+        jobs = []
         for i in range(0, self.settings["nbJobs"]):
-            scripts.append((tmScript.replace(tmDir, splitDir + "/" + str(i))\
+            script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
-                                + " --last-step 3"))
-        self.executor.runs(scripts)
-        
+                                + " --last-step 3")
+            t = threading.Thread(target=self.executor.run, args=(script, None, None, True))
+            jobs.append(t)
+            t.start()
+        utils.waitForCompletion(jobs)
+         
         utils.resetDir(tmDir)
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+alignment
@@ -139,6 +129,7 @@ class SlurmExperiment(Experiment):
             self.recordState()
         else:
             print "Construction of translation model FAILED"
+ 
     
                 
     def tokeniseFile(self, inputFile, outputFile):
