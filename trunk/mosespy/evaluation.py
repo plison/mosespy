@@ -1,7 +1,7 @@
 
 import utils
 
-def analyseShortWords(self, trueTarget, translation):
+def analyseShortAnswers(self, trueTarget, translation):
     if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
         raise RuntimeError("Number of lines in actual and reference translations are different")
 
@@ -40,6 +40,27 @@ def analyseQuestions(self, trueTarget, translation):
         actualLine = actualLines[i].strip()
         WER = getWER(trueLine, actualLine)
         if "?" in trueLine and WER >= 0.25:
+            print "Current line (reference):\t" + trueLine
+            print "Current line (actual):\t\t" + actualLine
+            print "----------------------"
+
+
+def analyseBigErrors(self, trueTarget, translation):
+    if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
+        raise RuntimeError("Number of lines in actual and reference translations are different")
+
+    with open(trueTarget, 'r') as trueT:
+        trueLines = trueT.readlines()
+    with open(translation, 'r') as actualT:
+        actualLines = actualT.readlines()
+    
+    print "Analysis of large translation errors"
+    print "----------------------"
+    for i in range(0, len(trueLines)):
+        trueLine = trueLines[i].strip()
+        actualLine = actualLines[i].strip()
+        WER = getWER(trueLine, actualLine)
+        if WER >= 0.6:
             print "Current line (reference):\t" + trueLine
             print "Current line (actual):\t\t" + actualLine
             print "----------------------"
