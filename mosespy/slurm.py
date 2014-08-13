@@ -144,12 +144,18 @@ class SlurmExperiment(Experiment):
                 config = iniFile.read()
             with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
                 iniFile.write(re.sub("\[jobs\]\n(\d)+", "", config))
-   
+
+
+    def getNbDecodingJobs(self, sourceFile):
+        nblines = utils.countNbLines(sourceFile)
+        return min(self.settings["nbjobs"], nblines/1000)
+
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
         script = Experiment.getTuningScript(self, tuneDir, tuningStem, nodeCpus)
-        return script #.replace("--decoder-flags=\'", 
-                      #        "--decoder-flags=\'-jobs " + str(self.settings["nbjobs"]) + " ")
+        nbDecodingJobs = self.getNbDecodingJobs(tuningStem + "." + self.settings["source"])
+        return script.replace("--decoder-flags=\'", 
+                              "--decoder-flags=\'-jobs " + str(nbDecodingJobs) + " ")
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
@@ -160,11 +166,15 @@ class SlurmExperiment(Experiment):
         return Experiment.translateFile(self, infile, outfile, preprocess, 
                                         customModel, nbThreads)
    
-   
-  #  def getTranslateScript(self, initFile, nbThreads):
-  #      return (self.decoder + " -f " + initFile.encode('utf-8') 
-  #              + " -threads " + str(nbThreads) + " -jobs " + str(self.settings["nbjobs"])) 
-  
+ 
+    def getTranslateScript(self, initFile, nbThreads, inputFile=None):
+        script = (self.decoder + " -f " + initFile.encode('utf-8') 
+                + " -threads " + str(nbThreads))
+        if inputFile:
+            script += " -input-file "+ inputFile
+            nbJobs = self.getNbDecodingJobs(inputFile)
+            script += " -jobs " + str(nbJobs)
+        return script  
 
 
 def getDefaultSlurmAccount():

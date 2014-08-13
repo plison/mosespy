@@ -314,9 +314,9 @@ class Experiment(object):
         if preprocess:
             infile = self.processRawData(infile)["true"]
 
-        transScript = self.getTranslateScript(initFile, nbThreads)
+        transScript = self.getTranslateScript(initFile, nbThreads, inputfile=infile)
         
-        result = self.executor.run(transScript, stdin=infile, stdout=outfile)
+        result = self.executor.run(transScript, stdout=outfile)
         
         if result:
             if not self.settings.has_key("translations"):
@@ -330,9 +330,12 @@ class Experiment(object):
             utils.rmDir(filterDir)
     
     
-    def getTranslateScript(self, initFile, nbThreads):
-        return (self.decoder + " -f " + initFile.encode('utf-8') 
-                + " -threads " + str(nbThreads)) 
+    def getTranslateScript(self, initFile, nbThreads, inputFile=None):
+        script = (self.decoder + " -f " + initFile.encode('utf-8') 
+                + " -threads " + str(nbThreads))
+        if inputFile:
+            script += " -input-file "+ inputFile
+        return script
                                      
     
     def evaluateBLEU(self, testData, preprocess=True):
@@ -425,6 +428,7 @@ class Experiment(object):
                     os.remove(fi)
                 elif os.path.isdir(fi):
                     utils.rmDir(fi)
+        print "Finished reducing the size of experiment directory " + self.settings["path"]
  
     
     def copy(self, nexExpName):
