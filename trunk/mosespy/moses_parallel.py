@@ -110,6 +110,7 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs, exec
         executor.run(command, stdout=outStream)
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
+        print "Running decoder: " + command + " < " + inputFile
         executor.run(command, stdin=inputFile, stdout=outStream)
     else:
         
