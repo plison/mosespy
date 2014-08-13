@@ -48,7 +48,7 @@ class SlurmExecutor(utils.CommandExecutor):
         
 class SlurmExperiment(Experiment):
             
-    def __init__(self, expName, sourceLang=None, targetLang=None, account=None, nbjobs=4):
+    def __init__(self, expName, sourceLang=None, targetLang=None, account=None, nbJobs=4):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
@@ -57,7 +57,7 @@ class SlurmExperiment(Experiment):
             return
     
         self.settings["account"] = account
-        self.settings["nbjobs"] = nbjobs
+        self.settings["nbjobs"] = nbJobs
         self.executor = SlurmExecutor(account)
         self.decoder = experiment.rootDir + "/mosespy/moses_parallel.py"
 
@@ -147,10 +147,10 @@ class SlurmExperiment(Experiment):
    
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        nbjobs = max(1, self.settings["nbjobs"]/4)
+        nbJobs = max(1, self.settings["nbjobs"]/4)
         script = Experiment.getTuningScript(self, tuneDir, tuningStem, nodeCpus)
         return script.replace("--decoder-flags=\'", 
-                              "--decoder-flags=\'-jobs " + str(nbjobs) + " ")
+                              "--decoder-flags=\'-jobs " + str(nbJobs) + " ")
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
@@ -163,9 +163,9 @@ class SlurmExperiment(Experiment):
    
    
     def getTranslateScript(self, initFile, nbThreads):
-        nbjobs = max(1, self.settings["nbjobs"]/4)
+        nbJobs = max(1, self.settings["nbjobs"]/4)
         return (self.decoder + " -f " + initFile.encode('utf-8') 
-                + " -threads " + str(nbThreads) + " -jobs " + str(nbjobs)) 
+                + " -threads " + str(nbThreads) + " -jobs " + str(nbJobs)) 
   
 
 
