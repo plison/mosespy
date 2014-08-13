@@ -72,7 +72,7 @@ def getArgumentValue(args, key):
     return None
 
 def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
-           
+    print "Merging nbest files " + str(nbestOutPartFiles) + " into " + str(nbestOutFile) 
     localCount = 0
     globalCount = 0
     with open(nbestOutFile, 'w') as nbestout_full:
@@ -112,31 +112,31 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
     
         
         
-def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
+def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
                 
     if not inputFile:
-        print "Running decoder: " + decoder + args
-        executor.run(decoder + args, stdout=outStream)
+        print "Running decoder: " + decoder + mosesArgs
+        executor.run(decoder + mosesArgs, stdout=outStream)
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
-        print "Running decoder: " + decoder + args + " < " + inputFile
-        executor.run(decoder + args, stdin=inputFile, stdout=outStream, allowForks=allowForks)
+        print "Running decoder: " + decoder + mosesArgs + " < " + inputFile
+        executor.run(decoder + mosesArgs, stdin=inputFile, stdout=outStream, allowForks=allowForks)
     else:
         
-        splits = splitDecoding(inputFile, args, nbJobs)
+        splits = splitDecoding(inputFile, mosesArgs, nbJobs)
         for s in splits.keys():
             split = splits[s]
-            args = (split["in"], split["args"], split["out"], 1, True)
-            t = threading.Thread(target=runParallelMoses, args=args)
+            threadArgs = (split["in"], split["args"], split["out"], 1, True)
+            t = threading.Thread(target=runParallelMoses, args=threadArgs)
             t.start()
             split["thread"] = t
             
         utils.waitForCompletion([splits[k]["thread"] for k in splits])
         mergeOutFiles([splits[k]["out"] for k in splits], outStream)
         
-        if "-n-best-list" in args:
-            mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits], 
-                               getArgumentValue(args, "-n-best-list"))
+        if "-n-best-list" in mosesArgs:
+            mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits.keys()], 
+                               getArgumentValue(mosesArgs, "-n-best-list"))
      
         utils.rmDir(os.path.dirname(splits[splits.keys()[0]]["in"]))
                          
