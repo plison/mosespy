@@ -96,7 +96,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
     infiles = utils.splitData(inputFile, splitDir, nbJobs)  
     print "Data split in " + str(len(infiles))
     
-    splits = {"dir":splitDir}
+    splits = {}
     for i in range(0, len(infiles)):
             infile = infiles[i]
             outfile = splitDir + "/" + str(i) + ".translated"
@@ -138,7 +138,7 @@ def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
             mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits], 
                                getArgumentValue(args, "-n-best-list"))
      
-        utils.rmDir(splits["dir"])
+        utils.rmDir(os.path.dirname(splits[splits.keys()[0]]["in"]))
                          
 
 def main():      
