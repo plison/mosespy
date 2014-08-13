@@ -39,7 +39,7 @@ def getNbJobs():
 
 
 def getMosesArguments():
-    argumentsToAvoid = ["-jobs", "-input-file"]
+    argumentsToAvoid = ["-jobs", "-input-file", "-n-best-file"]
     arguments = []
     for i in range(1, len(sys.argv)):
         curArg = sys.argv[i].strip()
@@ -49,7 +49,6 @@ def getMosesArguments():
             arguments.append(curArg)
     
     arguments = " ".join(arguments)
-    print "Running moses with following arguments: " + str(arguments)
     return arguments
 
 
@@ -107,6 +106,7 @@ def runParallelMoses(inputFile, basicArgs, outStream, nbestOutFile, nbJobs, exec
     command += (" -n-best-list " + nbestOutFile) if nbestOutFile else ""
     
     if not inputFile:
+        print "Running decoder: " + command
         executor.run(command, stdout=outStream)
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
