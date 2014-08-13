@@ -48,8 +48,8 @@ class SlurmExecutor(utils.CommandExecutor):
         
 class SlurmExperiment(Experiment):
             
-    def __init__(self, expName, sourceLang=None, targetLang=None, 
-                 account=None, nbJobs=4):
+    def __init__(self, expName, sourceLang=None, targetLang=None, account=None, nbjobs=4):
+        
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
         if not utils.existsExecutable("srun"):
@@ -57,7 +57,7 @@ class SlurmExperiment(Experiment):
             return
     
         self.settings["account"] = account
-        self.settings["nbJobs"] = nbJobs
+        self.settings["nbjobs"] = nbjobs
         self.executor = SlurmExecutor(account)
         self.decoder = experiment.rootDir + "/mosespy/moses_parallel.py"
 
@@ -77,7 +77,7 @@ class SlurmExperiment(Experiment):
                               alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering):
         
-        if self.settings["nbJobs"] == 1:
+        if self.settings["nbjobs"] == 1:
             Experiment.trainTranslationModel(self, trainStem, nodeCpus)
             return
              
@@ -86,18 +86,18 @@ class SlurmExperiment(Experiment):
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  trainStem
-               + " with " + str(self.settings["nbJobs"]) + " splits")
+               + " with " + str(self.settings["nbjobs"]) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         utils.resetDir(splitDir)
-        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbJobs"])
-        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbJobs"])
+        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbjobs"])
+        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
        
         jobs = []
-        for i in range(0, self.settings["nbJobs"]):
+        for i in range(0, self.settings["nbjobs"]):
             script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3")
@@ -110,7 +110,7 @@ class SlurmExperiment(Experiment):
         os.makedirs(tmDir+"/model")
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
-            for split in range(0, self.settings["nbJobs"]):
+            for split in range(0, self.settings["nbjobs"]):
                 splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
                 with open(splitFile) as part:
                     for partline in part.readlines():
@@ -147,10 +147,10 @@ class SlurmExperiment(Experiment):
    
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        nbJobs = max(1, self.settings["nbJobs"]/4)
+        nbjobs = max(1, self.settings["nbjobs"]/4)
         script = Experiment.getTuningScript(self, tuneDir, tuningStem, nodeCpus)
         return script.replace("--decoder-flags=\'", 
-                              "--decoder-flags=\'-jobs " + str(nbJobs) + " ")
+                              "--decoder-flags=\'-jobs " + str(nbjobs) + " ")
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
@@ -163,9 +163,9 @@ class SlurmExperiment(Experiment):
    
    
     def getTranslateScript(self, initFile, nbThreads):
-        nbJobs = max(1, self.settings["nbJobs"]/4)
+        nbjobs = max(1, self.settings["nbjobs"]/4)
         return (self.decoder + " -f " + initFile.encode('utf-8') 
-                + " -threads " + str(nbThreads) + " -jobs " + str(nbJobs)) 
+                + " -threads " + str(nbThreads) + " -jobs " + str(nbjobs)) 
   
 
 
