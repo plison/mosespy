@@ -122,10 +122,18 @@ class Experiment(object):
         result = self.executor.run(pruneScript)
         if result:
             print "Finished pruning translation table " + phrasetable
+            
             with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
                 initContent = iniFile.read()
             with open(self.settings["tm"]+"/model/moses.ini", 'w') as iniFile:
                 iniFile.write(initContent.replace(phrasetable, newtable))
+                
+            if self.settings.has_key("ttm"):
+                with open(self.settings["ttm"]+"/moses.ini", 'r') as iniFile:
+                    initContent = iniFile.read()
+                with open(self.settings["ttm"]+"/moses.ini", 'w') as iniFile:
+                    iniFile.write(initContent.replace(phrasetable, newtable))
+                
         else:
             print "Pruning of translation table FAILED"
         
@@ -177,7 +185,7 @@ class Experiment(object):
                       + self.decoder + " "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
-               #       + " --batch-mira "
+                      + " --batch-mira "
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
@@ -288,8 +296,7 @@ class Experiment(object):
             text = self.tokenise(text, self.settings["source"])
             text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
 
-        transScript = (self.decoder + " -f " + initFile.encode('utf-8') 
-                       + " -threads " + str(nbThreads))
+        transScript = self.getTranslateScript(initFile, nbThreads)
 
         # maybe we should try to untokenise the translation before sending it back?
         return self.executor.run_output(transScript, stdin=text)
@@ -312,10 +319,15 @@ class Experiment(object):
         if preprocess:
             infile = self.processRawData(infile)["true"]
 
-        transScript = (self.decoder + " -v 0 -f " + initFile.encode('utf-8')
-                        + " -threads " + str(nbThreads))
+        transScript = self.getTranslateScript(initFile, nbThreads)
+        
         self.executor.run(transScript, stdin=infile, stdout=outfile)
-                                        
+    
+    
+    def getTranslateScript(self, initFile, nbThreads):
+        return (self.decoder + " -f " + initFile.encode('utf-8') 
+                + " -threads " + str(nbThreads)) 
+                                     
     
     def evaluateBLEU(self, testData, preprocess=True):
  
@@ -501,8 +513,7 @@ class Experiment(object):
                                        utils.getsize(outputTarget))
         return outputSource, outputTarget
     
-    
-    
+        
     def divideData(self, alignedData, lmData, nbTuning=1000, nbTesting=3000):
         
         fullSource = alignedData + "." + self.settings["source"]
@@ -520,13 +531,13 @@ class Experiment(object):
          
         fullSource = open(fullSource, 'r')
         fullTarget = open(fullTarget, 'r')
-        trainStem = alignedData + ".train"
+        trainStem = self.settings["path"] + os.path.basename(alignedData) + ".train"
         trainSource = open(trainStem + "." + self.settings["source"], 'w', 1000000)
         trainTarget = open(trainStem + "." + self.settings["target"], 'w', 1000000)
-        tuneStem = alignedData + ".tune"
+        tuneStem = self.settings["path"] + os.path.basename(alignedData) + ".tune"
         tuneSource = open(tuneStem + "." + self.settings["source"], 'w')
         tuneTarget = open(tuneStem + "." + self.settings["target"], 'w')
-        testStem = alignedData + ".test"
+        testStem = self.settings["path"] + os.path.basename(alignedData) + ".test"
         testSource = open(testStem + "." + self.settings["source"], 'w')
         testTarget = open(testStem + "." + self.settings["target"], 'w')
         
@@ -541,26 +552,27 @@ class Experiment(object):
             if choice not in tuningLines:
                 testingLines.add(choice)
          
-        i = 0
         print "Dividing source data..."
-        for l in fullSource.readlines():
+        sourceLines = fullSource.readlines()
+        for i in range(0, len(sourceLines)):
+            sourceLine = sourceLines[i]
             if i in tuningLines:
-                tuneSource.write(l)
+                tuneSource.write(sourceLine)
             elif i in testingLines:
-                testSource.write(l)
+                testSource.write(sourceLine)
             else:
-                trainSource.write(l)
-            i += 1
-        i = 0
+                trainSource.write(sourceLine)
+        
         print "Dividing target data..."
-        for l in fullTarget.readlines():
+        targetLines = fullTarget.readlines()
+        for i in range(0, len(targetLines)):
+            targetLine = targetLines[i]
             if i in tuningLines:
-                tuneTarget.write(l)
+                tuneTarget.write(targetLine)
             elif i in testingLines:
-                testTarget.write(l)
+                testTarget.write(targetLine)
             else:
-                trainTarget.write(l)
-            i += 1
+                trainTarget.write(targetLine)
          
         for f in [fullSource, fullTarget, trainSource, trainTarget,
                   tuneSource, tuneTarget, testSource, testTarget]:
