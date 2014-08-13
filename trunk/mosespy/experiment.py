@@ -415,7 +415,7 @@ class Experiment(object):
             with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
                 iniContent = iniFile.read()
             for f in os.listdir(self.settings["tm"]+"/model"):
-                if f not in iniContent:
+                if f not in iniContent and f != "moses.ini":
                     os.remove(self.settings["tm"]+"/model/" + f)
         
         if self.settings.has_key("ttm"):
