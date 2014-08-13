@@ -126,6 +126,7 @@ class SlurmExperiment(Experiment):
         if result:
             print "Finished building translation model in: " + utils.getsize(tmDir)
             self.settings["tm"]=tmDir
+            self.prunePhraseTable()
             self.recordState()
         else:
             print "Construction of translation model FAILED"
