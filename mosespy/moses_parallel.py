@@ -57,7 +57,7 @@ def getNbestOut():
     nbestout = None
     for i in range(1, len(sys.argv)):
         if "-n-best-list" in sys.argv[i-1]:
-            nbestout = sys.argv[i]
+            nbestout = sys.argv[i].strip()
     return nbestout
     
 
