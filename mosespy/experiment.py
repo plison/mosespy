@@ -420,8 +420,11 @@ class Experiment(object):
         
         if self.settings.has_key("ttm"):
             for f in os.listdir(self.settings["ttm"]):
-                if f != "moses.ini":
-                    os.remove(self.settings["ttm"] + "/" + f)
+                fi = self.settings["ttm"] + "/" + f
+                if f != "moses.ini" and os.path.isfile(fi):
+                    os.remove(fi)
+                elif os.path.isdir(fi):
+                    utils.rmDir(fi)
  
     
     def copy(self, nexExpName):
