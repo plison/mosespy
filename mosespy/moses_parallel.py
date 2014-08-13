@@ -106,6 +106,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
                 newArgs = newArgs.replace(nbestout, splitDir + "/" + str(i) + ".translated" )
                 
             splits[i] = {"in": infile, "out":outfile, "args":newArgs}
+    print "Split decoding: " + str(splits)
     return splits
     
         
@@ -124,7 +125,7 @@ def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
     else:
         
         splits = splitDecoding(inputFile, args, nbJobs)
-        for s in splits:
+        for s in splits.keys():
             split = splits[s]
             args = (decoder + split["args"], split["in"], split["out"], 1, True)
             t = threading.Thread(target=runParallelMoses, args=args)
