@@ -127,7 +127,7 @@ def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
         for s in splits:
             split = splits[s]
             args = (decoder + split["args"], split["in"], split["out"], 1, True)
-            t = threading.Thread(target=runParallelMoses, args)
+            t = threading.Thread(target=runParallelMoses, args=args)
             t.start()
             split["thread"] = t
             
