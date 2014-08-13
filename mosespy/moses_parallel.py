@@ -3,6 +3,7 @@
 import sys, utils,os, uuid, slurm, select, threading
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
+decoder = moses_root + "/bin/moses "
 
 executor = slurm.SlurmExecutor()
 
@@ -64,7 +65,7 @@ def mergeOutFiles(outfiles, outStream):
        
        
 def getArgumentValue(args, key):
-    split = args.split(' ')
+    split = args.split()
     for i in range(0, len(split)):
         if i > 0 and key == split[i-1].strip():
             return split[i].strip()
@@ -112,9 +113,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
         
         
 def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
-            
-    decoder = moses_root + "/bin/moses "
-    
+                
     if not inputFile:
         print "Running decoder: " + decoder + args
         executor.run(decoder + args, stdout=outStream)
@@ -127,7 +126,7 @@ def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
         splits = splitDecoding(inputFile, args, nbJobs)
         for s in splits.keys():
             split = splits[s]
-            args = (decoder + split["args"], split["in"], split["out"], 1, True)
+            args = (split["in"], split["args"], split["out"], 1, True)
             t = threading.Thread(target=runParallelMoses, args=args)
             t.start()
             split["thread"] = t
