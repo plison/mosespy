@@ -138,11 +138,13 @@ class Experiment(object):
         tuneDir = self.settings["path"]+"/tunedmodel"
         tuningScript = self.getTuningScript(tuneDir, tuningStem, nbThreads)
         utils.resetDir(tuneDir)
-        self.executor.run(tuningScript)
-        print "Finished tuning translation model in directory " + utils.getsize(tuneDir)
-        self.settings["ttm"]=tuneDir
-        self.recordState()
-        
+        result = self.executor.run(tuningScript)
+        if result:
+            print "Finished tuning translation model in directory " + utils.getsize(tuneDir)
+            self.settings["ttm"]=tuneDir
+            self.recordState()
+        else:
+            print "Tuning of translation model FAILED"
         
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
 
