@@ -579,7 +579,7 @@ class Experiment(object):
             if (i+1) in testingLines:
                 curLine["i-1"] = l
             if i in testingLines:
-                if linesdict[l] not in linesdict:
+                if l not in linesdict:
                     linesdict[l] = [curLine]
                 else:
                     linesdict[l].append(curLine)
