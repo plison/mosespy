@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*- 
 
-import os, json, copy, random
-import utils
+import os, json, copy, random, re
+import utils, evaluation
 
 
 rootDir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -278,12 +278,8 @@ class Experiment(object):
 
       
    
-    def translate(self, text, preprocess=True, customModel=None, nbThreads=2):
-        if customModel:
-            if not os.path.exists(customModel+"/moses.ini"):
-                raise RuntimeError("Custom model " + customModel + " does not exist")
-            initFile = customModel+"/moses.ini"
-        elif self.settings.has_key("btm"):
+    def translate(self, text, preprocess=True, nbThreads=2):
+        if self.settings.has_key("btm"):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
             initFile = self.settings["ttm"] + "/moses.ini"
@@ -298,15 +294,14 @@ class Experiment(object):
 
         transScript = self.getTranslateScript(initFile, nbThreads)
 
-        # maybe we should try to untokenise the translation before sending it back?
         return self.executor.run_output(transScript, stdin=text)
         
    
-    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=2):
-        if customModel:
-            if not os.path.exists(customModel+"/moses.ini"):
-                raise RuntimeError("Custom model " + customModel + " does not exist")
-            initFile = customModel+"/moses.ini"
+    def translateFile(self, infile, outfile, preprocess=True, filterModel=False, nbThreads=2):
+           
+        if filterModel:
+            filterDir = self.getFilteredModel(infile)
+            initFile = filterDir + "/moses.ini"
         elif self.settings.has_key("btm"):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
@@ -321,7 +316,18 @@ class Experiment(object):
 
         transScript = self.getTranslateScript(initFile, nbThreads)
         
-        self.executor.run(transScript, stdin=infile, stdout=outfile)
+        result = self.executor.run(transScript, stdin=infile, stdout=outfile)
+        
+        if result:
+            if not self.settings.has_key("translations"):
+                self.settings["translations"] = []
+            translation = {"in":infile, "out":outfile}
+            self.settings["translations"].append(translation)
+        else:
+            print "Translation of file " + infile + " FAILED"
+        
+        if filterDir:
+            utils.rmDir(filterDir)
     
     
     def getTranslateScript(self, initFile, nbThreads):
@@ -342,14 +348,18 @@ class Experiment(object):
             testSource = self.processRawData(testSource)["true"]
             testTarget = self.processRawData(testTarget)["true"]
         
-        filteredDir = self.getFilteredModel(testSource)
         
         translationfile = testTarget.replace(".true.", ".translated.")
-        self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
-       
-        bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-        self.executor.run(bleuScript, stdin=translationfile)
-
+        result1 = self.translateFile(testSource, translationfile, filterModel=True,preprocess=False)
+        
+        if result1:
+            bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
+            result2 = utils.run_output(bleuScript, stdin=translationfile)
+            s = re.search("=\s(([0-9,\.])+)\,", result2)
+            if s:
+                score = s.group(1)
+                self.settings["translations"][-1]["bleu"] = score
+        
 
     def analyseErrors(self, testData, preprocess=True):
         print ("Perform error analysis with test data: " + testData)
@@ -368,7 +378,9 @@ class Experiment(object):
         translationfile = testTarget.replace(".true.", ".translated.")
         self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
         
-        self.analyseShortWords(testTarget, translationfile)
+        evaluation.analyseShortAnswers(testTarget, translationfile)
+        evaluation.analyseQuestions(testTarget, translationfile)
+        evaluation.analyseBigErrors(testTarget, translationfile)
 
 
 
@@ -393,7 +405,24 @@ class Experiment(object):
         dump = json.dumps(self.settings)
         with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
-            
+           
+    
+    def reduceSize(self):
+        if self.settings.has_key("tm"):
+            utils.rmDir(self.settings["tm"]+"/corpus") 
+            utils.rmDir(self.settings["tm"]+"/giza." + self.settings["source"] + "-" + self.settings["target"])
+            utils.rmDir(self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"])
+            with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
+                iniContent = iniFile.read()
+            for f in os.listdir(self.settings["tm"]+"/model"):
+                if f not in iniContent:
+                    os.remove(self.settings["tm"]+"/model/" + f)
+        
+        if self.settings.has_key("ttm"):
+            for f in os.listdir(self.settings["ttm"]):
+                if f != "moses.ini":
+                    os.remove(self.settings["tm"] + "/" + f)
+ 
     
     def copy(self, nexExpName):
         newexp = Experiment(nexExpName, self.settings["source"], self.settings["target"])
