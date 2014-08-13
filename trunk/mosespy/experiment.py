@@ -421,7 +421,7 @@ class Experiment(object):
         if self.settings.has_key("ttm"):
             for f in os.listdir(self.settings["ttm"]):
                 if f != "moses.ini":
-                    os.remove(self.settings["tm"] + "/" + f)
+                    os.remove(self.settings["ttm"] + "/" + f)
  
     
     def copy(self, nexExpName):
