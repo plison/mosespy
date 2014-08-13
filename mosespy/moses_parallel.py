@@ -110,7 +110,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
     
         
         
-def runParallelMoses(inputFile, args, outStream, nbJobs):
+def runParallelMoses(inputFile, args, outStream, nbJobs, allowForks=False):
             
     decoder = moses_root + "/bin/moses "
     
@@ -120,13 +120,13 @@ def runParallelMoses(inputFile, args, outStream, nbJobs):
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
         print "Running decoder: " + decoder + args + " < " + inputFile
-        executor.run(decoder + args, stdin=inputFile, stdout=outStream)
+        executor.run(decoder + args, stdin=inputFile, stdout=outStream, allowForks=allowForks)
     else:
         
         splits = splitDecoding(inputFile, args, nbJobs)
         for s in splits:
             split = splits[s]
-            args = (decoder + split["args"], split["in"], split["out"], 1)
+            args = (decoder + split["args"], split["in"], split["out"], 1, True)
             t = threading.Thread(target=runParallelMoses, args)
             t.start()
             split["thread"] = t
