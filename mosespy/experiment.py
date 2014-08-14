@@ -357,6 +357,7 @@ class Experiment(object):
         if result1:
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
             result2 = utils.run_output(bleuScript, stdin=translationfile)
+            print result2
             s = re.search("=\s(([0-9,\.])+)\,", result2)
             if s:
                 score = s.group(1)
