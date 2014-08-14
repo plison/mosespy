@@ -162,9 +162,9 @@ class SlurmExperiment(Experiment):
         return Experiment.translate(self, text, preprocess, customModel, nbThreads)
     
     
-    def translateFile(self, infile, outfile, preprocess=True, customModel=None, nbThreads=nodeCpus):
+    def translateFile(self, infile, outfile, preprocess=True, filterModel=False, nbThreads=nodeCpus):
         return Experiment.translateFile(self, infile, outfile, preprocess, 
-                                        customModel, nbThreads)
+                                        filterModel, nbThreads)
    
  
     def getTranslateScript(self, initFile, nbThreads, inputFile=None):

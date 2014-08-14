@@ -107,7 +107,6 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
                 newArgs = newArgs.replace(nbestout, splitDir + "/" + str(i) + ".nbest" )
                 
             splits[i] = {"in": infile, "out":outfile, "args":newArgs}
-    print "Split decoding: " + str(splits)
     return splits
     
         
