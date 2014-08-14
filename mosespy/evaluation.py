@@ -35,15 +35,16 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
         sourceLine = fullSourceLines[i].strip()
         if alignmentsBySource.has_key(sourceLine):
             targetLine = fullTargetLines[i].strip()
-            found = False
             for alignment in alignmentsBySource[sourceLine]:
                 if targetLine == alignment["target"]:
                     previousLine = fullTargetLines[i-1].strip()
                     alignment["previous"] = previousLine
-                    found = True
-            if not found:
-                print "target line was " + targetLine
-                print "searched targets was" + str([a["target"] for a in alignmentsBySource[sourceLine]])
+            alignmentsBySource[sourceLine]["found"] = True
+    
+    for k in alignmentsBySource.keys():
+        if not alignmentsBySource[k].has_key("found"):
+            print "not found anywhere: " + k
+
       
          
 def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpusTarget):
