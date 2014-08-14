@@ -31,6 +31,7 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
     fullSourceLines = Path(fullCorpusSource).readlines()
     fullTargetLines = Path(fullCorpusTarget).readlines()
 
+    foundSource = {}
     for i in range(0, len(fullSourceLines)):
         sourceLine = fullSourceLines[i].strip()
         if alignmentsBySource.has_key(sourceLine):
@@ -39,11 +40,11 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
                 if targetLine == alignment["target"]:
                     previousLine = fullTargetLines[i-1].strip()
                     alignment["previous"] = previousLine
-            alignmentsBySource[sourceLine]["found"] = True
+        foundSource[sourceLine] = True
     
     for k in alignmentsBySource.keys():
-        if not alignmentsBySource[k].has_key("found"):
-            print "not found anywhere: " + k
+        if not foundSource.has_key(k):
+            print "not found in the corpus"
 
       
          
