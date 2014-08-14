@@ -59,7 +59,6 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.settings["nbjobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-        self.decoder = experiment.rootDir + "/mosespy/moses_parallel.py"
 
     
     def copy(self, nexExpName):
@@ -69,7 +68,6 @@ class SlurmExperiment(Experiment):
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
         newexp.recordState()
-        newexp.decoder = self.decoder
         return newexp
     
     
@@ -152,11 +150,18 @@ class SlurmExperiment(Experiment):
 
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        script = Experiment.getTuningScript(self, tuneDir, tuningStem, nodeCpus)
         nbDecodingJobs = self.getNbDecodingJobs(tuningStem + "." + self.settings["source"])
-        script = script.replace("--decoder-flags=\'", 
-                              "--decoder-flags=\'-jobs " + str(nbDecodingJobs) + " ")
-        return script
+        tuneScript = (experiment.moses_root + "/scripts/training/mert-moses.pl" + " " 
+                      + tuningStem + "." + self.settings["source"] + " " 
+                      + tuningStem + "." + self.settings["target"] + " "
+                      + experiment.rootDir + "/mosespy/moses_parallel.py "
+                      + self.settings["tm"] + "/model/moses.ini " 
+                      + " --mertdir " + experiment.moses_root + "/bin/"
+                      + " --batch-mira "
+                      + " --decoder-flags=\'-jobs %i -threads %i -v 0' "
+                      + " --working-dir " + tuneDir
+                      )%(nbDecodingJobs, nbThreads)
+        return tuneScript
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
@@ -169,8 +174,8 @@ class SlurmExperiment(Experiment):
    
  
     def getTranslateScript(self, initFile, nbThreads, inputFile=None):
-        script = (self.decoder + " -f " + initFile.encode('utf-8') 
-                + " -threads " + str(nbThreads))
+        script = (experiment.rootDir + "/mosespy/moses_parallel.py -f " + initFile.encode('utf-8') 
+                + " -v 0 -threads " + str(nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
             nbJobs = self.getNbDecodingJobs(inputFile)
