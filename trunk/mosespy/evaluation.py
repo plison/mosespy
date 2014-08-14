@@ -56,7 +56,7 @@ def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpu
     print "----------------------"
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
-        print align + "  " + str(WER)
+        print str(align) + "  " + str(WER)
         if len(align["target"].split()) <= 3 and WER >= 0.5:
             if align.has_key("previous"):
                 print "Previous line (reference):\t" + align["previous"]
