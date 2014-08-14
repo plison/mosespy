@@ -12,7 +12,7 @@ class SlurmExecutor(utils.CommandExecutor):
         
     def __init__(self, account=None):
         if not account:
-            account = getDefaultSlurmAccount()
+            account = _getDefaultSlurmAccount()
         if not account:
             print "Warning: no SLURM account found, switching to normal execution"
         self.account = account
@@ -25,7 +25,7 @@ class SlurmExecutor(utils.CommandExecutor):
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
 
     
-    def getScript(self, script, allowForks):    
+    def _getScript(self, script, allowForks):    
         if self.account and (allowForks or "SLURM" not in str(os.environ.keys())):
             name = str(uuid.uuid4())[0:5]
             script = ("srun --account=" + self.account
@@ -41,7 +41,7 @@ class SlurmExecutor(utils.CommandExecutor):
         
     
     def run(self, script, stdin=None, stdout=None, allowForks=False):
-        script = self.getScript(script, allowForks)  
+        script = self._getScript(script, allowForks)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
               
@@ -68,7 +68,7 @@ class SlurmExperiment(Experiment):
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
-        newexp.recordState()
+        newexp._recordState()
         return newexp
     
     
@@ -81,7 +81,7 @@ class SlurmExperiment(Experiment):
             return
              
         if preprocess:         
-            trainStem = self.processAlignedData(trainStem)["clean"]
+            trainStem = self._processAlignedData(trainStem)["clean"]
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  trainStem
@@ -93,7 +93,7 @@ class SlurmExperiment(Experiment):
         utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self.getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
        
         jobs = []
         for i in range(0, self.settings["nbjobs"]):
@@ -125,15 +125,15 @@ class SlurmExperiment(Experiment):
         if result:
             print "Finished building translation model in: " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-            self.prunePhraseTable()
-            self.recordState()
+            self._prunePhraseTable()
+            self._recordState()
         else:
             print "Construction of translation model FAILED"
  
     
                 
     def tokeniseFile(self, inputFile, outputFile):
-        Experiment.tokeniseFile(self, inputFile, outputFile, nbThreads=nodeCpus)
+        Experiment._tokeniseFile(self, inputFile, outputFile, nbThreads=nodeCpus)
        
     
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
@@ -145,13 +145,13 @@ class SlurmExperiment(Experiment):
                 iniFile.write(re.sub("\[jobs\]\n(\d)+", "", config))
 
 
-    def getNbDecodingJobs(self, sourceFile):
+    def _getNbDecodingJobs(self, sourceFile):
         nblines = sourceFile.countNbLines()
         return min(self.settings["nbjobs"], max(1,nblines/1000))
 
 
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
-        nbDecodingJobs = self.getNbDecodingJobs(tuningStem + "." + self.settings["source"])
+        nbDecodingJobs = self._getNbDecodingJobs(tuningStem + "." + self.settings["source"])
         tuneScript = (experiment.moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.settings["source"] + " " 
                       + tuningStem + "." + self.settings["target"] + " "
@@ -174,17 +174,17 @@ class SlurmExperiment(Experiment):
                                         filterModel, nbThreads)
    
  
-    def getTranslateScript(self, initFile, nbThreads, inputFile=None):
+    def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
         script = (experiment.rootDir + "/mosespy/moses_parallel.py -f " + initFile.encode('utf-8') 
                 + " -v 0 -threads " + str(nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
-            nbJobs = self.getNbDecodingJobs(inputFile)
+            nbJobs = self._getNbDecodingJobs(inputFile)
             script += " -jobs " + str(nbJobs)
         return script  
 
 
-def getDefaultSlurmAccount():
+def _getDefaultSlurmAccount():
     user = (os.popen("whoami")).read().strip()
     result = (os.popen("sacctmgr show User "+user + " -p")).read()
     s = re.search(user+"\|((\S)+?)\|", result)

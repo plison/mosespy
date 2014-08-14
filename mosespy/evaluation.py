@@ -1,19 +1,20 @@
 
 import utils
+from utils import Path
 
 def getAlignment(source, target, translation):
-    if utils.countNbLines(source) != utils.countNbLines(target):
+    source = Path(source)
+    target = Path(target)
+    translation = Path(translation)
+    if source.countNbLines() != target.countNbLines():
         raise RuntimeError("Number of lines in source and reference translations are different")
-    elif utils.countNbLines(target) != utils.countNbLines(translation):
+    elif target.countNbLines() != translation.countNbLines():
         raise RuntimeError("Number of lines in actual and reference translations are different")
     
     alignments = []
-    with open(source, 'r') as sourceT:
-        sourceLines = sourceT.readlines()
-    with open(target, 'r') as targetT:
-        targetLines = targetT.readlines()
-    with open(translation, 'r') as translationT:
-        translationLines = translationT.readlines()
+    sourceLines = source.readlines()
+    targetLines = target.readlines()
+    translationLines = translation.readlines()
     for i in range(0, len(sourceLines)):
         align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip(),
                  "translation": translationLines[i].strip(), "index": i}
