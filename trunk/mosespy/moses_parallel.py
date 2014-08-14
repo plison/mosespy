@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys, utils,os, uuid, slurm, select, threading
+from utils import Path
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 decoder = moses_root + "/bin/moses "
@@ -91,15 +92,15 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
    
 
 def splitDecoding(inputFile, mosesArgs, nbJobs):
-    splitDir = "./tmp" + str(uuid.uuid4())[0:6]
-    utils.resetDir(splitDir)
+    splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
+    splitDir.reset()
     infiles = utils.splitData(inputFile, splitDir, nbJobs)  
     print "Data split in " + str(len(infiles))
     
     splits = {}
     for i in range(0, len(infiles)):
-            infile = infiles[i]
-            outfile = splitDir + "/" + str(i) + ".translated"
+            infile = Path(infiles[i])
+            outfile = Path(splitDir + "/" + str(i) + ".translated")
             
             newArgs = str(mosesArgs)
             nbestout = getArgumentValue(mosesArgs, "-n-best-list")
@@ -137,7 +138,7 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
             mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits.keys()], 
                                getArgumentValue(mosesArgs, "-n-best-list"))
      
-        utils.rmDir(os.path.dirname(splits[splits.keys()[0]]["in"]))
+        splits[splits.keys()[0]]["in"].getUp().remove()
                          
 
 def main():      

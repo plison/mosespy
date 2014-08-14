@@ -43,7 +43,7 @@ class Experiment(object):
                 self.settings["target"] = targetLang
                 self.settings["target_long"] = utils.getLanguage(targetLang)
                 
-        self.recordState()
+        self._recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
       
@@ -53,7 +53,7 @@ class Experiment(object):
         alignedStem = Path(alignedStem)
         if not lmData:
             lmData = alignedStem + "." + self.settings["target"]
-        trainStem, tuneStem, testStem, lmData = self.divideData(alignedStem, lmData)
+        trainStem, tuneStem, testStem, lmData = self._divideData(alignedStem, lmData)
         self.trainLanguageModel(lmData)
         self.trainTranslationModel(trainStem)
         self.tuneTranslationModel(tuneStem)
@@ -66,7 +66,7 @@ class Experiment(object):
         lang = trainFile.getSuffix()
 
         if preprocess:
-            trainFile = self.processRawData(trainFile)["true"]
+            trainFile = self._processRawData(trainFile)["true"]
 
         print "Building language model based on " + trainFile
         
@@ -94,163 +94,51 @@ class Experiment(object):
         arpaFile.remove()
 
         self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
-        self.recordState()
+        self._recordState()
     
     
     def trainTranslationModel(self, trainStem, nbThreads=2, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True):
            
         if preprocess:         
-            trainStem = self.processAlignedData(trainStem)["clean"]
+            trainStem = self._processAlignedData(trainStem)["clean"]
        
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " + trainStem)
 
         tmDir = Path(self.settings["path"] + "/translationmodel")
-        tmScript = self.getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
         tmDir.reset()
         result = self.executor.run(tmScript)
         if result:
             print "Finished building translation model in directory " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-            self.prunePhraseTable()
-            self.recordState()
+            self._prunePhraseTable()
+            self._recordState()
         else:
             print "Construction of translation model FAILED"
-            
-    
-    def prunePhraseTable(self):
-        
-        if not self.settings.has_key("tm"):
-            raise RuntimeError("Translation model is not yet constructed")
-        
-        phrasetable = Path(self.settings["tm"]+"/model/phrase-table.gz")
-        newtable = phrasetable.setInfix("reduced")
-        pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
-                       + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
-                       )%(phrasetable, newtable)
-        result = self.executor.run(pruneScript)
-        if result:
-            print "Finished pruning translation table " + phrasetable
-            
-            with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
-                initContent = iniFile.read()
-            with open(self.settings["tm"]+"/model/moses.ini", 'w') as iniFile:
-                iniFile.write(initContent.replace(phrasetable, newtable))
-                
-            if self.settings.has_key("ttm"):
-                with open(self.settings["ttm"]+"/moses.ini", 'r') as iniFile:
-                    initContent = iniFile.read()
-                with open(self.settings["ttm"]+"/moses.ini", 'w') as iniFile:
-                    iniFile.write(initContent.replace(phrasetable, newtable))
-                
-        else:
-            print "Pruning of translation table FAILED"
-        
-
-
-    def getTrainScript(self ,tmDir, trainData, nbThreads, alignment, reordering):
-        if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"): 
-            raise RuntimeError("Language model for " + self.settings["target_long"] 
-                               + " is not yet trained")
-
-        tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
-                    + "--root-dir " + tmDir + " -corpus " +  trainData
-                    + " -f " + self.settings["source"] + " -e " + self.settings["target"] 
-                    + " -alignment " + alignment + " " 
-                    + " -reordering " + reordering + " "
-                    + " -lm 0:" +str(self.settings["lm"]["ngram_order"])
-                    +":"+self.settings["lm"]["blm"]+":8"       # 8 because binarised with KenLM
-                    + " -external-bin-dir " + mgizapp_root + "/bin" 
-                    + " -cores %i -mgiza -mgiza-cpus %i -parallel"
-                    )%(nbThreads, nbThreads)
-        return tmScript
-                       
+  
 
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=2):
         
         if preprocess:         
-            tuningStem = self.processAlignedData(tuningStem)["clean"]
+            tuningStem = self._processAlignedData(tuningStem)["clean"]
         
         print ("Tuning translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " + tuningStem)
         
         tuneDir = self.settings["path"]+"/tunedmodel"
-        tuningScript = self.getTuningScript(tuneDir, tuningStem, nbThreads)
+        tuningScript = self._getTuningScript(tuneDir, tuningStem, nbThreads)
         tuneDir.reset()
         result = self.executor.run(tuningScript)
         if result:
             print "Finished tuning translation model in directory " + tuneDir.getDescription()
             self.settings["ttm"]=tuneDir
-            self.recordState()
+            self._recordState()
         else:
             print "Tuning of translation model FAILED"
-        
-        
-    def getTuningScript(self, tuneDir, tuningStem, nbThreads):
+          
 
-        tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
-                      + tuningStem + "." + self.settings["source"] + " " 
-                      + tuningStem + "." + self.settings["target"] + " "
-                      + moses_root + "/bin/moses "
-                      + self.settings["tm"] + "/model/moses.ini " 
-                      + " --mertdir " + moses_root + "/bin/"
-                      + " --batch-mira "
-                      + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
-                      )%(nbThreads)
-        return tuneScript
-        
-                               
-
-    def processAlignedData(self, dataStem, maxLength=80):
-
-        sourceFile = Path(dataStem+"."+self.settings["source"])
-        targetFile = Path(dataStem+"."+self.settings["target"])
-        if not sourceFile.exists():
-            raise RuntimeError("File " + sourceFile + " cannot be found, aborting")
-        elif not targetFile.exists():
-            raise RuntimeError("File " + targetFile + " cannot be found, aborting")
-    
-        dataset = {"stem": dataStem,
-                   "source":self.processRawData(sourceFile), 
-                   "target":self.processRawData(targetFile)} 
-        
-        trueStem = dataset["source"]["true"].getStem()
-        cleanStem = dataset["source"]["true"].setInfix("clean").getStem()
-        self.cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
-        dataset["clean"] = cleanStem
-        return dataset
-    
-    
-
-    def processRawData(self, rawFile):
-         
-        rawFile = Path(rawFile)
-        lang = rawFile.getSuffix()
-        dataset = {}
-        dataset["raw"] = rawFile
-        
-        # STEP 1: tokenisation
-        normFile = rawFile.replacePath(self.settings["path"]).setInfix("norm")
-        
-        self.normaliseFile(rawFile, normFile)
-        tokFile = normFile.setInfix("tok")
-        self.tokeniseFile(normFile, tokFile)
-        
-        # STEP 2: train truecaser if not already existing
-        if not self.settings.has_key("truecasing"):
-            self.settings["truecasing"] = {}
-        if not self.settings["truecasing"].has_key(lang):
-            self.settings["truecasing"][lang] = self.trainTruecasingModel(tokFile, self.settings["path"]
-                                                                    + "/truecasingmodel."+lang)
-        # STEP 3: truecasing   
-        trueFile = tokFile.setInfix("true")
-        modelFile = self.settings["truecasing"][lang]       
-        dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile) 
-        normFile.remove()
-        tokFile.remove()
-        return dataset  
-    
 
 
     def binariseModel(self):
@@ -284,7 +172,7 @@ class Experiment(object):
                 newConfig.write(l)
         
         self.settings["btm"] = binaDir
-        self.recordState()
+        self._recordState()
         print "Finished binarising the translation model in directory " + binaDir.getDescription()
 
       
@@ -300,10 +188,10 @@ class Experiment(object):
                self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
-            text = self.tokenise(text, self.settings["source"])
+            text = self._tokenise(text, self.settings["source"])
             text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
 
-        transScript = self.getTranslateScript(initFile, nbThreads)
+        transScript = self._getTranslateScript(initFile, nbThreads)
 
         return self.executor.run_output(transScript, stdin=text)
         
@@ -311,7 +199,7 @@ class Experiment(object):
     def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
            
         if filterModel:
-            filterDir = self.getFilteredModel(infile)
+            filterDir = self._getFilteredModel(infile)
             initFile = filterDir + "/moses.ini"
         elif self.settings.has_key("btm"):
             initFile = self.settings["btm"] + "/moses.ini"
@@ -323,9 +211,9 @@ class Experiment(object):
                self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
-            infile = self.processRawData(infile)["true"]
+            infile = self._processRawData(infile)["true"]
 
-        transScript = self.getTranslateScript(initFile, nbThreads, inputFile=infile)
+        transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
         
         result = self.executor.run(transScript, stdout=outfile)
 
@@ -336,16 +224,7 @@ class Experiment(object):
             print "Translation of file " + infile + " FAILED"
         return result
         
-    
-    
-    def getTranslateScript(self, initFile, nbThreads, inputFile=None):
-        script = (moses_root + "/bin/moses -f " + initFile.encode('utf-8') 
-                + " -v 0 -threads " + str(nbThreads))
-        if inputFile:
-            script += " -input-file "+ inputFile
-        return script
-                                     
-    
+       
     def evaluateBLEU(self, testData, preprocess=True):
  
         print ("Evaluating BLEU scores with test data: " + testData)
@@ -356,8 +235,8 @@ class Experiment(object):
             raise RuntimeError("Test data cannot be found")
 
         if preprocess:
-            testSource = self.processRawData(testSource)["true"]
-            testTarget = self.processRawData(testTarget)["true"]
+            testSource = self._processRawData(testSource)["true"]
+            testTarget = self._processRawData(testTarget)["true"]
         
         
         translationfile = testTarget.setInfix("translated")
@@ -376,7 +255,7 @@ class Experiment(object):
             s = re.search("=\s(([0-9,\.])+)\,", bleu_output)
             if s:
                 test["bleu"] = s.group(1)
-            self.recordState()
+            self._recordState()
         
 
     def analyseErrors(self, fullCorpusStem):
@@ -391,16 +270,16 @@ class Experiment(object):
         detokSourceFile = testSource.replacePath(self.settings["path"]).setInfix("detok")
         detokTargetFile = testTarget.replacePath(self.settings["path"]).setInfix("detok")
         detokTranslationFile = translationFile.replacePath(self.settings["path"]).setInfix("detok")
-        self.detokeniseFile(testSource,detokSourceFile)
-        self.detokeniseFile(testTarget,detokTargetFile)
-        self.detokeniseFile(translationFile,detokTranslationFile)
+        self._de_tokeniseFile(testSource,detokSourceFile)
+        self._de_tokeniseFile(testTarget,detokTargetFile)
+        self._de_tokeniseFile(translationFile,detokTranslationFile)
         
         finalSourceFile = detokSourceFile.setInfix("final")
         finalTargetFile = detokTargetFile.setInfix("final")
         finalTranslationFile = detokTranslationFile.setInfix("final")
-        self.deescapeSpecialCharacters(detokSourceFile, finalSourceFile)
-        self.deescapeSpecialCharacters(detokTargetFile, finalTargetFile)
-        self.deescapeSpecialCharacters(detokTranslationFile, finalTranslationFile)
+        self._deescapeSpecialCharacters(detokSourceFile, finalSourceFile)
+        self._deescapeSpecialCharacters(detokTargetFile, finalTargetFile)
+        self._deescapeSpecialCharacters(detokTranslationFile, finalTranslationFile)
         
         evaluation.analyseShortAnswers(finalSourceFile, finalTargetFile, finalTranslationFile, 
                                        fullCorpusStem + "." + self.settings["source"], 
@@ -408,31 +287,7 @@ class Experiment(object):
         evaluation.analyseQuestions(finalSourceFile, finalTargetFile, finalTranslationFile)
         evaluation.analyseBigErrors(finalSourceFile, finalTargetFile, finalTranslationFile)
 
-
-
-    def getFilteredModel(self, testSource):
-        
-        if self.settings.has_key("ttm"):
-            initFile = self.settings["ttm"] + "/moses.ini"
-        else:
-            raise RuntimeError("Translation model is not yet tuned")
-
-        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource.getPath()
-        filteredDir.remove()
-
-        filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
-                        + filteredDir + " " + initFile + " "
-                        + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
-        self.executor.run(filterScript)
-        return filteredDir
-            
-    
-    def recordState(self):
-        dump = json.dumps(self.settings)
-        with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
-            jsonFile.write(dump)
-           
-    
+   
     def reduceSize(self):
         if self.settings.has_key("tm"):
             Path(self.settings["tm"]+"/corpus").remove()
@@ -459,10 +314,158 @@ class Experiment(object):
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
-        newexp.recordState()   
+        newexp._recordState()   
         return newexp
+ 
+   
+    def _prunePhraseTable(self):
+        
+        if not self.settings.has_key("tm"):
+            raise RuntimeError("Translation model is not yet constructed")
+        
+        phrasetable = Path(self.settings["tm"]+"/model/phrase-table.gz")
+        newtable = phrasetable.setInfix("reduced")
+        pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
+                       + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
+                       )%(phrasetable, newtable)
+        result = self.executor.run(pruneScript)
+        if result:
+            print "Finished pruning translation table " + phrasetable
+            
+            with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
+                initContent = iniFile.read()
+            with open(self.settings["tm"]+"/model/moses.ini", 'w') as iniFile:
+                iniFile.write(initContent.replace(phrasetable, newtable))
+                
+            if self.settings.has_key("ttm"):
+                with open(self.settings["ttm"]+"/moses.ini", 'r') as iniFile:
+                    initContent = iniFile.read()
+                with open(self.settings["ttm"]+"/moses.ini", 'w') as iniFile:
+                    iniFile.write(initContent.replace(phrasetable, newtable))
+                
+        else:
+            print "Pruning of translation table FAILED"
+        
+
+
+    def _getTrainScript(self ,tmDir, trainData, nbThreads, alignment, reordering):
+        if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"): 
+            raise RuntimeError("Language model for " + self.settings["target_long"] 
+                               + " is not yet trained")
+
+        tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
+                    + "--root-dir " + tmDir + " -corpus " +  trainData
+                    + " -f " + self.settings["source"] + " -e " + self.settings["target"] 
+                    + " -alignment " + alignment + " " 
+                    + " -reordering " + reordering + " "
+                    + " -lm 0:" +str(self.settings["lm"]["ngram_order"])
+                    +":"+self.settings["lm"]["blm"]+":8"       # 8 because binarised with KenLM
+                    + " -external-bin-dir " + mgizapp_root + "/bin" 
+                    + " -cores %i -mgiza -mgiza-cpus %i -parallel"
+                    )%(nbThreads, nbThreads)
+        return tmScript
+                       
+        
+        
+    def _getTuningScript(self, tuneDir, tuningStem, nbThreads):
+
+        tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
+                      + tuningStem + "." + self.settings["source"] + " " 
+                      + tuningStem + "." + self.settings["target"] + " "
+                      + moses_root + "/bin/moses "
+                      + self.settings["tm"] + "/model/moses.ini " 
+                      + " --mertdir " + moses_root + "/bin/"
+                      + " --batch-mira "
+                      + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
+                      )%(nbThreads)
+        return tuneScript
+        
+
     
-    def normaliseFile(self, inputFile, outputFile):
+    def __getTranslateScript(self, initFile, nbThreads, inputFile=None):
+        script = (moses_root + "/bin/moses -f " + initFile.encode('utf-8') 
+                + " -v 0 -threads " + str(nbThreads))
+        if inputFile:
+            script += " -input-file "+ inputFile
+        return script
+                                     
+                                
+
+    def _processAlignedData(self, dataStem, maxLength=80):
+
+        sourceFile = Path(dataStem+"."+self.settings["source"])
+        targetFile = Path(dataStem+"."+self.settings["target"])
+        if not sourceFile.exists():
+            raise RuntimeError("File " + sourceFile + " cannot be found, aborting")
+        elif not targetFile.exists():
+            raise RuntimeError("File " + targetFile + " cannot be found, aborting")
+    
+        dataset = {"stem": dataStem,
+                   "source":self._processRawData(sourceFile), 
+                   "target":self._processRawData(targetFile)} 
+        
+        trueStem = dataset["source"]["true"].getStem()
+        cleanStem = dataset["source"]["true"].setInfix("clean").getStem()
+        self._cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
+        dataset["clean"] = cleanStem
+        return dataset
+    
+    
+
+    def _processRawData(self, rawFile):
+         
+        rawFile = Path(rawFile)
+        lang = rawFile.getSuffix()
+        dataset = {}
+        dataset["raw"] = rawFile
+        
+        # STEP 1: tokenisation
+        normFile = rawFile.replacePath(self.settings["path"]).setInfix("norm")
+        
+        self._normaliseFile(rawFile, normFile)
+        tokFile = normFile.setInfix("tok")
+        self._tokeniseFile(normFile, tokFile)
+        
+        # STEP 2: train truecaser if not already existing
+        if not self.settings.has_key("truecasing"):
+            self.settings["truecasing"] = {}
+        if not self.settings["truecasing"].has_key(lang):
+            self.settings["truecasing"][lang] = self.trainTruecasingModel(tokFile, self.settings["path"]
+                                                                    + "/truecasingmodel."+lang)
+        # STEP 3: truecasing   
+        trueFile = tokFile.setInfix("true")
+        modelFile = self.settings["truecasing"][lang]       
+        dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile) 
+        normFile.remove()
+        tokFile.remove()
+        return dataset  
+    
+
+
+    def _getFilteredModel(self, testSource):
+        
+        if self.settings.has_key("ttm"):
+            initFile = self.settings["ttm"] + "/moses.ini"
+        else:
+            raise RuntimeError("Translation model is not yet tuned")
+
+        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource.getPath()
+        filteredDir.remove()
+
+        filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
+                        + filteredDir + " " + initFile + " "
+                        + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
+        self.executor.run(filterScript)
+        return filteredDir
+            
+    
+    def _recordState(self):
+        dump = json.dumps(self.settings)
+        with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
+            jsonFile.write(dump)
+           
+    
+    def _normaliseFile(self, inputFile, outputFile):
         lang = inputFile.getSuffix()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
@@ -474,7 +477,7 @@ class Experiment(object):
 
     
     
-    def deescapeSpecialCharacters(self, inputFile, outputFile):
+    def _deescapeSpecialCharacters(self, inputFile, outputFile):
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
@@ -484,7 +487,7 @@ class Experiment(object):
             raise RuntimeError("Deescaping of special characters in %s has failed"%(inputFile))
 
       
-    def detokeniseFile(self, inputFile, outputFile):
+    def _de_tokeniseFile(self, inputFile, outputFile):
         lang = inputFile.getSuffix()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
@@ -495,10 +498,10 @@ class Experiment(object):
         if not result:
             raise RuntimeError("Detokenisation of %s has failed"%(inputFile))
 
-        print "New detokenised file: " + outputFile.getDescription() 
+        print "New de_tokenised file: " + outputFile.getDescription() 
 
       
-    def tokeniseFile(self, inputFile, outputFile, nbThreads=2):
+    def _tokeniseFile(self, inputFile, outputFile, nbThreads=2):
         lang = inputFile.getSuffix()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
@@ -510,7 +513,7 @@ class Experiment(object):
         if not result:
             raise RuntimeError("Tokenisation of %s has failed"%(inputFile))
 
-        print "New tokenised file: " + outputFile.getDescription() 
+        print "New _tokenised file: " + outputFile.getDescription() 
 
             
     #    specialchars = set()
@@ -524,14 +527,14 @@ class Experiment(object):
         return outputFile
     
     
-    def tokenise(self, inputText, lang):
+    def _tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
         return utils.run_output(tokScript, stdin=inputText).strip()
                 
                 
-    def trainTruecasingModel(self, inputFile, modelFile):
+    def _trainTruecasingModel(self, inputFile, modelFile):
         if not inputFile.exists():
-            raise RuntimeError("tokenised file " + inputFile + " does not exist")
+            raise RuntimeError("Tokenised file " + inputFile + " does not exist")
             
         print "Start building truecasing model based on " + inputFile
         truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" 
@@ -545,10 +548,10 @@ class Experiment(object):
     
             
         
-    def truecaseFile(self, inputFile, outputFile, modelFile):
+    def _truecaseFile(self, inputFile, outputFile, modelFile):
        
         if not inputFile.exists():
-            raise RuntimeError("tokenised file " + inputFile + " does not exist")
+            raise RuntimeError("_tokenised file " + inputFile + " does not exist")
     
         if not modelFile.exists():
             raise RuntimeError("model file " + modelFile + " does not exist")
@@ -563,14 +566,14 @@ class Experiment(object):
         return outputFile
     
     
-    def truecase(self, inputText, modelFile):
+    def _truecase(self, inputText, modelFile):
         if not modelFile.exists():
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         return utils.run_output(truecaseScript, stdin=inputText)
         
        
-    def cutoffFiles(self, inputStem, outputStem, source, target, maxLength):
+    def _cutoffFiles(self, inputStem, outputStem, source, target, maxLength):
                    
         cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                        inputStem + " " + source + " " + target + " " 
@@ -584,7 +587,7 @@ class Experiment(object):
         return outputSource, outputTarget
     
         
-    def divideData(self, alignedStem, lmFile, nbTuning=1000, nbTesting=3000):
+    def _divideData(self, alignedStem, lmFile, nbTuning=1000, nbTesting=3000):
         
         fullSource = alignedStem + "." + self.settings["source"]
         fullTarget = alignedStem + "." + self.settings["target"]
