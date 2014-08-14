@@ -34,7 +34,7 @@ class SlurmExecutor(utils.CommandExecutor):
                       + " --time=" + nodeTime 
                       + " " + script)  
             for k in list(os.environ):
-                if "SLURM" in k:
+                if "SLURM" in k and k in os.environ.keys():
                     del os.environ[k]     
         return script
         
