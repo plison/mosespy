@@ -58,8 +58,7 @@ class Path(str):
 
     def reset(self):
         self.remove()
-        if os.path.isdir(self):
-            os.makedirs(self)
+        os.makedirs(self)
             
     def make(self):
         if not os.path.exists(self):
