@@ -365,11 +365,12 @@ class Experiment(object):
             s = re.search("=\s(([0-9,\.])+)\,", bleu_output)
             if s:
                 test["bleu"] = s.group(1)
+            self.recordState()
         
 
     def analyseErrors(self):
         
-        if not self.settings.has_key("translations"):
+        if not self.settings.has_key("tests"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
         
         testTarget = self.settings["tests"][:-1]["gold"]
