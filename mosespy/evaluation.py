@@ -27,21 +27,17 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
             alignmentsBySource[alignment["source"]] = []
         alignmentsBySource[alignment["source"]].append(alignment)
     
-    with open(fullCorpusSource, 'r') as fullCorpusSourceD:
-        fullSourceLines = fullCorpusSourceD.readlines()
-    
-    with open(fullCorpusTarget, 'r') as fullCorpusTargetD:
-        fullTargetLines = fullCorpusTargetD.readlines()
-        
-    if len(fullSourceLines) != len(fullTargetLines):
-        raise RuntimeError("full corpus is not aligned")
+    fullSourceLines = Path(fullCorpusSource).readlines()
+    fullTargetLines = Path(fullCorpusTarget).readlines()
     
     for i in range(0, len(fullSourceLines)):
         sourceLine = fullSourceLines[i]
         if alignmentsBySource.has_key(sourceLine):
+            print "yes, line: " + sourceLine
             targetLine = fullTargetLines[i]
             for alignment in alignmentsBySource[sourceLine]:
                 if targetLine == alignment["target"]:
+                    print "Target too!"
                     previousLine = fullTargetLines[i-1]
                     alignment["previous"] = previousLine
       
@@ -101,7 +97,6 @@ def extractNgrams(tokens, size):
         return ngrams   
     for i in range(size-1, len(tokens)):
         ngrams.append(" ".join(tokens[i-size+1:i+1]))
-    print ngrams
     return ngrams
     
 
