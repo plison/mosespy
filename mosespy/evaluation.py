@@ -51,12 +51,10 @@ def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpu
     alignments = getAlignment(source, target, translation)
     addHistory(alignments, fullCorpusSource, fullCorpusTarget)
     
-    print "size of alignments" + str(len(alignments))
     print "Analysis of short words"
     print "----------------------"
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
-        print str(align) + "  " + str(WER)
         if len(align["target"].split()) <= 3 and WER >= 0.5:
             if align.has_key("previous"):
                 print "Previous line (reference):\t" + align["previous"]
