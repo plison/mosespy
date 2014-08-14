@@ -32,6 +32,8 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
     fullSourceLines = Path(fullCorpusSource).readlines()
     fullTargetLines = Path(fullCorpusTarget).readlines()
     print "len corpus " + str(len(fullSourceLines))
+    print "example of key: " + alignmentsBySource.keys()[0]
+    print "example of line: " + fullSourceLines[0]
     for i in range(0, len(fullSourceLines)):
         sourceLine = fullSourceLines[i]
         if alignmentsBySource.has_key(sourceLine):
@@ -86,7 +88,7 @@ def analyseBigErrors(source, target, translation):
     print "----------------------"
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
-        if WER >= 0.6:
+        if WER >= 0.7:
             print "Source line:\t\t\t" + align["source"]
             print "Current line (reference):\t" + align["target"]
             print "Current line (actual):\t\t" + align["translation"]
