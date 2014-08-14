@@ -47,7 +47,7 @@ def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpu
 
     alignments = getAlignment(source, target, translation)
     addHistory(alignments, fullCorpusSource, fullCorpusTarget)
-    return
+
     print "Analysis of short words"
     print "----------------------"
     for align in alignments:
