@@ -272,14 +272,14 @@ class Experiment(object):
 
         detokSourceFile = testSource.replacePath(self.settings["path"]).setInfix("detok")
         detokTargetFile = testTarget.replacePath(self.settings["path"]).setInfix("detok")
-        detokTranslationFile = translationFile.replacePath(self.settings["path"]).setInfix("detok")
+        detokTranslationFile = translationFile.replacePath(self.settings["path"]).setInfix("translated.detok")
         self._de_tokeniseFile(testSource,detokSourceFile)
         self._de_tokeniseFile(testTarget,detokTargetFile)
         self._de_tokeniseFile(translationFile,detokTranslationFile)
         
         finalSourceFile = detokSourceFile.setInfix("final")
         finalTargetFile = detokTargetFile.setInfix("final")
-        finalTranslationFile = detokTranslationFile.setInfix("final")
+        finalTranslationFile = detokTranslationFile.setInfix("translated.final")
         self._deescapeSpecialCharacters(detokSourceFile, finalSourceFile)
         self._deescapeSpecialCharacters(detokTargetFile, finalTargetFile)
         self._deescapeSpecialCharacters(detokTranslationFile, finalTranslationFile)
