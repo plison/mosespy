@@ -372,10 +372,8 @@ class Experiment(object):
         
         if not self.settings.has_key("tests"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
-        print self.settings["tests"]
-        print type(self.settings["tests"])
-        testTarget = self.settings["tests"][:-1]["gold"]
-        translationFile = self.settings["tests"][:-1]["out"]
+        testTarget = self.settings["tests"][-1]["gold"]
+        translationFile = self.settings["tests"][-1]["out"]
         
         evaluation.analyseShortAnswers(testTarget, translationFile)
         evaluation.analyseQuestions(testTarget, translationFile)
