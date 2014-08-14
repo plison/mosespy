@@ -28,7 +28,6 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
             alignmentsBySource[source] = []
         alignmentsBySource[source].append(alignment)
     
-    print "number of keys in abs " + str(len(alignmentsBySource.keys()))
     fullSourceLines = Path(fullCorpusSource).readlines()
     fullTargetLines = Path(fullCorpusTarget).readlines()
 
