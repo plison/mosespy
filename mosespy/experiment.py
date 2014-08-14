@@ -352,16 +352,15 @@ class Experiment(object):
         
         
         translationfile = testTarget.replace(".true.", ".translated.")
-        result1 = self.translateFile(testSource, translationfile, filterModel=True,preprocess=False)
+        self.translateFile(testSource, translationfile, filterModel=True,preprocess=False)
         
-        if result1:
-            bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-            result2 = utils.run_output(bleuScript, stdin=translationfile)
-            print result2
-            s = re.search("=\s(([0-9,\.])+)\,", result2)
-            if s:
-                score = s.group(1)
-                self.settings["translations"][-1]["bleu"] = score
+        bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
+        result2 = utils.run_output(bleuScript, stdin=translationfile)
+        print result2
+        s = re.search("=\s(([0-9,\.])+)\,", result2)
+        if s:
+            score = s.group(1)
+            self.settings["translations"][-1]["bleu"] = score
         
 
     def analyseErrors(self, testData, preprocess=True):
