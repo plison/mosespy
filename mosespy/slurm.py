@@ -5,7 +5,7 @@ from experiment import Experiment
   
 nodeMemory=62000
 nodeCpus = 16
-nodeTime = "6:00:00"
+nodeTime = "4:00:00"
 
 class SlurmExecutor(utils.CommandExecutor):
         

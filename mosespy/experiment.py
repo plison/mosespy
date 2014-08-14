@@ -42,27 +42,27 @@ class Experiment(object):
       
     
     
-    def doWholeShibang(self, alignedData, lmData=None):
+    def doWholeShibang(self, alignedStem, lmData=None):
         if not lmData:
-            lmData = alignedData + "." + self.settings["target"]
-        trainStem, tuneStem, testStem, lmData = self.divideData(alignedData, lmData)
+            lmData = alignedStem + "." + self.settings["target"]
+        trainStem, tuneStem, testStem, lmData = self.divideData(alignedStem, lmData)
         self.trainLanguageModel(lmData)
         self.trainTranslationModel(trainStem)
         self.tuneTranslationModel(tuneStem)
         self.evaluateBLEU(testStem)
                     
     
-    def trainLanguageModel(self, trainFile, ngram_order=3):
-        lang = trainFile.split(".")[len(trainFile.split("."))-1]
+    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
+  
+        lang = utils.getFileExtension(trainFile)
 
-        processedTrain = self.processRawData(trainFile)
-        self.settings["lm"] = {"ngram_order":ngram_order}
-        self.recordState()
+        if preprocess:
+            trainFile = self.processRawData(trainFile)["true"]
 
-        print "Building language model based on " + processedTrain["true"]
+        print "Building language model based on " + trainFile
         
-        sbFile = processedTrain["true"].replace(".true.", ".sb.")
-        self.executor.run(irstlm_root + "/bin/add-start-end.sh", processedTrain["true"], sbFile)
+        sbFile = self.settings["path"] + utils.replaceExtension(os.path.basename(trainFile), "sb", 2)
+        self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
         lmFile = self.settings["path"] + "/langmodel.lm." + lang
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
@@ -78,8 +78,9 @@ class Experiment(object):
         blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + utils.getsize(blmFile)   
-        self.settings["lm"]["blm"] = blmFile
 
+        self.settings["lm"]["blm"] = blmFile
+        self.settings["lm"] = {"ngram_order":ngram_order}
         self.recordState()
         os.remove(sbFile)
         os.remove(lmFile+ ".gz") 
@@ -176,6 +177,7 @@ class Experiment(object):
         else:
             print "Tuning of translation model FAILED"
         
+        
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
 
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
@@ -204,10 +206,9 @@ class Experiment(object):
                    "source":self.processRawData(sourceFile), 
                    "target":self.processRawData(targetFile)} 
         
-        trueStem = dataset["source"]["true"][:-len(self.settings["source"])-1]
-        cleanStem = trueStem.replace(".true", ".clean")
-        self.cutoffFiles(trueStem, cleanStem, self.settings["source"], 
-                         self.settings["target"], maxLength)
+        trueStem = utils.getStem(dataset["source"]["true"])
+        cleanStem = utils.replaceExtension(trueStem, "clean")
+        self.cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
         dataset["clean"] = cleanStem
         return dataset
     
@@ -215,14 +216,14 @@ class Experiment(object):
 
     def processRawData(self, rawFile):
          
-        lang = rawFile.split(".")[len(rawFile.split("."))-1]
+        lang = utils.getFileExtension(rawFile)
         dataset = {}
         dataset["raw"] = rawFile
         
         # STEP 1: tokenisation
-        normFile = self.settings["path"] + "/" + os.path.basename(rawFile)[:-len(lang)] + "norm." + lang
+        normFile = self.settings["path"] + "/" + utils.getStem(rawFile, fullPath=False) + ".norm." + lang
         self.normaliseFile(rawFile, normFile)
-        tokFile = normFile.replace(".norm.", ".tok.") 
+        tokFile = utils.replaceExtension(normFile, "tok", 2)
         self.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
@@ -232,7 +233,7 @@ class Experiment(object):
             self.settings["truecasing"][lang] = self.trainTruecasingModel(tokFile, self.settings["path"]
                                                                     + "/truecasingmodel."+lang)
         # STEP 3: truecasing   
-        trueFile = tokFile.replace(".tok.", ".true.") 
+        trueFile = utils.replaceExtension(tokFile, "true", 2)
         modelFile = self.settings["truecasing"][lang]       
         dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile) 
         os.remove(normFile)  
@@ -316,17 +317,14 @@ class Experiment(object):
         transScript = self.getTranslateScript(initFile, nbThreads, inputFile=infile)
         
         result = self.executor.run(transScript, stdout=outfile)
-        
-        if result:
-            if not self.settings.has_key("translations"):
-                self.settings["translations"] = []
-            translation = {"in":infile, "out":outfile}
-            self.settings["translations"].append(translation)
-        else:
-            print "Translation of file " + infile + " FAILED"
-        
+
         if filterDir:
             utils.rmDir(filterDir)
+        
+        if not result:
+            print "Translation of file " + infile + " FAILED"
+        return result
+        
     
     
     def getTranslateScript(self, initFile, nbThreads, inputFile=None):
@@ -351,38 +349,34 @@ class Experiment(object):
             testTarget = self.processRawData(testTarget)["true"]
         
         
-        translationfile = testTarget.replace(".true.", ".translated.")
-        self.translateFile(testSource, translationfile, filterModel=True,preprocess=False)
+        translationfile = utils.replaceExtension(testTarget, "translated", 2)
+        trans_result = self.translateFile(testSource, translationfile, filterModel=True,preprocess=False)
         
-        bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-        result2 = utils.run_output(bleuScript, stdin=translationfile)
-        print result2
-        s = re.search("=\s(([0-9,\.])+)\,", result2)
-        if s:
-            score = s.group(1)
-            self.settings["translations"][-1]["bleu"] = score
+        if trans_result:
+            if not self.settings.has_key("tests"):
+                self.settings["tests"] = []
+            test = {"in":testSource, "out":translationfile, "gold":testTarget}
+            self.settings["tests"].append(test)
+
+            bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
+            bleu_output = utils.run_output(bleuScript, stdin=translationfile)
+            print bleu_output.strip()
+            s = re.search("=\s(([0-9,\.])+)\,", bleu_output)
+            if s:
+                test["bleu"] = s.group(1)
         
 
-    def analyseErrors(self, testData, preprocess=True):
-        print ("Perform error analysis with test data: " + testData)
+    def analyseErrors(self):
         
-        testSource = testData + "." + self.settings["source"]
-        testTarget = testData + "." + self.settings["target"]
-        if not (os.path.exists(testSource) and os.path.exists(testTarget)):
-            raise RuntimeError("Test data cannot be found")
-
-        if preprocess:
-            testSource = self.processRawData(testSource)["true"]
-            testTarget = self.processRawData(testTarget)["true"]
+        if not self.settings.has_key("translations"):
+            raise RuntimeError("you must first perform an evaluation before the analysis")
         
-        filteredDir = self.getFilteredModel(testSource)
+        testTarget = self.settings["tests"][:-1]["gold"]
+        translationFile = self.settings["tests"][:-1]["out"]
         
-        translationfile = testTarget.replace(".true.", ".translated.")
-        self.translateFile(testSource, translationfile, customModel=filteredDir,preprocess=False)
-        
-        evaluation.analyseShortAnswers(testTarget, translationfile)
-        evaluation.analyseQuestions(testTarget, translationfile)
-        evaluation.analyseBigErrors(testTarget, translationfile)
+        evaluation.analyseShortAnswers(testTarget, translationFile)
+        evaluation.analyseQuestions(testTarget, translationFile)
+        evaluation.analyseBigErrors(testTarget, translationFile)
 
 
 
@@ -440,7 +434,7 @@ class Experiment(object):
         return newexp
     
     def normaliseFile(self, inputFile, outputFile):
-        lang = inputFile.split(".")[len(inputFile.split("."))-1]
+        lang = utils.getFileExtension(inputFile)
         if not os.path.exists(inputFile):
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
@@ -452,7 +446,7 @@ class Experiment(object):
         return outputFile   
       
     def tokeniseFile(self, inputFile, outputFile, nbThreads=2):
-        lang = inputFile.split(".")[len(inputFile.split("."))-1]
+        lang = utils.getFileExtension(inputFile)
         if not os.path.exists(inputFile):
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
@@ -536,46 +530,40 @@ class Experiment(object):
         return outputSource, outputTarget
     
         
-    def divideData(self, alignedData, lmData, nbTuning=1000, nbTesting=3000):
+    def divideData(self, alignedStem, lmFile, nbTuning=1000, nbTesting=3000):
         
-        fullSource = alignedData + "." + self.settings["source"]
-        fullTarget = alignedData + "." + self.settings["target"]
+        fullSource = alignedStem + "." + self.settings["source"]
+        fullTarget = alignedStem + "." + self.settings["target"]
         
         if not os.path.exists(fullSource) or not os.path.exists(fullTarget):
-            raise RuntimeError("Data " + alignedData + " does not exist")
+            raise RuntimeError("Data " + alignedStem + " does not exist")
         
         nbLinesSource = utils.countNbLines(fullSource)
         nbLinesTarget = utils.countNbLines(fullTarget)
         if nbLinesSource != nbLinesTarget:
             raise RuntimeError("Number of lines for source and target are different")
         if nbLinesSource <= nbTuning + nbTesting:
-            raise RuntimeError("Data " + alignedData + " is too small")
-         
-        fullSource = open(fullSource, 'r')
-        fullTarget = open(fullTarget, 'r')
-        trainStem = self.settings["path"] + "/" + os.path.basename(alignedData) + ".train"
+            raise RuntimeError("Data " + alignedStem + " is too small")
+        
+        with open(fullSource, 'r') as fullSourceD:
+            sourceLines = fullSourceD.readlines()
+        with open(fullTarget, 'r') as fullTargetD:
+            targetLines = fullTargetD.readlines()
+            
+        trainStem = self.settings["path"] + "/" + os.path.basename(alignedStem) + ".train"
         trainSource = open(trainStem + "." + self.settings["source"], 'w', 1000000)
         trainTarget = open(trainStem + "." + self.settings["target"], 'w', 1000000)
-        tuneStem = self.settings["path"] + "/" + os.path.basename(alignedData) + ".tune"
+        tuneStem = self.settings["path"] + "/" + os.path.basename(alignedStem) + ".tune"
         tuneSource = open(tuneStem + "." + self.settings["source"], 'w')
         tuneTarget = open(tuneStem + "." + self.settings["target"], 'w')
-        testStem = self.settings["path"]+ "/" + os.path.basename(alignedData) + ".test"
+        testStem = self.settings["path"]+ "/" + os.path.basename(alignedStem) + ".test"
         testSource = open(testStem + "." + self.settings["source"], 'w')
         testTarget = open(testStem + "." + self.settings["target"], 'w')
         
-        tuningLines = set()
-        while len(tuningLines) < nbTuning:
-            choice = random.randrange(2, nbLinesSource)
-            tuningLines.add(choice)
-        
-        testingLines = set()
-        while len(testingLines) < nbTesting:
-            choice = random.randrange(2, nbLinesSource)
-            if choice not in tuningLines:
-                testingLines.add(choice)
+        tuningLines = utils.drawRandomNumbers(2, nbLinesSource, nbTuning)
+        testingLines = utils.drawRandomNumbers(2, nbLinesSource, nbTesting, exclusion=tuningLines)
          
         print "Dividing source data..."
-        sourceLines = fullSource.readlines()
         for i in range(0, len(sourceLines)):
             sourceLine = sourceLines[i]
             if i in tuningLines:
@@ -586,7 +574,6 @@ class Experiment(object):
                 trainSource.write(sourceLine)
         
         print "Dividing target data..."
-        targetLines = fullTarget.readlines()
         for i in range(0, len(targetLines)):
             targetLine = targetLines[i]
             if i in tuningLines:
@@ -596,48 +583,43 @@ class Experiment(object):
             else:
                 trainTarget.write(targetLine)
          
-        for f in [fullSource, fullTarget, trainSource, trainTarget,
-                  tuneSource, tuneTarget, testSource, testTarget]:
+        for f in [trainSource, trainTarget, tuneSource, tuneTarget, testSource, testTarget]:
             f.close()
                        
         print "Filtering language model to remove sentences from test set..."
         
-        linesdict = {}
+        testoccurrences = {}
         for i in range(0, len(targetLines)):
             l = targetLines[i]
-            if (i+2) in testingLines:
-                curLine = {"i-2": l}
-            if (i+1) in testingLines:
-                curLine["i-1"] = l
             if i in testingLines:
-                if l not in linesdict:
-                    linesdict[l] = [curLine]
+                history = [targetLines[i-2], targetLines[i-1]]
+                if l not in testoccurrences:
+                    testoccurrences[l] = [history]
                 else:
-                    linesdict[l].append(curLine)
+                    testoccurrences[l].append(history)
 
-        inData = open(lmData, 'r')
-        extension = lmData.split(".")[len(lmData.split("."))-1]
-        newLmFile = (self.settings["path"] + "/" + os.path.basename(lmData[:-len(extension)])
-                     + "wotest." + extension)        
-        outData = open(newLmFile, 'w', 1000000)
-                           
-        prev2Line = None
-        prevLine = None
-        skippedLines = []
-        for l in inData.readlines():
-            toSkip = False
-            if l in linesdict:
-                for lineinfo in linesdict[l]:
-                    if prev2Line == lineinfo["i-2"] and prevLine == lineinfo["i-1"]:
-                        skippedLines.append(l)
-                        toSkip = True
-            if not toSkip:
-                outData.write(l)                                
-            prev2Line = prevLine
-            prevLine = l
+        newLmFile = (self.settings["path"] + "/" + utils.getStem(lmFile,fullPath=False) 
+                     + ".wotest." + utils.getFileExtension(lmFile))
+
+        with open(lmFile, 'r') as lmFileD:
+            lmLines = lmFileD.readlines()
         
-        inData.close()
-        outData.close()
+        with open(newLmFile, 'w', 1000000) as newLmFileD:                 
+            prev2Line = None
+            prevLine = None
+            skippedLines = []
+            for l in lmLines:
+                toSkip = False
+                if l in testoccurrences:
+                    for occurrence in testoccurrences[l]:
+                        if prev2Line == occurrence[0] and prevLine == occurrence[1]:
+                            skippedLines.append(l)
+                            toSkip = True
+                if not toSkip:
+                    newLmFileD.write(l)                                
+                prev2Line = prevLine
+                prevLine = l
+        
         print "Number of skipped lines in language model: " + str(len(skippedLines))
         return trainStem, tuneStem, testStem, newLmFile
 
