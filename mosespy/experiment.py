@@ -90,7 +90,7 @@ class Experiment(object):
         print "New binarised language model: " + blmFile.getDescription() 
 
         sbFile.remove()
-        lmFile.addSuffix("gz").remove()
+        (lmFile + "gz").remove()
         arpaFile.remove()
 
         self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
