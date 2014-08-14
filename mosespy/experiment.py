@@ -50,6 +50,7 @@ class Experiment(object):
     
     
     def doWholeShibang(self, alignedStem, lmData=None):
+        alignedStem = Path(alignedStem)
         if not lmData:
             lmData = alignedStem + "." + self.settings["target"]
         trainStem, tuneStem, testStem, lmData = self.divideData(alignedStem, lmData)
