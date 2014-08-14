@@ -7,7 +7,7 @@ from xml.dom import minidom
 class Path(str):
 
     def getStem(self, fullPath=True):
-        extension = self.getFileExtension(1)
+        extension = self.getSuffix()
         if  fullPath:
             return Path(self[:-len(extension)-1])
         else:
@@ -43,10 +43,10 @@ class Path(str):
         if self.count(".") == 0:
             return Path(self + "." + infix)
         elif self.count(".") == 1:
-            extension = self.getFileExtension(1)
+            extension = self.getSuffix()
             return Path(self[:-len(extension)] + infix + "." + extension)
         else:
-            existingInfix = self.getFileExtension(2)
+            existingInfix = self.split(".")[len(self.split("."))-2]
             return Path(self.replace("."+existingInfix+".", "."+infix+"."))
 
     def remove(self):
