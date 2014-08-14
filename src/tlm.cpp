@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 	
 	bool backoff=false; //back-off or interpolation
 	int lmtype=0;
-	int dub=0; //dictionary upper bound
+	int dub=10000000; //dictionary upper bound
 	int size=0;   //lm size
 	
 	int interactive=0;

@@ -73,7 +73,7 @@ using namespace std;
 typedef struct {
 	const char *word;
 	int  code;
-	long long  freq;
+	long long freq;
 } dict_entry;
 
 typedef htable<char*> HASHTABLE_t;
@@ -167,9 +167,9 @@ public:
 		std::cerr << "EoS code is "<< c << std::endl;
 	}
 	
-	inline int setoovrate(double oovrate) {
+	inline long long setoovrate(double oovrate) {
 		encode(OOV()); //be sure OOV code exists
-		int oovfreq=(int)(oovrate * totfreq());
+		long long oovfreq=(long long)(oovrate * totfreq());
 		std::cerr << "setting OOV rate to: " << oovrate << " -- freq= " << oovfreq << std::endl;
 		return freq(oovcode(),oovfreq);
 	}
@@ -184,7 +184,7 @@ public:
 		return tb[code].freq=(long long)(value * tb[code].freq);
 	}
 	
-	inline long freq(int code,long long value=-1) {
+	inline long long freq(int code,long long value=-1) {
 		if (value>=0) {
 			N+=value-tb[code].freq;
 			tb[code].freq=value;

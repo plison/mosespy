@@ -98,7 +98,7 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
             int j = 1;
             
             while (word){
-                if (i>max_npar){
+                if (j>max_npar){
                     std::stringstream ss_msg;
                     ss_msg << "Too many parameters (expected " << max_npar << ")";
                     exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
@@ -201,6 +201,8 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
             //creates the super n-gram table
             if(usefulltable) augment(sublm[i]);
             
+            cerr << "super table statistics\n";
+            stat(2);
         }
         
         cerr << "eventually generate OOV code of the mixture\n";
