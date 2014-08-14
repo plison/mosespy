@@ -44,7 +44,7 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
     
     for k in alignmentsBySource.keys():
         if not foundSource.has_key(k):
-            print "not found in the corpus"
+            print "not found in the corpus: " + k
 
       
          
@@ -52,7 +52,7 @@ def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpu
 
     alignments = getAlignment(source, target, translation)
     addHistory(alignments, fullCorpusSource, fullCorpusTarget)
-    
+    return
     print "Analysis of short words"
     print "----------------------"
     for align in alignments:
