@@ -1,7 +1,7 @@
 
 import utils
 
-def analyseShortAnswers(self, trueTarget, translation):
+def analyseShortAnswers(trueTarget, translation):
     if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
         raise RuntimeError("Number of lines in actual and reference translations are different")
 
@@ -24,7 +24,7 @@ def analyseShortAnswers(self, trueTarget, translation):
    
 
 
-def analyseQuestions(self, trueTarget, translation):
+def analyseQuestions(trueTarget, translation):
     if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
         raise RuntimeError("Number of lines in actual and reference translations are different")
 
@@ -45,7 +45,7 @@ def analyseQuestions(self, trueTarget, translation):
             print "----------------------"
 
 
-def analyseBigErrors(self, trueTarget, translation):
+def analyseBigErrors(trueTarget, translation):
     if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
         raise RuntimeError("Number of lines in actual and reference translations are different")
 
