@@ -1,68 +1,101 @@
 
 import utils
 
-def analyseShortAnswers(trueTarget, translation):
-    if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
+def getAlignment(source, target, translation):
+    if utils.countNbLines(source) != utils.countNbLines(target):
+        raise RuntimeError("Number of lines in source and reference translations are different")
+    elif utils.countNbLines(target) != utils.countNbLines(translation):
         raise RuntimeError("Number of lines in actual and reference translations are different")
+    
+    alignments = []
+    with open(source, 'r') as sourceT:
+        sourceLines = sourceT.readlines()
+    with open(target, 'r') as targetT:
+        targetLines = targetT.readlines()
+    with open(translation, 'r') as translationT:
+        translationLines = translationT.readlines()
+    for i in range(0, len(sourceLines)):
+        align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip(),
+                 "translation": translationLines[i].strip(), "index": i}
+        alignments.append(align)
+        
+    return alignments
 
-    with open(trueTarget, 'r') as trueT:
-        trueLines = trueT.readlines()
-    with open(translation, 'r') as actualT:
-        actualLines = actualT.readlines()
+
+def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
+ 
+    alignmentsBySource = {}
+    for i in range(0, len(alignments)):
+        alignment = alignments[i]
+        if not alignmentsBySource.has_key(alignment["source"]):
+            alignmentsBySource[alignment["source"]] = []
+        alignmentsBySource[alignment["source"]].append(alignment)
+    
+    with open(fullCorpusSource, 'r') as fullCorpusSourceD:
+        fullSourceLines = fullCorpusSourceD.readlines()
+    
+    with open(fullCorpusTarget, 'r') as fullCorpusTargetD:
+        fullTargetLines = fullCorpusTargetD.readlines()
+        
+    if len(fullSourceLines) != len(fullTargetLines):
+        raise RuntimeError("full corpus is not aligned")
+    
+    for i in range(0, len(fullSourceLines)):
+        sourceLine = fullSourceLines[i]
+        if alignmentsBySource.has_key(sourceLine):
+            targetLine = fullTargetLines[i]
+            for alignment in alignmentsBySource[sourceLine]:
+                if targetLine == alignment["target"]:
+                    previousLine = fullTargetLines[i-1]
+                    alignment["previous"] = previousLine
+      
+   
+def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpusTarget):
+
+    alignments = getAlignment(source, target, translation)
+    addHistory(alignments, fullCorpusSource, fullCorpusTarget)
     
     print "Analysis of short words"
     print "----------------------"
-    for i in range(0, len(trueLines)):
-        trueLine = trueLines[i].strip()
-        actualLine = actualLines[i].strip()
-        WER = getWER(trueLine, actualLine)
-        if len(trueLine.split()) <= 3 and WER >= 0.5:
-            print "Previous line:\t\t\t" + trueLines[i-1].strip()
-            print "Current line (reference):\t" + trueLine
-            print "Current line (actual):\t\t" + actualLine
+    for align in alignments:
+        WER = getWER(align["target"], align["translation"])
+        if len(align["target"].split()) <= 3 and WER >= 0.5:
+            if align.has_key("previous"):
+                print "Previous line (reference):\t" + align["previous"]
+            print "Source line:\t\t\t" + align["source"]
+            print "Current line (reference):\t" + align["target"]
+            print "Current line (actual):\t\t" + align["translation"]
             print "----------------------"
    
 
 
-def analyseQuestions(trueTarget, translation):
-    if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
-        raise RuntimeError("Number of lines in actual and reference translations are different")
-
-    with open(trueTarget, 'r') as trueT:
-        trueLines = trueT.readlines()
-    with open(translation, 'r') as actualT:
-        actualLines = actualT.readlines()
+def analyseQuestions(source, target, translation):
+    
+    alignments = getAlignment(source, target, translation)
     
     print "Analysis of questions"
     print "----------------------"
-    for i in range(0, len(trueLines)):
-        trueLine = trueLines[i].strip()
-        actualLine = actualLines[i].strip()
-        WER = getWER(trueLine, actualLine)
-        if "?" in trueLine and WER >= 0.25:
-            print "Current line (reference):\t" + trueLine
-            print "Current line (actual):\t\t" + actualLine
+    for align in alignments:
+        WER = getWER(align["target"], align["translation"])
+        if "?" in align["target"] and WER >= 0.25:
+            print "Source line:\t\t\t" + align["source"]
+            print "Current line (reference):\t" + align["target"]
+            print "Current line (actual):\t\t" + align["translation"]
             print "----------------------"
 
 
-def analyseBigErrors(trueTarget, translation):
-    if utils.countNbLines(trueTarget) != utils.countNbLines(translation):
-        raise RuntimeError("Number of lines in actual and reference translations are different")
-
-    with open(trueTarget, 'r') as trueT:
-        trueLines = trueT.readlines()
-    with open(translation, 'r') as actualT:
-        actualLines = actualT.readlines()
+def analyseBigErrors(source, target, translation):
+    
+    alignments = getAlignment(source, target, translation)
     
     print "Analysis of large translation errors"
     print "----------------------"
-    for i in range(0, len(trueLines)):
-        trueLine = trueLines[i].strip()
-        actualLine = actualLines[i].strip()
-        WER = getWER(trueLine, actualLine)
+    for align in alignments:
+        WER = getWER(align["target"], align["translation"])
         if WER >= 0.6:
-            print "Current line (reference):\t" + trueLine
-            print "Current line (actual):\t\t" + actualLine
+            print "Source line:\t\t\t" + align["source"]
+            print "Current line (reference):\t" + align["target"]
+            print "Current line (actual):\t\t" + align["translation"]
             print "----------------------"
 
     
