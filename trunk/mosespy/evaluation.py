@@ -23,7 +23,7 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
     alignmentsBySource = {}
     for i in range(0, len(alignments)):
         alignment = alignments[i]
-        source = alignment["source"]
+        source = alignment["source"].lower()
         if not alignmentsBySource.has_key(source):
             alignmentsBySource[source] = []
         alignmentsBySource[source].append(alignment)
@@ -33,20 +33,15 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
 
     foundSource = {}
     for i in range(0, len(fullSourceLines)):
-        sourceLine = fullSourceLines[i].strip()
+        sourceLine = fullSourceLines[i].strip().lower()
         if alignmentsBySource.has_key(sourceLine):
-            targetLine = fullTargetLines[i].strip()
+            targetLine = fullTargetLines[i].strip().lower()
             for alignment in alignmentsBySource[sourceLine]:
-                if targetLine == alignment["target"]:
+                if targetLine == alignment["target"].lower():
                     previousLine = fullTargetLines[i-1].strip()
                     alignment["previous"] = previousLine
         foundSource[sourceLine] = True
     
-    for k in alignmentsBySource.keys():
-        if not foundSource.has_key(k):
-            print "not found in the corpus: " + k
-
-      
          
 def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpusTarget):
 
