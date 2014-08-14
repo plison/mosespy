@@ -297,7 +297,7 @@ class Experiment(object):
         return self.executor.run_output(transScript, stdin=text)
         
    
-    def translateFile(self, infile, outfile, preprocess=True, filterModel=False, nbThreads=2):
+    def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
            
         if filterModel:
             filterDir = self.getFilteredModel(infile)
@@ -368,16 +368,34 @@ class Experiment(object):
             self.recordState()
         
 
-    def analyseErrors(self):
+    def analyseErrors(self, fullCorpusStem):
         
         if not self.settings.has_key("tests"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
+
+        testSource = self.settings["tests"][-1]["in"]
         testTarget = self.settings["tests"][-1]["gold"]
         translationFile = self.settings["tests"][-1]["out"]
+
+        detokSourceFile = utils.replaceExtension(testSource, "detok", 2)
+        detokTargetFile = utils.replaceExtension(testTarget, "detok", 2)
+        detokTranslationFile = utils.replaceExtension(translationFile, "detok", 2)
+        self.detokeniseFile(testSource,detokSourceFile)
+        self.detokeniseFile(testTarget,detokTargetFile)
+        self.detokeniseFile(translationFile,detokTranslationFile)
         
-        evaluation.analyseShortAnswers(testTarget, translationFile)
-        evaluation.analyseQuestions(testTarget, translationFile)
-        evaluation.analyseBigErrors(testTarget, translationFile)
+        finalSourceFile = utils.replaceExtension(detokSourceFile, "final", 2)
+        finalTargetFile = utils.replaceExtension(detokTargetFile, "final", 2)
+        finalTranslationFile = utils.replaceExtension(detokTranslationFile, "final", 2)
+        self.deescapeSpecialCharacters(detokSourceFile, finalSourceFile)
+        self.deescapeSpecialCharacters(detokTargetFile, finalTargetFile)
+        self.deescapeSpecialCharacters(detokTranslationFile, finalTranslationFile)
+        
+        evaluation.analyseShortAnswers(finalSourceFile, finalTargetFile, finalTranslationFile, 
+                                       fullCorpusStem + "." + self.settings["source"], 
+                                       fullCorpusStem+"."+ self.settings["target"])
+        evaluation.analyseQuestions(finalSourceFile, finalTargetFile, finalTranslationFile)
+        evaluation.analyseBigErrors(finalSourceFile, finalTargetFile, finalTranslationFile)
 
 
 
@@ -442,9 +460,33 @@ class Experiment(object):
         cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
         result = self.executor.run(cleanScript, inputFile, outputFile)
         if not result:
-            raise RuntimeError("Cleaning of aligned files has failed")
+            raise RuntimeError("Normalisation of %s has failed"%(inputFile))
 
-        return outputFile   
+    
+    
+    def deescapeSpecialCharacters(self, inputFile, outputFile):
+        if not os.path.exists(inputFile):
+            raise RuntimeError("raw file " + inputFile + " does not exist")
+                        
+        deescapeScript = moses_root + "/scripts/tokenizer/deescape-special-chars.perl "
+        result = self.executor.run(deescapeScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Deescaping of special characters in %s has failed"%(inputFile))
+
+      
+    def detokeniseFile(self, inputFile, outputFile):
+        lang = utils.getFileExtension(inputFile)
+        if not os.path.exists(inputFile):
+            raise RuntimeError("raw file " + inputFile + " does not exist")
+                        
+        print "Start detokenisation of file \"" + inputFile + "\""
+        detokScript = moses_root + "/scripts/tokenizer/detokenizer.perl -l " + lang
+        result = self.executor.run(detokScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Detokenisation of %s has failed"%(inputFile))
+
+        print "New detokenised file: " + utils.getsize(outputFile)    
+
       
     def tokeniseFile(self, inputFile, outputFile, nbThreads=2):
         lang = utils.getFileExtension(inputFile)
@@ -456,9 +498,10 @@ class Experiment(object):
                      + " -l " + lang + " -threads " + str(nbThreads))
         result = self.executor.run(tokScript, inputFile, outputFile)
         if not result:
-            raise RuntimeError("Cleaning of aligned files has failed")
+            raise RuntimeError("Tokenisation of %s has failed"%(inputFile))
 
         print "New tokenised file: " + utils.getsize(outputFile)    
+
             
     #    specialchars = set()
     #    with open(outputFile, 'r') as tmp:
@@ -485,11 +528,12 @@ class Experiment(object):
                                + " --model " + modelFile + " --corpus " + inputFile)
         result = self.executor.run(truecaseModelScript)
         if not result:
-            raise RuntimeError("Cleaning of aligned files has failed")
+            raise RuntimeError("Training of truecasing model with %s has failed"%(inputFile))
 
         print "New truecasing model: " + utils.getsize(modelFile)
         return modelFile
-        
+    
+            
         
     def truecaseFile(self, inputFile, outputFile, modelFile):
        
@@ -503,7 +547,7 @@ class Experiment(object):
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         result = self.executor.run(truecaseScript, inputFile, outputFile)
         if not result:
-            raise RuntimeError("Cleaning of aligned files has failed")
+            raise RuntimeError("Truecasing of %s has failed"%(inputFile))
 
         print "New truecased file: " + utils.getsize(outputFile)
         return outputFile
