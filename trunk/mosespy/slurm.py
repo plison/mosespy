@@ -165,14 +165,14 @@ class SlurmExperiment(Experiment):
         return tuneScript
 
 
-    def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):
-        return Experiment.translate(self, text, preprocess, customModel, nbThreads)
+    def translate(self, text, preprocess=True, nbThreads=nodeCpus):
+        return Experiment.translate(self, text, preprocess, nbThreads)
     
     
     def translateFile(self, infile, outfile, preprocess=True, filterModel=False, nbThreads=nodeCpus):
         return Experiment.translateFile(self, infile, outfile, preprocess, 
                                         filterModel, nbThreads)
-   
+        
  
     def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
         script = (experiment.rootDir + "/mosespy/moses_parallel.py -f " + initFile.encode('utf-8') 
