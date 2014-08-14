@@ -2,6 +2,7 @@
 import os, re, uuid, threading, copy
 import utils, experiment
 from experiment import Experiment 
+from utils import Path
   
 nodeMemory=62000
 nodeCpus = 16
@@ -87,7 +88,7 @@ class SlurmExperiment(Experiment):
                + " with " + str(self.settings["nbjobs"]) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
-        utils.resetDir(splitDir)
+        splitDir.reset()
         utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbjobs"])
         utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
 
@@ -104,8 +105,8 @@ class SlurmExperiment(Experiment):
             t.start()
         utils.waitForCompletion(jobs)
          
-        utils.resetDir(tmDir)
-        os.makedirs(tmDir+"/model")
+        tmDir.reset()
+        Path(tmDir+"/model").make()
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
             for split in range(0, self.settings["nbjobs"]):
@@ -119,10 +120,10 @@ class SlurmExperiment(Experiment):
                       + "-sort-batch-size 1024 " 
                     + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
         result = self.executor.run(tmScript + " --first-step 4")
-        utils.rmDir(splitDir)
+        splitDir.remove()
 
         if result:
-            print "Finished building translation model in: " + utils.getsize(tmDir)
+            print "Finished building translation model in: " + tmDir.getDescription()
             self.settings["tm"]=tmDir
             self.prunePhraseTable()
             self.recordState()
@@ -145,7 +146,7 @@ class SlurmExperiment(Experiment):
 
 
     def getNbDecodingJobs(self, sourceFile):
-        nblines = utils.countNbLines(sourceFile)
+        nblines = sourceFile.countNbLines()
         return min(self.settings["nbjobs"], max(1,nblines/1000))
 
 
