@@ -35,15 +35,13 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
     for i in range(0, len(fullSourceLines)):
         sourceLine = fullSourceLines[i].strip()
         if alignmentsBySource.has_key(sourceLine):
-            print "yes, line: " + sourceLine
             targetLine = fullTargetLines[i].strip()
             for alignment in alignmentsBySource[sourceLine]:
                 if targetLine == alignment["target"]:
-                    print "Target too!"
                     previousLine = fullTargetLines[i-1]
                     alignment["previous"] = previousLine
       
-   
+         
 def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpusTarget):
 
     alignments = getAlignment(source, target, translation)
