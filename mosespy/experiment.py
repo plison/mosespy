@@ -189,7 +189,7 @@ class Experiment(object):
 
         if preprocess:
             text = self._tokenise(text, self.settings["source"])
-            text = self.truecase(text, self.settings["truecasing"][self.settings["source"]])
+            text = self._truecase(text, self.settings["truecasing"][self.settings["source"]])
 
         transScript = self._getTranslateScript(initFile, nbThreads)
 
@@ -382,7 +382,7 @@ class Experiment(object):
         
 
     
-    def __getTranslateScript(self, initFile, nbThreads, inputFile=None):
+    def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
         script = (moses_root + "/bin/moses -f " + initFile.encode('utf-8') 
                 + " -v 0 -threads " + str(nbThreads))
         if inputFile:
@@ -430,12 +430,12 @@ class Experiment(object):
         if not self.settings.has_key("truecasing"):
             self.settings["truecasing"] = {}
         if not self.settings["truecasing"].has_key(lang):
-            self.settings["truecasing"][lang] = self.trainTruecasingModel(tokFile, self.settings["path"]
+            self.settings["truecasing"][lang] = self._trainTruecasingModel(tokFile, self.settings["path"]
                                                                     + "/truecasingmodel."+lang)
         # STEP 3: truecasing   
         trueFile = tokFile.setInfix("true")
         modelFile = self.settings["truecasing"][lang]       
-        dataset["true"] = self.truecaseFile(tokFile, trueFile, modelFile) 
+        dataset["true"] = self._truecaseFile(tokFile, trueFile, modelFile) 
         normFile.remove()
         tokFile.remove()
         return dataset  
