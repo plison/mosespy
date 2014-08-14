@@ -357,6 +357,7 @@ class Experiment(object):
                 self.settings["tests"] = []
             test = {"in":testSource, "out":translationfile, "gold":testTarget}
             self.settings["tests"].append(test)
+            print "Appending new test description in settings"
 
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
             bleu_output = utils.run_output(bleuScript, stdin=translationfile)
