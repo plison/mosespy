@@ -31,14 +31,12 @@ def addHistory(alignments, fullCorpusSource, fullCorpusTarget):
     print "number of keys in abs " + str(len(alignmentsBySource.keys()))
     fullSourceLines = Path(fullCorpusSource).readlines()
     fullTargetLines = Path(fullCorpusTarget).readlines()
-    print "len corpus " + str(len(fullSourceLines))
-    print "example of key: " + alignmentsBySource.keys()[0]
-    print "example of line: " + fullSourceLines[0]
+
     for i in range(0, len(fullSourceLines)):
-        sourceLine = fullSourceLines[i]
+        sourceLine = fullSourceLines[i].strip()
         if alignmentsBySource.has_key(sourceLine):
             print "yes, line: " + sourceLine
-            targetLine = fullTargetLines[i]
+            targetLine = fullTargetLines[i].strip()
             for alignment in alignmentsBySource[sourceLine]:
                 if targetLine == alignment["target"]:
                     print "Target too!"
