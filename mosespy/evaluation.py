@@ -1,26 +1,20 @@
 
 from utils import Path
 
-def getAlignment(source, target, translation):
-    source = Path(source)
-    target = Path(target)
-    translation = Path(translation)
-    if source.countNbLines() != target.countNbLines():
-        raise RuntimeError("Number of lines in source and reference translations are different")
-    elif target.countNbLines() != translation.countNbLines():
-        raise RuntimeError("Number of lines in actual and reference translations are different")
-    
+def getAlignment(source, target, translation): 
+
     alignments = []
-    sourceLines = source.readlines()
-    targetLines = target.readlines()
-    print "description of source: " + source.getDescription() + " and nb lines " + str(source.countNbLines())
-    translationLines = translation.readlines()
+    sourceLines = Path(source).readlines()
+    targetLines = Path(target).readlines()
+    translationLines = Path(translation).readlines()
+    if len(sourceLines) != len(targetLines) or len(sourceLines) != len(targetLines):
+        raise RuntimeError("number of lines in source, target and translation is not identical")
+    
     for i in range(0, len(sourceLines)):
         align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip(),
                  "translation": translationLines[i].strip(), "index": i}
         alignments.append(align)
     
-    print "Number of aligned lines: " + str(len(alignments))
     return alignments
 
 
@@ -57,10 +51,12 @@ def analyseShortAnswers(source, target, translation, fullCorpusSource, fullCorpu
     alignments = getAlignment(source, target, translation)
     addHistory(alignments, fullCorpusSource, fullCorpusTarget)
     
+    print "size of alignments" + str(len(alignments))
     print "Analysis of short words"
     print "----------------------"
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
+        print align + "  " + str(WER)
         if len(align["target"].split()) <= 3 and WER >= 0.5:
             if align.has_key("previous"):
                 print "Previous line (reference):\t" + align["previous"]
