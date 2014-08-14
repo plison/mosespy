@@ -1,5 +1,4 @@
 
-import utils
 from utils import Path
 
 def getAlignment(source, target, translation):
@@ -14,12 +13,14 @@ def getAlignment(source, target, translation):
     alignments = []
     sourceLines = source.readlines()
     targetLines = target.readlines()
+    print "description of source: " + source.getDescription() + " and nb lines " + str(source.countNbLines())
     translationLines = translation.readlines()
     for i in range(0, len(sourceLines)):
         align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip(),
                  "translation": translationLines[i].strip(), "index": i}
         alignments.append(align)
-        
+    
+    print "Number of aligned lines: " + str(len(alignments))
     return alignments
 
 
