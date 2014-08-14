@@ -154,8 +154,9 @@ class SlurmExperiment(Experiment):
     def getTuningScript(self, tuneDir, tuningStem, nbThreads):
         script = Experiment.getTuningScript(self, tuneDir, tuningStem, nodeCpus)
         nbDecodingJobs = self.getNbDecodingJobs(tuningStem + "." + self.settings["source"])
-        return script.replace("--decoder-flags=\'", 
+        script = script.replace("--decoder-flags=\'", 
                               "--decoder-flags=\'-jobs " + str(nbDecodingJobs) + " ")
+        return script
 
 
     def translate(self, text, preprocess=True, customModel=None, nbThreads=nodeCpus):

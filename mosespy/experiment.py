@@ -314,7 +314,7 @@ class Experiment(object):
         if preprocess:
             infile = self.processRawData(infile)["true"]
 
-        transScript = self.getTranslateScript(initFile, nbThreads, inputfile=infile)
+        transScript = self.getTranslateScript(initFile, nbThreads, inputFile=infile)
         
         result = self.executor.run(transScript, stdout=outfile)
         
