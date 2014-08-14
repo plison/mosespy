@@ -1,5 +1,5 @@
 
-import os, subprocess, shutil, sys, threading, time
+import os, subprocess, shutil, time, random
 from datetime import datetime
 from xml.dom import minidom
 
@@ -103,8 +103,37 @@ def getLanguage(langcode):
     raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
 
 
+def drawRandomNumbers(start, end, number, exclusion=set()):
+    numbers = set()
+    while len(numbers) < number:
+        choice = random.randrange(start, end)
+        if choice not in exclusion:
+            numbers.add(choice)
+    return numbers
 
+def getStem(filename, fullPath=True):
+    extension = getFileExtension(filename, 1)
+    if  fullPath:
+        return filename[:-len(extension)-1]
+    else:
+        return os.path.basename(filename)[:-len(extension)-1]
 
+def getFileExtension(filename, extensionNumber=1):
+    if extensionNumber < 1:
+        raise RuntimeError("extensionNumber must be >= 1")        
+    if  filename.count(".") >= extensionNumber:
+        return filename.split(".")[len(filename.split("."))-extensionNumber]
+    else:
+        raise RuntimeError("file " + filename + " does not have " + str(extensionNumber) + " extensions")
+
+def replaceExtension(inputFile, replacement, extensionNumber=1):
+    extension = getFileExtension(inputFile, extensionNumber)
+    if extensionNumber == 1:
+        return inputFile[:-len(extension)] + replacement
+    else:
+        return inputFile.replace("."+extension+".", "."+replacement+".")
+ 
+    
 def waitForCompletion(jobs):
     print "Parallel run of " + str(len(jobs)) + " processes"
     time.sleep(0.1)
@@ -119,15 +148,15 @@ def waitForCompletion(jobs):
     print "Parallel processes completed"  
 
 
-def splitData(data, outputDir, nbSplits):
+def splitData(inputFile, outputDir, nbSplits):
 
-    if isinstance(data, basestring) and os.path.exists(data):  
-        extension = "." + data.split(".")[len(data.split("."))-1]
-        fullFile = open(data, 'r')
+    if isinstance(inputFile, basestring) and os.path.exists(inputFile):  
+        extension = "." + getFileExtension(inputFile)
+        fullFile = open(inputFile, 'r')
         lines = fullFile.readlines()
         fullFile.close()
     else:
-        raise RuntimeError("cannot split the content for data " + str(data))
+        raise RuntimeError("cannot split the content for data " + str(inputFile))
         
     totalLines = len(lines) 
     nbSplits = min(nbSplits, totalLines)
