@@ -79,12 +79,12 @@ class Experiment(object):
         self.executor.run(blmScript)
         print "New binarised language model: " + utils.getsize(blmFile)   
 
-        self.settings["lm"]["blm"] = blmFile
-        self.settings["lm"] = {"ngram_order":ngram_order}
-        self.recordState()
         os.remove(sbFile)
         os.remove(lmFile+ ".gz") 
         os.remove(arpaFile)
+
+        self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
+        self.recordState()
     
     
     def trainTranslationModel(self, trainStem, nbThreads=2, alignment=defaultAlignment, 
