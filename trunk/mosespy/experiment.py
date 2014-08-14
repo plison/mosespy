@@ -350,7 +350,7 @@ class Experiment(object):
         
         
         translationfile = utils.replaceExtension(testTarget, "translated", 2)
-        trans_result = self.translateFile(testSource, translationfile, filterModel=True,preprocess=False)
+        trans_result = self.translateFile(testSource, translationfile, filterModel=False,preprocess=False)
         
         if trans_result:
             if not self.settings.has_key("tests"):
