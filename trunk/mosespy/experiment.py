@@ -36,7 +36,6 @@ class Experiment(object):
                 self.settings["target"] = targetLang
                 self.settings["target_long"] = utils.getLanguage(targetLang)
                 
-        self.decoder = moses_root + "/bin/moses"         
         self.recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
@@ -182,7 +181,7 @@ class Experiment(object):
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.settings["source"] + " " 
                       + tuningStem + "." + self.settings["target"] + " "
-                      + self.decoder + " "
+                      + moses_root + "/bin/moses "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --batch-mira "
@@ -331,8 +330,8 @@ class Experiment(object):
     
     
     def getTranslateScript(self, initFile, nbThreads, inputFile=None):
-        script = (self.decoder + " -f " + initFile.encode('utf-8') 
-                + " -threads " + str(nbThreads))
+        script = (moses_root + "/bin/moses -f " + initFile.encode('utf-8') 
+                + " -v 0 -threads " + str(nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
         return script
