@@ -99,7 +99,8 @@ class Experiment(object):
     
     def trainTranslationModel(self, trainStem, nbThreads=2, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True):
-           
+        
+        trainStem = Path(trainStem)
         if preprocess:         
             trainStem = self._processAlignedData(trainStem)["clean"]
        
@@ -121,6 +122,7 @@ class Experiment(object):
 
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=2):
         
+        tuningStem = Path(tuningStem)
         if preprocess:         
             tuningStem = self._processAlignedData(tuningStem)["clean"]
         
@@ -198,6 +200,7 @@ class Experiment(object):
    
     def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
            
+        infile = Path(infile)
         if filterModel:
             filterDir = self._getFilteredModel(infile)
             initFile = filterDir + "/moses.ini"
