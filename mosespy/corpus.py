@@ -1,6 +1,6 @@
 
 import random
-from mosespy.paths import Path
+from paths import Path
 
 class AlignedCorpus():
     
