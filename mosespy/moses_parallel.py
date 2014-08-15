@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 import sys, os, uuid, select, threading
-from mosespy import slurm
-from mosespy import executor
-from mosespy import corpus
-from mosespy.paths import Path
+import process, slurm, corpus
+from paths import Path
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 decoder = moses_root + "/bin/moses "
@@ -135,7 +133,7 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
             t.start()
             split["thread"] = t
             
-        executor.waitForCompletion([splits[k]["thread"] for k in splits])
+        process.waitForCompletion([splits[k]["thread"] for k in splits])
         mergeOutFiles([splits[k]["out"] for k in splits], outStream)
         
         if "-n-best-list" in mosesArgs:
