@@ -410,7 +410,7 @@ class Experiment(object):
         dataset["raw"] = rawFile
         
         # STEP 1: tokenisation
-        normFile = rawFile.changePath(self.settings["path"]).setInfix("norm")
+        normFile = rawFile.getStem().changePath(self.settings["path"]) + ".norm." + lang
         
         self.tokeniser.normaliseFile(rawFile, normFile)
         tokFile = normFile.setInfix("tok")
@@ -423,7 +423,6 @@ class Experiment(object):
             
         # STEP 3: truecasing   
         trueFile = tokFile.setInfix("true")
-        modelFile = self.settings["truecasing"][lang]       
         dataset["true"] = self.truecaser[lang].truecaseFile(tokFile, trueFile) 
         normFile.remove()
         tokFile.remove()
