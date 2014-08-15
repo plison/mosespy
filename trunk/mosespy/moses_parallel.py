@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import sys, os, uuid, select, threading
-import process, slurm, corpus
-from paths import Path
+from mosespy import process, slurm, corpus
+from mosespy.paths import Path
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 decoder = moses_root + "/bin/moses "
