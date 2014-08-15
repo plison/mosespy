@@ -424,7 +424,7 @@ class Experiment(object):
         # STEP 3: truecasing   
         trueFile = tokFile.setInfix("true")
         modelFile = self.settings["truecasing"][lang]       
-        dataset["true"] = self.truecaser[lang].truecaseFile(tokFile, trueFile, modelFile) 
+        dataset["true"] = self.truecaser[lang].truecaseFile(tokFile, trueFile) 
         normFile.remove()
         tokFile.remove()
         return dataset  
