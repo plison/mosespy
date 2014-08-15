@@ -103,8 +103,8 @@ class Experiment(object):
         self._recordState()
     
     
-    def trainTranslationModel(self, trainStem, nbThreads=2, alignment=defaultAlignment, 
-                              reordering=defaultReordering, preprocess=True):
+    def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
+                              reordering=defaultReordering, preprocess=True, nbThreads=2):
         
         trainStem = Path(trainStem)
         if preprocess:         
@@ -256,7 +256,7 @@ class Experiment(object):
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
             bleu_output = shellutils.run_output(bleuScript, stdin=translationfile)
             print bleu_output.strip()
-            s = re.search("=\s(([0-9,\.])+)\,", bleu_output)
+            s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
             if s:
                 test["bleu"] = s.group(1)
             self._recordState()
@@ -306,7 +306,6 @@ class Experiment(object):
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
-        newexp._recordState()   
         return newexp
  
    

@@ -1,6 +1,6 @@
 
-import os, pathutils, random
-from pathutils import Path
+import random
+from mosespy.pathutils import Path
 
 
 class AlignedCorpus():
@@ -10,6 +10,8 @@ class AlignedCorpus():
         self.alignedStem = alignedStem
         self.sourceLang = sourceLang
         self.targetLang = targetLang
+        self.origin = None
+        self.translationFile = None
         
         if not self.getSourceFile().exists():
             raise RuntimeError(self.getSourceFile() + " does not exist")
@@ -216,6 +218,3 @@ def _drawRandom(start, end, number, exclusion=None):
             numbers.add(choice)
     return numbers
 
-
-
- 

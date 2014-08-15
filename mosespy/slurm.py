@@ -4,14 +4,16 @@ from mosespy import shellutils, experiment, textutils
 from mosespy.experiment import Experiment 
 from mosespy.pathutils import Path
 from mosespy.nlputils import Tokeniser
+from mosespy.shellutils import CommandExecutor
   
 nodeMemory=62000
 nodeCpus = 16
 nodeTime = "4:00:00"
 
-class SlurmExecutor(shellutils.CommandExecutor):
+class SlurmExecutor(CommandExecutor):
         
     def __init__(self, account=None):
+        CommandExecutor.__init__(self)
         if not account:
             account = _getDefaultSlurmAccount()
         if not account:
@@ -24,10 +26,21 @@ class SlurmExecutor(shellutils.CommandExecutor):
                                          + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                                          + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
-
+        self.initenv = copy.deepcopy(os.environ)
+        
     
-    def _getScript(self, script, allowForks):    
-        if self.account and (allowForks or "SLURM" not in str(os.environ.keys())):
+    def allowForks(self, allow):
+        if allow:
+            for k in list(os.environ):
+                if "SLURM" in k and k in os.environ.keys():
+                    del os.environ[k]    
+        else:
+            for k in self.initenv.keys():
+                os.environ[k] = self.initenv[k] 
+            
+    
+    def _getScript(self, script):    
+        if self.account and "SLURM" not in str(os.environ.keys()):
             name = str(uuid.uuid4())[0:5]
             script = ("srun --account=" + self.account
                       + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
@@ -35,18 +48,14 @@ class SlurmExecutor(shellutils.CommandExecutor):
                       + " --cpus-per-task=" + str(nodeCpus)
                       + " --time=" + nodeTime 
                       + " " + script)  
-            for k in list(os.environ):
-                if "SLURM" in k and k in os.environ.keys():
-                    del os.environ[k]     
         return script
         
     
-    def run(self, script, stdin=None, stdout=None, allowForks=False):
-        script = self._getScript(script, allowForks)  
+    def run(self, script, stdin=None, stdout=None):
+        script = self._getScript(script)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
-              
-  
+               
         
 class SlurmExperiment(Experiment):
             
@@ -70,16 +79,14 @@ class SlurmExperiment(Experiment):
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
-        newexp._recordState()
         return newexp
     
     
-    def trainTranslationModel(self, trainStem, preprocess=True,
-                              alignment=experiment.defaultAlignment, 
-                              reordering=experiment.defaultReordering):
+    def trainTranslationModel(self, trainStem, preprocess=True,alignment=experiment.defaultAlignment, 
+                              reordering=experiment.defaultReordering, nbThreads=nodeCpus):
         
         if self.settings["nbjobs"] == 1:
-            Experiment.trainTranslationModel(self, trainStem, nodeCpus)
+            Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
              
         if preprocess:         
@@ -95,16 +102,18 @@ class SlurmExperiment(Experiment):
         textutils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
        
         jobs = []
+        self.executor.allowForks(True)
         for i in range(0, self.settings["nbjobs"]):
             script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
                                 .replace(trainStem, splitDir + "/" +str(i))
                                 + " --last-step 3")
-            t = threading.Thread(target=self.executor.run, args=(script, None, None, True))
+            t = threading.Thread(target=self.executor.run, args=(script, None, None))
             jobs.append(t)
             t.start()
+        self.executor.allowForks(False)
         shellutils.waitForCompletion(jobs)
          
         tmDir.reset()
@@ -139,7 +148,7 @@ class SlurmExperiment(Experiment):
             with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
                 config = iniFile.read()
             with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
-                iniFile.write(re.sub("\[jobs\]\n(\d)+", "", config))
+                iniFile.write(re.sub(r"\[jobs\]\n(\d)+", "", config))
 
 
     def _getNbDecodingJobs(self, sourceFile):
@@ -184,7 +193,7 @@ class SlurmExperiment(Experiment):
 def _getDefaultSlurmAccount():
     user = (os.popen("whoami")).read().strip()
     result = (os.popen("sacctmgr show User "+user + " -p")).read()
-    s = re.search(user+"\|((\S)+?)\|", result)
+    s = re.search(user+r"\|((\S)+?)\|", result)
     if s:
         account = s.group(1)
         return account

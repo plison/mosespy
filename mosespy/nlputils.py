@@ -1,6 +1,5 @@
 
-from mosespy import pathutils
-from pathutils import Path 
+from mosespy.pathutils import Path 
 from xml.dom import minidom
 
 rootDir = Path(__file__).getUp().getUp()
@@ -176,14 +175,12 @@ def getWER(reference, actual):
 
 
 def getLanguage(langcode):
-    rootDir = pathutils.Path(__file__).getUp().getUp()
     isostandard = minidom.parse(rootDir+"/data/iso639.xml")
     itemlist = isostandard.getElementsByTagName('iso_639_entry') 
     for item in itemlist :
         if (item.attributes.has_key('iso_639_1_code') 
             and item.attributes[u'iso_639_1_code'].value == langcode):
-                return item.attributes['name'].value
+            return item.attributes['name'].value
     raise RuntimeError("Language code '" + langcode + "' could not be related to a known language")
 
 
- 

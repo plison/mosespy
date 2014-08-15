@@ -25,7 +25,6 @@ class Path(str):
         else:
             return ""
 
-    
     def exists(self):
         return os.path.exists(self)
      
@@ -55,6 +54,7 @@ class Path(str):
     def reset(self):
         self.remove()
         os.makedirs(self)
+        
             
     def make(self):
         if not os.path.exists(self):
