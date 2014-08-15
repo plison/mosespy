@@ -105,7 +105,13 @@ class AlignedCorpus():
     def filterLmData(self, lmFile, newLmFile):
         
         print "Filtering language model to remove sentences from test set..."
-             
+        
+        lmFile = Path(lmFile)
+        if not lmFile.exists():
+            raise RuntimeError(lmFile + " does not exist")
+        
+        lmLines = lmFile.readlines()
+
         if self.origin:
             targetLines = self.origin["corpus"].getTargetFile().readlines()
             
@@ -121,7 +127,6 @@ class AlignedCorpus():
         else:
             testoccurrences = set().union(self.getTargetFile().readlines())
     
-        lmLines = lmFile.readlines()
         
         with open(newLmFile, 'w', 1000000) as newLmFileD:                 
             prev2Line = None
