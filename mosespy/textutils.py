@@ -58,24 +58,20 @@ class AlignedCorpus():
             else:
                 trainTargetLines.append(targetLine)
          
-        trainSource = self.getSourceFile().changePath(workPath).setInfix("train")
-        trainSource.writelines(trainSourceLines) 
-        print trainSource
-        trainTarget = self.getTargetFile().changePath(workPath).setInfix("train")
-        trainTarget.writelines(trainTargetLines)
-        trainCorpus = AlignedCorpus(self.alignedStem+".train", self.sourceLang, self.targetLang)
+        trainStem = (self.alignedStem + ".train").changePath(workPath)
+        (trainStem + "." + self.sourceLang).writelines(trainSourceLines) 
+        (trainStem + "." + self.targetLang).writelines(trainTargetLines)
+        trainCorpus = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
 
-        tuneSource = self.getSourceFile().changePath(workPath).setInfix("tune")
-        tuneSource.writelines(tuneSourceLines)
-        tuneTarget = self.getTargetFile().changePath(workPath).setInfix("tune")
-        tuneTarget.writelines(tuneTargetLines)
-        tuneCorpus = AlignedCorpus(self.alignedStem+".tune", self.sourceLang, self.targetLang)
+        tuneStem = (self.alignedStem + ".tune").changePath(workPath)
+        (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
+        (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
+        tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
-        testSource = self.getSourceFile().changePath(workPath).setInfix("test")
-        testSource.writelines(testSourceLines)
-        testTarget = self.getTargetFile().changePath(workPath).setInfix("test")
-        testTarget.writelines(testTargetLines)
-        testCorpus = AlignedCorpus(self.alignedStem+".test", self.sourceLang, self.targetLang)
+        testStem = (self.alignedStem + ".test").changePath(workPath)
+        (testStem + "." + self.sourceLang).writelines(testSourceLines) 
+        (testStem + "." + self.targetLang).writelines(testTargetLines)
+        testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
         testCorpus.linkWithOriginalCorpus(self, testingIndices)
         
         return trainCorpus, tuneCorpus, testCorpus
