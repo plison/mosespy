@@ -90,7 +90,7 @@ class TrueCaser():
     
     
     def isModelTrained(self):
-        return self.modelFile.exist()
+        return self.modelFile.exists()
         
             
     def truecaseFile(self, inputFile, outputFile):
