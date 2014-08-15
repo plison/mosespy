@@ -472,6 +472,7 @@ class Experiment(object):
             
     
     def _recordState(self):
+        print self.settings
         dump = json.dumps(self.settings)
         with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
