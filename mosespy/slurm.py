@@ -4,6 +4,7 @@ from mosespy import shellutils, experiment, textutils
 from mosespy.experiment import Experiment 
 from mosespy.nlputils import Tokeniser
 from mosespy.shellutils import CommandExecutor
+from mosespy.pathutils import Path
   
 nodeMemory=62000
 nodeCpus = 16
@@ -88,6 +89,7 @@ class SlurmExperiment(Experiment):
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
              
+        trainStem = Path(trainStem)
         if preprocess:         
             trainStem = self._processAlignedData(trainStem)["clean"]
         
