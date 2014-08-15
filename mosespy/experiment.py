@@ -2,7 +2,7 @@
 
 import os, json, copy,  re
 from mosespy import paths
-from mosespy import executor
+from mosespy import process
 from mosespy import nlp
 from mosespy.paths import Path
 from mosespy.nlp import CorpusProcessor
@@ -20,7 +20,7 @@ defaultReordering = "msd-bidirectional-fe"
 
 class Experiment(object):
     
-    executor = executor.CommandExecutor()
+    executor = process.CommandExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.settings = {}
@@ -249,29 +249,24 @@ class Experiment(object):
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=False)
         
         if trans_result:
-            if not self.settings.has_key("tests"):
-                self.settings["tests"] = []
-            test = {"stem":testData, "translation":translationfile}
-            self.settings["tests"].append(test)
-            print "Appending new test description in settings"
+            self.settings["test"] = {"stem":testData, "translation":translationfile}
 
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-            bleu_output = executor.run_output(bleuScript, stdin=translationfile)
+            bleu_output = process.run_output(bleuScript, stdin=translationfile)
             print bleu_output.strip()
             s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
             if s:
-                test["bleu"] = s.group(1)
+                self.settings["test"]["bleu"] = s.group(1)
             self._recordState()
         
 
     def analyseErrors(self):
         
-        if not self.settings.has_key("tests"):
+        if not self.settings.has_key("test"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
 
-        lastTest = self.settings["tests"][-1]
-        testStem = self.processor.revertFile(lastTest["stem"])
-        translation = self.processor.revertFile(lastTest["translation"])
+        testStem = self.processor.revertFile(self.settings["test"]["stem"])
+        translation = self.processor.revertFile(self.settings["test"]["translation"])
   
         corpus = AlignedCorpus(testStem, self.settings["source"], self.settings["target"])
         corpus.addActualTranslations(translation)  
