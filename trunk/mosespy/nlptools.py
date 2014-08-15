@@ -51,16 +51,12 @@ class CorpusProcessor():
     
     
     def processText(self, text, lang):
-                 
-        tokText = self.tokeniser.tokenise(text, lang)
-                    
+        tokText = self.tokeniser.tokenise(text, lang)                 
         trueText = self.truecaser.truecase(tokText, lang)        
-        
         return trueText
  
  
     def revertCorpus(self, corpus):
- 
         if not isinstance(corpus, AlignedCorpus):
             raise RuntimeError("aligned data must be of type AlignedCorpus")
         

@@ -116,8 +116,8 @@ class SlurmExperiment(Experiment):
             t = threading.Thread(target=self.executor.run, args=(script, None, None))
             jobs.append(t)
             t.start()
-        self.executor.allowForks(False)
         executor.waitForCompletion(jobs)
+        self.executor.allowForks(False)
          
         tmDir.reset()
         (tmDir+"/model").make()
