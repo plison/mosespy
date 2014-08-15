@@ -4,9 +4,9 @@ from mosespy.paths import Path
 
 class AlignedCorpus():
     
-    def __init__(self, alignedStem, sourceLang, targetLang):
+    def __init__(self, stem, sourceLang, targetLang):
         
-        self.alignedStem = Path(alignedStem)
+        self.stem = Path(stem)
         self.sourceLang = sourceLang
         self.targetLang = targetLang
         self.origin = None
@@ -25,8 +25,8 @@ class AlignedCorpus():
  
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000):
          
-        sourceLines = (self.alignedStem + "." + self.sourceLang).readlines()
-        targetLines = (self.alignedStem + "." + self.sourceLang).readlines()
+        sourceLines = (self.stem + "." + self.sourceLang).readlines()
+        targetLines = (self.stem + "." + self.sourceLang).readlines()
             
         tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
         testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
@@ -57,17 +57,17 @@ class AlignedCorpus():
             else:
                 trainTargetLines.append(targetLine)
          
-        trainStem = workPath + "/" + (self.alignedStem + ".train").basename()
+        trainStem = workPath + "/" + (self.stem + ".train").basename()
         (trainStem + "." + self.sourceLang).writelines(trainSourceLines) 
         (trainStem + "." + self.targetLang).writelines(trainTargetLines)
         trainCorpus = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
 
-        tuneStem = workPath + "/" + (self.alignedStem + ".tune").basename()
+        tuneStem = workPath + "/" + (self.stem + ".tune").basename()
         (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
         tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
-        testStem = workPath + "/" + (self.alignedStem + ".test").basename()
+        testStem = workPath + "/" + (self.stem + ".test").basename()
         (testStem + "." + self.sourceLang).writelines(testSourceLines) 
         (testStem + "." + self.targetLang).writelines(testTargetLines)
         testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
@@ -79,14 +79,14 @@ class AlignedCorpus():
     def linkWithOriginalCorpus(self, fullCorpus, lineIndices):
         self.origin = {"corpus":fullCorpus, "indices":lineIndices}
         
-    def getAlignedStem(self):
-        return self.alignedStem
+    def getStem(self):
+        return self.stem
     
     def getSourceFile(self):
-        return Path(self.alignedStem + "." + self.sourceLang)
+        return Path(self.stem + "." + self.sourceLang)
         
     def getTargetFile(self):
-        return Path(self.alignedStem + "." + self.targetLang)
+        return Path(self.stem + "." + self.targetLang)
     
     
     

@@ -60,9 +60,9 @@ class Experiment(object):
         corpus.filterLmData(lmFile, newLmFile)
         self.trainLanguageModel(newLmFile)
         
-        self.trainTranslationModel(trainCorpus.getAlignedStem())
-        self.tuneTranslationModel(tuneCorpus.getAlignedStem())
-        self.evaluateBLEU(testCorpus.getAlignedStem())
+        self.trainTranslationModel(trainCorpus.getStem())
+        self.tuneTranslationModel(tuneCorpus.getStem())
+        self.evaluateBLEU(testCorpus.getStem())
                     
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
@@ -111,7 +111,7 @@ class Experiment(object):
             train = self.processor.processCorpus(train)
        
         print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + train.getAlignedStem())
+               + self.settings["target"] + " with " + train.getStem())
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
@@ -134,10 +134,10 @@ class Experiment(object):
             tuning = self.processor.processCorpus(tuning)
         
         print ("Tuning translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + tuning.getAlignedStem())
+               + self.settings["target"] + " with " + tuning.getStem())
         
         tuneDir = self.settings["path"]+"/tunedmodel"
-        tuningScript = self._getTuningScript(tuneDir, tuning.getAlignedStem, nbThreads)
+        tuningScript = self._getTuningScript(tuneDir, tuning.getStem(), nbThreads)
         tuneDir.reset()
         result = self.executor.run(tuningScript)
         if result:
