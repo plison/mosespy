@@ -242,6 +242,9 @@ class Experiment(object):
         if preprocess:
             testSource = self._processRawData(testCorpus.getSourceFile())["true"]
             testTarget = self._processRawData(testCorpus.getTargetFile())["true"]
+        else:
+            testSource = testCorpus.getSourceFile()
+            testTarget = testCorpus.getTargetFile()
           
         translationfile = testTarget.addProperty("translated")
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=False)
