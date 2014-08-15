@@ -13,7 +13,7 @@ def getInput():
     lines = []
     for i in range(1, len(sys.argv)):
         if "-input-file" in sys.argv[i-1]:
-            return sys.argv[i].strip()
+            return Path(sys.argv[i].strip())
        
     while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
         line = sys.stdin.readline()
@@ -27,7 +27,7 @@ def getInput():
         tmpInputFile = "./tmp" + str(uuid.uuid4())[0:6] + ".source"
         with open(tmpInputFile, 'w') as tmpInput:
             tmpInput.writelines(lines)
-        return tmpInputFile
+        return Path(tmpInputFile)
     else:
         return None
 
@@ -112,7 +112,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
     
         
         
-def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
+def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
                 
     if not inputFile:
         print "Running decoder: " + decoder + mosesArgs
@@ -120,20 +120,20 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
         print "Running decoder: " + decoder + mosesArgs + " < " + inputFile
-        executor.allowForks(allowForks)
         executor.run(decoder + mosesArgs, stdin=inputFile, stdout=outStream)
-        executor.allowForks(False)
     else:
         
         splits = splitDecoding(inputFile, mosesArgs, nbJobs)
+        executor.allowForks(True)
         for s in splits.keys():
             split = splits[s]
-            threadArgs = (split["in"], split["args"], split["out"], 1, True)
+            threadArgs = (split["in"], split["args"], split["out"], 1)
             t = threading.Thread(target=runParallelMoses, args=threadArgs)
             t.start()
             split["thread"] = t
             
         process.waitForCompletion([splits[k]["thread"] for k in splits])
+        executor.allowForks(False)
         mergeOutFiles([splits[k]["out"] for k in splits], outStream)
         
         if "-n-best-list" in mosesArgs:
