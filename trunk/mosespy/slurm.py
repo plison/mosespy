@@ -1,14 +1,15 @@
 
 import os, re, uuid, threading, copy
-import utils, experiment
-from experiment import Experiment 
-from utils import Path
+from mosespy import shellutils, experiment, textutils
+from mosespy.experiment import Experiment 
+from mosespy.pathutils import Path
+from mosespy.nlputils import Tokeniser
   
 nodeMemory=62000
 nodeCpus = 16
 nodeTime = "4:00:00"
 
-class SlurmExecutor(utils.CommandExecutor):
+class SlurmExecutor(shellutils.CommandExecutor):
         
     def __init__(self, account=None):
         if not account:
@@ -53,14 +54,15 @@ class SlurmExperiment(Experiment):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
-        if not utils.existsExecutable("srun"):
+        if not shellutils.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
     
         self.settings["account"] = account
         self.settings["nbjobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-
+        self.tokeniser = Tokeniser(self.executor, nbThreads=nodeCpus)
+        
     
     def copy(self, nexExpName):
         newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.settings["account"])
@@ -89,8 +91,8 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        utils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbjobs"])
-        utils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
+        textutils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbjobs"])
+        textutils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, trainStem, nodeCpus, alignment, reordering)
@@ -103,7 +105,7 @@ class SlurmExperiment(Experiment):
             t = threading.Thread(target=self.executor.run, args=(script, None, None, True))
             jobs.append(t)
             t.start()
-        utils.waitForCompletion(jobs)
+        shellutils.waitForCompletion(jobs)
          
         tmDir.reset()
         Path(tmDir+"/model").make()
@@ -130,12 +132,7 @@ class SlurmExperiment(Experiment):
         else:
             print "Construction of translation model FAILED"
  
-    
-                
-    def tokeniseFile(self, inputFile, outputFile):
-        Experiment._tokeniseFile(self, inputFile, outputFile, nbThreads=nodeCpus)
-       
-    
+      
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
         Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
         if self.settings.has_key("ttm"):
