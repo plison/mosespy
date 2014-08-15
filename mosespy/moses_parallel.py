@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 import sys, os, uuid, select, threading
 from mosespy import process, slurm, corpus
