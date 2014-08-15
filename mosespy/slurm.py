@@ -4,7 +4,7 @@ from mosespy import experiment
 from mosespy import executor
 from mosespy import corpus
 from mosespy.experiment import Experiment 
-from mosespy.nlptools import CorpusProcessor
+from mosespy.nlp import CorpusProcessor
 from mosespy.corpus import AlignedCorpus
 from mosespy.executor import CommandExecutor
   
