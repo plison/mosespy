@@ -1,6 +1,6 @@
 
-from mosespy.paths import Path 
-from mosespy.corpus import AlignedCorpus
+from paths import Path 
+from corpus import AlignedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 

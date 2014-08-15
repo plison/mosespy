@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*- 
 
 import os, json, copy,  re
-from mosespy import paths
-from mosespy import process
-from mosespy import nlp
-from mosespy.paths import Path
-from mosespy.nlp import CorpusProcessor
-from mosespy.corpus import AlignedCorpus
+import paths, process, nlp
+from paths import Path
+from nlp import CorpusProcessor
+from corpus import AlignedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"

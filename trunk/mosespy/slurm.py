@@ -1,12 +1,10 @@
 
 import os, re, uuid, threading, copy
-from mosespy import experiment
-from mosespy import process
-from mosespy import corpus
-from mosespy.experiment import Experiment 
-from mosespy.nlp import CorpusProcessor
-from mosespy.corpus import AlignedCorpus
-from mosespy.process import CommandExecutor
+import experiment, process, corpus
+from experiment import Experiment 
+from nlp import CorpusProcessor
+from corpus import AlignedCorpus
+from process import CommandExecutor
   
 nodeMemory=62000
 nodeCpus = 16
