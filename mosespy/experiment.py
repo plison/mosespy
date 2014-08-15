@@ -3,9 +3,9 @@
 import os, json, copy,  re
 from mosespy import paths
 from mosespy import executor
-from mosespy import nlptools
+from mosespy import nlp
 from mosespy.paths import Path
-from mosespy.nlptools import CorpusProcessor
+from mosespy.nlp import CorpusProcessor
 from mosespy.corpus import AlignedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
@@ -75,7 +75,7 @@ class Experiment(object):
 
         print "Building language model based on " + trainFile
         
-        sbFile = self.settings["path"] + "/" + trainFile.basename().addProperty("sb")
+        sbFile = self.settings["path"] + "/" + trainFile.basename().changeProperty("sb")
                 
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
@@ -416,7 +416,7 @@ def analyseShortAnswers(alignments):
     print "Analysis of short words"
     print "----------------------"
     for align in alignments:
-        WER = nlptools.getWER(align["target"], align["translation"])
+        WER = nlp.getWER(align["target"], align["translation"])
         if len(align["target"].split()) <= 3 and WER >= 0.5:
             if align.has_key("previous"):
                 print "Previous line (reference):\t" + align["previous"]
@@ -432,7 +432,7 @@ def analyseQuestions(alignments):
     print "Analysis of questions"
     print "----------------------"
     for align in alignments:
-        WER = nlptools.getWER(align["target"], align["translation"])
+        WER = nlp.getWER(align["target"], align["translation"])
         if "?" in align["target"] and WER >= 0.25:
             print "Source line:\t\t\t" + align["source"]
             print "Current line (reference):\t" + align["target"]
@@ -446,7 +446,7 @@ def analyseBigErrors(alignments):
     print "Analysis of large translation errors"
     print "----------------------"
     for align in alignments:
-        WER = nlptools.getWER(align["target"], align["translation"])
+        WER = nlp.getWER(align["target"], align["translation"])
         if WER >= 0.7:
             print "Source line:\t\t\t" + align["source"]
             print "Current line (reference):\t" + align["target"]
