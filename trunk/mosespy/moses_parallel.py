@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os, uuid, select, threading
-from mosespy import shellutils, slurm
+from mosespy import shellutils, slurm, textutils
 from mosespy.pathutils import Path
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
@@ -59,10 +59,10 @@ def getMosesArguments():
 
 def mergeOutFiles(outfiles, outStream):
     for outfile_part in outfiles:
-            with open(outfile_part, 'r') as part:
-                for partline in part.readlines():
-                    if partline.strip():
-                        outStream.write(partline.strip('\n') + '\n')
+        with open(outfile_part, 'r') as part:
+            for partline in part.readlines():
+                if partline.strip():
+                    outStream.write(partline.strip('\n') + '\n')
     outStream.close()
        
        
@@ -95,19 +95,18 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
 def splitDecoding(inputFile, mosesArgs, nbJobs):
     splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
     splitDir.reset()
-    infiles = shellutils.splitData(inputFile, splitDir, nbJobs)  
+    infiles = textutils.splitData(inputFile, splitDir, nbJobs)  
     print "Data split in " + str(len(infiles))
     
     splits = {}
     for i in range(0, len(infiles)):
-            infile = Path(infiles[i])
-            outfile = Path(splitDir + "/" + str(i) + ".translated")
+        infile = Path(infiles[i])
+        outfile = Path(splitDir + "/" + str(i) + ".translated")
             
-            newArgs = str(mosesArgs)
-            nbestout = getArgumentValue(mosesArgs, "-n-best-list")
-            if nbestout:
-                newArgs = newArgs.replace(nbestout, splitDir + "/" + str(i) + ".nbest" )
-                
+        newArgs = str(mosesArgs)
+        nbestout = getArgumentValue(mosesArgs, "-n-best-list")
+        if nbestout:
+            newArgs = newArgs.replace(nbestout, splitDir + "/" + str(i) + ".nbest" )    
             splits[i] = {"in": infile, "out":outfile, "args":newArgs}
     return splits
     
@@ -121,7 +120,9 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
         
     elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
         print "Running decoder: " + decoder + mosesArgs + " < " + inputFile
-        executor.run(decoder + mosesArgs, stdin=inputFile, stdout=outStream, allowForks=allowForks)
+        executor.allowForks(allowForks)
+        executor.run(decoder + mosesArgs, stdin=inputFile, stdout=outStream)
+        executor.allowForks(False)
     else:
         
         splits = splitDecoding(inputFile, mosesArgs, nbJobs)

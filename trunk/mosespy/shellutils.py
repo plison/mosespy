@@ -1,26 +1,28 @@
 
-import os, subprocess, shutil, time, random
+import os, subprocess, time
 from datetime import datetime
 
 
 class CommandExecutor(object):
     
+    def __init__(self):
+        self.callincr = 0
+        
     def run(self, script, stdin=None, stdout=None):
-        global callincr
-        callincr = callincr + 1 if 'callincr' in globals() else 1
-        print "[" + str(callincr) + "] Running " + script + \
+        self.callincr += 1
+        print "[" + str(self.callincr) + "] Running " + script + \
                 (" < " + stdin if isinstance(stdin, basestring) else "") + \
               (" > " + stdout if isinstance(stdout, basestring) else "")
                   
         if os.path.exists(str(stdin)):
-            stdin_popen = file(stdin, 'r')
+            stdin_popen = open(stdin, 'r')
         elif isinstance(stdin, basestring):
             stdin_popen = subprocess.PIPE
         else:
             stdin_popen = None
             
         if os.path.exists(os.path.dirname(str(stdout))):
-            stdout_popen = file(stdout, 'w')
+            stdout_popen = open(stdout, 'w')
         elif stdout is not None and not stdout:
             stdout_popen = subprocess.PIPE
         else:
@@ -30,7 +32,7 @@ class CommandExecutor(object):
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
         
-        print "Task [" + str(callincr) + "] " + ("successful" if not p.returncode else "FAILED")
+        print "Task [" + str(self.callincr) + "] " + ("successful" if not p.returncode else "FAILED")
         print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]
         if stdout_popen == subprocess.PIPE:
             return out_popen
