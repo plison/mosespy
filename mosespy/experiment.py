@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*- 
 
 import os, json, copy,  re
-from mosespy import shellutils, pathutils, nlputils
-from mosespy.pathutils import Path
-from mosespy.nlputils import Tokeniser,TrueCaser
-from mosespy.textutils import AlignedCorpus
+from mosespy import paths
+from mosespy import executor
+from mosespy import nlptools
+from mosespy.paths import Path
+from mosespy.nlptools import CorpusProcessor
+from mosespy.corpus import AlignedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -18,7 +20,7 @@ defaultReordering = "msd-bidirectional-fe"
 
 class Experiment(object):
     
-    executor = shellutils.CommandExecutor()
+    executor = executor.CommandExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.settings = {}
@@ -30,24 +32,21 @@ class Experiment(object):
         if jsonFile.exists():
             print "Existing experiment, reloading known settings..."
             self.settings = json.loads(open(jsonFile).read())
-            self.settings = pathutils.convertToPaths(self.settings)
+            self.settings = paths.convertToPaths(self.settings)
         else:
             self.settings["path"].make()
             if sourceLang:
                 self.settings["source"] = sourceLang
-                self.settings["source_long"] = pathutils.getLanguage(sourceLang)
+                self.settings["source_long"] = paths.getLanguage(sourceLang)
             if targetLang:
                 self.settings["target"] = targetLang
-                self.settings["target_long"] = pathutils.getLanguage(targetLang)
+                self.settings["target_long"] = paths.getLanguage(targetLang)
                 
         self._recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
         
-        self.tokeniser = Tokeniser(self.executor)
-        self.truecaser = {}
-        self.truecaser[sourceLang] = TrueCaser(self.executor, self.settings["path"]+"/truecasingmodel."+sourceLang)
-        self.truecaser[targetLang] = TrueCaser(self.executor, self.settings["path"]+"/truecasingmodel."+targetLang)
+        self.processor = CorpusProcessor(self.settings["path"], self.executor)
       
     
     def doWholeShibang(self, alignedStem, lmFile=None):
@@ -72,7 +71,7 @@ class Experiment(object):
         lang = trainFile.getLang()
 
         if preprocess:
-            trainFile = self._processRawData(trainFile)["true"]
+            trainFile = self.processor.processFile(trainFile)
 
         print "Building language model based on " + trainFile
         
@@ -106,12 +105,13 @@ class Experiment(object):
     def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True, nbThreads=2):
         
-        trainStem = Path(trainStem)
+        train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
+        
         if preprocess:         
-            trainStem = self._processAlignedData(trainStem)["clean"]
+            train = self.processor.processCorpus(train)
        
         print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + trainStem)
+               + self.settings["target"] + " with " + train.getAlignedStem())
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
@@ -128,15 +128,16 @@ class Experiment(object):
 
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=2):
         
-        tuningStem = Path(tuningStem)
+        tuning = AlignedCorpus(tuningStem, self.settings["source"], self.settings["target"])
+        
         if preprocess:         
-            tuningStem = self._processAlignedData(tuningStem)["clean"]
+            tuning = self.processor.processCorpus(tuning)
         
         print ("Tuning translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + tuningStem)
+               + self.settings["target"] + " with " + tuning.getAlignedStem())
         
         tuneDir = self.settings["path"]+"/tunedmodel"
-        tuningScript = self._getTuningScript(tuneDir, tuningStem, nbThreads)
+        tuningScript = self._getTuningScript(tuneDir, tuning.getAlignedStem, nbThreads)
         tuneDir.reset()
         result = self.executor.run(tuningScript)
         if result:
@@ -196,9 +197,8 @@ class Experiment(object):
                self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
-            text = self.tokeniser.tokenise(text, self.settings["source"])
-            text = self.truecaser[self.settings["source"]].truecase(text)
-
+            text = self.processor.processText(text, self.settings["source"])
+            
         transScript = self._getTranslateScript(initFile, nbThreads)
 
         return self.executor.run_output(transScript, stdin=text)
@@ -220,7 +220,7 @@ class Experiment(object):
                self.settings["source"] + " to " + self.settings["target"])
 
         if preprocess:
-            infile = self._processRawData(infile)["true"]
+            infile = self.processor.processFile(infile)
 
         transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
         
@@ -239,12 +239,11 @@ class Experiment(object):
         testCorpus = AlignedCorpus(testData, self.settings["source"], self.settings["target"])
         print ("Evaluating BLEU scores with test data: " + testData)
         
+        testSource = testCorpus.getSourceFile()
+        testTarget = testCorpus.getTargetFile()
         if preprocess:
-            testSource = self._processRawData(testCorpus.getSourceFile())["true"]
-            testTarget = self._processRawData(testCorpus.getTargetFile())["true"]
-        else:
-            testSource = testCorpus.getSourceFile()
-            testTarget = testCorpus.getTargetFile()
+            testSource = self.processor.processFile(testSource)
+            testTarget = self.processor.processFile(testTarget)
           
         translationfile = testTarget.addProperty("translated")
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=False)
@@ -257,7 +256,7 @@ class Experiment(object):
             print "Appending new test description in settings"
 
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-            bleu_output = shellutils.run_output(bleuScript, stdin=translationfile)
+            bleu_output = executor.run_output(bleuScript, stdin=translationfile)
             print bleu_output.strip()
             s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
             if s:
@@ -270,8 +269,9 @@ class Experiment(object):
         if not self.settings.has_key("tests"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
 
-        testStem = self._revertProcessedData(self.settings["tests"][-1]["stem"])
-        translation = self._revertProcessedData(self.settings["tests"][-1]["translation"])
+        lastTest = self.settings["tests"][-1]
+        testStem = self.processor.revertFile(lastTest["stem"])
+        translation = self.processor.revertFile(lastTest["translation"])
   
         corpus = AlignedCorpus(testStem, self.settings["source"], self.settings["target"])
         corpus.addActualTranslations(translation)  
@@ -385,77 +385,6 @@ class Experiment(object):
         return script
                                      
                                 
-
-    def _processAlignedData(self, dataStem, maxLength=80):
-
-        sourceFile = dataStem+"."+self.settings["source"]
-        targetFile = dataStem+"."+self.settings["target"]
-        if not sourceFile.exists():
-            raise RuntimeError("File " + sourceFile + " cannot be found, aborting")
-        elif not targetFile.exists():
-            raise RuntimeError("File " + targetFile + " cannot be found, aborting")
-    
-        dataset = {"stem": dataStem,
-                   "source":self._processRawData(sourceFile), 
-                   "target":self._processRawData(targetFile)} 
-        
-        trueStem = dataset["source"]["true"].getStem()
-        cleanStem = dataset["source"]["true"].changeProperty("clean").getStem()
-        self._cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
-        dataset["clean"] = cleanStem
-        return dataset
-    
-    
-
-    def _processRawData(self, rawFile):
-         
-        lang = rawFile.getLang()
-        dataset = {}
-        dataset["raw"] = rawFile
-        
-        # STEP 1: tokenisation
-        normFile = self.settings["path"] + rawFile.basename().addProperty("norm")
-        
-        self.tokeniser.normaliseFile(rawFile, normFile)
-        tokFile = normFile.changeProperty("tok")
-        self.tokeniser.tokeniseFile(normFile, tokFile)
-        
-        # STEP 2: train truecaser if not already existing
-        
-        if not self.truecaser[lang].isModelTrained():
-            self.truecaser[lang].trainModel(tokFile)
-            
-        # STEP 3: truecasing   
-        trueFile = tokFile.changeProperty("true")
-        dataset["true"] = self.truecaser[lang].truecaseFile(tokFile, trueFile) 
-        normFile.remove()
-        tokFile.remove()
-        return dataset  
-
-
-
-    def _revertProcessedData(self, processedFile, isStem=False):
-        
-        if isStem:
-            dataSource = processedFile +"." + self.settings["source"]
-            dataTarget = processedFile +"." + self.settings["target"]
-            if dataSource.exists() and dataTarget.exists():
-                dataSource = self._revertProcessedData(dataSource)
-                dataTarget = self._revertProcessedData(dataTarget)
-                return dataSource.getStem()
-            else:
-                raise RuntimeError("cannot revert data with stem "+ processedFile)
-        elif processedFile.exists():
-            raise RuntimeError(processedFile + " does not exist")
-        
-        untokFile = self.settings["path"] + processedFile.basename().addProperty("detok") 
-        self.tokeniser.detokeniseFile(processedFile,untokFile)
-         
-        finalFile = untokFile.changeProperty("read")
-        self.tokeniser.deescapeSpecialCharacters(untokFile, finalFile)
-
-        return finalFile
-    
     
     def _getFilteredModel(self, testSource):
         
@@ -479,21 +408,7 @@ class Experiment(object):
         with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
            
-        
-       
-    def _cutoffFiles(self, inputStem, outputStem, source, target, maxLength):
-                   
-        cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
-                       inputStem + " " + source + " " + target + " " 
-                       + outputStem + " 1 " + str(maxLength))
-        result = self.executor.run(cleanScript)
-        if not result:
-            raise RuntimeError("Cleaning of aligned files has failed")
-        outputSource = outputStem+"."+source
-        outputTarget = outputStem+"."+target
-        print "New cleaned files: " + outputSource.getDescription() + " and " + outputTarget.getDescription()
-        return outputSource, outputTarget
-     
+    
      
      
 def analyseShortAnswers(alignments):
@@ -501,7 +416,7 @@ def analyseShortAnswers(alignments):
     print "Analysis of short words"
     print "----------------------"
     for align in alignments:
-        WER = nlputils.getWER(align["target"], align["translation"])
+        WER = nlptools.getWER(align["target"], align["translation"])
         if len(align["target"].split()) <= 3 and WER >= 0.5:
             if align.has_key("previous"):
                 print "Previous line (reference):\t" + align["previous"]
@@ -517,7 +432,7 @@ def analyseQuestions(alignments):
     print "Analysis of questions"
     print "----------------------"
     for align in alignments:
-        WER = nlputils.getWER(align["target"], align["translation"])
+        WER = nlptools.getWER(align["target"], align["translation"])
         if "?" in align["target"] and WER >= 0.25:
             print "Source line:\t\t\t" + align["source"]
             print "Current line (reference):\t" + align["target"]
@@ -531,7 +446,7 @@ def analyseBigErrors(alignments):
     print "Analysis of large translation errors"
     print "----------------------"
     for align in alignments:
-        WER = nlputils.getWER(align["target"], align["translation"])
+        WER = nlptools.getWER(align["target"], align["translation"])
         if WER >= 0.7:
             print "Source line:\t\t\t" + align["source"]
             print "Current line (reference):\t" + align["target"]

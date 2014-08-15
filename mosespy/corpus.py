@@ -1,7 +1,6 @@
 
 import random
-from mosespy.pathutils import Path
-
+from mosespy.paths import Path
 
 class AlignedCorpus():
     
@@ -90,6 +89,7 @@ class AlignedCorpus():
         return Path(self.alignedStem + "." + self.targetLang)
     
     
+    
     def addActualTranslations(self, translationFile):
         
         if not translationFile.exists():
@@ -148,7 +148,7 @@ class AlignedCorpus():
         
         print "Number of skipped lines in language model: " + str(len(skippedLines))
     
-    
+
     def getAlignments(self, addHistory=False): 
         
         sourceLines = self.getSourceFile().readlines()

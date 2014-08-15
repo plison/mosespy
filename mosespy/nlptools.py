@@ -1,9 +1,101 @@
 
-from mosespy.pathutils import Path 
-
+from mosespy.paths import Path 
+from mosespy.corpus import AlignedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 
+
+class CorpusProcessor():
+    
+    def __init__(self, workPath, executor, nbThreads=2):
+        self.workPath = workPath
+        self.executor = executor
+        self.tokeniser = Tokeniser(executor, nbThreads)
+        self.truecaser = TrueCaser(executor, workPath+"/truecasingmodel")
+        
+    def processCorpus(self, corpus, maxLength=80):
+        
+        if not isinstance(corpus, AlignedCorpus):
+            raise RuntimeError("aligned data must be of type AlignedCorpus")
+   
+        trueSource = self.processFile(corpus.getSourceFile())
+        self.processFile(corpus.getTargetFile())
+     
+        trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
+        cleanStem = trueSource.getStem().changeProperty("clean")
+        cleanCorpus = self.cutoffFiles(trueCorpus, cleanStem, maxLength)
+        return cleanCorpus
+
+
+    def processFile(self, rawFile):
+         
+        rawFile = Path(rawFile)
+        
+        # STEP 1: tokenisation
+        normFile = self.workPath + rawFile.basename().addProperty("norm")
+        self.tokeniser.normaliseFile(rawFile, normFile)
+        tokFile = normFile.changeProperty("tok")
+        self.tokeniser.tokeniseFile(normFile, tokFile)
+        
+        # STEP 2: train truecaser if not already existing
+        if not self.truecaser.isModelTrained(rawFile.getLang()):
+            self.truecaser.trainModel(tokFile)
+            
+        # STEP 3: truecasing   
+        trueFile = tokFile.changeProperty("true")
+        self.truecaser.truecaseFile(tokFile, trueFile) 
+        
+        normFile.remove()
+        tokFile.remove()
+        return trueFile  
+    
+    
+    def processText(self, text, lang):
+                 
+        tokText = self.tokeniser.tokenise(text, lang)
+                    
+        trueText = self.truecaser.truecase(tokText, lang)        
+        
+        return trueText
+ 
+ 
+    def revertCorpus(self, corpus):
+ 
+        if not isinstance(corpus, AlignedCorpus):
+            raise RuntimeError("aligned data must be of type AlignedCorpus")
+        
+        revertedSource = self.revertFile(corpus.getSourceFile())
+        self.revertFile(corpus.getTargetFile())
+        return revertedSource.getStem()
+ 
+ 
+    def revertFile(self, processedFile):
+        if not processedFile.exists():
+            raise RuntimeError(processedFile + " does not exist")
+        
+        untokFile = self.workPath + processedFile.basename().addProperty("detok") 
+        self.tokeniser.detokeniseFile(processedFile,untokFile)
+         
+        finalFile = untokFile.changeProperty("read")
+        self.tokeniser.deescapeSpecialCharacters(untokFile, finalFile)
+    
+        return finalFile
+
+   
+    def cutoffFiles(self, inputCorpus, outputStem, maxLength):
+                   
+        cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
+                       inputCorpus.alignedStem + " " + inputCorpus.sourceLang + " " + inputCorpus.targetLang + " " 
+                       + outputStem + " 1 " + str(maxLength))
+        result = self.executor.run(cleanScript)
+        if not result:
+            raise RuntimeError("Cleaning of aligned files has failed")
+        outputSource = outputStem+"."+inputCorpus.sourceLang
+        outputTarget = outputStem+"."+inputCorpus.targetLang
+        print "New cleaned files: " + outputSource.getDescription() + " and " + outputTarget.getDescription()
+        return AlignedCorpus(outputStem, inputCorpus.sourceLang, inputCorpus.targetLang)
+  
+         
 class Tokeniser():
     
     def __init__(self, executor, nbThreads=2):
@@ -70,26 +162,27 @@ class Tokeniser():
 
 class TrueCaser():
           
-    def __init__(self, executor, modelFile):
+    def __init__(self, executor, modelStem):
         self.executor = executor
-        self.modelFile = modelFile
+        self.modelStem = modelStem
                
     def trainModel(self, inputFile):
         if not inputFile.exists():
             raise RuntimeError("Tokenised file " + inputFile + " does not exist")
         
+        modelFile = self.modelStem + "." + inputFile.getLang()
         print "Start building truecasing model based on " + inputFile
         truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" 
-                               + " --model " + self.modelFile + " --corpus " + inputFile)
+                               + " --model " + modelFile + " --corpus " + inputFile)
         result = self.executor.run(truecaseModelScript)
         if not result:
             raise RuntimeError("Training of truecasing model with %s has failed"%(inputFile))
 
-        print "New truecasing model: " + self.modelFile.getDescription()
+        print "New truecasing model: " + modelFile.getDescription()
     
     
-    def isModelTrained(self):
-        return self.modelFile.exists()
+    def isModelTrained(self, lang):
+        return Path(self.modelStem + "." + lang).exists()
         
             
     def truecaseFile(self, inputFile, outputFile):
@@ -97,11 +190,12 @@ class TrueCaser():
         if not inputFile.exists():
             raise RuntimeError("_tokenised file " + inputFile + " does not exist")
     
-        if not self.isModelTrained():
-            raise RuntimeError("model file " + self.modelFile + " does not exist")
+        if not self.isModelTrained(inputFile.getLang()):
+            raise RuntimeError("model file for " + inputFile.getLang() + " does not exist")
     
+        modelFile = Path(self.modelStem + "." + inputFile.getLang())
         print "Start truecasing of file \"" + inputFile + "\""
-        truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + self.modelFile
+        truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         result = self.executor.run(truecaseScript, inputFile, outputFile)
         if not result:
             raise RuntimeError("Truecasing of %s has failed"%(inputFile))
@@ -110,13 +204,13 @@ class TrueCaser():
         return outputFile
     
     
-    def truecase(self, inputText, modelFile):
+    def truecase(self, inputText, lang):
+        modelFile = Path(self.modelStem + "." + lang)
         if not modelFile.exists():
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         return self.executor.run_output(truecaseScript, stdin=inputText)
     
-
 
  
 def extractNgrams(tokens, size):
