@@ -72,7 +72,7 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.settings["nbjobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-        self.corpusProcessor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
+        self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):
