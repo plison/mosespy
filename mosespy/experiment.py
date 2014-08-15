@@ -26,7 +26,7 @@ class Experiment(object):
         
         self.settings["path"] = Path(expDir+self.settings["name"])
         
-        jsonFile = Path(self.settings["path"]+"/settings.json")
+        jsonFile = self.settings["path"]+"/settings.json"
         if jsonFile.exists():
             print "Existing experiment, reloading known settings..."
             self.settings = json.loads(open(jsonFile).read())
@@ -113,7 +113,7 @@ class Experiment(object):
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " + trainStem)
 
-        tmDir = Path(self.settings["path"] + "/translationmodel")
+        tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
         tmDir.reset()
         result = self.executor.run(tmScript)
@@ -244,7 +244,7 @@ class Experiment(object):
             testTarget = self._processRawData(testCorpus.getTargetFile())["true"]
           
         translationfile = testTarget.setInfix("translated")
-        trans_result = self.translateFile(testSource, translationfile, filterModel=False,preprocess=False)
+        trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=False)
         
         if trans_result:
             if not self.settings.has_key("tests"):
@@ -282,17 +282,17 @@ class Experiment(object):
    
     def reduceSize(self):
         if self.settings.has_key("tm"):
-            Path(self.settings["tm"]+"/corpus").remove()
-            Path(self.settings["tm"]+"/giza." + self.settings["source"] + "-" + self.settings["target"]).remove()
-            Path(self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"]).remove()
+            (self.settings["tm"]+"/corpus").remove()
+            (self.settings["tm"]+"/giza." + self.settings["source"] + "-" + self.settings["target"]).remove()
+            (self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"]).remove()
             with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
                 iniContent = iniFile.read()
-            for f in Path(self.settings["tm"]+"/model").listdir():
+            for f in (self.settings["tm"]+"/model").listdir():
                 if f not in iniContent and f != "moses.ini":
-                    Path(self.settings["tm"]+"/model/" + f).remove()
+                    (self.settings["tm"]+"/model/" + f).remove()
         
         if self.settings.has_key("ttm"):
-            for f in Path(self.settings["ttm"]).listdir():
+            for f in self.settings["ttm"].listdir():
                 fi = self.settings["ttm"] + "/" + f
                 if f != "moses.ini":
                     fi.remove()
@@ -314,7 +314,7 @@ class Experiment(object):
         if not self.settings.has_key("tm"):
             raise RuntimeError("Translation model is not yet constructed")
         
-        phrasetable = Path(self.settings["tm"]+"/model/phrase-table.gz")
+        phrasetable = self.settings["tm"]+"/model/phrase-table.gz"
         newtable = phrasetable.setInfix("reduced")
         pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
                        + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
@@ -384,8 +384,8 @@ class Experiment(object):
 
     def _processAlignedData(self, dataStem, maxLength=80):
 
-        sourceFile = Path(dataStem+"."+self.settings["source"])
-        targetFile = Path(dataStem+"."+self.settings["target"])
+        sourceFile = dataStem+"."+self.settings["source"]
+        targetFile = dataStem+"."+self.settings["target"]
         if not sourceFile.exists():
             raise RuntimeError("File " + sourceFile + " cannot be found, aborting")
         elif not targetFile.exists():
@@ -405,7 +405,6 @@ class Experiment(object):
 
     def _processRawData(self, rawFile):
          
-        rawFile = Path(rawFile)
         lang = rawFile.getSuffix()
         dataset = {}
         dataset["raw"] = rawFile
