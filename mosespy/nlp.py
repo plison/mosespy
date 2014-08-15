@@ -81,7 +81,7 @@ class CorpusProcessor():
     def cutoffFiles(self, inputCorpus, outputStem, maxLength):
                    
         cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
-                       inputCorpus.alignedStem + " " + inputCorpus.sourceLang + " " + inputCorpus.targetLang + " " 
+                       inputCorpus.getStem() + " " + inputCorpus.sourceLang + " " + inputCorpus.targetLang + " " 
                        + outputStem + " 1 " + str(maxLength))
         result = self.executor.run(cleanScript)
         if not result:
