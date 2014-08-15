@@ -420,7 +420,7 @@ class Experiment(object):
         # STEP 2: train truecaser if not already existing
         
         if not self.truecaser[lang].isModelTrained():
-            self.truecaser[lang] = self.truecaser[lang].trainModel(tokFile)
+            self.truecaser[lang].trainModel(tokFile)
             
         # STEP 3: truecasing   
         trueFile = tokFile.changeProperty("true")
