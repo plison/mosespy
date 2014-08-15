@@ -57,7 +57,7 @@ class Experiment(object):
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
         newLmFile = self.settings["path"] + "/" + Path(lmFile).basename().addProperty("filtered") 
-        corpus.filterLmData(lmFile, newLmFile)
+        testCorpus.filterLmData(lmFile, newLmFile)
         self.trainLanguageModel(newLmFile)
         
         self.trainTranslationModel(trainCorpus.getStem())
