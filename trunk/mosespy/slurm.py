@@ -2,7 +2,6 @@
 import os, re, uuid, threading, copy
 from mosespy import shellutils, experiment, textutils
 from mosespy.experiment import Experiment 
-from mosespy.pathutils import Path
 from mosespy.nlputils import Tokeniser
 from mosespy.shellutils import CommandExecutor
   
@@ -117,7 +116,7 @@ class SlurmExperiment(Experiment):
         shellutils.waitForCompletion(jobs)
          
         tmDir.reset()
-        Path(tmDir+"/model").make()
+        (tmDir+"/model").make()
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
             for split in range(0, self.settings["nbjobs"]):

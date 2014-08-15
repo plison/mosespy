@@ -7,7 +7,7 @@ class AlignedCorpus():
     
     def __init__(self, alignedStem, sourceLang, targetLang):
         
-        self.alignedStem = alignedStem
+        self.alignedStem = Path(alignedStem)
         self.sourceLang = sourceLang
         self.targetLang = targetLang
         self.origin = None
@@ -26,8 +26,8 @@ class AlignedCorpus():
  
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000):
          
-        sourceLines = Path(self.alignedStem + "." + self.sourceLang).readlines()
-        targetLines = Path(self.alignedStem + "." + self.sourceLang).readlines()
+        sourceLines = (self.alignedStem + "." + self.sourceLang).readlines()
+        targetLines = (self.alignedStem + "." + self.sourceLang).readlines()
             
         tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
         testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
@@ -206,7 +206,6 @@ def splitData(inputFile, outputDir, nbSplits):
             filenames.append(filename)
     curFile.close()
     return filenames
-
 
 
 
