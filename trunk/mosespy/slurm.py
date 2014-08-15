@@ -1,12 +1,12 @@
 
 import os, re, uuid, threading, copy
 from mosespy import experiment
-from mosespy import executor
+from mosespy import process
 from mosespy import corpus
 from mosespy.experiment import Experiment 
 from mosespy.nlp import CorpusProcessor
 from mosespy.corpus import AlignedCorpus
-from mosespy.executor import CommandExecutor
+from mosespy.process import CommandExecutor
   
 nodeMemory=62000
 nodeCpus = 16
@@ -65,7 +65,7 @@ class SlurmExperiment(Experiment):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
-        if not executor.existsExecutable("srun"):
+        if not process.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
     
@@ -116,7 +116,7 @@ class SlurmExperiment(Experiment):
             t = threading.Thread(target=self.executor.run, args=(script, None, None))
             jobs.append(t)
             t.start()
-        executor.waitForCompletion(jobs)
+        process.waitForCompletion(jobs)
         self.executor.allowForks(False)
          
         tmDir.reset()
