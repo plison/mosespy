@@ -58,17 +58,17 @@ class AlignedCorpus():
             else:
                 trainTargetLines.append(targetLine)
          
-        trainStem = (self.alignedStem + ".train").changePath(workPath)
+        trainStem = workPath + (self.alignedStem + ".train").basename()
         (trainStem + "." + self.sourceLang).writelines(trainSourceLines) 
         (trainStem + "." + self.targetLang).writelines(trainTargetLines)
         trainCorpus = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
 
-        tuneStem = (self.alignedStem + ".tune").changePath(workPath)
+        tuneStem = workPath + (self.alignedStem + ".tune").basename()
         (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
         tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
-        testStem = (self.alignedStem + ".test").changePath(workPath)
+        testStem = workPath + (self.alignedStem + ".test").basename()
         (testStem + "." + self.sourceLang).writelines(testSourceLines) 
         (testStem + "." + self.targetLang).writelines(testTargetLines)
         testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
@@ -182,7 +182,7 @@ class AlignedCorpus():
 def splitData(inputFile, outputDir, nbSplits):
 
     if inputFile.exists():  
-        extension = "." + Path(inputFile).getSuffix()
+        extension = "." + Path(inputFile).getLang()
         lines = inputFile.readlines()
     else:
         raise RuntimeError("cannot split the content for data " + inputFile)

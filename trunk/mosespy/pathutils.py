@@ -1,48 +1,62 @@
 import os, shutil
 
+from xml.dom import minidom
+    
 class Path(str):
 
-    def getStem(self, fullPath=True):
-        extension = self.getSuffix()
-        if  fullPath:
-            return Path(self[:-len(extension)-1])
+    def getStem(self):
+        lang = self.getLang()
+        return Path(self[:-len(lang)-1]) if lang else self
+        
+    def removeProperty(self):
+        curProp = self.getProperty()
+        if curProp:
+            return Path(self.replace("."+curProp, ""))
         else:
-            return Path(os.path.basename(self)[:-len(extension)-1])
-    
-    def getSuffix(self):
+            return self
+        
+    def getLang(self):
         if  "." in self:
-            return self.split(".")[len(self.split("."))-1]
+            langcode = self.split(".")[len(self.split("."))-1]
+            return langcode if isLanguage(langcode) else None
         else:
-            raise RuntimeError("file " + self + " does not have a suffix")
+            return None        
+    
+    def getProperty(self):
+        stem = self.getStem()
+        if "." in stem:
+            return stem.split(".")[len(stem.split("."))-1]
+        return None
+    
+    def setLang(self, lang):
+        if not lang in languages:
+            raise RuntimeError("language code " + lang + " is not valid")
+        return self.getStem() + "." + lang
+ 
+    def changeProperty(self, newProperty):
+        stem = self.getStem()
+        stem = stem.removeProperty()
+        newPath = stem + "." + newProperty
+        if self.getLang():
+            newPath += "." + self.getLang()
+        return newPath
+    
+    def addProperty(self, newProperty):
+        stem = self.getStem()
+        newPath = stem + "." + newProperty
+        if self.getLang():
+            newPath += "." + self.getLang()
+        return newPath
+         
     
     def getPath(self):
         return Path(os.path.dirname(self))
-            
-
-    def getInfix(self):
-        if  self.count(".") >= 2:
-            return self.split(".")[len(self.split("."))-2]
-        else:
-            return ""
 
     def exists(self):
         return os.path.exists(self)
      
-    def changePath(self, newPath):
-        if newPath[-1] == "/":
-            newPath = newPath[:-1]
-        return Path(newPath + "/" + os.path.basename(self))
-    
-    
-    def setInfix(self, infix):
-        if self.count(".") == 0:
-            return Path(self + "." + infix)
-        elif self.count(".") == 1:
-            extension = self.getSuffix()
-            return Path(self[:-len(extension)] + infix + "." + extension)
-        else:
-            existingInfix = self.split(".")[len(self.split("."))-2]
-            return Path(self.replace("."+existingInfix+".", "."+infix+"."))
+    def basename(self):
+        return Path(os.path.basename(self))    
 
     def remove(self):
         if os.path.isfile(self):
@@ -124,4 +138,27 @@ def convertToPaths(element):
             element[i] = convertToPaths(element[i])
     return element
 
+
+def extractLanguages():
+    isostandard = minidom.parse(Path(__file__).getUp().getUp()+"/data/iso639.xml")
+    itemlist = isostandard.getElementsByTagName('iso_639_entry') 
+    languagesdict = {}
+    for item in itemlist :
+        if (item.attributes.has_key('iso_639_1_code')):
+            langcode = item.attributes[u'iso_639_1_code'].value
+            language = item.attributes['name']
+            languagesdict[langcode] = language
+    return languagesdict
+
+
+def getLanguage(langcode):
+    if languages.has_key(langcode):
+        return languages[langcode]
+    else:
+        raise RuntimeError("cannot find language with code " + str(langcode))
+    
+def isLanguage(langcode):
+    return languages.has_key(langcode)
+   
+languages = extractLanguages()
 

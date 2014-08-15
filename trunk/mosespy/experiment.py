@@ -35,10 +35,10 @@ class Experiment(object):
             self.settings["path"].make()
             if sourceLang:
                 self.settings["source"] = sourceLang
-                self.settings["source_long"] = nlputils.getLanguage(sourceLang)
+                self.settings["source_long"] = pathutils.getLanguage(sourceLang)
             if targetLang:
                 self.settings["target"] = targetLang
-                self.settings["target_long"] = nlputils.getLanguage(targetLang)
+                self.settings["target_long"] = pathutils.getLanguage(targetLang)
                 
         self._recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
@@ -57,7 +57,7 @@ class Experiment(object):
         
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
-        newLmFile = Path(lmFile).changePath(self.settings["path"]).setInfix("wotest")
+        newLmFile = self.settings["path"] + Path(lmFile).basename().addProperty("filtered") 
         corpus.filterLmData(lmFile, newLmFile)
         self.trainLanguageModel(newLmFile)
         
@@ -69,14 +69,14 @@ class Experiment(object):
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
   
         trainFile = Path(trainFile)
-        lang = trainFile.getSuffix()
+        lang = trainFile.getLang()
 
         if preprocess:
             trainFile = self._processRawData(trainFile)["true"]
 
         print "Building language model based on " + trainFile
         
-        sbFile = trainFile.changePath(self.settings["path"]).setInfix("sb")
+        sbFile = self.settings["path"] + trainFile.basename().addProperty("sb")
                 
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
@@ -243,7 +243,7 @@ class Experiment(object):
             testSource = self._processRawData(testCorpus.getSourceFile())["true"]
             testTarget = self._processRawData(testCorpus.getTargetFile())["true"]
           
-        translationfile = testTarget.setInfix("translated")
+        translationfile = testTarget.addProperty("translated")
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=False)
         
         if trans_result:
@@ -315,7 +315,8 @@ class Experiment(object):
             raise RuntimeError("Translation model is not yet constructed")
         
         phrasetable = self.settings["tm"]+"/model/phrase-table.gz"
-        newtable = phrasetable.setInfix("reduced")
+        newtable = self.settings["tm"]+"/model/phrase-table.reduced.gz"
+        
         pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
                        + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
                        )%(phrasetable, newtable)
@@ -396,7 +397,7 @@ class Experiment(object):
                    "target":self._processRawData(targetFile)} 
         
         trueStem = dataset["source"]["true"].getStem()
-        cleanStem = dataset["source"]["true"].setInfix("clean").getStem()
+        cleanStem = dataset["source"]["true"].changeProperty("clean").getStem()
         self._cutoffFiles(trueStem, cleanStem, self.settings["source"], self.settings["target"], maxLength)
         dataset["clean"] = cleanStem
         return dataset
@@ -410,10 +411,10 @@ class Experiment(object):
         dataset["raw"] = rawFile
         
         # STEP 1: tokenisation
-        normFile = rawFile.getStem().changePath(self.settings["path"]) + ".norm." + lang
+        normFile = self.settings["path"] + rawFile.basename().addProperty("norm")
         
         self.tokeniser.normaliseFile(rawFile, normFile)
-        tokFile = normFile.setInfix("tok")
+        tokFile = normFile.changeProperty("tok")
         self.tokeniser.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
@@ -422,7 +423,7 @@ class Experiment(object):
             self.truecaser[lang] = self.truecaser[lang].trainModel(tokFile)
             
         # STEP 3: truecasing   
-        trueFile = tokFile.setInfix("true")
+        trueFile = tokFile.changeProperty("true")
         dataset["true"] = self.truecaser[lang].truecaseFile(tokFile, trueFile) 
         normFile.remove()
         tokFile.remove()
@@ -444,17 +445,10 @@ class Experiment(object):
         elif processedFile.exists():
             raise RuntimeError(processedFile + " does not exist")
         
-        detokinfix = "detok"
-        if processedFile.getInfix():
-            detokinfix += "." + processedFile.getInfix
-        untokFile = processedFile.changePath(self.settings["path"]).setInfix(detokinfix)
-         
+        untokFile = self.settings["path"] + processedFile.basename().addProperty("detok") 
         self.tokeniser.detokeniseFile(processedFile,untokFile)
          
-        finalinfix = "final"
-        if processedFile.getInfix():
-            finalinfix += "." + processedFile.getInfix
-        finalFile = untokFile.setInfix(finalinfix)
+        finalFile = untokFile.changeProperty("read")
         self.tokeniser.deescapeSpecialCharacters(untokFile, finalFile)
 
         return finalFile
