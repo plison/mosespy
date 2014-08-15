@@ -1,10 +1,12 @@
 
 import os, re, uuid, threading, copy
-from mosespy import shellutils, experiment, textutils
+from mosespy import experiment
+from mosespy import executor
+from mosespy import corpus
 from mosespy.experiment import Experiment 
-from mosespy.nlputils import Tokeniser
-from mosespy.shellutils import CommandExecutor
-from mosespy.pathutils import Path
+from mosespy.nlptools import CorpusProcessor
+from mosespy.corpus import AlignedCorpus
+from mosespy.executor import CommandExecutor
   
 nodeMemory=62000
 nodeCpus = 16
@@ -63,14 +65,14 @@ class SlurmExperiment(Experiment):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
-        if not shellutils.existsExecutable("srun"):
+        if not executor.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
     
         self.settings["account"] = account
         self.settings["nbjobs"] = nbJobs
         self.executor = SlurmExecutor(account)
-        self.tokeniser = Tokeniser(self.executor, nbThreads=nodeCpus)
+        self.corpusProcessor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):
@@ -89,33 +91,33 @@ class SlurmExperiment(Experiment):
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
              
-        trainStem = Path(trainStem)
+        train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
         if preprocess:         
-            trainStem = self._processAlignedData(trainStem)["clean"]
+            train = self.processor.processCorpus(train)
         
         print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " +  trainStem
+               + self.settings["target"] + " with " +  train.getAlignedStem()
                + " with " + str(self.settings["nbjobs"]) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        textutils.splitData(trainStem + "." + self.settings["source"], splitDir, self.settings["nbjobs"])
-        textutils.splitData(trainStem + "." + self.settings["target"], splitDir, self.settings["nbjobs"])
+        corpus.splitData(train.getSourceFile(), splitDir, self.settings["nbjobs"])
+        corpus.splitData(train.getTargetFile(), splitDir, self.settings["nbjobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, train.getAlignedStem(), nbThreads, alignment, reordering)
        
         jobs = []
         self.executor.allowForks(True)
         for i in range(0, self.settings["nbjobs"]):
             script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
-                                .replace(trainStem, splitDir + "/" +str(i))
+                                .replace(train.getAlignedStem(), splitDir + "/" +str(i))
                                 + " --last-step 3")
             t = threading.Thread(target=self.executor.run, args=(script, None, None))
             jobs.append(t)
             t.start()
         self.executor.allowForks(False)
-        shellutils.waitForCompletion(jobs)
+        executor.waitForCompletion(jobs)
          
         tmDir.reset()
         (tmDir+"/model").make()
@@ -152,12 +154,8 @@ class SlurmExperiment(Experiment):
                 iniFile.write(re.sub(r"\[jobs\]\n(\d)+", "", config))
 
 
-    def _getNbDecodingJobs(self, sourceFile):
-        nblines = sourceFile.countNbLines()
-        return min(self.settings["nbjobs"], max(1,nblines/1000))
 
-
-    def getTuningScript(self, tuneDir, tuningStem, nbThreads):
+    def _getTuningScript(self, tuneDir, tuningStem, nbThreads):
         nbDecodingJobs = self._getNbDecodingJobs(tuningStem + "." + self.settings["source"])
         tuneScript = (experiment.moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.settings["source"] + " " 
@@ -181,6 +179,11 @@ class SlurmExperiment(Experiment):
                                         filterModel, nbThreads)
         
  
+    def _getNbDecodingJobs(self, sourceFile):
+        nblines = sourceFile.countNbLines()
+        return min(self.settings["nbjobs"], max(1,nblines/1000))
+
+
     def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
         script = (experiment.rootDir + "/mosespy/moses_parallel.py -f " + initFile.encode('utf-8') 
                 + " -v 0 -threads " + str(nbThreads))
