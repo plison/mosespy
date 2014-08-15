@@ -32,7 +32,7 @@ class CorpusProcessor():
         rawFile = Path(rawFile)
         
         # STEP 1: tokenisation
-        normFile = self.workPath + rawFile.basename().addProperty("norm")
+        normFile = self.workPath + "/" + rawFile.basename().addProperty("norm")
         self.tokeniser.normaliseFile(rawFile, normFile)
         tokFile = normFile.changeProperty("tok")
         self.tokeniser.tokeniseFile(normFile, tokFile)
@@ -69,7 +69,7 @@ class CorpusProcessor():
         if not processedFile.exists():
             raise RuntimeError(processedFile + " does not exist")
         
-        untokFile = self.workPath + processedFile.basename().addProperty("detok") 
+        untokFile = self.workPath + "/" + processedFile.basename().addProperty("detok") 
         self.tokeniser.detokeniseFile(processedFile,untokFile)
          
         finalFile = untokFile.changeProperty("read")

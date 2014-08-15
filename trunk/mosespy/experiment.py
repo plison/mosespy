@@ -56,7 +56,7 @@ class Experiment(object):
         
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
-        newLmFile = self.settings["path"] + Path(lmFile).basename().addProperty("filtered") 
+        newLmFile = self.settings["path"] + "/" + Path(lmFile).basename().addProperty("filtered") 
         corpus.filterLmData(lmFile, newLmFile)
         self.trainLanguageModel(newLmFile)
         
@@ -75,7 +75,7 @@ class Experiment(object):
 
         print "Building language model based on " + trainFile
         
-        sbFile = self.settings["path"] + trainFile.basename().addProperty("sb")
+        sbFile = self.settings["path"] + "/" + trainFile.basename().addProperty("sb")
                 
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
