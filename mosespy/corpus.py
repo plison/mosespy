@@ -26,7 +26,7 @@ class AlignedCorpus():
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000):
          
         sourceLines = (self.stem + "." + self.sourceLang).readlines()
-        targetLines = (self.stem + "." + self.sourceLang).readlines()
+        targetLines = (self.stem + "." + self.targetLang).readlines()
             
         tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
         testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
