@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import sys, utils,os, uuid, slurm, select, threading
-from utils import Path
+import sys, os, uuid, select, threading
+from mosespy import shellutils, slurm
+from mosespy.pathutils import Path
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 decoder = moses_root + "/bin/moses "
@@ -94,7 +95,7 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
 def splitDecoding(inputFile, mosesArgs, nbJobs):
     splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
     splitDir.reset()
-    infiles = utils.splitData(inputFile, splitDir, nbJobs)  
+    infiles = shellutils.splitData(inputFile, splitDir, nbJobs)  
     print "Data split in " + str(len(infiles))
     
     splits = {}
@@ -131,7 +132,7 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs, allowForks=False):
             t.start()
             split["thread"] = t
             
-        utils.waitForCompletion([splits[k]["thread"] for k in splits])
+        shellutils.waitForCompletion([splits[k]["thread"] for k in splits])
         mergeOutFiles([splits[k]["out"] for k in splits], outStream)
         
         if "-n-best-list" in mosesArgs:
