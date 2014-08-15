@@ -57,17 +57,17 @@ class AlignedCorpus():
             else:
                 trainTargetLines.append(targetLine)
          
-        trainStem = workPath + (self.alignedStem + ".train").basename()
+        trainStem = workPath + "/" + (self.alignedStem + ".train").basename()
         (trainStem + "." + self.sourceLang).writelines(trainSourceLines) 
         (trainStem + "." + self.targetLang).writelines(trainTargetLines)
         trainCorpus = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
 
-        tuneStem = workPath + (self.alignedStem + ".tune").basename()
+        tuneStem = workPath + "/" + (self.alignedStem + ".tune").basename()
         (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
         tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
-        testStem = workPath + (self.alignedStem + ".test").basename()
+        testStem = workPath + "/" + (self.alignedStem + ".test").basename()
         (testStem + "." + self.sourceLang).writelines(testSourceLines) 
         (testStem + "." + self.targetLang).writelines(testTargetLines)
         testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
