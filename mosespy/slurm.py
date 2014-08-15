@@ -96,7 +96,7 @@ class SlurmExperiment(Experiment):
             train = self.processor.processCorpus(train)
         
         print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " +  train.getAlignedStem()
+               + self.settings["target"] + " with " +  train.getStem()
                + " with " + str(self.settings["nbjobs"]) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
@@ -105,13 +105,13 @@ class SlurmExperiment(Experiment):
         corpus.splitData(train.getTargetFile(), splitDir, self.settings["nbjobs"])
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, train.getAlignedStem(), nbThreads, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
        
         jobs = []
         self.executor.allowForks(True)
         for i in range(0, self.settings["nbjobs"]):
             script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
-                                .replace(train.getAlignedStem(), splitDir + "/" +str(i))
+                                .replace(train.getStem(), splitDir + "/" +str(i))
                                 + " --last-step 3")
             t = threading.Thread(target=self.executor.run, args=(script, None, None))
             jobs.append(t)
