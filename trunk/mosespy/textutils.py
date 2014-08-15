@@ -60,6 +60,7 @@ class AlignedCorpus():
          
         trainSource = self.getSourceFile().changePath(workPath).setInfix("train")
         trainSource.writelines(trainSourceLines) 
+        print trainSource
         trainTarget = self.getTargetFile().changePath(workPath).setInfix("train")
         trainTarget.writelines(trainTargetLines)
         trainCorpus = AlignedCorpus(self.alignedStem+".train", self.sourceLang, self.targetLang)
