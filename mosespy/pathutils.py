@@ -146,7 +146,7 @@ def extractLanguages():
     for item in itemlist :
         if (item.attributes.has_key('iso_639_1_code')):
             langcode = item.attributes[u'iso_639_1_code'].value
-            language = item.attributes['name']
+            language = item.attributes['name'].value
             languagesdict[langcode] = language
     return languagesdict
 
