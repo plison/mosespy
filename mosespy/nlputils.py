@@ -11,7 +11,7 @@ class Tokeniser():
         self.nbThreads = nbThreads
      
     def normaliseFile(self, inputFile, outputFile):
-        lang = inputFile.getSuffix()
+        lang = inputFile.getLang()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
@@ -32,7 +32,7 @@ class Tokeniser():
 
       
     def detokeniseFile(self, inputFile, outputFile):
-        lang = inputFile.getSuffix()
+        lang = inputFile.getLang()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
@@ -46,7 +46,7 @@ class Tokeniser():
 
       
     def tokeniseFile(self, inputFile, outputFile):
-        lang = inputFile.getSuffix()
+        lang = inputFile.getLang()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
