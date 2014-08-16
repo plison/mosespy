@@ -103,7 +103,8 @@ class AlignedCorpus(object):
                     targetdict = linesdict[fullSourceLine]
                     if fullTargetLine in targetdict:
                         linesIndices[targetdict[fullTargetLine]] = i
-                                
+        
+        print "finished linking to original corpus"      
         self.origin = {"corpus":fullCorpus, "indices":lineIndices}
                                 
         
