@@ -75,11 +75,11 @@ class AlignedCorpus(object):
         return trainCorpus, tuneCorpus, testCorpus
         
     
-    def linkWithOriginalCorpus(self, fullCorpus, lineIndices=None):
+    def linkWithOriginalCorpus(self, fullCorpus, linesIndices=None):
         if not isinstance(fullCorpus, AlignedCorpus):
             raise RuntimeError(fullCorpus + " must be an aligned corpus")
                 
-        elif not lineIndices:
+        elif not linesIndices:
             print "Linking test sentences to original corpus..."
             
             linesdict = {}
@@ -104,8 +104,7 @@ class AlignedCorpus(object):
                     if fullTargetLine in targetdict:
                         linesIndices[targetdict[fullTargetLine]] = i
         
-        print "finished linking to original corpus"      
-        self.origin = {"corpus":fullCorpus, "indices":lineIndices}
+        self.origin = {"corpus":fullCorpus, "indices":linesIndices}
                                 
         
     def getStem(self):
