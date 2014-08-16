@@ -7,7 +7,7 @@ from corpus import AlignedCorpus
 from process import CommandExecutor
   
 nodeMemory=62000
-nodeCpus = 16
+nodeCpus = 10
 nodeTime = "4:00:00"
 
 class SlurmExecutor(CommandExecutor):
