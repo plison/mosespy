@@ -269,10 +269,10 @@ class Experiment(object):
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
         alignments = translatedCorpus.getAlignments(addHistory=True)      
-     
-        analyseShortAnswers(alignments)
-        analyseQuestions(alignments)
-        analyseBigErrors(alignments)
+        print alignments[0]
+        #analyseShortAnswers(alignments)
+        #analyseQuestions(alignments)
+        #analyseBigErrors(alignments)
 
    
     def reduceSize(self):
