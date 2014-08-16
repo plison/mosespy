@@ -81,31 +81,33 @@ class AlignedCorpus(object):
                 
         elif not lineIndices:
             print "Linking test sentences to original corpus..."
-            fullSourceLines = fullCorpus.getSourceFile().readlines()
-            fullTargetLines = fullCorpus.getTargetFile().readlines()
-            print "finishe reading lines"
-            linesdict = dict.fromkeys(fullSourceLines, [])        
-            for i in range(0, len(fullSourceLines)):
-                fullSourceLine = fullSourceLines[i]
-                fullTargetLine = fullTargetLines[i]
-                linesdict[fullSourceLine].append((i,fullTargetLine))
-            print "finished making dictionary"
-            lineIndices = []            
+            
+            linesdict = {}
             sourceLines = self.getSourceFile().readlines()
             targetLines = self.getTargetFile().readlines()
-            linesdict = {}
+            linesdict = dict.fromkeys(sourceLines, [])        
             for i in range(0, len(sourceLines)):
                 sourceLine = sourceLines[i]
                 targetLine = targetLines[i]
-                lineIndex = None
-                if linesdict.has_key(sourceLine):
-                    for pair in linesdict[sourceLine]:
-                        if pair[1] == targetLine:
-                            lineIndex = pair[0]                    
-                if not lineIndex:
-                    print "line " + sourceLine + " could not be retrieved in full corpus!"
-                lineIndices.append(lineIndex)        
-
+                linesdict[sourceLine].append((i, targetLine))
+            
+            
+            print "finished constructing dico"
+            fullSourceLines = fullCorpus.getSourceFile().readlines()
+            fullTargetLines = fullCorpus.getTargetFile().readlines()
+            
+            linesIndices = [None for i in range(0, len(sourceLines))]
+            print "finished reading lines"
+            for i in range(0, len(fullSourceLines)):
+                fullSourceLine = fullSourceLines[i]
+                fullTargetLine = fullTargetLines[i]
+                if fullSourceLine in linesdict:
+                    for target in linesdict[fullSourceLine]:
+                        if fullTargetLine == target[1]:
+                            linesIndices[target[0]] = i
+            
+            print linesIndices
+                    
         self.origin = {"corpus":fullCorpus, "indices":lineIndices}
                                 
         
