@@ -98,7 +98,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
     infiles = corpus.splitData(inputFile, splitDir, nbJobs)  
     print "Data split in " + str(len(infiles))
     
-    splits = {}
+    splits = []
     for i in range(0, len(infiles)):
         infile = Path(infiles[i])
         outfile = Path(splitDir + "/" + str(i) + ".translated")
@@ -107,7 +107,7 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
         nbestout = getArgumentValue(mosesArgs, "-n-best-list")
         if nbestout:
             newArgs = newArgs.replace(nbestout, splitDir + "/" + str(i) + ".nbest" )    
-            splits[i] = {"in": infile, "out":outfile, "args":newArgs}
+            splits.append({"in": infile, "out":outfile, "args":newArgs})
     return splits
     
         
@@ -125,25 +125,21 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
         
         splits = splitDecoding(inputFile, mosesArgs, nbJobs)
         executor.allowForks(True)
-        for s in splits.keys():
-            split = splits[s]
+        for split in splits:
             threadArgs = (split["in"], split["args"], split["out"], 1)
             t = threading.Thread(target=runParallelMoses, args=threadArgs)
             t.start()
             split["thread"] = t
             
-        process.waitForCompletion([splits[k]["thread"] for k in splits])
+        process.waitForCompletion([split["thread"] for split in splits])
         executor.allowForks(False)
-        mergeOutFiles([splits[k]["out"] for k in splits], outStream)
+        mergeOutFiles([split["out"] for split in splits], outStream)
         
         if "-n-best-list" in mosesArgs:
-            mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits.keys()], 
+            mergeNbestOutFiles([getArgumentValue(split["args"], "-n-best-list") for split in splits], 
                                getArgumentValue(mosesArgs, "-n-best-list"))
      
-        print "split value: " + str(splits)
-        print "split value: " + str(splits.values())
-        print "split value: " + str(splits.itervalues())
-        splits.itervalues().next()["in"].getUp().remove()
+        splits[0]["in"].getUp().remove()
                          
 
 def main():      
