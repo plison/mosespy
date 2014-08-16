@@ -53,7 +53,7 @@ class SlurmExecutor(CommandExecutor):
         jobs = []
         for i in range(0, len(jobArgs)):
             jobArg = jobArgs[i]
-            script = script%(jobArg)
+            script = script%jobArg
             stdin = stdins[i] if stdins else None
             stdout = stdouts[i] if stdouts else None
             t = threading.Thread(target=self.run, args=(script, stdin, stdout))
