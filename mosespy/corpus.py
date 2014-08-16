@@ -163,7 +163,8 @@ class TranslatedCorpus(AlignedCorpus):
     
     def __init__(self, stem, sourceLang, targetLang, translationFile):
         AlignedCorpus.__init__(self, stem, sourceLang, targetLang)
-
+        
+        translationFile = Path(translationFile)
         if not translationFile.exists():
             raise RuntimeError(translationFile + " does not exist")
         if translationFile.getSuffix() != self.targetLang:
