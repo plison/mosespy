@@ -101,7 +101,7 @@ class AlignedCorpus(object):
                     maxk = k
     
             print "maximum numer of targets: " + str(maxl)
-            print "the key is : " + str(k) + " and the values are " + str(linesdict[k])
+            print "the key is : " + str(maxk) + " and the values are " + str(linesdict[maxk])
             
             print "finished constructing dico"
             fullSourceLines = fullCorpus.getSourceFile().readlines()
