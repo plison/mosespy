@@ -258,17 +258,18 @@ class Experiment(object):
             self._recordState()
         
 
-    def analyseErrors(self):
+    def analyseErrors(self, fullCorpus=None):
         
         if not self.settings.has_key("test"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
         
         translatedCorpus = TranslatedCorpus(self.settings["test"]["stem"], self.settings["source"], 
                                             self.settings["target"], self.settings["test"]["translation"])
-
+        if fullCorpus:
+            translatedCorpus.linkWithOriginalCorpus(fullCorpus)
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
-        alignments = translatedCorpus.getAlignments(addHistory=True)      
+        alignments = translatedCorpus.getAlignments(addHistory=True)   
         print alignments[0]
         #analyseShortAnswers(alignments)
         #analyseQuestions(alignments)

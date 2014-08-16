@@ -75,8 +75,42 @@ class AlignedCorpus(object):
         return trainCorpus, tuneCorpus, testCorpus
         
     
-    def linkWithOriginalCorpus(self, fullCorpus, lineIndices):
+    def linkWithOriginalCorpus(self, fullCorpus, lineIndices=None):
+        if not isinstance(fullCorpus, AlignedCorpus):
+            raise RuntimeError(fullCorpus + " must be an aligned corpus")
+                
+        elif not lineIndices:
+
+            fullSourceLines = fullCorpus.getSourceFile().readlines()
+            fullTargetLines = fullCorpus.getTargetFile().readlines()
+
+            linesdict = {}            
+            for i in range(0, len(fullSourceLines)):
+                fullSourceLine = fullSourceLines[i]
+                fullTargetLine = fullTargetLines[i]
+                if not linesdict.has_key(fullSourceLine):
+                    linesdict[fullSourceLine] = [(i,fullTargetLine)]
+                else:
+                    linesdict[fullSourceLine].append((i,fullTargetLine))
+            
+            lineIndices = []            
+            sourceLines = self.getSourceFile().readlines()
+            targetLines = self.getTargetFile().readlines()
+            linesdict = {}
+            for i in range(0, len(sourceLines)):
+                sourceLine = sourceLines[i]
+                targetLine = targetLines[i]
+                lineIndex = None
+                if linesdict.has_key(sourceLine):
+                    for pair in linesdict[sourceLine]:
+                        if pair[1] == targetLine:
+                            lineIndex = pair[0]                    
+                if not lineIndex:
+                    print "line " + sourceLine + " could not be retrieved in full corpus!"
+                lineIndices.append(lineIndex)        
+
         self.origin = {"corpus":fullCorpus, "indices":lineIndices}
+                                
         
     def getStem(self):
         return self.stem
@@ -148,11 +182,14 @@ class AlignedCorpus(object):
         if addHistory and self.origin:
             origTargetLines = self.origin["corpus"].getTargetFile().readlines()
             for i in range(0, len(alignments)):
+                align = alignments[i]
                 testingIndex = self.origin["indices"][i]
-                align["previoustarget"] = origTargetLines[testingIndex-1].strip()
+                if testingIndex:
+                    align["previoustarget"] = origTargetLines[testingIndex-1].strip()
         
         elif addHistory:
             for i in range(0, len(alignments)):
+                align = alignments[i]
                 align["previoustarget"] = targetLines[i-1].strip()
                 
         return alignments
