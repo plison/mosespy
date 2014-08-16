@@ -167,7 +167,7 @@ class TranslatedCorpus(AlignedCorpus):
         translationFile = Path(translationFile)
         if not translationFile.exists():
             raise RuntimeError(translationFile + " does not exist")
-        if translationFile.getSuffix() != self.targetLang:
+        if translationFile.getLang() != self.targetLang:
             raise RuntimeError("language for reference and actual translations differ")
         elif translationFile.countNbLines() != self.getTargetFile().countNbLines():
             raise RuntimeError("reference and actual translation do not have the same number of lines")
