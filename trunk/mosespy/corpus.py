@@ -85,11 +85,11 @@ class AlignedCorpus(object):
             linesdict = {}
             sourceLines = self.getSourceFile().readlines()
             targetLines = self.getTargetFile().readlines()
-            linesdict = dict.fromkeys(sourceLines, [])        
+            linesdict = dict.fromkeys(sourceLines, {})        
             for i in range(0, len(sourceLines)):
                 sourceLine = sourceLines[i]
                 targetLine = targetLines[i]
-                linesdict[sourceLine].append((i, targetLine))
+                linesdict[sourceLine][targetLine] = i
             
             
             print "finished constructing dico"
@@ -102,9 +102,9 @@ class AlignedCorpus(object):
                 fullSourceLine = fullSourceLines[i]
                 fullTargetLine = fullTargetLines[i]
                 if fullSourceLine in linesdict:
-                    for target in linesdict[fullSourceLine]:
-                        if fullTargetLine == target[1]:
-                            linesIndices[target[0]] = i
+                    targetdict = linesdict[fullSourceLine]
+                    if fullTargetLine in targetdict:
+                        linesIndices[targetdict[fullTargetLine]] = i
             
             print linesIndices
                     
