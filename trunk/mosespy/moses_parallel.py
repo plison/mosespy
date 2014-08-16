@@ -140,7 +140,8 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
             mergeNbestOutFiles([getArgumentValue(splits[k]["args"], "-n-best-list") for k in splits.keys()], 
                                getArgumentValue(mosesArgs, "-n-best-list"))
      
-        splits[splits.keys()[0]]["in"].getUp().remove()
+        print "split value: " + str(splits.itervalues().next())
+        splits.itervalues().next()["in"].getUp().remove()
                          
 
 def main():      
