@@ -53,10 +53,10 @@ class SlurmExecutor(CommandExecutor):
         jobs = []
         for i in range(0, len(jobArgs)):
             jobArg = jobArgs[i]
-            script = script%jobArg
+            filledScript = script%(jobArg)
             stdin = stdins[i] if stdins else None
             stdout = stdouts[i] if stdouts else None
-            t = threading.Thread(target=self.run, args=(script, stdin, stdout))
+            t = threading.Thread(target=self.run, args=(filledScript, stdin, stdout))
             jobs.append(t)
             t.start()
         process.waitForCompletion(jobs)
@@ -114,10 +114,8 @@ class SlurmExperiment(Experiment):
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
-        print "Slot script: " + slotScript
         jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --last-step 1")
                    for i in range(0, self.nbJobs/2)]
-        print "ARGS: " + str(jobArgs)
         self.executor.run_parallel(slotScript, jobArgs)
         
         jobArgs1 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
