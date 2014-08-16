@@ -124,15 +124,11 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
     else:
         
         splits = splitDecoding(inputFile, mosesArgs, nbJobs)
-        executor.allowForks(True)
-        for split in splits:
-            threadArgs = (split["in"], split["args"], split["out"], 1)
-            t = threading.Thread(target=runParallelMoses, args=threadArgs)
-            t.start()
-            split["thread"] = t
-            
-        process.waitForCompletion([split["thread"] for split in splits])
-        executor.allowForks(False)
+        jobArgs = [split["args"] for split in splits]
+        stdins = [split["in"] for split in splits]
+        stdouts = [split["out"] for split in splits]
+        executor.run_parallel(decoder + " %s", jobArgs, stdins, stdouts)
+ 
         mergeOutFiles([split["out"] for split in splits], outStream)
         
         if "-n-best-list" in mosesArgs:

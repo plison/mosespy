@@ -61,6 +61,7 @@ def existsExecutable(command):
             return True
     return False
 
+
     
 def waitForCompletion(jobs):
     print "Parallel run of " + str(len(jobs)) + " processes"
@@ -70,7 +71,7 @@ def waitForCompletion(jobs):
         if len(running) > 0:
             time.sleep(1)
             if not (counter % 60):
-                print "Number of running processes: " + str(len(running))
+                print "Number of running processes (%i mins): %i"%(counter/60, len(running))
         else:
             break
     print "Parallel processes completed"  

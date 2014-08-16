@@ -134,7 +134,7 @@ class Tokeniser():
         if not result:
             raise RuntimeError("Detokenisation of %s has failed"%(inputFile))
 
-        print "New de_tokenised file: " + outputFile.getDescription() 
+        print "New detokenised file: " + outputFile.getDescription() 
 
       
     def tokeniseFile(self, inputFile, outputFile):

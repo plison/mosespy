@@ -28,17 +28,7 @@ class SlurmExecutor(CommandExecutor):
         os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
         self.initenv = copy.deepcopy(os.environ)
         
-    
-    def allowForks(self, allow):
-        if allow:
-            for k in list(os.environ):
-                if "SLURM" in k and k in os.environ.keys():
-                    del os.environ[k]    
-        else:
-            for k in self.initenv.keys():
-                os.environ[k] = self.initenv[k] 
-            
-    
+
     def _getScript(self, script):    
         if self.account and "SLURM" not in str(os.environ.keys()):
             name = str(uuid.uuid4())[0:5]
@@ -54,6 +44,24 @@ class SlurmExecutor(CommandExecutor):
     def run(self, script, stdin=None, stdout=None):
         script = self._getScript(script)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
+    
+    
+    def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):  
+        for k in list(os.environ):
+                if "SLURM" in k and k in os.environ.keys():
+                    del os.environ[k] 
+        jobs = []
+        for i in range(0, len(jobArgs)):
+            jobArg = jobArgs[i]
+            script = script%(jobArg)
+            stdin = stdins[i] if stdins else None
+            stdout = stdouts[i] if stdouts else None
+            t = threading.Thread(target=self.run, args=(script, stdin, stdout))
+            jobs.append(t)
+            t.start()
+        process.waitForCompletion(jobs)
+        for k in self.initenv.keys():
+            os.environ[k] = self.initenv[k] 
     
                
         
@@ -104,18 +112,24 @@ class SlurmExperiment(Experiment):
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
-       
-        jobs = []
-        self.executor.allowForks(True)
-        for i in range(0, self.settings["nbjobs"]):
-            script = (tmScript.replace(tmDir, splitDir + "/" + str(i))\
-                                .replace(train.getStem(), splitDir + "/" +str(i))
-                                + " --last-step 3")
-            t = threading.Thread(target=self.executor.run, args=(script, None, None))
-            jobs.append(t)
-            t.start()
-        process.waitForCompletion(jobs)
-        self.executor.allowForks(False)
+           
+        slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem, "%s") + " %s"
+        
+        jobArgs = [(splitDir + "/" + str(i), splitDir + "/" + str(i), " --last-step 1")
+                   for i in range(0, self.settings["nbjobs"]/2)]
+        self.executor.run_parallel(slotScript, jobArgs)
+        
+        jobArgs1 = [(splitDir + "/" + str(i), splitDir + "/" + str(i), 
+                     " --first-step 2 --last-step 2 --direction 1")
+                   for i in range(0, self.settings["nbjobs"]/2)]
+        jobArgs2 = [(splitDir + "/" + str(i), splitDir + "/" + str(i), 
+                     " --first-step 2 --last-step 2 --direction 2")
+                   for i in range(0, self.settings["nbjobs"]/2)]      
+        self.executor.run_parallel(slotScript, jobArgs1 + jobArgs2)
+ 
+        jobArgs = [(splitDir + "/" + str(i), splitDir + "/" + str(i), " --first-step 3 --last-step 3")
+                   for i in range(0, self.settings["nbjobs"]/2)]
+        self.executor.run_parallel(slotScript, jobArgs)
          
         tmDir.reset()
         (tmDir+"/model").make()
