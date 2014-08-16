@@ -2,7 +2,7 @@
 import random
 from paths import Path
 
-class AlignedCorpus():
+class AlignedCorpus(object):
     
     def __init__(self, stem, sourceLang, targetLang):
         
@@ -10,7 +10,6 @@ class AlignedCorpus():
         self.sourceLang = sourceLang
         self.targetLang = targetLang
         self.origin = None
-        self.translationFile = None
         
         if not self.getSourceFile().exists():
             raise RuntimeError(self.getSourceFile() + " does not exist")
@@ -87,20 +86,7 @@ class AlignedCorpus():
         
     def getTargetFile(self):
         return Path(self.stem + "." + self.targetLang)
-    
-    
-    
-    def addActualTranslations(self, translationFile):
-        
-        if not translationFile.exists():
-            raise RuntimeError(translationFile + " does not exist")
-        if translationFile.getSuffix() != self.targetLang:
-            raise RuntimeError("language for reference and actual translations differ")
-        elif translationFile.countNbLines() != self.getTargetFile().countNbLines():
-            raise RuntimeError("reference and actual translation do not have the same number of lines")
-        
-        self.translationFile = translationFile
-        
+            
     
     def filterLmData(self, lmFile, newLmFile):
         
@@ -158,13 +144,7 @@ class AlignedCorpus():
         for i in range(0, len(sourceLines)):
             align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip()}
             alignments.append(align)
-            
-        if self.translationFile:
-            translationLines = self.translationFile.readlines()
-            for i in range(0, len(alignments)):
-                align = alignments[i]
-                align["translation"] = translationLines[i].strip()
-        
+                    
         if addHistory and self.origin:
             origTargetLines = self.origin["corpus"].getTargetFile().readlines()
             for i in range(0, len(alignments)):
@@ -174,6 +154,36 @@ class AlignedCorpus():
         elif addHistory:
             for i in range(0, len(alignments)):
                 align["previoustarget"] = targetLines[i-1].strip()
+                
+        return alignments
+            
+
+
+class TranslatedCorpus(AlignedCorpus):
+    
+    def __init__(self, stem, sourceLang, targetLang, translationFile):
+        AlignedCorpus.__init__(self, stem, sourceLang, targetLang)
+
+        if not translationFile.exists():
+            raise RuntimeError(translationFile + " does not exist")
+        if translationFile.getSuffix() != self.targetLang:
+            raise RuntimeError("language for reference and actual translations differ")
+        elif translationFile.countNbLines() != self.getTargetFile().countNbLines():
+            raise RuntimeError("reference and actual translation do not have the same number of lines")
+        
+        self.translationFile = translationFile
+          
+    def getTranslationFile(self):
+        return self.translationFile
+            
+   
+    def getAlignments(self, addHistory=False): 
+        
+        translationLines = self.translationFile.readlines()
+        alignments = AlignedCorpus.getAlignments(self, addHistory)
+        for i in range(0, len(alignments)):
+            alignment = alignments[i]
+            alignment["translation"] = translationLines[i].strip()
                 
         return alignments
             

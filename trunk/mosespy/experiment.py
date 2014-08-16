@@ -4,7 +4,7 @@ import os, json, copy,  re
 import paths, process, nlp
 from paths import Path
 from nlp import CorpusProcessor
-from corpus import AlignedCorpus
+from corpus import AlignedCorpus, TranslatedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -262,14 +262,13 @@ class Experiment(object):
         
         if not self.settings.has_key("test"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
-
-        testStem = self.processor.revertFile(self.settings["test"]["stem"])
-        translation = self.processor.revertFile(self.settings["test"]["translation"])
-  
-        corpus = AlignedCorpus(testStem, self.settings["source"], self.settings["target"])
-        corpus.addActualTranslations(translation)  
         
-        alignments = corpus.getAlignments(addHistory=True)      
+        translatedCorpus = TranslatedCorpus(self.settings["test"]["stem"], self.settings["source"], 
+                                            self.settings["target"], self.settings["test"]["translation"])
+
+        translatedCorpus = self.processor.revertCorpus(translatedCorpus)
+      
+        alignments = translatedCorpus.getAlignments(addHistory=True)      
      
         analyseShortAnswers(alignments)
         analyseQuestions(alignments)
