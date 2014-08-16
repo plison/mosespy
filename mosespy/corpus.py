@@ -179,6 +179,7 @@ class AlignedCorpus(object):
             for i in range(0, len(alignments)):
                 align = alignments[i]
                 testingIndex = self.origin["indices"][i]
+                print testingIndex
                 if testingIndex:
                     align["previoustarget"] = origTargetLines[testingIndex-1].strip()
         
