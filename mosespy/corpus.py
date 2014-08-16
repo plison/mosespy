@@ -83,16 +83,13 @@ class AlignedCorpus(object):
             print "Linking test sentences to original corpus..."
             fullSourceLines = fullCorpus.getSourceFile().readlines()
             fullTargetLines = fullCorpus.getTargetFile().readlines()
-
-            linesdict = {}            
+            print "finishe reading lines"
+            linesdict = dict.fromkeys(fullSourceLines, [])        
             for i in range(0, len(fullSourceLines)):
                 fullSourceLine = fullSourceLines[i]
                 fullTargetLine = fullTargetLines[i]
-                if not linesdict.has_key(fullSourceLine):
-                    linesdict[fullSourceLine] = [(i,fullTargetLine)]
-                else:
-                    linesdict[fullSourceLine].append((i,fullTargetLine))
-            
+                linesdict[fullSourceLine].append((i,fullTargetLine))
+            print "finished making dictionary"
             lineIndices = []            
             sourceLines = self.getSourceFile().readlines()
             targetLines = self.getTargetFile().readlines()
