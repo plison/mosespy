@@ -327,7 +327,7 @@ class Experiment(object):
             with open(self.settings["tm"]+"/model/moses.ini", 'w') as iniFile:
                 iniFile.write(initContent.replace(phrasetable, newtable))
                 
-            if self.settings.has_key("ttm"):
+            if self.settings.has_key("ttm") and (self.settings["ttm"] + "/moses.ini").exists():
                 with open(self.settings["ttm"]+"/moses.ini", 'r') as iniFile:
                     initContent = iniFile.read()
                 with open(self.settings["ttm"]+"/moses.ini", 'w') as iniFile:
@@ -393,7 +393,8 @@ class Experiment(object):
 
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + initFile + " "
-                        + testSource + " -Binarizer "  + moses_root+"/bin/processPhraseTable")
+                        + testSource)
+                        #+ " -Binarizer "  + moses_root+"/bin/processPhraseTable")
         self.executor.run(filterScript)
         return filteredDir
             
