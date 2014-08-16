@@ -85,11 +85,11 @@ class AlignedCorpus(object):
             linesdict = {}
             sourceLines = self.getSourceFile().readlines()
             targetLines = self.getTargetFile().readlines()
-            linesdict = dict.fromkeys(sourceLines, {})        
             for i in range(0, len(sourceLines)):
                 sourceLine = sourceLines[i]
                 targetLine = targetLines[i]
-                print sourceLine + " --> " + targetLine
+                if not linesdict.has_key(sourceLine):
+                    linesdict[sourceLine] = {}
                 linesdict[sourceLine][targetLine] = i
                 
             print "number of keys in linesdict: " + str(len(linesdict))
