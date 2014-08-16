@@ -24,6 +24,7 @@ class CorpusProcessor():
         trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
         cleanStem = trueSource.getStem().changeProperty("clean")
         cleanCorpus = self.cutoffFiles(trueCorpus, cleanStem, maxLength)
+        cleanCorpus.origin = corpus.origin
         return cleanCorpus
 
 
@@ -63,7 +64,9 @@ class CorpusProcessor():
         revertedSource = self.revertFile(corpus.getSourceFile())
         self.revertFile(corpus.getTargetFile())
         translation = self.revertFile(corpus.getTranslationFile())
-        return TranslatedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang, translation)
+        newCorpus = TranslatedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang, translation)
+        newCorpus.origin = corpus.origin
+        return newCorpus
  
  
     def revertFile(self, processedFile):
