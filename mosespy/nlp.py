@@ -1,6 +1,6 @@
 
 from paths import Path 
-from corpus import AlignedCorpus
+from corpus import AlignedCorpus, TranslatedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 
@@ -57,12 +57,13 @@ class CorpusProcessor():
  
  
     def revertCorpus(self, corpus):
-        if not isinstance(corpus, AlignedCorpus):
-            raise RuntimeError("aligned data must be of type AlignedCorpus")
+        if not isinstance(corpus, TranslatedCorpus):
+            raise RuntimeError("aligned data must be of type TranslatedCorpus")
         
         revertedSource = self.revertFile(corpus.getSourceFile())
         self.revertFile(corpus.getTargetFile())
-        return revertedSource.getStem()
+        translation = self.revertFile(corpus.getTranslationFile())
+        return TranslatedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang, translation)
  
  
     def revertFile(self, processedFile):
