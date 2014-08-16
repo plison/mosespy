@@ -117,6 +117,7 @@ class SlurmExperiment(Experiment):
         print "Slot script: " + slotScript
         jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --last-step 1")
                    for i in range(0, self.nbJobs/2)]
+        print "ARGS: " + str(jobArgs)
         self.executor.run_parallel(slotScript, jobArgs)
         
         jobArgs1 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
