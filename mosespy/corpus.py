@@ -95,7 +95,7 @@ class AlignedCorpus(object):
             print "number of keys in linesdict: " + str(len(linesdict))
             maxl = -100
             maxk = None
-            for k in linesdict:
+            for k in linesdict.keys():
                 if maxl < len(linesdict[k].keys()):
                     maxl = len(linesdict[k].keys())
                     maxk = k
