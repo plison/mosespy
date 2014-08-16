@@ -76,7 +76,7 @@ class SlurmExperiment(Experiment):
             return
     
         self.settings["account"] = account
-        self.settings["nbjobs"] = nbJobs
+        self.nbJobs = nbJobs
         self.executor = SlurmExecutor(account)
         self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
@@ -93,7 +93,7 @@ class SlurmExperiment(Experiment):
     def trainTranslationModel(self, trainStem, preprocess=True,alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering, nbThreads=nodeCpus):
         
-        if self.settings["nbjobs"] == 1:
+        if self.nbJobs == 1:
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
              
@@ -103,39 +103,39 @@ class SlurmExperiment(Experiment):
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  train.getStem()
-               + " with " + str(self.settings["nbjobs"]) + " splits")
+               + " with " + str(self.nbJobs) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        corpus.splitData(train.getSourceFile(), splitDir, self.settings["nbjobs"])
-        corpus.splitData(train.getTargetFile(), splitDir, self.settings["nbjobs"])
+        corpus.splitData(train.getSourceFile(), splitDir, self.nbJobs/2)
+        corpus.splitData(train.getTargetFile(), splitDir, self.nbJobs/2)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
-        
-        jobArgs = [(splitDir + "/" + str(i), splitDir + "/" + str(i), " --last-step 1")
-                   for i in range(0, self.settings["nbjobs"]/2)]
+        print "Slot script: " + slotScript
+        jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --last-step 1")
+                   for i in range(0, self.nbJobs/2)]
         self.executor.run_parallel(slotScript, jobArgs)
         
-        jobArgs1 = [(splitDir + "/" + str(i), splitDir + "/" + str(i), 
+        jobArgs1 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
                      " --first-step 2 --last-step 2 --direction 1")
-                   for i in range(0, self.settings["nbjobs"]/2)]
-        jobArgs2 = [(splitDir + "/" + str(i), splitDir + "/" + str(i), 
+                   for i in range(0, self.nbJobs/2)]
+        jobArgs2 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
                      " --first-step 2 --last-step 2 --direction 2")
-                   for i in range(0, self.settings["nbjobs"]/2)]      
+                   for i in range(0, self.nbJobs/2)]      
         self.executor.run_parallel(slotScript, jobArgs1 + jobArgs2)
  
-        jobArgs = [(splitDir + "/" + str(i), splitDir + "/" + str(i), " --first-step 3 --last-step 3")
-                   for i in range(0, self.settings["nbjobs"]/2)]
+        jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --first-step 3 --last-step 3")
+                   for i in range(0, self.nbJobs/2)]
         self.executor.run_parallel(slotScript, jobArgs)
          
         tmDir.reset()
         (tmDir+"/model").make()
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
-            for split in range(0, self.settings["nbjobs"]):
+            for split in range(0, self.nbJobs/2):
                 splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
                 with open(splitFile) as part:
                     for partline in part.readlines():
@@ -193,7 +193,7 @@ class SlurmExperiment(Experiment):
  
     def _getNbDecodingJobs(self, sourceFile):
         nblines = sourceFile.countNbLines()
-        return min(self.settings["nbjobs"], max(1,nblines/1000))
+        return min(self.nbJobs, max(1,nblines/1000))
 
 
     def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
