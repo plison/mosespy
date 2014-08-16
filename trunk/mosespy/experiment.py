@@ -266,6 +266,7 @@ class Experiment(object):
         translatedCorpus = TranslatedCorpus(self.settings["test"]["stem"], self.settings["source"], 
                                             self.settings["target"], self.settings["test"]["translation"])
         if fullCorpus:
+            fullCorpus = AlignedCorpus(fullCorpus, self.settings["source"], self.settings["target"])
             translatedCorpus.linkWithOriginalCorpus(fullCorpus)
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
