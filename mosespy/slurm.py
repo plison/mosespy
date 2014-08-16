@@ -6,8 +6,8 @@ from nlp import CorpusProcessor
 from corpus import AlignedCorpus
 from process import CommandExecutor
   
-nodeMemory=62000
-nodeCpus = 10
+nodeMemory=40000
+nodeCpus = 8
 nodeTime = "4:00:00"
 
 class SlurmExecutor(CommandExecutor):
