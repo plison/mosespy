@@ -91,24 +91,11 @@ class AlignedCorpus(object):
                 if not linesdict.has_key(sourceLine):
                     linesdict[sourceLine] = {}
                 linesdict[sourceLine][targetLine] = i
-                
-            print "number of keys in linesdict: " + str(len(linesdict))
-            maxl = -100
-            maxk = None
-            for k in linesdict.keys():
-                if maxl < len(linesdict[k].keys()):
-                    maxl = len(linesdict[k].keys())
-                    maxk = k
-    
-            print "maximum numer of targets: " + str(maxl)
-            print "the key is : " + str(maxk) + " and the values are " + str(linesdict[maxk])
-            
-            print "finished constructing dico"
+                 
             fullSourceLines = fullCorpus.getSourceFile().readlines()
             fullTargetLines = fullCorpus.getTargetFile().readlines()
             
             linesIndices = [None for i in range(0, len(sourceLines))]
-            print "finished reading lines"
             for i in range(0, len(fullSourceLines)):
                 fullSourceLine = fullSourceLines[i]
                 fullTargetLine = fullTargetLines[i]
@@ -116,9 +103,7 @@ class AlignedCorpus(object):
                     targetdict = linesdict[fullSourceLine]
                     if fullTargetLine in targetdict:
                         linesIndices[targetdict[fullTargetLine]] = i
-            
-            print linesIndices
-                    
+                                
         self.origin = {"corpus":fullCorpus, "indices":lineIndices}
                                 
         
