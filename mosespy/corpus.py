@@ -80,7 +80,7 @@ class AlignedCorpus(object):
             raise RuntimeError(fullCorpus + " must be an aligned corpus")
                 
         elif not lineIndices:
-
+            print "Linking test sentences to original corpus..."
             fullSourceLines = fullCorpus.getSourceFile().readlines()
             fullTargetLines = fullCorpus.getTargetFile().readlines()
 
