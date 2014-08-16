@@ -89,6 +89,7 @@ class AlignedCorpus(object):
             for i in range(0, len(sourceLines)):
                 sourceLine = sourceLines[i]
                 targetLine = targetLines[i]
+                print sourceLine + " --> " + targetLine
                 linesdict[sourceLine][targetLine] = i
                 
             print "number of keys in linesdict: " + str(len(linesdict))
