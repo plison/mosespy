@@ -273,7 +273,7 @@ class Experiment(object):
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
         alignments = translatedCorpus.getAlignments(addHistory=True)   
-        #analyseShortAnswers(alignments)
+        analyseShortAnswers(alignments)
         #analyseQuestions(alignments)
         #analyseBigErrors(alignments)
 
