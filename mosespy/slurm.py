@@ -113,7 +113,7 @@ class SlurmExperiment(Experiment):
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
-        slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem, "%s") + " %s"
+        slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
         
         jobArgs = [(splitDir + "/" + str(i), splitDir + "/" + str(i), " --last-step 1")
                    for i in range(0, self.settings["nbjobs"]/2)]
