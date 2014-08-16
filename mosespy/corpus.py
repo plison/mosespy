@@ -90,6 +90,13 @@ class AlignedCorpus(object):
                 sourceLine = sourceLines[i]
                 targetLine = targetLines[i]
                 linesdict[sourceLine][targetLine] = i
+                
+            print "number of keys in linesdict: " + str(len(linesdict))
+            maxl = - 100
+            for k in linesdict:
+                if maxl < len(linesdict[k].keys()):
+                    maxl = len(linesdict[k].keys())
+            print "maximum numer of targets: " + str(maxl)
             
             
             print "finished constructing dico"
