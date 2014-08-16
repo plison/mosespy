@@ -413,7 +413,7 @@ def analyseShortAnswers(alignments):
     for align in alignments:
         WER = nlp.getWER(align["target"], align["translation"])
         if len(align["target"].split()) <= 3 and WER >= 0.5:
-            if align.has_key("previous"):
+            if align.has_key("previoustarget"):
                 print "Previous line (reference):\t" + align["previoustarget"]
             print "Source line:\t\t\t" + align["source"]
             print "Current line (reference):\t" + align["target"]
