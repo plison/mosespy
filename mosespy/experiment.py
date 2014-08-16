@@ -238,16 +238,16 @@ class Experiment(object):
         print ("Evaluating BLEU scores with test data: " + testData)
         
         testSource = testCorpus.getSourceFile()
-        testTarget = testCorpus.getTargetFile()
-        if preprocess:
-            testSource = self.processor.processFile(testSource)
-            testTarget = self.processor.processFile(testTarget)
-          
+        testTarget = testCorpus.getTargetFile()          
         translationfile = testTarget.addProperty("translated")
-        trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=False)
+        
+        trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=preprocess)
         
         if trans_result:
             self.settings["test"] = {"stem":testData, "translation":translationfile}
+
+            if preprocess:
+                testTarget = self.processor.processFile(testTarget)
 
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
             bleu_output = process.run_output(bleuScript, stdin=translationfile)
@@ -267,11 +267,11 @@ class Experiment(object):
                                             self.settings["target"], self.settings["test"]["translation"])
         if fullCorpus:
             fullCorpus = AlignedCorpus(fullCorpus, self.settings["source"], self.settings["target"])
+            
             translatedCorpus.linkWithOriginalCorpus(fullCorpus)
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
         alignments = translatedCorpus.getAlignments(addHistory=True)   
-        print alignments[0]
         #analyseShortAnswers(alignments)
         #analyseQuestions(alignments)
         #analyseBigErrors(alignments)
@@ -387,7 +387,7 @@ class Experiment(object):
         else:
             raise RuntimeError("Translation model is not yet tuned")
 
-        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource.basename()
+        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource.basename().getStem()
         filteredDir.remove()
 
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
