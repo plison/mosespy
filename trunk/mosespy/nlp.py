@@ -108,9 +108,17 @@ class Tokeniser():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
         cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
-        result = self.executor.run(cleanScript, inputFile, outputFile)
+        tmpFile = outputFile + "_tmp"
+        result = self.executor.run(cleanScript, inputFile, tmpFile)
         if not result:
             raise RuntimeError("Normalisation of %s has failed"%(inputFile))
+        
+        outlines = []
+        for line in Path(tmpFile).readlines():
+            outlines.append(line[0].upper() + line[1:])
+        outputFile.writelines(outlines)
+        tmpFile.remove()
+        
    
     
     def deescapeSpecialCharacters(self, inputFile, outputFile):
