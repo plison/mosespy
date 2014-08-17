@@ -118,7 +118,7 @@ class Experiment(object):
         if result:
             print "Finished building translation model in directory " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-            self._prunePhraseTable()
+        #    self._prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
@@ -364,7 +364,7 @@ class Experiment(object):
                       + moses_root + "/bin/moses "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
-                      + " --batch-mira "
+                #      + " --batch-mira "
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(nbThreads)
         return tuneScript
