@@ -6,7 +6,7 @@ from nlp import CorpusProcessor
 from corpus import AlignedCorpus
 from process import CommandExecutor
   
-nodeMemory=40000
+nodeMemory=35000
 nodeCpus = 8
 nodeTime = "4:00:00"
 
@@ -19,37 +19,32 @@ class SlurmExecutor(CommandExecutor):
         if not account:
             print "Warning: no SLURM account found, switching to normal execution"
         self.account = account
-        os.environ["LD_LIBRARY_PATH"] = (os.popen("module load intel ; echo $LD_LIBRARY_PATH")
-                                         .read().strip('\n') + ":"
-                                         + os.popen("module load openmpi.intel ; echo $LD_LIBRARY_PATH")
-                                         .read().strip('\n') + ":"
-                                         + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
-                                         + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        os.environ["PATH"] = "/opt/rocks/bin:" + os.popen("module load openmpi.intel ; echo $PATH").read().strip('\n')
-        self.initenv = copy.deepcopy(os.environ)
+        
+        os.environ["LD_LIBRARY_PATH"] = (process.run_output("module load intel openmpi.intel ; echo $LD_LIBRARY_PATH") + ":"
+                   + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                   + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        os.environ["PATH"] = "/opt/rocks/bin:" + process.run_output("module load openmpi.intel ; echo $PATH")
         
 
     def _getScript(self, script):    
-        if self.account and "SLURM" not in str(os.environ.keys()):
+        if self.account:
             name = str(uuid.uuid4())[0:5]
             script = ("srun --account=" + self.account
                       + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
                       +" --job-name=" + name
                       + " --cpus-per-task=" + str(nodeCpus)
-                      + " --time=" + nodeTime 
+                      + " --time=" + nodeTime
                       + " " + script)  
         return script
         
     
     def run(self, script, stdin=None, stdout=None):
-        script = self._getScript(script)  
+        if "SLURM" not in str(os.environ.keys()):
+            script = self._getScript(script)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
     
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):  
-        for k in list(os.environ):
-                if "SLURM" in k and k in os.environ.keys():
-                    del os.environ[k] 
         jobs = []
         for i in range(0, len(jobArgs)):
             jobArg = jobArgs[i]
@@ -60,14 +55,12 @@ class SlurmExecutor(CommandExecutor):
             jobs.append(t)
             t.start()
         process.waitForCompletion(jobs)
-        for k in self.initenv.keys():
-            os.environ[k] = self.initenv[k] 
     
                
         
 class SlurmExperiment(Experiment):
             
-    def __init__(self, expName, sourceLang=None, targetLang=None, account=None, nbJobs=4):
+    def __init__(self, expName, sourceLang=None, targetLang=None, account=None, maxJobs=4):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
@@ -76,7 +69,7 @@ class SlurmExperiment(Experiment):
             return
     
         self.settings["account"] = account
-        self.nbJobs = nbJobs
+        self.maxJobs = maxJobs
         self.executor = SlurmExecutor(account)
         self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
@@ -93,7 +86,7 @@ class SlurmExperiment(Experiment):
     def trainTranslationModel(self, trainStem, preprocess=True,alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering, nbThreads=nodeCpus):
         
-        if self.nbJobs == 1:
+        if self.maxJobs == 1:
             Experiment.trainTranslationModel(self, trainStem, nbThreads)
             return
              
@@ -103,38 +96,38 @@ class SlurmExperiment(Experiment):
         
         print ("Building translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " +  train.getStem()
-               + " with " + str(self.nbJobs) + " splits")
+               + " with " + str(self.maxJobs) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        corpus.splitData(train.getSourceFile(), splitDir, self.nbJobs/2)
-        corpus.splitData(train.getTargetFile(), splitDir, self.nbJobs/2)
+        corpus.splitData(train.getSourceFile(), splitDir, self.maxJobs/2)
+        corpus.splitData(train.getTargetFile(), splitDir, self.maxJobs/2)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
         jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --last-step 1")
-                   for i in range(0, self.nbJobs/2)]
+                   for i in range(0, self.maxJobs/2)]
         self.executor.run_parallel(slotScript, jobArgs)
         
         jobArgs1 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
                      " --first-step 2 --last-step 2 --direction 1")
-                   for i in range(0, self.nbJobs/2)]
+                   for i in range(0, self.maxJobs/2)]
         jobArgs2 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
                      " --first-step 2 --last-step 2 --direction 2")
-                   for i in range(0, self.nbJobs/2)]      
+                   for i in range(0, self.maxJobs/2)]      
         self.executor.run_parallel(slotScript, jobArgs1 + jobArgs2)
  
         jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --first-step 3 --last-step 3")
-                   for i in range(0, self.nbJobs/2)]
+                   for i in range(0, self.maxJobs/2)]
         self.executor.run_parallel(slotScript, jobArgs)
          
         tmDir.reset()
         (tmDir+"/model").make()
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
-            for split in range(0, self.nbJobs/2):
+            for split in range(0, self.maxJobs/2):
                 splitFile = splitDir+ "/" + str(split)+"/model/aligned."+alignment
                 with open(splitFile) as part:
                     for partline in part.readlines():
@@ -192,7 +185,7 @@ class SlurmExperiment(Experiment):
  
     def _getNbDecodingJobs(self, sourceFile):
         nblines = sourceFile.countNbLines()
-        return min(self.nbJobs, max(1,nblines/1000))
+        return min(self.maxJobs, max(1,nblines/1000))
 
 
     def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
@@ -200,8 +193,8 @@ class SlurmExperiment(Experiment):
                 + " -v 0 -threads " + str(nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
-            nbJobs = self._getNbDecodingJobs(inputFile)
-            script += " -jobs " + str(nbJobs)
+            maxJobs = self._getNbDecodingJobs(inputFile)
+            script += " -jobs " + str(maxJobs)
         return script  
 
 
