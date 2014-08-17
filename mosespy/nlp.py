@@ -19,12 +19,14 @@ class CorpusProcessor():
             raise RuntimeError("aligned data must be of type AlignedCorpus")
    
         trueSource = self.processFile(corpus.getSourceFile())
-        self.processFile(corpus.getTargetFile())
+        trueTarget = self.processFile(corpus.getTargetFile())
      
         trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
         cleanStem = trueSource.getStem().changeProperty("clean")
         cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
-
+        
+        trueSource.remove()
+        trueTarget.remove()
         return cleanCorpus
 
 
@@ -157,7 +159,7 @@ class Tokeniser():
         if not result:
             raise RuntimeError("Tokenisation of %s has failed"%(inputFile))
 
-        print "New _tokenised file: " + outputFile.getDescription() 
+        print "New tokenised file: " + outputFile.getDescription() 
             
         return outputFile
     
@@ -196,7 +198,7 @@ class TrueCaser():
     def truecaseFile(self, inputFile, outputFile):
        
         if not inputFile.exists():
-            raise RuntimeError("_tokenised file " + inputFile + " does not exist")
+            raise RuntimeError("tokenised file " + inputFile + " does not exist")
     
         if not self.isModelTrained(inputFile.getLang()):
             raise RuntimeError("model file for " + inputFile.getLang() + " does not exist")

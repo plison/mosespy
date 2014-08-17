@@ -33,7 +33,7 @@ def getInput():
 
 
 def getNbJobs():
-    nbJobs = 4
+    nbJobs = 1
     for i in range(1, len(sys.argv)):
         arg = sys.argv[i]
         arg = arg if " " not in arg else "\'" + arg + "\'"
