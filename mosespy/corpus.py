@@ -232,7 +232,6 @@ def splitData(inputFile, outputDir, nbSplits):
         
     totalLines = len(lines) 
     nbSplits = min(nbSplits, totalLines)
-    print "Splitting " + str(totalLines)  + " with " + str(nbSplits)
     filenames = []
     curSplit = 0
     filename = outputDir + "/" + str(curSplit) + extension
