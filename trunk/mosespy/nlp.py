@@ -23,8 +23,8 @@ class CorpusProcessor():
      
         trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
         cleanStem = trueSource.getStem().changeProperty("clean")
-        cleanCorpus = self.cutoffFiles(trueCorpus, cleanStem, maxLength)
-        cleanCorpus.origin = corpus.origin
+        cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
+
         return cleanCorpus
 
 
@@ -65,7 +65,7 @@ class CorpusProcessor():
         self.revertFile(corpus.getTargetFile())
         translation = self.revertFile(corpus.getTranslationFile())
         newCorpus = TranslatedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang, translation)
-        newCorpus.origin = corpus.origin
+
         return newCorpus
  
  
@@ -82,7 +82,7 @@ class CorpusProcessor():
         return finalFile
 
    
-    def cutoffFiles(self, inputCorpus, outputStem, maxLength):
+    def cutCorpus(self, inputCorpus, outputStem, maxLength):
                    
         cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                        inputCorpus.getStem() + " " + inputCorpus.sourceLang + " " + inputCorpus.targetLang + " " 
