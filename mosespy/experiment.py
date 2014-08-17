@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*- 
 
 import os, json, copy,  re
-import paths, process, nlp
+import paths, process, analyser
 from paths import Path
 from nlp import CorpusProcessor
 from corpus import AlignedCorpus, TranslatedCorpus
@@ -203,7 +203,10 @@ class Experiment(object):
         
    
     def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
-           
+    
+        if preprocess:
+            infile = self.processor.processFile(infile)
+       
         infile = Path(infile)
         if filterModel:
             filterDir = self._getFilteredModel(infile)
@@ -217,8 +220,6 @@ class Experiment(object):
         print ("Translating file \"" + infile + "\" from " + 
                self.settings["source"] + " to " + self.settings["target"])
 
-        if preprocess:
-            infile = self.processor.processFile(infile)
 
         transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
         
@@ -239,7 +240,7 @@ class Experiment(object):
         
         testSource = testCorpus.getSourceFile()
         testTarget = testCorpus.getTargetFile()          
-        translationfile = testTarget.addProperty("translated")
+        translationfile = self.settings["path"] + testTarget.basename().addProperty("translated")
         
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=preprocess)
         
@@ -273,9 +274,7 @@ class Experiment(object):
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
         alignments = translatedCorpus.getAlignments(addHistory=True)   
-        analyseShortAnswers(alignments)
-        #analyseQuestions(alignments)
-        #analyseBigErrors(alignments)
+        analyser.printSummary(alignments)
 
    
     def reduceSize(self):
@@ -406,47 +405,3 @@ class Experiment(object):
            
     
      
-     
-def analyseShortAnswers(alignments):
-
-    print "Analysis of short words"
-    print "----------------------"
-    for align in alignments:
-        WER = nlp.getWER(align["target"], align["translation"])
-        if len(align["target"].split()) <= 3 and WER >= 0.5:
-            if align.has_key("previoustarget"):
-                print "Previous line (reference):\t" + align["previoustarget"]
-            print "Source line:\t\t\t" + align["source"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
-            print "----------------------"
-   
-
-
-def analyseQuestions(alignments):
-        
-    print "Analysis of questions"
-    print "----------------------"
-    for align in alignments:
-        WER = nlp.getWER(align["target"], align["translation"])
-        if "?" in align["target"] and WER >= 0.25:
-            print "Source line:\t\t\t" + align["source"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
-            print "----------------------"
-
-
-def analyseBigErrors(alignments):
-    
-    
-    print "Analysis of large translation errors"
-    print "----------------------"
-    for align in alignments:
-        WER = nlp.getWER(align["target"], align["translation"])
-        if WER >= 0.7:
-            print "Source line:\t\t\t" + align["source"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
-            print "----------------------"
-
-        
