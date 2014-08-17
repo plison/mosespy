@@ -315,7 +315,7 @@ class Experiment(object):
         newtable = self.settings["tm"]+"/model/phrase-table.reduced.gz"
         
         pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
-                       + "/threshold-filter.perl " + " 0.001 | gzip - > %s"
+                       + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
                        )%(phrasetable, newtable)
         result = self.executor.run(pruneScript)
         if result:
