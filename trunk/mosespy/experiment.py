@@ -63,7 +63,7 @@ class Experiment(object):
         self.evaluateBLEU(testCorpus.getStem())
                     
     
-    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
+    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, keepArpa=False):
   
         trainFile = Path(trainFile)
         lang = trainFile.getLang()
@@ -93,8 +93,9 @@ class Experiment(object):
         print "New binarised language model: " + blmFile.getDescription() 
 
         sbFile.remove()
-        (lmFile + "gz").remove()
-        arpaFile.remove()
+        (lmFile + ".gz").remove()
+        if not keepArpa:
+            arpaFile.remove()
 
         self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
         self._recordState()
