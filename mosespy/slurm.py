@@ -2,7 +2,7 @@
 import os, re, uuid, threading, copy
 import experiment, process, corpus
 from experiment import Experiment 
-from nlp import CorpusProcessor
+from nlp import Preprocessor
 from corpus import AlignedCorpus
 from process import CommandExecutor
   
@@ -74,7 +74,7 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.maxJobs = maxJobs
         self.executor = SlurmExecutor(account)
-        self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
+        self.processor = Preprocessor(self.settings["path"], self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):

@@ -2,7 +2,7 @@
 
 import unittest, uuid, os, shutil
 from paths import Path
-from nlp import CorpusProcessor
+from nlp import Preprocessor
 from process import CommandExecutor
 from corpus import AlignedCorpus
 
@@ -17,7 +17,7 @@ class Pipeline(unittest.TestCase):
         
     def test_preprocessing(self):
         
-        processor = CorpusProcessor(self.directory, CommandExecutor())
+        processor = Preprocessor(self.directory, CommandExecutor())
         trueFile = processor.processFile(inFile)
         trueLines = trueFile.readlines()
         self.assertIn("bien occupé .\n", trueLines)

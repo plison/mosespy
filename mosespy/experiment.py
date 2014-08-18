@@ -3,7 +3,7 @@
 import os, json, copy,  re
 import paths, process, analyser
 from paths import Path
-from nlp import CorpusProcessor
+from nlp import Preprocessor
 from corpus import AlignedCorpus, TranslatedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
@@ -44,7 +44,7 @@ class Experiment(object):
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
         
-        self.processor = CorpusProcessor(self.settings["path"], self.executor)
+        self.processor = Preprocessor(self.settings["path"], self.executor)
       
     
     def doWholeShibang(self, alignedStem, lmFile=None):

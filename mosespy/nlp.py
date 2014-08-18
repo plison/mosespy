@@ -5,7 +5,7 @@ rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 
 
-class CorpusProcessor():
+class Preprocessor():
     
     def __init__(self, workPath, executor, nbThreads=2):
         self.workPath = Path(workPath)
