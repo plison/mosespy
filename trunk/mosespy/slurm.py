@@ -36,7 +36,7 @@ class SlurmExecutor(CommandExecutor):
                       +" --job-name=" + name
                       + " --cpus-per-task=" + str(nodeCpus)
                       + " --time=" + nodeTime
-                      + " --propagate=None " 
+                      + " --propagate=NONE " 
                       + " " + script)  
         return script
         
