@@ -8,7 +8,7 @@ moses_root = rootDir + "/moses"
 class CorpusProcessor():
     
     def __init__(self, workPath, executor, nbThreads=2):
-        self.workPath = workPath
+        self.workPath = Path(workPath)
         self.executor = executor
         self.tokeniser = Tokeniser(executor, nbThreads)
         self.truecaser = TrueCaser(executor, workPath+"/truecasingmodel")
@@ -28,7 +28,7 @@ class CorpusProcessor():
         trueSource.remove()
         trueTarget.remove()
         return cleanCorpus
-
+    
 
     def processFile(self, rawFile):
          
@@ -81,6 +81,7 @@ class CorpusProcessor():
         finalFile = untokFile.changeProperty("read")
         self.tokeniser.deescapeSpecialCharacters(untokFile, finalFile)
     
+        untokFile.remove()
         return finalFile
 
    
@@ -174,7 +175,7 @@ class TrueCaser():
           
     def __init__(self, executor, modelStem):
         self.executor = executor
-        self.modelStem = modelStem
+        self.modelStem = Path(modelStem)
                
     def trainModel(self, inputFile):
         if not inputFile.exists():
