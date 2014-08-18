@@ -245,7 +245,6 @@ class Experiment(object):
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=preprocess)
         
         if trans_result:
-            self.settings["test"] = {"stem":testData, "translation":translationfile}
 
             if preprocess:
                 testTarget = self.processor.processFile(testTarget)
@@ -255,11 +254,13 @@ class Experiment(object):
             print bleu_output.strip()
             s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
             if s:
-                self.settings["test"]["bleu"] = s.group(1)
+                self.settings["test"] = {"stem":testTarget.getStem(), 
+                                         "translation":translationfile, 
+                                         "bleu": s.group(1)}
             self._recordState()
         
 
-    def analyseErrors(self, fullCorpus=None):
+    def analyseErrors(self):
         
         if not self.settings.has_key("test"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
@@ -267,10 +268,15 @@ class Experiment(object):
         lastTest = self.settings["test"]
         translatedCorpus = TranslatedCorpus(lastTest["stem"], self.settings["source"], 
                                             self.settings["target"], lastTest["translation"])
-        if fullCorpus:
-            fullCorpus = AlignedCorpus(fullCorpus, self.settings["source"], self.settings["target"])     
-            translatedCorpus.linkWithOriginalCorpus(fullCorpus)
-            
+
+        indicesFile = lastTest["stem"].removeProperty().addProperty("indices")
+        print "Looking for " + indicesFile
+        if (indicesFile).exists():
+            indices = [int(i) for i in indicesFile.readlines().split('\n')]
+            originCorpus = lastTest["stem"].removeProperty().removeProperty()  
+            print "original corpus: " + originCorpus             
+            translatedCorpus.linkWithOriginalCorpus(originCorpus, indices)
+                     
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
         alignments = translatedCorpus.getAlignments(addHistory=True)   

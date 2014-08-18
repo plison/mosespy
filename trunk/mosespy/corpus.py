@@ -1,7 +1,7 @@
 
 import random
 from paths import Path
-
+from preprocessing import Preprocessor
 class AlignedCorpus(object):
     
     def __init__(self, stem, sourceLang, targetLang):
@@ -59,59 +59,33 @@ class AlignedCorpus(object):
         trainStem = workPath + "/" + (self.stem + ".train").basename()
         (trainStem + "." + self.sourceLang).writelines(trainSourceLines) 
         (trainStem + "." + self.targetLang).writelines(trainTargetLines)
+        (trainStem + ".indices." + self.targetLang).writelines('\n'.join(tuningIndices))
         trainCorpus = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
+        
 
         tuneStem = workPath + "/" + (self.stem + ".tune").basename()
         (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
+        (tuneStem + ".indices." + self.targetLang).writelines('\n'.join(tuningIndices))
         tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
         testStem = workPath + "/" + (self.stem + ".test").basename()
         (testStem + "." + self.sourceLang).writelines(testSourceLines) 
         (testStem + "." + self.targetLang).writelines(testTargetLines)
+        (testStem + ".indices." + self.targetLang).writelines('\n'.join(testingIndices))
         testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
-        testCorpus.linkWithOriginalCorpus(self, testingIndices)
-        
+  
         return trainCorpus, tuneCorpus, testCorpus
         
     
-    def linkWithOriginalCorpus(self, fullCorpus, linesIndices=None):
-        if not isinstance(fullCorpus, AlignedCorpus):
-            raise RuntimeError(fullCorpus + " must be an aligned corpus")
-                
-        elif not linesIndices:
-            print "Linking test sentences for " + self.getStem() + " to original corpus " + str(fullCorpus.getStem())
-            
-            linesdict = {}
-            sourceLines = self.getSourceFile().readlines()
-            targetLines = self.getTargetFile().readlines()
-            for i in range(0, len(sourceLines)):
-                sourceLine = sourceLines[i]
-                targetLine = targetLines[i]
-                if not linesdict.has_key(sourceLine):
-                    linesdict[sourceLine] = {}
-                linesdict[sourceLine][targetLine] = i
-                 
-            fullSourceLines = fullCorpus.getSourceFile().readlines()
-            fullTargetLines = fullCorpus.getTargetFile().readlines()
-            
-            linesIndices = [None for i in range(0, len(sourceLines))]
-            for i in range(0, len(fullSourceLines)):
-                fullSourceLine = fullSourceLines[i]
-                fullTargetLine = fullTargetLines[i]
-                if fullSourceLine in linesdict:
-                    targetdict = linesdict[fullSourceLine]
-                    if fullTargetLine in targetdict:
-                        linesIndices[targetdict[fullTargetLine]] = i
-        
-        for i in range(0, len(linesIndices)):
-            print "test corpus: " + sourceLines[i] + " --> " + targetLines[i]
-            inde = linesIndices[i]
-            if inde:
-                print "full corpus: " + fullSourceLines[inde] + " --> " + targetLines[inde]
-        self.origin = {"corpus":fullCorpus, "indices":linesIndices}
-                                
-        
+    def linkWithOriginalCorpus(self, originCorpus, linesIndices):
+        if not isinstance(originCorpus, AlignedCorpus):
+            raise RuntimeError(originCorpus + " must be an aligned corpus")
+        self.origin = {"corpus":originCorpus, "indices":linesIndices}
+    
+                                    
+ 
+    
     def getStem(self):
         return self.stem
     
