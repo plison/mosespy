@@ -2,7 +2,7 @@
 
 import unittest, uuid, os, shutil
 from paths import Path
-from nlp import Preprocessor
+from mosespy.preprocessing import Preprocessor
 from process import CommandExecutor
 from corpus import AlignedCorpus
 
