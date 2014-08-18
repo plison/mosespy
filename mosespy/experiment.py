@@ -276,9 +276,9 @@ class Experiment(object):
         alignments = translatedCorpus.getAlignments(addHistory=True)   
         analyser.printSummary(alignments)
         
-        translatedCorpus.getSourceFile().remove()
-        translatedCorpus.getTargetFile().remove()
-        translatedCorpus.getTranslationFile().remove()
+    #    translatedCorpus.getSourceFile().remove()
+    #    translatedCorpus.getTargetFile().remove()
+    #    translatedCorpus.getTranslationFile().remove()
 
    
     def reduceSize(self):
