@@ -107,7 +107,8 @@ class AlignedCorpus(object):
         for i in range(0, len(linesIndices)):
             print "test corpus: " + sourceLines[i] + " --> " + targetLines[i]
             inde = linesIndices[i]
-            print "full corpus: " + fullSourceLines[inde] + " --> " + targetLines[inde]
+            if inde:
+                print "full corpus: " + fullSourceLines[inde] + " --> " + targetLines[inde]
         self.origin = {"corpus":fullCorpus, "indices":linesIndices}
                                 
         
