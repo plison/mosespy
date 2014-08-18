@@ -80,7 +80,7 @@ class AlignedCorpus(object):
             raise RuntimeError(fullCorpus + " must be an aligned corpus")
                 
         elif not linesIndices:
-            print "Linking test sentences to original corpus..."
+            print "Linking test sentences for " + self.getStem() + " to original corpus " + str(fullCorpus.getStem())
             
             linesdict = {}
             sourceLines = self.getSourceFile().readlines()
@@ -104,6 +104,10 @@ class AlignedCorpus(object):
                     if fullTargetLine in targetdict:
                         linesIndices[targetdict[fullTargetLine]] = i
         
+        for i in range(0, len(linesIndices)):
+            print "test corpus: " + sourceLines[i] + " --> " + targetLines[i]
+            inde = linesIndices[i]
+            print "full corpus: " + fullSourceLines[inde] + " --> " + targetLines[inde]
         self.origin = {"corpus":fullCorpus, "indices":linesIndices}
                                 
         
