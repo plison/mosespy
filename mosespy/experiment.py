@@ -3,7 +3,7 @@
 import os, json, copy,  re
 import paths, process, analyser
 from paths import Path
-from nlp import Preprocessor
+from mosespy.preprocessing import Preprocessor
 from corpus import AlignedCorpus, TranslatedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
@@ -220,7 +220,6 @@ class Experiment(object):
         print ("Translating file \"" + infile + "\" from " + 
                self.settings["source"] + " to " + self.settings["target"])
 
-
         transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
         
         result = self.executor.run(transScript, stdout=outfile)
@@ -276,9 +275,9 @@ class Experiment(object):
         alignments = translatedCorpus.getAlignments(addHistory=True)   
         analyser.printSummary(alignments)
         
-    #    translatedCorpus.getSourceFile().remove()
-    #    translatedCorpus.getTargetFile().remove()
-    #    translatedCorpus.getTranslationFile().remove()
+        translatedCorpus.getSourceFile().remove()
+        translatedCorpus.getTargetFile().remove()
+        translatedCorpus.getTranslationFile().remove()
 
    
     def reduceSize(self):
@@ -297,6 +296,9 @@ class Experiment(object):
                 fi = self.settings["ttm"] + "/" + f
                 if f != "moses.ini":
                     fi.remove()
+        for f in self.settings["path"].listdir():
+            if "model" not in f and "settings" not in f:
+                (self.settings["path"]+"/" + f).remove()
 
         print "Finished reducing the size of experiment directory " + self.settings["path"]
  

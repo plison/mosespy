@@ -2,7 +2,7 @@
 import os, re, uuid, threading, copy
 import experiment, process, corpus
 from experiment import Experiment 
-from nlp import Preprocessor
+from mosespy.preprocessing import Preprocessor
 from corpus import AlignedCorpus
 from process import CommandExecutor
   
