@@ -65,13 +65,13 @@ class AlignedCorpus(object):
         tuneStem = workPath + "/" + (self.stem + ".tune").basename()
         (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
-        (tuneStem + ".indices." + self.targetLang).writelines('\n'.join([str(i) for i in tuningIndices]))
+        (tuneStem + ".indices").writelines('\n'.join([str(i) for i in tuningIndices]))
         tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
         testStem = workPath + "/" + (self.stem + ".test").basename()
         (testStem + "." + self.sourceLang).writelines(testSourceLines) 
         (testStem + "." + self.targetLang).writelines(testTargetLines)
-        (testStem + ".indices." + self.targetLang).writelines('\n'.join([str(i) for i in testingIndices]))
+        (testStem + ".indices").writelines('\n'.join([str(i) for i in testingIndices]))
         testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
   
         return trainCorpus, tuneCorpus, testCorpus
