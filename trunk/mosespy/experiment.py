@@ -240,7 +240,7 @@ class Experiment(object):
         
         testSource = testCorpus.getSourceFile()
         testTarget = testCorpus.getTargetFile()          
-        translationfile = self.settings["path"] + testTarget.basename().addProperty("translated")
+        translationfile = self.settings["path"] + "/" + testTarget.basename().addProperty("translated")
         
         trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=preprocess)
         
@@ -275,6 +275,10 @@ class Experiment(object):
       
         alignments = translatedCorpus.getAlignments(addHistory=True)   
         analyser.printSummary(alignments)
+        
+        translatedCorpus.getSourceFile().remove()
+        translatedCorpus.getTargetFile().remove()
+        translatedCorpus.getTranslationFile().remove()
 
    
     def reduceSize(self):
@@ -306,7 +310,7 @@ class Experiment(object):
         return newexp
  
    
-    def _prunePhraseTable(self):
+    def _prunePhraseTable(self, probThreshold=0.0001):
         
         if not self.settings.has_key("tm"):
             raise RuntimeError("Translation model is not yet constructed")
@@ -314,8 +318,12 @@ class Experiment(object):
         phrasetable = self.settings["tm"]+"/model/phrase-table.gz"
         newtable = self.settings["tm"]+"/model/phrase-table.reduced.gz"
         
+        if not phrasetable.exists():
+            print "Original phrase table has been removed, pruning canceled"
+            return
+        
         pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
-                       + "/threshold-filter.perl " + " 0.0001 | gzip - > %s"
+                       + "/threshold-filter.perl " + str(probThreshold) + " | gzip - > %s"
                        )%(phrasetable, newtable)
         result = self.executor.run(pruneScript)
         if result:
