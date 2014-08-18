@@ -1,7 +1,7 @@
 
 import random
 from paths import Path
-from preprocessing import Preprocessor
+
 class AlignedCorpus(object):
     
     def __init__(self, stem, sourceLang, targetLang):
