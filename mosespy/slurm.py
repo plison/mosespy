@@ -1,5 +1,5 @@
 
-import re, uuid, threading, copy
+import re, uuid, threading, copy, Queue
 import experiment, system
 from experiment import Experiment 
 from mosespy.processing import CorpusProcessor
@@ -47,18 +47,25 @@ class SlurmExecutor(CommandExecutor):
             script = self._getScript(script)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
+    def run_queue(self, script, resultQueue, stdin=None, stdout=None):
+        if not "SLURM" in str(system.getEnv().keys()):
+            script = self._getScript(script)  
+        result = super(SlurmExecutor,self).run(script, stdin, stdout)
+        resultQueue.put(result)
+
     
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):  
-        jobs = []
+        resultQueues = []
         for i in range(0, len(jobArgs)):
             jobArg = jobArgs[i]
             filledScript = script%(jobArg)
             stdin = stdins[i] if stdins else None
             stdout = stdouts[i] if stdouts else None
-            t = threading.Thread(target=self.run, args=(filledScript, stdin, stdout))
-            jobs.append(t)
+            resultQueue = Queue.Queue()
+            t = threading.Thread(target=self.run_queue, args=(filledScript, resultQueue, stdin, stdout))
+            resultQueues.append(resultQueue)
             t.start()
-        system.waitForCompletion(jobs)
+        return system.waitForCompletion(resultQueues)
     
                
         
@@ -103,15 +110,22 @@ class SlurmExperiment(Experiment):
                + " with " + str(self.maxJobs) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
+        splitDir.reset()
         splitStems = train.splitData(splitDir, self.maxJobs/2)
- 
+        print "Split data: " + str(splitStems)
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
+        jobArgs1 = [(stem, stem, " --last-step 1") for stem in splitStems]
+        self.executor.run_parallel(slotScript, jobArgs1)
   
-        jobArgs = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
-        self.executor.run_parallel(slotScript, jobArgs)
+        jobArgs2 = [(stem, stem, " --first-step 2 --last-step 2 --direction 1") for stem in splitStems]
+        jobArgs3 = [(stem, stem, " --first-step 2 --last-step 2 --direction 2") for stem in splitStems]
+        self.executor.run_parallel(slotScript, jobArgs2 + jobArgs3)
+
+        jobArgs4 = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
+        self.executor.run_parallel(slotScript, jobArgs4)
          
         tmDir.reset()
         (tmDir+"/model").make()
