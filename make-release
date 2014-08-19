@@ -24,7 +24,8 @@ exit 1;
 fi
 
 ### Get the most recent version in the repository
-svn export https://irstlm.svn.sourceforge.net/svnroot/irstlm/trunk $tmpdir
+url="https://svn.code.sf.net/p/irstlm/code"
+svn export $url $tmpdir
 
 ### remove files which should not be included in the release
 pushd $tmpdir
