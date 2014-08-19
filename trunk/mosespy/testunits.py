@@ -120,10 +120,11 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(len(Path(self.tmpdir + "/2.en").readlines()), 34)
 
         
-    def langmodel(self):
+    def test_langmodel(self):
         experiment.expDir = self.tmpdir + "/"
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True, keepArpa=True)
+        
         
     def tearDown(self):
         print ""
