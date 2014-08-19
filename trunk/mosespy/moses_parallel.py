@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import sys, os, uuid, select, threading
-import process, slurm, corpus
+import sys, os, uuid, select
+import slurm
 from paths import Path
 from corpus import BasicCorpus
 

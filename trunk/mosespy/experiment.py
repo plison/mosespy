@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*- 
 
 import os, json, copy,  re
-import paths, process, analyser
+import paths, process, analyser, corpus
 from paths import Path
-from mosespy.preprocessing import Preprocessor
+from preprocessing import Preprocessor
 from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
@@ -14,7 +14,6 @@ irstlm_root = rootDir + "/irstlm"
 os.environ["IRSTLM"] = irstlm_root
 defaultAlignment = "grow-diag-final-and"
 defaultReordering = "msd-bidirectional-fe"
-
 
 class Experiment(object):
     
@@ -49,12 +48,13 @@ class Experiment(object):
     
     def doWholeShibang(self, alignedStem, lmFile=None):
         
-        corpus = AlignedCorpus(alignedStem, self.settings["source"], self.settings["target"])
-        train, tune, test = corpus.divideData(self.settings["path"])
+        acorpus = AlignedCorpus(alignedStem, self.settings["source"], self.settings["target"])
+        train, tune, test = acorpus.divideData(self.settings["path"])
         
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
-        newLmFile = BasicCorpus(lmFile).filterOutLines(test.getTargetFile(), self.settings["path"])
+        newLmFile = self.settings["path"] + "/" + lmFile.basename().addProperty("filtered") 
+        BasicCorpus(lmFile).filterOutLines(test.getTargetFile(), newLmFile)
 
         self.trainLanguageModel(newLmFile)
         

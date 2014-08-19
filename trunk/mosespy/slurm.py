@@ -6,9 +6,9 @@ from mosespy.preprocessing import Preprocessor
 from corpus import BasicCorpus, AlignedCorpus
 from process import CommandExecutor
   
-nodeMemory=35000
-nodeCpus = 8
-nodeTime = "4:00:00"
+nodeMemory=60000
+nodeCpus = 16
+nodeTime = "5:00:00"
 
 class SlurmExecutor(CommandExecutor):
         
@@ -103,27 +103,20 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        BasicCorpus(train.getSourceFile()).splitData(splitDir, self.maxJobs/2)
-        BasicCorpus(train.getTargetFile()).splitData(splitDir, self.maxJobs/2)
-
+        splitStems = train.splitData(splitDir, self.maxJobs/2)
+ 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
-        jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --last-step 1")
-                   for i in range(0, self.maxJobs/2)]
+        jobArgs = [(stem, stem, " --last-step 1") for stem in splitStems]
         self.executor.run_parallel(slotScript, jobArgs)
-        
-        jobArgs1 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
-                     " --first-step 2 --last-step 2 --direction 1")
-                   for i in range(0, self.maxJobs/2)]
-        jobArgs2 = [(splitDir+"/"+str(i), splitDir+"/"+str(i), 
-                     " --first-step 2 --last-step 2 --direction 2")
-                   for i in range(0, self.maxJobs/2)]      
+  
+        jobArgs1 = [(stem, stem, " --first-step 2 --last-step 2 --direction 1") for stem in splitStems]
+        jobArgs2 = [(stem, stem, " --first-step 2 --last-step 2 --direction 2") for stem in splitStems]
         self.executor.run_parallel(slotScript, jobArgs1 + jobArgs2)
- 
-        jobArgs = [(splitDir+"/"+str(i), splitDir+"/"+str(i), " --first-step 3 --last-step 3")
-                   for i in range(0, self.maxJobs/2)]
+
+        jobArgs = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
         self.executor.run_parallel(slotScript, jobArgs)
          
         tmDir.reset()
@@ -136,17 +129,17 @@ class SlurmExperiment(Experiment):
                     for partline in part.readlines():
                         if partline.strip():
                             align.write(partline.strip('\n') + '\n')
+        splitDir.remove()
                             
         tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
                       + "-sort-batch-size 1024 " 
                     + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
         result = self.executor.run(tmScript + " --first-step 4")
-        splitDir.remove()
-
+        
         if result:
             print "Finished building translation model in: " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-            self._prunePhraseTable()
+       #     self._prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
@@ -170,7 +163,6 @@ class SlurmExperiment(Experiment):
                       + experiment.rootDir + "/mosespy/moses_parallel.py "
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + experiment.moses_root + "/bin/"
-                      + " --batch-mira "
                       + " --decoder-flags=\'-jobs %i -threads %i -v 0' "
                       + " --working-dir " + tuneDir
                       )%(nbDecodingJobs, nbThreads)

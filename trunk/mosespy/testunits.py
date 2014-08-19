@@ -17,7 +17,7 @@ class Pipeline(unittest.TestCase):
         os.makedirs(self.tmpdir)
         print "using directory " + str(self.tmpdir)
         
-    def preprocessing(self):
+    def test_preprocessing(self):
         
         processor = Preprocessor(self.tmpdir, CommandExecutor())
         trueFile = processor.processFile(inFile)
@@ -71,8 +71,9 @@ class Pipeline(unittest.TestCase):
             oindices = [k for k, x in enumerate(targetlines) if x == testLine]
             self.assertEquals(testLine, targetlines[oindices[0]])
             self.assertTrue(any([histories[i]==targetlines[max(0,q-2):q] for q in oindices]))
-            
-        newFile = BasicCorpus(outFile).filterOutLines(test.getTargetFile(), self.tmpdir)
+        
+        newFile = test.getTargetFile().addProperty("2") 
+        BasicCorpus(outFile).filterOutLines(test.getTargetFile(), newFile)
         newlines = Path(newFile).readlines()
         intersect = set(testlines).intersection(set(newlines))
         self.assertTrue(all([targetlines.count(i) > 1 for i in intersect]))
@@ -85,6 +86,39 @@ class Pipeline(unittest.TestCase):
             oindices = [k for k, x in enumerate(targetlines) if x == testlines[i]]
             self.assertTrue(any([not q or align["previoustarget"]==targetlines[q-1] for q in oindices]))
         
+    
+    def test_split(self):
+        acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
+        splitStems = acorpus.splitData(self.tmpdir, 2)
+        self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
+        self.assertTrue(Path(self.tmpdir + "/1.fr").exists())
+        self.assertTrue(Path(self.tmpdir + "/0.en").exists())
+        self.assertTrue(Path(self.tmpdir + "/1.en").exists())
+        self.assertEquals(len(Path(self.tmpdir + "/0.fr").readlines()), 50)
+        self.assertEquals(len(Path(self.tmpdir + "/1.fr").readlines()), 50)
+        self.assertEquals(len(Path(self.tmpdir + "/0.en").readlines()), 50)
+        self.assertEquals(len(Path(self.tmpdir + "/1.en").readlines()), 50)
+
+        self.assertSetEqual(set(splitStems), set([Path(self.tmpdir + "/0"), Path(self.tmpdir + "/1")]))
+        self.assertEquals(Path(self.tmpdir + "/0.fr").readlines()[0], inFile.readlines()[0])
+        self.assertEquals(Path(self.tmpdir + "/0.en").readlines()[0], outFile.readlines()[0])
+        self.assertEquals(Path(self.tmpdir + "/1.fr").readlines()[0], inFile.readlines()[50])
+        self.assertEquals(Path(self.tmpdir + "/1.en").readlines()[0], outFile.readlines()[50])
+    
+        splitStems = acorpus.splitData(self.tmpdir, 3)
+        self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
+        self.assertTrue(Path(self.tmpdir + "/1.fr").exists())
+        self.assertTrue(Path(self.tmpdir + "/2.fr").exists())
+        self.assertTrue(Path(self.tmpdir + "/0.en").exists())
+        self.assertTrue(Path(self.tmpdir + "/1.en").exists())
+        self.assertTrue(Path(self.tmpdir + "/2.en").exists())
+        self.assertEquals(len(Path(self.tmpdir + "/0.fr").readlines()), 33)
+        self.assertEquals(len(Path(self.tmpdir + "/1.fr").readlines()), 33)
+        self.assertEquals(len(Path(self.tmpdir + "/2.fr").readlines()), 34)
+        self.assertEquals(len(Path(self.tmpdir + "/0.en").readlines()), 33)
+        self.assertEquals(len(Path(self.tmpdir + "/1.en").readlines()), 33)
+        self.assertEquals(len(Path(self.tmpdir + "/2.en").readlines()), 34)
+
         
     def langmodel(self):
         experiment.expDir = self.tmpdir + "/"
