@@ -244,18 +244,29 @@ def existsExecutable(command):
     return False
 
     
-def waitForCompletion(jobs):
-    print "Parallel run of " + str(len(jobs)) + " processes"
+def waitForCompletion(resultQueues):
+    print "Parallel run of " + str(len(resultQueues)) + " processes"
     time.sleep(0.1)
     for counter in range(0, 10000):
-        running = [t for t in jobs if t.is_alive()]
-        if len(running) > 0:
+        print "testing, result " + str(resultQueues)
+        stillRunning = []
+        for q in resultQueues:
+            if not q.empty():
+                print "not empty queue!"
+                if not q.get():
+                    print "One parallel task failed, aborting"
+                    return False
+            else:
+                stillRunning.append(q)
+        resultQueues = stillRunning 
+        if len(resultQueues) > 0:
             time.sleep(1)
             if not (counter % 60):
-                print "Number of running processes (%i mins): %i"%(counter/60, len(running))
+                print "Number of running processes (%i mins): %i"%(counter/60, len(resultQueues))
         else:
             break
-    print "Parallel processes completed"  
+    print "Parallel processes completed" 
+    return True 
 
 
 def setEnv(variable, value, override=True):
