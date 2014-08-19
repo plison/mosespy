@@ -4,7 +4,7 @@ import os, json, copy,  re
 import paths, process, analyser
 from paths import Path
 from mosespy.preprocessing import Preprocessor
-from corpus import AlignedCorpus, TranslatedCorpus
+from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -50,17 +50,17 @@ class Experiment(object):
     def doWholeShibang(self, alignedStem, lmFile=None):
         
         corpus = AlignedCorpus(alignedStem, self.settings["source"], self.settings["target"])
-        trainCorpus, tuneCorpus, testCorpus = corpus.divideData(self.settings["path"])
+        train, tune, test = corpus.divideData(self.settings["path"])
         
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
-        newLmFile = self.settings["path"] + "/" + Path(lmFile).basename().addProperty("filtered") 
-        testCorpus.filterLmData(lmFile, newLmFile)
+        newLmFile = BasicCorpus(lmFile).filterOutLines(test.getTargetFile(), self.settings["path"])
+
         self.trainLanguageModel(newLmFile)
         
-        self.trainTranslationModel(trainCorpus.getStem())
-        self.tuneTranslationModel(tuneCorpus.getStem())
-        self.evaluateBLEU(testCorpus.getStem())
+        self.trainTranslationModel(train.getStem())
+        self.tuneTranslationModel(tune.getStem())
+        self.evaluateBLEU(test.getStem())
                     
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, keepArpa=False):
@@ -268,14 +268,6 @@ class Experiment(object):
         lastTest = self.settings["test"]
         translatedCorpus = TranslatedCorpus(lastTest["stem"], self.settings["source"], 
                                             self.settings["target"], lastTest["translation"])
-
-        indicesFile = lastTest["stem"].removeProperty().addProperty("indices")
-        print "Looking for " + indicesFile
-        if (indicesFile).exists():
-            indices = [int(i) for i in indicesFile.readlines().split('\n')]
-            originCorpus = lastTest["stem"].removeProperty().removeProperty()  
-            print "original corpus: " + originCorpus             
-            translatedCorpus.linkWithOriginalCorpus(originCorpus, indices)
                      
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       

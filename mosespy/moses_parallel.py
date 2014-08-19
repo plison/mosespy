@@ -3,6 +3,7 @@
 import sys, os, uuid, select, threading
 import process, slurm, corpus
 from paths import Path
+from corpus import BasicCorpus
 
 moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
 decoder = moses_root + "/bin/moses "
@@ -95,7 +96,7 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
 def splitDecoding(inputFile, mosesArgs, nbJobs):
     splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
     splitDir.reset()
-    infiles = corpus.splitData(inputFile, splitDir, nbJobs)  
+    infiles = BasicCorpus(inputFile).splitData(splitDir, nbJobs)
     print "Data split in " + str(len(infiles))
     
     splits = []
