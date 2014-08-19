@@ -66,8 +66,9 @@ class Experiment(object):
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, keepArpa=False):
   
         trainFile = Path(trainFile)
-        lang = trainFile.getLang()
-
+        if not trainFile.exists():
+            raise RuntimeError("File " + trainFile + " does not exist")
+        
         if preprocess:
             trainFile = self.processor.processFile(trainFile)
 
@@ -77,17 +78,17 @@ class Experiment(object):
                 
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
-        lmFile = self.settings["path"] + "/langmodel.lm." + lang
+        lmFile = self.settings["path"] + "/langmodel.lm." + trainFile.getLang()
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.settings["name"])) 
         self.executor.run(lmScript)
                            
-        arpaFile = self.settings["path"] + "/langmodel.arpa." + lang
+        arpaFile = self.settings["path"] + "/langmodel.arpa." + trainFile.getLang()
         arpaScript = (irstlm_root + "/bin/compile-lm" + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
 
-        blmFile = self.settings["path"] + "/langmodel.blm." + lang
+        blmFile = self.settings["path"] + "/langmodel.blm." + trainFile.getLang()
         blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
@@ -278,6 +279,18 @@ class Experiment(object):
         translatedCorpus.getTargetFile().remove()
         translatedCorpus.getTranslationFile().remove()
 
+    def queryLanguageModel(self, text):
+        if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"):
+            raise RuntimeError("Language model is not yet trained")
+        blmFile = self.settings["lm"]["blm"]
+        queryScript = (moses_root + "/bin/query "+ blmFile)
+        return self.executor.run_output(queryScript, text)
+       # regex = (".*" + re.escape("Total:") + "\s([-+]?[0-9]*\.?[0-9]*).*" 
+       #          + ".*" + re.escape("Perplexity including OOVs:") + "\s([-+]?[0-9]*\.?[0-9]*).*" 
+       #          + ".*" + re.escape("Perplexity excluding OOVs:") + "\s([-+]?[0-9]*\.?[0-9]*).*" 
+       #          + ".*" + re.escape("OOVs:") + "\s([0-9]*).*" 
+       #          + ".*" + re.escape("Tokens:") + "\s([0-9]*).*")
+     
    
     def reduceSize(self):
         if self.settings.has_key("tm"):
