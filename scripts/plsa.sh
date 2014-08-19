@@ -204,12 +204,20 @@ fi
 echo split documents >> $logfile
 $bin/plsa -c="$data" -d=$dict -b=$tmpdir/data -sd=$splits >> $logfile 2>&1
 
+machine=`uname -s` 
+if [ $machine == "Darwin" ] ; then
+splitlist=`jot - 1 $splits`
+iterlist=`jot - 1 $iter`
+else
+splitlist=`seq 1 1 $splits`
+iterlist=`seq 1 1 $iter`
+fi
 
 #rm $tmpdir/Tlist
-for sp in `seq 1 1 $splits`; do echo $tmpdir/data.T.$sp >> $tmpdir/Tlist 2>&1; done
+for sp in $splitlist ; do echo $tmpdir/data.T.$sp >> $tmpdir/Tlist 2>&1; done
 #rm $model
-for it in `seq 1 1 $iter` ; do
-for sp in `seq 1 1 $splits`; do
+for it in $iterlist ; do
+for sp in $splitlist ; do
 date; echo it $it split $sp
 $bin/plsa -c=$tmpdir/data.$sp -d=$dict -st=$spectopics -hf=$tmpdir/data.H.$sp -tf=$tmpdir/data.T.$sp -wf=$model -m=$model -t=$topics -it=1 -tit=$it >> $logfile 2>&1 &
 done
