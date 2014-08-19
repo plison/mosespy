@@ -4,7 +4,9 @@ import experiment, system
 from experiment import Experiment 
 from preprocessing import Preprocessor
 from corpus import AlignedCorpus
-from system import Path, CommandExecutor
+from system import CommandExecutor
+from config import MosesConfig
+
 nodeMemory=60000
 nodeCpus = 16
 nodeTime = "5:00:00"
@@ -146,12 +148,8 @@ class SlurmExperiment(Experiment):
       
     def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
         Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
-        if self.settings.has_key("ttm"):
-            with open(self.settings["ttm"] + "/moses.ini", 'r') as iniFile:
-                config = iniFile.read()
-            with open(self.settings["ttm"] + "/moses.ini", 'w') as iniFile:
-                iniFile.write(re.sub(r"\[jobs\]\n(\d)+", "", config))
-
+        config = MosesConfig(self.settings["ttm"]+"/moses.ini")
+        config.removePart("jobs")
 
 
     def _getTuningScript(self, tuneDir, tuningStem, nbThreads):

@@ -5,6 +5,7 @@ import system, analyser
 from system import Path
 from preprocessing import Preprocessor
 from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
+from config import MosesConfig
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -171,15 +172,10 @@ class Experiment(object):
         result2 = self.executor.run(binScript2)
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
-        
-        
-        initLines = Path(self.settings["ttm"]+"/moses.ini").readlines()
-        with open(binaDir+"/moses.ini", 'w') as newConfig:
-            for l in initLines:
-                l = l.replace("PhraseDictionaryMemory", "PhraseDictionaryBinary")
-                l = l.replace(phraseTable, binaDir + "/phrase-table")
-                l = l.replace(reorderingTable, binaDir + "/reordering-table")
-                newConfig.write(l)
+         
+        config = MosesConfig(self.settings["ttm"]+"/moses.ini")
+        config.replacePhraseTable(binaDir+"/phrase-table", "PhraseDictionaryBinary")
+        config.replaceReorderingTable(binaDir+"/reordering-table")
         
         self.settings["btm"] = binaDir
         self._recordState()
@@ -305,16 +301,16 @@ class Experiment(object):
             (self.settings["tm"]+"/corpus").remove()
             (self.settings["tm"]+"/giza." + self.settings["source"] + "-" + self.settings["target"]).remove()
             (self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"]).remove()
-            with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
-                iniContent = iniFile.read()
+            config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
+            paths = config.getPaths()
             for f in (self.settings["tm"]+"/model").listdir():
-                if f not in iniContent and f != "moses.ini":
+                if Path(f).getAbsolute() not in paths and "moses.ini" not in f:
                     (self.settings["tm"]+"/model/" + f).remove()
         
         if self.settings.has_key("ttm"):
             for f in self.settings["ttm"].listdir():
                 fi = self.settings["ttm"] + "/" + f
-                if f != "moses.ini":
+                if "moses.ini" not in f:
                     fi.remove()
         for f in self.settings["path"].listdir():
             if "model" not in f and "settings" not in f:
@@ -350,18 +346,11 @@ class Experiment(object):
         result = self.executor.run(pruneScript)
         if result:
             print "Finished pruning translation table " + phrasetable
-            
-            with open(self.settings["tm"]+"/model/moses.ini", 'r') as iniFile:
-                initContent = iniFile.read()
-            with open(self.settings["tm"]+"/model/moses.ini", 'w') as iniFile:
-                iniFile.write(initContent.replace(phrasetable, newtable))
-                
+            config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
+            config.replacePhraseTable(newtable)                
             if self.settings.has_key("ttm") and (self.settings["ttm"] + "/moses.ini").exists():
-                with open(self.settings["ttm"]+"/moses.ini", 'r') as iniFile:
-                    initContent = iniFile.read()
-                with open(self.settings["ttm"]+"/moses.ini", 'w') as iniFile:
-                    iniFile.write(initContent.replace(phrasetable, newtable))
-                
+                config = MosesConfig(self.settings["ttm"]+"/moses.ini")
+                config.replacePhraseTable(newtable)                
         else:
             print "Pruning of translation table FAILED"
         

@@ -1,5 +1,5 @@
 import re
-from paths import Path
+from system import Path
 
 class MosesConfig():
     
@@ -58,6 +58,23 @@ class MosesConfig():
             parts["feature"] = newList
         self._updateFile(parts)
         
+    
+    def removePart(self, partname):
+        parts = self._getParts()
+        if parts.has_key(partname):
+            del parts[partname]
+        self._updateFile(parts)
+        
+    
+    def getPaths(self):
+        paths = set()
+        parts = self._getParts() 
+        for part in parts:
+            for l in parts[part]:
+                s = re.search(re.escape("path=") + r"((\S)+)", l)
+                if s:
+                    paths.add(Path(s.group(1)).getAbsolute())
+        return paths
         
     
     def _updateFile(self, newParts):
