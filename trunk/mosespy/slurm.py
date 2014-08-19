@@ -118,14 +118,23 @@ class SlurmExperiment(Experiment):
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
         jobArgs1 = [(stem, stem, " --last-step 1") for stem in splitStems]
-        self.executor.run_parallel(slotScript, jobArgs1)
+        r1 = self.executor.run_parallel(slotScript, jobArgs1)
+        if not r1:
+            print "Construction of translation model FAILED (step 1)"
+            return
   
         jobArgs2 = [(stem, stem, " --first-step 2 --last-step 2 --direction 1") for stem in splitStems]
         jobArgs3 = [(stem, stem, " --first-step 2 --last-step 2 --direction 2") for stem in splitStems]
-        self.executor.run_parallel(slotScript, jobArgs2 + jobArgs3)
+        r2 = self.executor.run_parallel(slotScript, jobArgs2 + jobArgs3)
+        if not r2:
+            print "Construction of translation model FAILED (step 2)"
+            return
 
         jobArgs4 = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
-        self.executor.run_parallel(slotScript, jobArgs4)
+        r3 = self.executor.run_parallel(slotScript, jobArgs4)
+        if not r3:
+            print "Construction of translation model FAILED (step 3)"
+            return
          
         tmDir.reset()
         (tmDir+"/model").make()
