@@ -124,7 +124,21 @@ class Pipeline(unittest.TestCase):
         experiment.expDir = self.tmpdir + "/"
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True, keepArpa=True)
+        result1 = exp.queryLanguageModel("Where is it ?")
+        print result1
+        self.assertAlmostEqual(result1["logprob"], -6.29391, 3)
+        result2 = exp.queryLanguageModel("unrelated phrase I find here")
+        self.assertAlmostEqual(result2["logprob"], -8.35604, 3)
+        self.assertEqual(result2["OOVs"], 3)
+        self.assertTrue(exp.settings.has_key("lm"))
         
+    
+    def test_translationmodel(self):
+        experiment.expDir = self.tmpdir + "/"
+        exp = experiment.Experiment("test", "fr", "en")
+        exp.trainLanguageModel(outFile, preprocess=True, keepArpa=True)
+        exp.trainTranslationModel(inFile.getStem())
+        self.assertTrue(exp.settings.has_key("tm"))
         
     def tearDown(self):
         print ""

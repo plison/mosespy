@@ -48,6 +48,8 @@ class Path(str):
             newPath += "." + self.getLang()
         return newPath
          
+    def getAbsolute(self):
+        return Path(os.path.abspath(self))
     
     def getPath(self):
         return Path(os.path.dirname(self))
