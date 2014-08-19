@@ -25,7 +25,7 @@ class SlurmExecutor(CommandExecutor):
         os.environ["LD_LIBRARY_PATH"] = (intelPath + ":"
                    + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                    + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        os.environ["PATH"] = "/opt/rocks/bin" + os.environ["PATH"] 
+        os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"] 
         
 
     def _getScript(self, script):    
