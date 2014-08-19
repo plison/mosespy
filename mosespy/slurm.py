@@ -1,11 +1,10 @@
 
 import re, uuid, threading, copy
-import experiment, process
+import experiment, system
 from experiment import Experiment 
 from preprocessing import Preprocessor
 from corpus import AlignedCorpus
-from process import CommandExecutor
-  
+from system import Path, CommandExecutor
 nodeMemory=60000
 nodeCpus = 16
 nodeTime = "5:00:00"
@@ -22,10 +21,10 @@ class SlurmExecutor(CommandExecutor):
         
         # System-dependent settings for the Abel cluster, change it to suit your needs
         modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
-        process.setEnv("LD_LIBRARY_PATH", process.run_output(modScript) + ":"
+        system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
                        + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
                    +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        process.setEnv("PATH", "/opt/rocks/bin", override=False)
+        system.setEnv("PATH", "/opt/rocks/bin", override=False)
         
 
     def _getScript(self, script):    
@@ -42,7 +41,7 @@ class SlurmExecutor(CommandExecutor):
         
     
     def run(self, script, stdin=None, stdout=None):
-        if not "SLURM" in str(process.getEnv().keys()):
+        if not "SLURM" in str(system.getEnv().keys()):
             script = self._getScript(script)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
@@ -57,7 +56,7 @@ class SlurmExecutor(CommandExecutor):
             t = threading.Thread(target=self.run, args=(filledScript, stdin, stdout))
             jobs.append(t)
             t.start()
-        process.waitForCompletion(jobs)
+        system.waitForCompletion(jobs)
     
                
         
@@ -67,7 +66,7 @@ class SlurmExperiment(Experiment):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
   
-        if not process.existsExecutable("srun"):
+        if not system.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
     
@@ -194,8 +193,8 @@ class SlurmExperiment(Experiment):
 
 
 def _getDefaultSlurmAccount():
-    user = process.run_output("whoami")
-    result = process.run_output("sacctmgr show User "+user + " -p")
+    user = system.run_output("whoami")
+    result = system.run_output("sacctmgr show User "+user + " -p")
     s = re.search(user+r"\|((\S)+?)\|", result)
     if s:
         account = s.group(1)
