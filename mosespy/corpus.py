@@ -2,7 +2,6 @@
 import random
 from paths import Path
 
-
 class BasicCorpus(object):
          
     def __init__(self, corpusFile):
@@ -51,15 +50,13 @@ class BasicCorpus(object):
 
 
         
-    def filterOutLines(self, fileToFilter, workPath):
+    def filterOutLines(self, contentToRemove, outputFile):
     
         inputLines = self.getCorpusFile().readlines()
         
-        corpusToFilter = BasicCorpus(fileToFilter)
-        occurrences = corpusToFilter.getOccurrences()
-        histories = corpusToFilter.getHistories()
-         
-        outputFile = workPath + "/" + self.getCorpusFile().basename().addProperty("filtered") 
+        contentToRemove = BasicCorpus(contentToRemove)
+        occurrences = contentToRemove.getOccurrences()
+        histories = contentToRemove.getHistories()     
 
         with open(outputFile, 'w', 1000000) as newLmFileD:                 
             skippedLines = []
@@ -88,20 +85,21 @@ class BasicCorpus(object):
         nbSplits = min(nbSplits, totalLines)
         filenames = []
         curSplit = 0
-        filename = outputDir + "/" + str(curSplit) + extension
+        filename = Path(outputDir + "/" + str(curSplit) + extension)
         filenames.append(filename)
         curFile = open(filename, 'w')
         nbLines = 0
         for l in lines:
-            curFile.write(l)
-            nbLines += 1
-            if nbLines >= (totalLines / nbSplits + 1):
+            if nbLines >= (totalLines / nbSplits) and curSplit < nbSplits -1:
                 nbLines = 0
                 curFile.close()
                 curSplit += 1
-                filename = outputDir + "/" + str(curSplit) + extension
+                filename = Path(outputDir + "/" + str(curSplit) + extension)
                 curFile = open(filename, 'w')
                 filenames.append(filename)
+            print "current line: " + l + " on curFile " + str(curFile.name)
+            curFile.write(l)
+            nbLines += 1
         curFile.close()
         return filenames
 
@@ -127,10 +125,21 @@ class AlignedCorpus(object):
         if nbLinesSource != nbLinesTarget:
             raise RuntimeError("Number of lines for source and target are different")
 
-                
+    
+    def splitData(self, outputDir, nbSplits):
+    
+        sourceCorpus = BasicCorpus(self.getSourceFile())
+        targetCorpus = BasicCorpus(self.getTargetFile())
+        sourceFiles = sourceCorpus.splitData(outputDir, nbSplits)
+        targetFiles = targetCorpus.splitData(outputDir, nbSplits)
+        stems = [filename.getStem() for filename in sourceFiles]
+        if stems != [filename.getStem() for filename in targetFiles]:
+            raise RuntimeError("stems from split data in source and target are different")
+        
+        return stems
+               
  
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000):
-        
         workPath = Path(workPath)
         sourceLines = (self.stem + "." + self.sourceLang).readlines()
         targetLines = (self.stem + "." + self.targetLang).readlines()
