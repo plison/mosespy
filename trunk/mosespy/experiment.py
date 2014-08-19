@@ -23,7 +23,7 @@ class Experiment(object):
         self.settings = {}
         self.settings["name"] = expName
         
-        self.settings["path"] = Path(expDir+self.settings["name"])
+        self.settings["path"] = Path(expDir+self.settings["name"]).getAbsolute()
         
         jsonFile = self.settings["path"]+"/settings.json"
         if jsonFile.exists():
@@ -65,7 +65,7 @@ class Experiment(object):
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, keepArpa=False):
   
-        trainFile = Path(trainFile)
+        trainFile = Path(trainFile).getAbsolute()
         if not trainFile.exists():
             raise RuntimeError("File " + trainFile + " does not exist")
         
@@ -284,13 +284,20 @@ class Experiment(object):
             raise RuntimeError("Language model is not yet trained")
         blmFile = self.settings["lm"]["blm"]
         queryScript = (moses_root + "/bin/query "+ blmFile)
-        return self.executor.run_output(queryScript, text)
-       # regex = (".*" + re.escape("Total:") + "\s([-+]?[0-9]*\.?[0-9]*).*" 
-       #          + ".*" + re.escape("Perplexity including OOVs:") + "\s([-+]?[0-9]*\.?[0-9]*).*" 
-       #          + ".*" + re.escape("Perplexity excluding OOVs:") + "\s([-+]?[0-9]*\.?[0-9]*).*" 
-       #          + ".*" + re.escape("OOVs:") + "\s([0-9]*).*" 
-       #          + ".*" + re.escape("Tokens:") + "\s([0-9]*).*")
-     
+        output = self.executor.run_output(queryScript, text+"\n")
+        regex = (r".*" + re.escape("Total:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+" 
+                 + re.escape("Perplexity including OOVs:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+"  
+                 + re.escape("Perplexity excluding OOVs:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+" 
+                 + re.escape("OOVs:") + r"\s+([0-9]*).+" 
+                 + re.escape("Tokens:") + r"\s+([0-9]*)")
+        s = re.search(regex, output, flags=re.DOTALL)
+        if s:
+            return {"logprob":float(s.group(1)), "perplexity":float(s.group(2)), 
+                    "perplexity2":float(s.group(3)),
+                    "OOVs":int(s.group(4)), "tokens": int(s.group(5))}
+        else:
+            print "Query results could not be parsed: " + str(output)
+    
    
     def reduceSize(self):
         if self.settings.has_key("tm"):

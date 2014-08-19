@@ -10,23 +10,27 @@ class CommandExecutor(object):
         
     def run(self, script, stdin=None, stdout=None):
         self.callincr += 1
-        print "[" + str(self.callincr) + "] Running " + script + \
-                (" < " + stdin if isinstance(stdin, basestring) else "") + \
-              (" > " + stdout if isinstance(stdout, basestring) else "")
-                  
+        
+        str_stdin = ""
         if os.path.exists(str(stdin)):
             stdin_popen = open(stdin, 'r')
+            str_stdin = " < " + stdin
         elif isinstance(stdin, basestring):
             stdin_popen = subprocess.PIPE
+            str_stdin = " <<< \"" + stdin + "\""
         else:
             stdin_popen = None
-            
+        
+        str_stdout = ""
         if os.path.exists(os.path.dirname(str(stdout))):
             stdout_popen = open(stdout, 'w')
+            str_stdout = " > " + stdout
         elif stdout is not None and not stdout:
             stdout_popen = subprocess.PIPE
         else:
             stdout_popen = None
+                 
+        print "[" + str(self.callincr) + "] Running " + script + str_stdin + str_stdout
         
         inittime = datetime.now()
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
