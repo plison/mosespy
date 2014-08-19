@@ -1,6 +1,6 @@
 
 import random
-from paths import Path
+from system import Path
 
 class BasicCorpus(object):
          

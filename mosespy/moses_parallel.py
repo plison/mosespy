@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-import sys, os, uuid, select
+import sys, uuid, select
 import slurm
 from paths import Path
 from corpus import BasicCorpus
 
-moses_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/moses" 
+moses_root = Path(__file__).getAbsolute().getUp().getUp() + "/moses"
 decoder = moses_root + "/bin/moses "
 
 executor = slurm.SlurmExecutor()
@@ -119,7 +119,7 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
         print "Running decoder: " + decoder + mosesArgs
         executor.run(decoder + mosesArgs, stdout=outStream)
         
-    elif nbJobs == 1 or os.path.getsize(inputFile) < 1000:
+    elif nbJobs == 1 or inputFile.getSize() < 1000:
         print "Running decoder: " + decoder + mosesArgs + " < " + inputFile
         executor.run(decoder + mosesArgs, stdin=inputFile, stdout=outStream)
     else:
@@ -151,7 +151,7 @@ def main():
     runParallelMoses(inputFile, arguments, stdout, nbJobs)
     
     if inputFile and "tmp" in inputFile:
-        os.remove(inputFile)
+        inputFile.remove()
 
 
 

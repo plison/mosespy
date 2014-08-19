@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*- 
 
-import os, json, copy,  re
-import paths, process, analyser, corpus
-from paths import Path
+import json, copy,  re
+import system, analyser
+from system import Path
 from preprocessing import Preprocessor
 from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
 
@@ -11,13 +11,11 @@ expDir = rootDir + "/experiments/"
 moses_root = rootDir + "/moses" 
 mgizapp_root = rootDir + "/mgizapp"
 irstlm_root = rootDir + "/irstlm"
-os.environ["IRSTLM"] = irstlm_root
 defaultAlignment = "grow-diag-final-and"
 defaultReordering = "msd-bidirectional-fe"
 
 class Experiment(object):
     
-    executor = process.CommandExecutor()
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.settings = {}
@@ -29,22 +27,23 @@ class Experiment(object):
         if jsonFile.exists():
             print "Existing experiment, reloading known settings..."
             self.settings = json.loads(open(jsonFile).read())
-            self.settings = paths.convertToPaths(self.settings)
+            self.settings = system.convertToPaths(self.settings)
         else:
             self.settings["path"].make()
             if sourceLang:
                 self.settings["source"] = sourceLang
-                self.settings["source_long"] = paths.getLanguage(sourceLang)
+                self.settings["source_long"] = system.getLanguage(sourceLang)
             if targetLang:
                 self.settings["target"] = targetLang
-                self.settings["target_long"] = paths.getLanguage(targetLang)
+                self.settings["target_long"] = system.getLanguage(targetLang)
                 
         self._recordState()
         print ("Experiment " + expName + " (" + self.settings["source"]  
                + "-" + self.settings["target"] + ") successfully started")
         
+        self.executor = system.CommandExecutor()
         self.processor = Preprocessor(self.settings["path"], self.executor)
-      
+
     
     def doWholeShibang(self, alignedStem, lmFile=None):
         
@@ -65,6 +64,7 @@ class Experiment(object):
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, keepArpa=False):
   
+        system.setEnv("IRSTLM", irstlm_root)
         trainFile = Path(trainFile).getAbsolute()
         if not trainFile.exists():
             raise RuntimeError("File " + trainFile + " does not exist")
@@ -172,6 +172,7 @@ class Experiment(object):
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
         
+        
         initLines = Path(self.settings["ttm"]+"/moses.ini").readlines()
         with open(binaDir+"/moses.ini", 'w') as newConfig:
             for l in initLines:
@@ -251,7 +252,7 @@ class Experiment(object):
                 testTarget = self.processor.processFile(testTarget)
 
             bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-            bleu_output = process.run_output(bleuScript, stdin=translationfile)
+            bleu_output = system.run_output(bleuScript, stdin=translationfile)
             print bleu_output.strip()
             s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
             if s:

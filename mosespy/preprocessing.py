@@ -1,5 +1,5 @@
 
-from paths import Path 
+from system import Path 
 from corpus import AlignedCorpus, TranslatedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 

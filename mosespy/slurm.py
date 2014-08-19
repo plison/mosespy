@@ -1,5 +1,5 @@
 
-import os, re, uuid, threading, copy
+import re, uuid, threading, copy
 import experiment, process
 from experiment import Experiment 
 from preprocessing import Preprocessor
@@ -21,11 +21,11 @@ class SlurmExecutor(CommandExecutor):
         self.account = account
         
         # System-dependent settings for the Abel cluster, change it to suit your needs
-        intelPath = os.popen("module load intel openmpi.intel ; echo $LD_LIBRARY_PATH").read().strip('\n')
-        os.environ["LD_LIBRARY_PATH"] = (intelPath + ":"
-                   + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
-                   + "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        os.environ["PATH"] = "/opt/rocks/bin:" + os.environ["PATH"] 
+        modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
+        process.setEnv("LD_LIBRARY_PATH", process.run_output(modScript) + ":"
+                       + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                   +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        process.setEnv("PATH", "/opt/rocks/bin", override=False)
         
 
     def _getScript(self, script):    
@@ -42,7 +42,7 @@ class SlurmExecutor(CommandExecutor):
         
     
     def run(self, script, stdin=None, stdout=None):
-        if "SLURM" not in str(os.environ.keys()):
+        if not "SLURM" in str(process.getEnv().keys()):
             script = self._getScript(script)  
         return super(SlurmExecutor,self).run(script, stdin, stdout)
     
@@ -194,8 +194,8 @@ class SlurmExperiment(Experiment):
 
 
 def _getDefaultSlurmAccount():
-    user = (os.popen("whoami")).read().strip()
-    result = (os.popen("sacctmgr show User "+user + " -p")).read()
+    user = process.run_output("whoami")
+    result = process.run_output("sacctmgr show User "+user + " -p")
     s = re.search(user+r"\|((\S)+?)\|", result)
     if s:
         account = s.group(1)
