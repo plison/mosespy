@@ -252,6 +252,7 @@ def waitForCompletion(resultQueues):
         for q in resultQueues:
             if not q.empty():
                 if not q.get():
+                    print "One parallel task failed, aborting"
                     return False
             else:
                 stillRunning.append(q)
