@@ -3,7 +3,7 @@
 import json, copy,  re
 import system, analyser
 from system import Path
-from preprocessing import Preprocessor
+from mosespy.processing import CorpusProcessor
 from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
 from config import MosesConfig
 
@@ -43,7 +43,7 @@ class Experiment(object):
                + "-" + self.settings["target"] + ") successfully started")
         
         self.executor = system.CommandExecutor()
-        self.processor = Preprocessor(self.settings["path"], self.executor)
+        self.processor = CorpusProcessor(self.settings["path"], self.executor)
 
     
     def doWholeShibang(self, alignedStem, lmFile=None):
@@ -63,7 +63,7 @@ class Experiment(object):
         self.evaluateBLEU(test.getStem())
                     
     
-    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, keepArpa=False):
+    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
   
         system.setEnv("IRSTLM", irstlm_root)
         trainFile = Path(trainFile).getAbsolute()
@@ -96,8 +96,7 @@ class Experiment(object):
 
         sbFile.remove()
         (lmFile + ".gz").remove()
-        if not keepArpa:
-            arpaFile.remove()
+        arpaFile.remove()
 
         self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
         self._recordState()
@@ -188,6 +187,8 @@ class Experiment(object):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
             initFile = self.settings["ttm"] + "/moses.ini"
+        elif self.settings.has_key("tm"):
+            initFile = self.settings["tm"] + "/model/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet trained and tuned!")
         print ("Translating text: \"" + text + "\" from " + 
@@ -214,8 +215,10 @@ class Experiment(object):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
             initFile = self.settings["ttm"] + "/moses.ini"
+        elif self.settings.has_key("tm"):
+            initFile = self.settings["tm"] + "/model/moses.ini"
         else:
-            raise RuntimeError("Translation model is not yet trained and tuned!")
+            raise RuntimeError("Translation model is not yet trained!")
         print ("Translating file \"" + infile + "\" from " + 
                self.settings["source"] + " to " + self.settings["target"])
 
@@ -236,36 +239,31 @@ class Experiment(object):
         testCorpus = AlignedCorpus(testData, self.settings["source"], self.settings["target"])
         print ("Evaluating BLEU scores with test data: " + testData)
         
-        testSource = testCorpus.getSourceFile()
-        testTarget = testCorpus.getTargetFile()          
-        translationfile = self.settings["path"] + "/" + testTarget.basename().addProperty("translated")
+        if preprocess:
+            testCorpus = self.processor.processCorpus(testCorpus, False)
+          
+        transFile = testCorpus.getTargetFile().basename().addProperty("translated")  
+        transPath = self.settings["path"] + "/" + transFile
         
-        trans_result = self.translateFile(testSource, translationfile, filterModel=True, preprocess=preprocess)
-        
-        if trans_result:
-
-            if preprocess:
-                testTarget = self.processor.processFile(testTarget)
-
-            bleuScript = moses_root + "/scripts/generic/multi-bleu.perl -lc " + testTarget
-            bleu_output = system.run_output(bleuScript, stdin=translationfile)
-            print bleu_output.strip()
-            s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
-            if s:
-                self.settings["test"] = {"stem":testTarget.getStem(), 
-                                         "translation":translationfile, 
-                                         "bleu": s.group(1)}
+        result = self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
+        if result:
+            transCorpus = TranslatedCorpus(testCorpus, transPath)
+            bleu = self.processor.getBleuScore(transCorpus)
+            self.settings["test"] = {"stem":transCorpus.getStem(),
+                                     "translation":transPath,
+                                     "bleu":bleu}                            
             self._recordState()
-        
-
+            return bleu
+ 
+ 
     def analyseErrors(self):
         
         if not self.settings.has_key("test"):
             raise RuntimeError("you must first perform an evaluation before the analysis")
         
         lastTest = self.settings["test"]
-        translatedCorpus = TranslatedCorpus(lastTest["stem"], self.settings["source"], 
-                                            self.settings["target"], lastTest["translation"])
+        testCorpus = AlignedCorpus(lastTest["stem"], self.settings["source"], self.settings["target"])
+        translatedCorpus = TranslatedCorpus(testCorpus, lastTest["translation"])
                      
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
@@ -304,13 +302,13 @@ class Experiment(object):
             config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
             paths = config.getPaths()
             for f in (self.settings["tm"]+"/model").listdir():
-                if Path(f).getAbsolute() not in paths and "moses.ini" not in f:
+                if Path(f).getAbsolute() not in paths and f !="moses.ini":
                     (self.settings["tm"]+"/model/" + f).remove()
         
         if self.settings.has_key("ttm"):
             for f in self.settings["ttm"].listdir():
                 fi = self.settings["ttm"] + "/" + f
-                if "moses.ini" not in f:
+                if f !="moses.ini":
                     fi.remove()
         for f in self.settings["path"].listdir():
             if "model" not in f and "settings" not in f:
@@ -333,9 +331,10 @@ class Experiment(object):
         if not self.settings.has_key("tm"):
             raise RuntimeError("Translation model is not yet constructed")
         
-        phrasetable = self.settings["tm"]+"/model/phrase-table.gz"
-        newtable = self.settings["tm"]+"/model/phrase-table.reduced.gz"
-        
+        config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
+        phrasetable = config.getPhraseTable()
+        newtable = config.getPhraseTable()[:-2] + "reduced.gz"
+
         if not phrasetable.exists():
             print "Original phrase table has been removed, pruning canceled"
             return
@@ -346,8 +345,8 @@ class Experiment(object):
         result = self.executor.run(pruneScript)
         if result:
             print "Finished pruning translation table " + phrasetable
-            config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
-            config.replacePhraseTable(newtable)                
+            config.replacePhraseTable(newtable)  
+                          
             if self.settings.has_key("ttm") and (self.settings["ttm"] + "/moses.ini").exists():
                 config = MosesConfig(self.settings["ttm"]+"/moses.ini")
                 config.replacePhraseTable(newtable)                
@@ -402,6 +401,8 @@ class Experiment(object):
         
         if self.settings.has_key("ttm"):
             initFile = self.settings["ttm"] + "/moses.ini"
+        if self.settings.has_key("tm"):
+            initFile = self.settings["tm"] + "/model/moses.ini"
         else:
             raise RuntimeError("Translation model is not yet tuned")
 

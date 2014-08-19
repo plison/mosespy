@@ -156,7 +156,7 @@ class Path(str):
             return os.path.getsize(self)
         elif os.path.isdir(self):
             sizeStr = os.popen('du -sh ' + self).read().split("\t")[0]
-            number = int(sizeStr[:-1])
+            number = float(sizeStr[:-1])
             if sizeStr[-1]=="K":
                 return number*1000
             elif sizeStr[-1]=="M":
@@ -190,10 +190,7 @@ class Path(str):
     
     
     def getUp(self):
-        if os.path.exists(self): 
-            return Path(os.path.realpath(os.path.dirname(self)))
-        else:
-            raise RuntimeError(self + " does not exist")
+        return Path(os.path.realpath(os.path.dirname(self)))
         
     def listdir(self):
         if os.path.isdir(self):

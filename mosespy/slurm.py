@@ -2,7 +2,7 @@
 import re, uuid, threading, copy
 import experiment, system
 from experiment import Experiment 
-from preprocessing import Preprocessor
+from mosespy.processing import CorpusProcessor
 from corpus import AlignedCorpus
 from system import CommandExecutor
 from config import MosesConfig
@@ -75,7 +75,7 @@ class SlurmExperiment(Experiment):
         self.settings["account"] = account
         self.maxJobs = maxJobs
         self.executor = SlurmExecutor(account)
-        self.processor = Preprocessor(self.settings["path"], self.executor, nodeCpus)
+        self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):
@@ -103,20 +103,13 @@ class SlurmExperiment(Experiment):
                + " with " + str(self.maxJobs) + " splits")
     
         splitDir = self.settings["path"] + "/splits"
-        splitDir.reset()
         splitStems = train.splitData(splitDir, self.maxJobs/2)
  
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
-        jobArgs = [(stem, stem, " --last-step 1") for stem in splitStems]
-        self.executor.run_parallel(slotScript, jobArgs)
   
-        jobArgs1 = [(stem, stem, " --first-step 2 --last-step 2 --direction 1") for stem in splitStems]
-        jobArgs2 = [(stem, stem, " --first-step 2 --last-step 2 --direction 2") for stem in splitStems]
-        self.executor.run_parallel(slotScript, jobArgs1 + jobArgs2)
-
         jobArgs = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
         self.executor.run_parallel(slotScript, jobArgs)
          
