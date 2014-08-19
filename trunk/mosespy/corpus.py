@@ -2,6 +2,7 @@
 import random
 from system import Path
 
+
 class BasicCorpus(object):
          
     def __init__(self, corpusFile):
@@ -138,14 +139,18 @@ class AlignedCorpus(object):
         return stems
                
  
-    def divideData(self, workPath, nbTuning=1000, nbTesting=3000):
+    def divideData(self, workPath, nbTuning=1000, nbTesting=3000, random=True):
         workPath = Path(workPath)
         sourceLines = (self.stem + "." + self.sourceLang).readlines()
         targetLines = (self.stem + "." + self.targetLang).readlines()
             
-        tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
-        testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
-        
+        if random:
+            tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
+            testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
+        else:
+            tuningIndices = range(0,len(sourceLines))[-nbTuning-nbTesting:-nbTesting]
+            testingIndices = range(0,len(sourceLines))[-nbTesting:]
+            
         trainSourceLines = []
         tuneSourceLines = []
         testSourceLines = []       
@@ -232,8 +237,10 @@ class AlignedCorpus(object):
 
 class TranslatedCorpus(AlignedCorpus):
     
-    def __init__(self, stem, sourceLang, targetLang, translationFile):
-        AlignedCorpus.__init__(self, stem, sourceLang, targetLang)
+    def __init__(self, corpus, translationFile):
+        if not isinstance(corpus, AlignedCorpus):
+            raise RuntimeError("corpus must be an AlignedCorpus object")
+        AlignedCorpus.__init__(self, corpus.getStem(), corpus.sourceLang, corpus.targetLang)
         
         translationFile = Path(translationFile)
         if not translationFile.exists():
@@ -259,6 +266,8 @@ class TranslatedCorpus(AlignedCorpus):
             alignment["translation"] = translationLines[i].strip()
                 
         return alignments
+
+ 
             
 
 

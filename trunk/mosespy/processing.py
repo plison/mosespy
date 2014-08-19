@@ -1,11 +1,12 @@
 
+import re
 from system import Path 
 from corpus import AlignedCorpus, TranslatedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 
 
-class Preprocessor():
+class CorpusProcessor():
     
     def __init__(self, workPath, executor, nbThreads=2):
         self.workPath = Path(workPath)
@@ -22,12 +23,15 @@ class Preprocessor():
         trueTarget = self.processFile(corpus.getTargetFile())
      
         trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
-        cleanStem = trueSource.getStem().changeProperty("clean")
-        cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
         
-        trueSource.remove()
-        trueTarget.remove()
-        return cleanCorpus
+        if maxLength:
+            cleanStem = trueSource.getStem().changeProperty("clean")
+            cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
+            trueSource.remove()
+            trueTarget.remove()
+            return cleanCorpus
+        else:
+            return trueCorpus
     
 
     def processFile(self, rawFile):
@@ -66,7 +70,8 @@ class Preprocessor():
         revertedSource = self.revertFile(corpus.getSourceFile())
         self.revertFile(corpus.getTargetFile())
         translation = self.revertFile(corpus.getTranslationFile())
-        newCorpus = TranslatedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang, translation)
+        aCorpus = AlignedCorpus(revertedSource.getStem, corpus.sourceLang, corpus.targetLang)
+        newCorpus = TranslatedCorpus(aCorpus, translation)
 
         return newCorpus
  
@@ -98,6 +103,18 @@ class Preprocessor():
         print "New cleaned files: " + outputSource.getDescription() + " and " + outputTarget.getDescription()
         return AlignedCorpus(outputStem, inputCorpus.sourceLang, inputCorpus.targetLang)
   
+        
+    def getBleuScore(self, translatedCorpus):
+        bleuScript = (moses_root  + "/scripts/generic/multi-bleu.perl -lc " 
+                      + translatedCorpus.getTargetFile())
+        bleu_output = self.executor.run_output(bleuScript, stdin=translatedCorpus.getTranslationFile())       
+        s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
+        if s:
+            bleu = float(s.group(1))
+            return bleu
+        else:
+            raise RuntimeError("BLEU score could not be extracted")
+
          
 class Tokeniser():
     

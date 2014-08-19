@@ -13,7 +13,7 @@ class MosesConfig():
                 if "PhraseDictionary" in l:
                     s = re.search(re.escape("path=") + r"((\S)+)", l)
                     if s:
-                        return s.group(1)
+                        return Path(s.group(1))
         print "Cannot find path to phrase table"
         
     
@@ -40,7 +40,7 @@ class MosesConfig():
                 if "LexicalReordering" in l:
                     s = re.search(re.escape("path=") + r"((\S)+)", l)
                     if s:
-                        return s.group(1)
+                        return Path(s.group(1))
         print "Cannot find path to reordering table"
         
     
@@ -77,6 +77,11 @@ class MosesConfig():
         return paths
         
     
+    def display(self):
+        lines = self.configFile.readlines()
+        for l in lines:
+            print l.strip()
+        
     def _updateFile(self, newParts):
         with open(self.configFile, 'w') as configFileD:
             for part in newParts:
