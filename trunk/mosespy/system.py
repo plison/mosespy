@@ -248,13 +248,10 @@ def waitForCompletion(resultQueues):
     print "Parallel run of " + str(len(resultQueues)) + " processes"
     time.sleep(0.1)
     for counter in range(0, 10000):
-        print "testing, result " + str(resultQueues)
         stillRunning = []
         for q in resultQueues:
             if not q.empty():
-                print "not empty queue!"
                 if not q.get():
-                    print "One parallel task failed, aborting"
                     return False
             else:
                 stillRunning.append(q)
