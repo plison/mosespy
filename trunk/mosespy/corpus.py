@@ -97,7 +97,6 @@ class BasicCorpus(object):
                 filename = Path(outputDir + "/" + str(curSplit) + extension)
                 curFile = open(filename, 'w')
                 filenames.append(filename)
-            print "current line: " + l + " on curFile " + str(curFile.name)
             curFile.write(l)
             nbLines += 1
         curFile.close()
