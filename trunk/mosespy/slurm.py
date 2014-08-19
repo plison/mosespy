@@ -3,7 +3,7 @@ import os, re, uuid, threading, copy
 import experiment, process, corpus
 from experiment import Experiment 
 from mosespy.preprocessing import Preprocessor
-from corpus import AlignedCorpus
+from corpus import BasicCorpus, AlignedCorpus
 from process import CommandExecutor
   
 nodeMemory=35000
@@ -103,8 +103,8 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        corpus.splitData(train.getSourceFile(), splitDir, self.maxJobs/2)
-        corpus.splitData(train.getTargetFile(), splitDir, self.maxJobs/2)
+        BasicCorpus(train.getSourceFile()).splitData(splitDir, self.maxJobs/2)
+        BasicCorpus(train.getTargetFile()).splitData(splitDir, self.maxJobs/2)
 
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)

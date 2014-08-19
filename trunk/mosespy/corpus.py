@@ -2,6 +2,111 @@
 import random
 from paths import Path
 
+
+class BasicCorpus(object):
+         
+    def __init__(self, corpusFile):
+        
+        self.corpusFile = Path(corpusFile)
+        
+        if not self.getCorpusFile().exists():
+            raise RuntimeError(self.getCorpusFile() + " does not exist")    
+
+        for indicesFile in [(self.corpusFile.getStem() + ".indices"), 
+                            (self.corpusFile.getStem().removeProperty() + ".indices")]:       
+            if indicesFile.exists():
+                indLines = indicesFile.readlines()
+                self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.corpusFile.getLang())
+                self.originIndices = [int(i.strip()) for i in indLines[1:]]
+       
+    def getCorpusFile(self):
+        return self.corpusFile 
+         
+    def getOccurrences(self):
+        
+        occurrences = {} 
+        corpusLines = self.getCorpusFile().readlines()
+        for i in range(0, len(corpusLines)):
+            corpusLine = corpusLines[i]
+            if corpusLine not in occurrences:
+                occurrences[corpusLine] = set()
+            occurrences[corpusLine].add(i)
+                
+        return occurrences
+   
+    def getHistories(self, historyWindow=2):
+        
+        histories = {}
+        corpusLines = self.getCorpusFile().readlines()
+        if self.originCorpus:
+            originLines = self.originCorpus.getCorpusFile().readlines()
+        else:
+            originLines = corpusLines
+        
+        for i in range(0, len(corpusLines)):
+            origindex = self.originIndices[i] if self.originIndices else i
+            histories[i] = originLines[max(0,origindex-historyWindow):max(0,origindex)]
+ 
+        return histories
+
+
+        
+    def filterOutLines(self, fileToFilter, workPath):
+    
+        inputLines = self.getCorpusFile().readlines()
+        
+        corpusToFilter = BasicCorpus(fileToFilter)
+        occurrences = corpusToFilter.getOccurrences()
+        histories = corpusToFilter.getHistories()
+         
+        outputFile = workPath + "/" + self.getCorpusFile().basename().addProperty("filtered") 
+
+        with open(outputFile, 'w', 1000000) as newLmFileD:                 
+            skippedLines = []
+            for i in range(2, len(inputLines)):
+                l = inputLines[i]
+                toSkip = False
+                if l in occurrences:
+                    for index in occurrences[l]:
+                        if histories[index] == inputLines[i-2:i]:
+                            skippedLines.append(l)
+                            toSkip = True
+                if not toSkip:
+                    newLmFileD.write(l)                                
+    
+        print "Number of skipped lines: " + str(len(skippedLines))
+        return outputFile
+    
+    
+    
+    def splitData(self, outputDir, nbSplits):
+    
+        lines = self.getCorpusFile().readlines()
+        extension = "." + Path(self.getCorpusFile()).getLang()
+            
+        totalLines = len(lines) 
+        nbSplits = min(nbSplits, totalLines)
+        filenames = []
+        curSplit = 0
+        filename = outputDir + "/" + str(curSplit) + extension
+        filenames.append(filename)
+        curFile = open(filename, 'w')
+        nbLines = 0
+        for l in lines:
+            curFile.write(l)
+            nbLines += 1
+            if nbLines >= (totalLines / nbSplits + 1):
+                nbLines = 0
+                curFile.close()
+                curSplit += 1
+                filename = outputDir + "/" + str(curSplit) + extension
+                curFile = open(filename, 'w')
+                filenames.append(filename)
+        curFile.close()
+        return filenames
+
+
+
 class AlignedCorpus(object):
     
     def __init__(self, stem, sourceLang, targetLang):
@@ -9,7 +114,8 @@ class AlignedCorpus(object):
         self.stem = Path(stem)
         self.sourceLang = sourceLang
         self.targetLang = targetLang
-        self.origin = None
+        self.sourceCorpus = BasicCorpus(self.stem + "." + sourceLang)
+        self.targetCorpus = BasicCorpus(self.stem + "." + targetLang)
         
         if not self.getSourceFile().exists():
             raise RuntimeError(self.getSourceFile() + " does not exist")
@@ -21,9 +127,11 @@ class AlignedCorpus(object):
         if nbLinesSource != nbLinesTarget:
             raise RuntimeError("Number of lines for source and target are different")
 
+                
  
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000):
-         
+        
+        workPath = Path(workPath)
         sourceLines = (self.stem + "." + self.sourceLang).readlines()
         targetLines = (self.stem + "." + self.targetLang).readlines()
             
@@ -65,83 +173,33 @@ class AlignedCorpus(object):
         tuneStem = workPath + "/" + (self.stem + ".tune").basename()
         (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
-        (tuneStem + ".indices").writelines('\n'.join([str(i) for i in tuningIndices]))
+        (tuneStem + ".indices").writelines([self.stem+"\n"] + [str(i)+"\n" for i in sorted(list(tuningIndices))])
         tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
 
         testStem = workPath + "/" + (self.stem + ".test").basename()
         (testStem + "." + self.sourceLang).writelines(testSourceLines) 
         (testStem + "." + self.targetLang).writelines(testTargetLines)
-        (testStem + ".indices").writelines('\n'.join([str(i) for i in testingIndices]))
+        (testStem + ".indices").writelines([self.stem+"\n"] + [str(i)+"\n" for i in sorted(list(testingIndices))])
         testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
   
         return trainCorpus, tuneCorpus, testCorpus
         
     
-    def linkWithOriginalCorpus(self, originCorpus, linesIndices):
-        if not isinstance(originCorpus, AlignedCorpus):
-            raise RuntimeError(originCorpus + " must be an aligned corpus")
-        self.origin = {"corpus":originCorpus, "indices":linesIndices}
-    
-                                    
- 
-    
     def getStem(self):
         return self.stem
     
     def getSourceFile(self):
-        return Path(self.stem + "." + self.sourceLang)
+        return self.sourceCorpus.getCorpusFile()
         
     def getTargetFile(self):
-        return Path(self.stem + "." + self.targetLang)
-            
+        return self.targetCorpus.getCorpusFile()
     
-    def filterLmData(self, lmFile, newLmFile):
-        
-        print "Filtering language model to remove sentences from test set..."
-        
-        lmFile = Path(lmFile)
-        if not lmFile.exists():
-            raise RuntimeError(lmFile + " does not exist")
-        
-        lmLines = lmFile.readlines()
+    def getSourceCorpus(self):
+        return self.sourceCorpus
 
-        if self.origin:
-            targetLines = self.origin["corpus"].getTargetFile().readlines()
-            
-            testoccurrences = {}
-            for i in range(0, len(targetLines)):
-                l = targetLines[i]
-                if i in self.origin["indices"]:
-                    history = [targetLines[i-2], targetLines[i-1]]
-                    if l not in testoccurrences:
-                        testoccurrences[l] = [history]
-                    else:
-                        testoccurrences[l].append(history)
-        else:
-            testoccurrences = set().union(self.getTargetFile().readlines())
+    def getTargetCorpus(self):
+        return self.targetCorpus
     
-        
-        with open(newLmFile, 'w', 1000000) as newLmFileD:                 
-            prev2Line = None
-            prevLine = None
-            skippedLines = []
-            for l in lmLines:
-                toSkip = False
-                if l in testoccurrences and isinstance(testoccurrences, dict):
-                    for occurrence in testoccurrences[l]:
-                        if prev2Line == occurrence[0] and prevLine == occurrence[1]:
-                            skippedLines.append(l)
-                            toSkip = True
-                elif l in testoccurrences and isinstance(testoccurrences, set):
-                    toSkip = True
-                if not toSkip:
-                    newLmFileD.write(l)                                
-                prev2Line = prevLine
-                prevLine = l
-        
-        print "Number of skipped lines in language model: " + str(len(skippedLines))
-    
-
     def getAlignments(self, addHistory=False): 
         
         sourceLines = self.getSourceFile().readlines()
@@ -151,20 +209,15 @@ class AlignedCorpus(object):
         for i in range(0, len(sourceLines)):
             align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip()}
             alignments.append(align)
-                    
-        if addHistory and self.origin:
-            origTargetLines = self.origin["corpus"].getTargetFile().readlines()
+            
+        if addHistory:
+            targetCorpus = BasicCorpus(self.getTargetFile())
+            histories = targetCorpus.getHistories()
             for i in range(0, len(alignments)):
                 align = alignments[i]
-                testingIndex = self.origin["indices"][i]
-                if testingIndex:
-                    align["previoustarget"] = origTargetLines[testingIndex-1].strip()
-        
-        elif addHistory:
-            for i in range(0, len(alignments)):
-                align = alignments[i]
-                align["previoustarget"] = targetLines[i-1].strip()
-                
+                if histories.has_key(i):
+                    align["previoustarget"] = histories[i][-1] if len(histories[i]) > 0 else None
+                 
         return alignments
             
 
@@ -190,45 +243,15 @@ class TranslatedCorpus(AlignedCorpus):
    
     def getAlignments(self, addHistory=False): 
         
-        translationLines = self.translationFile.readlines()
         alignments = AlignedCorpus.getAlignments(self, addHistory)
+        
+        translationLines = self.translationFile.readlines()
         for i in range(0, len(alignments)):
             alignment = alignments[i]
             alignment["translation"] = translationLines[i].strip()
                 
         return alignments
             
-    
-
-def splitData(inputFile, outputDir, nbSplits):
-
-    if inputFile.exists():  
-        extension = "." + Path(inputFile).getLang()
-        lines = inputFile.readlines()
-    else:
-        raise RuntimeError("cannot split the content for data " + inputFile)
-        
-    totalLines = len(lines) 
-    nbSplits = min(nbSplits, totalLines)
-    filenames = []
-    curSplit = 0
-    filename = outputDir + "/" + str(curSplit) + extension
-    filenames.append(filename)
-    curFile = open(filename, 'w')
-    nbLines = 0
-    for l in lines:
-        curFile.write(l)
-        nbLines += 1
-        if nbLines >= (totalLines / nbSplits + 1):
-            nbLines = 0
-            curFile.close()
-            curSplit += 1
-            filename = outputDir + "/" + str(curSplit) + extension
-            curFile = open(filename, 'w')
-            filenames.append(filename)
-    curFile.close()
-    return filenames
-
 
 
 def _drawRandom(start, end, number, exclusion=None):
