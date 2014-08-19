@@ -45,7 +45,7 @@ class CommandExecutor(object):
             print "Task [" + str(self.callincr) + "] " + ("successful" if not p.returncode else "FAILED")
             print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]
         if stdout_popen == subprocess.PIPE:
-            return out_popen
+            return out_popen.strip()
         else:
             return not p.returncode
     
