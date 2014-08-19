@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*- 
 
 import unittest, uuid, os, shutil
-import experiment, corpus
-from paths import Path
+import experiment
+from system import Path, CommandExecutor
 from preprocessing import Preprocessor
-from process import CommandExecutor
 from corpus import BasicCorpus, AlignedCorpus
 
 inFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.fr"
@@ -139,6 +138,12 @@ class Pipeline(unittest.TestCase):
         exp.trainLanguageModel(outFile, preprocess=True, keepArpa=True)
         exp.trainTranslationModel(inFile.getStem())
         self.assertTrue(exp.settings.has_key("tm"))
+        exp.executor.run("gunzip " + exp.settings["tm"]+"/model/phrase-table.gz")
+        lines = Path(exp.settings["tm"]+"/model/phrase-table").readlines()
+        self.assertIn("veux te donner ||| want to give ||| 1 0.0705882 1 0.6 " 
+                      + "||| 0-0 1-1 2-2 ||| 1 1 1 ||| ||| \n", lines)
+        initsize = Path(exp.settings["tm"]+"/model/phrase-table.gz").getSize()
+        exp._prunePhraseTable()
         
     def tearDown(self):
         print ""

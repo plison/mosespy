@@ -1,0 +1,294 @@
+import os, shutil, subprocess, time, platform
+from datetime import datetime
+from xml.dom import minidom
+
+class CommandExecutor(object):
+    
+    def __init__(self, quiet=False):
+        self.callincr = 0
+        self.tmpdir = None
+        if platform.system() == "Darwin":
+            self.performMacFix()
+            
+        self.quiet = quiet
+   
+    def run(self, script, stdin=None, stdout=None):
+        self.callincr += 1
+        
+        str_stdin = ""
+        if os.path.exists(str(stdin)):
+            stdin_popen = open(stdin, 'r')
+            str_stdin = " < " + stdin
+        elif isinstance(stdin, basestring):
+            stdin_popen = subprocess.PIPE
+            str_stdin = " <<< \"" + stdin + "\""
+        else:
+            stdin_popen = None
+        
+        str_stdout = ""
+        if os.path.exists(os.path.dirname(str(stdout))):
+            stdout_popen = open(stdout, 'w')
+            str_stdout = " > " + stdout
+        elif stdout is not None and not stdout:
+            stdout_popen = subprocess.PIPE
+        else:
+            stdout_popen = None
+            
+        if not self.quiet:     
+            print "[" + str(self.callincr) + "] Running " + script + str_stdin + str_stdout
+        
+        inittime = datetime.now()
+        p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
+        out_popen = p.communicate(stdin)[0]
+        
+        if not self.quiet:     
+            print "Task [" + str(self.callincr) + "] " + ("successful" if not p.returncode else "FAILED")
+            print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]
+        if stdout_popen == subprocess.PIPE:
+            return out_popen
+        else:
+            return not p.returncode
+    
+    
+    def run_output(self, script, stdin=None):
+        return self.run(script, stdin, stdout=False)
+    
+
+    def performMacFix(self):
+        if "/usr/local/bin" not in os.environ["PATH"]:
+            os.environ["PATH"] = "/usr/local/bin:" + os.environ["PATH"]
+        if existsExecutable("gsplit"):
+            print "Adapting executables to Mac OS X settings..."
+            gsplit = os.popen("which gsplit").read().strip("\n")
+            os.popen("ln -s " + gsplit + " split")
+            gsort = os.popen("which gsort").read().strip("\n")
+            os.popen("ln -s " + gsort + " sort")
+    
+    def __del__(self):
+        if Path("./split").exists():
+            Path("./split").remove()               
+        if Path("./sort").exists():
+            Path("./sort").remove()               
+            
+
+
+class Path(str):
+
+    def getStem(self):
+        lang = self.getLang()
+        return Path(self[:-len(lang)-1]) if lang else self
+        
+    def removeProperty(self):
+        curProp = self.getProperty()
+        if curProp:
+            return Path(self.replace("."+curProp, ""))
+        else:
+            return self
+        
+    def getLang(self):
+        if  "." in self:
+            langcode = self.split(".")[len(self.split("."))-1]
+            return langcode if langcode in languages else None
+        else:
+            return None        
+    
+    def getProperty(self):
+        stem = self.getStem()
+        if "." in stem:
+            return stem.split(".")[len(stem.split("."))-1]
+        return None
+    
+    def setLang(self, lang):
+        if not lang in languages:
+            raise RuntimeError("language code " + lang + " is not valid")
+        return self.getStem() + "." + lang
+ 
+    def changeProperty(self, newProperty):
+        stem = self.getStem()
+        stem = stem.removeProperty()
+        newPath = stem + "." + newProperty
+        if self.getLang():
+            newPath += "." + self.getLang()
+        return newPath
+    
+    def addProperty(self, newProperty):
+        stem = self.getStem()
+        newPath = stem + "." + newProperty
+        if self.getLang():
+            newPath += "." + self.getLang()
+        return newPath
+         
+    def getAbsolute(self):
+        return Path(os.path.abspath(self))
+    
+    def getPath(self):
+        return Path(os.path.dirname(self))
+
+    def exists(self):
+        return os.path.exists(self)
+     
+    def basename(self):
+        return Path(os.path.basename(self))    
+
+    def remove(self):
+        if os.path.isfile(self):
+            os.remove(self)
+        elif os.path.isdir(self):
+            shutil.rmtree(self, ignore_errors=True)
+       
+
+    def reset(self):
+        self.remove()
+        os.makedirs(self)
+        
+            
+    def make(self):
+        if not os.path.exists(self):
+            os.makedirs(self)
+            
+    def __add__(self, other):
+        return Path(str.__add__(self, other))
+
+
+
+    def getSize(self):
+        if os.path.isfile(self):
+            return os.path.getsize(self)
+        elif os.path.isdir(self):
+            sizeStr = os.popen('du -sh ' + self).read().split("\t")[0]
+            number = int(sizeStr[:-1])
+            if sizeStr[-1]=="K":
+                return number*1000
+            elif sizeStr[-1]=="M":
+                return number*1000000
+            elif sizeStr[-1]=="G":
+                return  number*1000000000
+            else:
+                return number
+        else:
+            return None       
+
+
+    def getDescription(self):
+        if self.exists():
+            size = self.getSize()                  
+            if size > 1000000000:
+                sizeStr = str(size/1000000000) + "G"
+            elif size > 1000000:
+                sizeStr = str(size/1000000) + "M"
+            else:
+                sizeStr = str(size/1000) + "K"  
+            return self + " ("+sizeStr+")"   
+        else:
+            return "not found"
+       
+    
+    def countNbLines(self):
+        if not self.exists():
+            return RuntimeError("File does not exist")
+        return int(os.popen("wc -l " + self).read().split()[0])
+    
+    
+    def getUp(self):
+        if os.path.exists(self): 
+            return Path(os.path.realpath(os.path.dirname(self)))
+        else:
+            raise RuntimeError(self + " does not exist")
+        
+    def listdir(self):
+        if os.path.isdir(self):
+            result = []
+            for i in os.listdir(self):
+                result.append(Path(i))
+            return result
+        else:
+            raise RuntimeError(self + " not a directory")
+        
+        
+    def readlines(self):
+        if os.path.isfile(self):
+            with open(self, 'r') as fileD:
+                lines = fileD.readlines()
+            return lines
+        else:
+            raise RuntimeError(self + " not an existing file")
+ 
+    def writelines(self, lines):
+        with open(self, 'w') as fileD:
+            fileD.writelines(lines)
+    
+
+def convertToPaths(element):
+    if isinstance(element, basestring):
+        element = Path(element)
+    elif isinstance(element, dict):
+        for k in element.keys():
+            element[k] = convertToPaths(element[k])
+    elif isinstance(element, list):
+        for i in range(0, len(element)):
+            element[i] = convertToPaths(element[i])
+    return element
+
+ 
+def run(script, stdin=None, stdout=None):
+    return CommandExecutor(True).run(script, stdin, stdout)
+  
+def run_output(script, stdin=None):
+    return CommandExecutor(True).run_output(script, stdin)
+
+   
+def existsExecutable(command):
+    paths = os.popen("echo $PATH").read().strip()
+    for path in paths.split(os.pathsep):
+        path = path.strip('"')
+        exe_file = os.path.join(path, command)
+        if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
+            return True
+    return False
+
+    
+def waitForCompletion(jobs):
+    print "Parallel run of " + str(len(jobs)) + " processes"
+    time.sleep(0.1)
+    for counter in range(0, 10000):
+        running = [t for t in jobs if t.is_alive()]
+        if len(running) > 0:
+            time.sleep(1)
+            if not (counter % 60):
+                print "Number of running processes (%i mins): %i"%(counter/60, len(running))
+        else:
+            break
+    print "Parallel processes completed"  
+
+
+def setEnv(variable, value, override=True):
+    if override:
+        os.environ[variable] = value
+    else:
+        os.environ[variable] = value + ":" + os.environ[variable]
+        
+        
+def getEnv():
+    return os.environ
+
+
+def extractLanguages():
+    isostandard = minidom.parse(Path(__file__).getUp().getUp()+"/data/iso639.xml")
+    itemlist = isostandard.getElementsByTagName('iso_639_entry') 
+    languagesdict = {}
+    for item in itemlist :
+        if (item.attributes.has_key('iso_639_1_code')):
+            langcode = item.attributes[u'iso_639_1_code'].value
+            language = item.attributes['name'].value
+            languagesdict[langcode] = language
+    return languagesdict
+
+
+def getLanguage(langcode):
+    if languages.has_key(langcode):
+        return languages[langcode]
+    else:
+        raise RuntimeError("cannot find language with code " + str(langcode))
+       
+languages = extractLanguages()
+
