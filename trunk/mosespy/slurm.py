@@ -173,7 +173,7 @@ class SlurmExecutor(CommandExecutor):
                       + " --cpus-per-task=" + str(nodeCpus)
                       + " --time=" + nodeTime
                       + " " + script) 
-        return CommandExecutor.run(script, stdin, stdout)
+        return CommandExecutor.run(self, script, stdin, stdout)
                
        
 def _getDefaultSlurmAccount():
