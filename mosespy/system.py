@@ -57,7 +57,6 @@ class CommandExecutor(object):
     
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None): 
          
-        print "starting parallel run for " + str(script) + " and " + str(jobArgs)
         resultQueues = []
         for i in range(0, len(jobArgs)):
             time.sleep(0.1)
@@ -89,7 +88,6 @@ class CommandExecutor(object):
             else:
                 break
         print "Parallel processes successfully completed" 
-        print "finished parallel run for " + str(script) + " and " + str(jobArgs)
         return True
             
 
