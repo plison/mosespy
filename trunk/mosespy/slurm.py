@@ -179,7 +179,7 @@ class SlurmExecutor(CommandExecutor):
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None): 
         for k in system.getEnv():
             if "SLURM" in k:
-                system.setEnv(k, "")
+                system.delEnv(k)
         CommandExecutor.run_parallel(self, script, jobArgs, stdins, stdouts)
 
                
