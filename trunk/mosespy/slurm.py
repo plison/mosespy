@@ -55,6 +55,7 @@ class SlurmExecutor(CommandExecutor):
 
     
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):  
+        print "starting parallel run for " + str(script) + " and " + str(jobArgs)
         resultQueues = []
         for i in range(0, len(jobArgs)):
             jobArg = jobArgs[i]
