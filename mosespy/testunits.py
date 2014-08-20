@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*- 
 
+__author__ = 'Pierre Lison (plison@ifi.uio.no)'
+__copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
+__license__ = 'MIT License'
+__version__ = "$Date$"    
+
+
 import unittest
 import uuid
 import os

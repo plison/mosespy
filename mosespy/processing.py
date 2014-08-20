@@ -6,6 +6,11 @@ from mosespy.corpus import AlignedCorpus, TranslatedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 
+__author__ = 'Pierre Lison (plison@ifi.uio.no)'
+__copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
+__license__ = 'MIT License'
+__version__ = "$Date$"    
+
 
 class CorpusProcessor():
     
