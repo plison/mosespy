@@ -67,7 +67,7 @@ class SlurmExecutor(CommandExecutor):
             resultQueues.append(resultQueue)
             t.start()
         result = system.waitForCompletion(resultQueues)
-        print "finished parallel run for " + str(script) + " and " + str(jobArgs) + ", final result is " + result
+        print "finished parallel run for " + str(script) + " and " + str(jobArgs) + ", final result is " + str(result)
         return result
     
                
