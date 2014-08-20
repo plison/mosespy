@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 
-import sys, uuid, select
-import slurm, system
-from system import Path
-from corpus import BasicCorpus
+import sys, uuid, select, os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import mosespy.slurm as slurm
+from mosespy.system import Path
+from mosespy.corpus import BasicCorpus
 
 moses_root = Path(__file__).getAbsolute().getUp().getUp() + "/moses"
 decoder = moses_root + "/bin/moses "
-
-if system.existsExecutable("srun"):
-    executor = slurm.SlurmExecutor(slurm._getDefaultSlurmAccount())
-else:
-    executor = system.CommandExecutor()
 
 def getInput():
     lines = []
@@ -117,7 +113,8 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
         
         
 def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
-                
+         
+    executor = slurm.SlurmExecutor()        
     if not inputFile:
         print "Running decoder: " + decoder + mosesArgs
         executor.run(decoder + mosesArgs, stdout=outStream)
@@ -143,7 +140,7 @@ def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
                          
 
 def main():      
-   
+
     stdout = sys.stdout
     sys.stdout = sys.stderr
 

@@ -1,3 +1,4 @@
+
 import os, shutil, subprocess, time, platform, Queue, threading, copy
 from datetime import datetime
 from xml.dom import minidom
@@ -7,12 +8,14 @@ class CommandExecutor(object):
     def __init__(self, quiet=False):
         self.callincr = 0
         self.tmpdir = None
-        if platform.system() == "Darwin":
-            self.performMacFix()
-            
         self.quiet = quiet
-   
+        
+        if "/usr/local/bin" not in os.environ["PATH"]:
+            os.environ["PATH"] = "/usr/local/bin:" + os.environ["PATH"]
+
+
     def run(self, script, stdin=None, stdout=None):
+            
         self.callincr += 1
         curcall = int(self.callincr)
         str_stdin = ""
@@ -33,7 +36,7 @@ class CommandExecutor(object):
             stdout_popen = subprocess.PIPE
         else:
             stdout_popen = None
-            
+        
         if not self.quiet:     
             print "[" + str(curcall) + "] Running " + script + str_stdin + str_stdout
         
@@ -94,25 +97,6 @@ class CommandExecutor(object):
     def _run_queue(self, script, resultQueue, stdin=None, stdout=None):
         result = self.run(script, stdin, stdout)
         resultQueue.put(result)
-
-   
-
-    def performMacFix(self):
-        if "/usr/local/bin" not in os.environ["PATH"]:
-            os.environ["PATH"] = "/usr/local/bin:" + os.environ["PATH"]
-        if not Path("./split").exists() and not Path("./sort").exists() and existsExecutable("gsplit"):
-            print "Adapting executables to Mac OS X settings..."
-            gsplit = os.popen("which gsplit").read().strip("\n")
-            os.popen("ln -s " + gsplit + " split")
-            gsort = os.popen("which gsort").read().strip("\n")
-            os.popen("ln -s " + gsort + " sort")
-    
-    def __del__(self):
-        if Path("./split").exists():
-            Path("./split").remove()               
-        if Path("./sort").exists():
-            Path("./sort").remove()               
-            
 
 
 class Path(str):
@@ -189,7 +173,14 @@ class Path(str):
         if self.exists():
             shutil.move(self, newLoc)
             
-        
+    def printlines(self):
+        if os.path.isfile(self):
+            with open(self, 'r') as fileD:
+                for line in fileD.readlines():
+                    print line.strip()
+        else:
+            raise RuntimeError(self + " not an existing file")
+         
             
     def make(self):
         if not os.path.exists(self):

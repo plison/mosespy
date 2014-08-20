@@ -1,7 +1,7 @@
 
 import re
-from system import Path 
-from corpus import AlignedCorpus, TranslatedCorpus
+from mosespy.system import Path 
+from mosespy.corpus import AlignedCorpus, TranslatedCorpus
 rootDir = Path(__file__).getUp().getUp()
 moses_root = rootDir + "/moses" 
 

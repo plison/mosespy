@@ -1,6 +1,6 @@
 
 import random
-from system import Path
+from mosespy.system import Path
 
 
 class BasicCorpus(object):
@@ -150,7 +150,6 @@ class AlignedCorpus(object):
         else:
             tuningIndices = range(0,len(sourceLines))[-nbTuning-nbTesting:-nbTesting]
             testingIndices = range(0,len(sourceLines))[-nbTesting:]
-            
         trainSourceLines = []
         tuneSourceLines = []
         testSourceLines = []       

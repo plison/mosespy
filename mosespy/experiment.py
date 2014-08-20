@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*- 
 
 import json, copy,  re
-import system, analyser
-from system import Path
-from processing import CorpusProcessor
-from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
-from config import MosesConfig
+import mosespy.system as system
+import mosespy.analyser as analyser
+from mosespy.system import Path
+from mosespy.processing import CorpusProcessor
+from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
+from mosespy.config import MosesConfig
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -16,7 +17,18 @@ defaultAlignment = "grow-diag-final-and"
 defaultReordering = "msd-bidirectional-fe"
 
 class Experiment(object):
+    """Representation of a translation experiment. The experiment initially consists
+    of a name and a (source, target) language pair.  The experiment can be subsequently
+    updated by the following core operations:
+    - train a language model from data in the target language
+    - train a translation model (phrase and reordering tables) from aligned data
+    - tune the feature weights from aligned data
+    - evaluate the resulting setup on test data (using e.g. BLEU).
     
+    The data and models produced during the experiment are stored in the directory
+    {expDir}/{name of experiment}.  In this directory, the JSON file settings.json
+    functions as a permanent representation of the experiment, allowing experiments
+    to be easily restarted."""
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
         self.settings = {}
@@ -225,7 +237,6 @@ class Experiment(object):
         transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
         
         result = self.executor.run(transScript, stdout=outfile)
-        print "\n".join(Path(outfile).readlines())
 
         if filterDir:
             filterDir.remove()
@@ -325,6 +336,7 @@ class Experiment(object):
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
+        newexp.processor = self.processor
         return newexp
  
    
@@ -335,23 +347,23 @@ class Experiment(object):
         
         config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
         phrasetable = config.getPhraseTable()
-        newtable = config.getPhraseTable()[:-2] + "reduced.gz"
+        newtable = Path(config.getPhraseTable()[:-2] + "reduced.gz")
 
         if not phrasetable.exists():
             print "Original phrase table has been removed, pruning canceled"
             return
         
-        pruneScript = ("zcat %s | " + moses_root + "/scripts/training" 
+        zcatExec = "gzcat" if system.existsExecutable("gzcat") else "zcat"
+        pruneScript = (zcatExec + " %s | " + moses_root + "/scripts/training" 
                        + "/threshold-filter.perl " + str(probThreshold) + " | gzip - > %s"
                        )%(phrasetable, newtable)
         result = self.executor.run(pruneScript)
-        if result:
-            print "Finished pruning translation table " + phrasetable
-            config.replacePhraseTable(newtable)  
-                          
+        if result:        
+            config.replacePhraseTable(newtable)                          
             if self.settings.has_key("ttm") and (self.settings["ttm"] + "/moses.ini").exists():
                 config = MosesConfig(self.settings["ttm"]+"/moses.ini")
-                config.replacePhraseTable(newtable)                
+                config.replacePhraseTable(newtable)        
+            phrasetable.remove()              
         else:
             print "Pruning of translation table FAILED"
         
@@ -396,8 +408,7 @@ class Experiment(object):
         if inputFile:
             script += " -input-file "+ inputFile
         return script
-                                     
-                                
+                                                                   
     
     def _getFilteredModel(self, testSource):
         
@@ -425,4 +436,3 @@ class Experiment(object):
             jsonFile.write(dump)
            
     
-     

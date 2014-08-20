@@ -1,11 +1,12 @@
 
 import re, uuid, copy
-import experiment, system
-from experiment import Experiment 
-from processing import CorpusProcessor
-from corpus import AlignedCorpus
-from system import CommandExecutor
-from config import MosesConfig
+import mosespy.experiment as experiment
+import mosespy.system as system
+from mosespy.experiment import Experiment 
+from mosespy.processing import CorpusProcessor
+from mosespy.corpus import AlignedCorpus
+from mosespy.system import CommandExecutor
+from mosespy.config import MosesConfig
 
 nodeMemory=60000
 nodeCpus = 16
@@ -22,19 +23,19 @@ class SlurmExperiment(Experiment):
             print "SLURM system not present, switching back to standard setup"
             return
         
-        if not account:
-            account = _getDefaultSlurmAccount()    
-        self.account = account
         self.executor = SlurmExecutor(account)
         self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):
-        newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.account, self.maxJobs)
+        newexp = SlurmExperiment(nexExpName, self.settings["source"], 
+                                 self.settings["target"], self.executor.account, self.maxJobs)
         settingscopy = copy.deepcopy(self.settings)
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
                 newexp.settings[k] = settingscopy[k]
+        newexp.processor = self.processor
+        newexp.maxJobs = self.maxJobs
         return newexp
     
     
@@ -92,14 +93,14 @@ class SlurmExperiment(Experiment):
         splitDir.remove()
                             
         tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
-                      + "-sort-batch-size 1024 " 
+        #              + "-sort-batch-size 1024 " 
                     + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
         result = self.executor.run(tmScript + " --first-step 4")
         
         if result:
             print "Finished building translation model in: " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-       #     self._prunePhraseTable()
+            self._prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
@@ -152,9 +153,13 @@ class SlurmExperiment(Experiment):
 
 class SlurmExecutor(CommandExecutor):
         
-    def __init__(self, account):
+    def __init__(self, account=None):
+        
         CommandExecutor.__init__(self)
-        self.account = account
+        self.account = _getDefaultSlurmAccount() if not account else account
+        if not self.account:
+            print "Warning: cannot use SLURM bindings"
+            return
         
         # System-dependent settings for the Abel cluster, change it to suit your needs
         modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
@@ -185,12 +190,13 @@ class SlurmExecutor(CommandExecutor):
                
        
 def _getDefaultSlurmAccount():
-    user = system.run_output("whoami")
-    result = system.run_output("sacctmgr show User "+user + " -p")
-    s = re.search(user+r"\|((\S)+?)\|", result)
-    if s:
-        account = s.group(1)
-        return account
+    if system.existsExecutable("sacctmgr"):
+        user = system.run_output("whoami")
+        result = system.run_output("sacctmgr show User "+user + " -p")
+        s = re.search(user+r"\|((\S)+?)\|", result)
+        if s:
+            account = s.group(1)
+            return account
     return None
 
 
