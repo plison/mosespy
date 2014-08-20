@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*- 
 
-import unittest, uuid, os, shutil, slurm
-import experiment
-from system import Path, CommandExecutor
-from processing import CorpusProcessor
-from corpus import BasicCorpus, AlignedCorpus
-from config import MosesConfig
+import unittest, uuid, os, shutil 
+import mosespy.slurm as slurm
+import mosespy.experiment as experiment
+from mosespy.system import Path, CommandExecutor
+from mosespy.processing import CorpusProcessor
+from mosespy.corpus import BasicCorpus, AlignedCorpus
+from mosespy.config import MosesConfig
 
 inFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.fr"
 outFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.en"
@@ -15,9 +16,8 @@ class Pipeline(unittest.TestCase):
     def setUp(self):
         self.tmpdir = "./tmp" + str(uuid.uuid4())[0:6]
         os.makedirs(self.tmpdir)
-        print "using directory " + str(self.tmpdir)
         
-    def preprocessing(self):
+    def test_preprocessing(self):
         
         processor = CorpusProcessor(self.tmpdir, CommandExecutor())
         trueFile = processor.processFile(inFile)
@@ -44,7 +44,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(len(os.listdir(self.tmpdir)), 5)
 
 
-    def division(self):
+    def test_division(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
         train, tune, test = acorpus.divideData(self.tmpdir, 10, 10)
         self.assertTrue(os.path.exists(test.getStem()+".indices"))
@@ -86,7 +86,7 @@ class Pipeline(unittest.TestCase):
             self.assertTrue(any([not q or align["previoustarget"]==targetlines[q-1] for q in oindices]))
         
     
-    def split(self):
+    def test_split(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
         splitStems = acorpus.splitData(self.tmpdir, 2)
         self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
@@ -119,7 +119,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(len(Path(self.tmpdir + "/2.en").readlines()), 34)
 
         
-    def langmodel(self):
+    def test_langmodel(self):
         experiment.expDir = self.tmpdir + "/"
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
@@ -131,7 +131,7 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.settings.has_key("lm"))
         
     
-    def translationmodel(self):
+    def test_translationmodel(self):
         experiment.expDir = self.tmpdir + "/"
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
@@ -151,7 +151,7 @@ class Pipeline(unittest.TestCase):
         self.assertLess(newSize, initSize)
         
     
-    def tuning(self):
+    def test_tuning(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
         train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
         tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
@@ -175,7 +175,7 @@ class Pipeline(unittest.TestCase):
         self.assertSetEqual(set(os.listdir(exp.settings["tm"]+"/model")), set(["moses.ini"]))
         self.assertSetEqual(set(os.listdir(exp.settings["ttm"])), set(["moses.ini"]))
 
-    def paths(self):
+    def test_paths(self):
         p = Path(self.tmpdir + "/blabla.en")
         self.assertFalse(p.exists())
         self.assertEqual(p.getAbsolute().getUp().getUp(), Path(__file__).getUp())
@@ -194,7 +194,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(p.getDescription(), p + " (0K)")
     
     
-    def translate(self):
+    def test_translate(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
         train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
@@ -214,7 +214,7 @@ class Pipeline(unittest.TestCase):
         self.assertAlmostEquals(bleu, 61.39, 2)  
         
     
-    def parallel(self):
+    def test_parallel(self):
   
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
         train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
@@ -247,16 +247,13 @@ class Pipeline(unittest.TestCase):
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
-        print "settigns before : " + str(exp.settings)
         exp = exp.copy("newexp")
-        print "settigns after : " + str(exp.settings)
         bleu = exp.evaluateBLEU(test.getStem()+"2")
         self.assertTrue(exp.settings.has_key("test"))
         self.assertTrue(exp.settings["test"]["translation"])
         self.assertAlmostEquals(bleu, 61.39, 2)          
         
     def tearDown(self):
-        print ""
         shutil.rmtree(self.tmpdir)
 
 if __name__ == '__main__':

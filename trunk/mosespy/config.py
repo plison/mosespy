@@ -1,5 +1,5 @@
 import re
-from system import Path
+from mosespy.system import Path
 
 class MosesConfig():
     
@@ -99,7 +99,7 @@ class MosesConfig():
             if l.startswith("[") and l.endswith("]"):
                 partType = l[1:-1]
                 start = i+1
-                end = len(lines)-1
+                end = len(lines)
                 for  j in range(i+1, len(lines)):
                     l2 = lines[j].strip()
                     if l2.startswith("[") and l2.endswith("]"):
