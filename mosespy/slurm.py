@@ -165,16 +165,23 @@ class SlurmExecutor(CommandExecutor):
         
 
     def run(self, script, stdin=None, stdout=None):
-        if self.account:
+        if not "SLURM" in str(system.getEnv().keys()) and self.account:
             name = str(uuid.uuid4())[0:5]
             script = ("srun --account=" + self.account
                       + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
                       +" --job-name=" + name
                       + " --cpus-per-task=" + str(nodeCpus)
                       + " --time=" + nodeTime
-                      + " --propagate=NONE "
                       + " " + script) 
         return CommandExecutor.run(self, script, stdin, stdout)
+    
+    
+    def run_parallel(self, script, jobArgs, stdins=None, stdouts=None): 
+        for k in system.getEnv():
+            if "SLURM" in k:
+                system.setEnv(k, "")
+        CommandExecutor.run_parallel(self, script, jobArgs, stdins, stdouts)
+
                
        
 def _getDefaultSlurmAccount():
