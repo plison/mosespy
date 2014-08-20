@@ -1,4 +1,4 @@
-import os, shutil, subprocess, time, platform, Queue, threading
+import os, shutil, subprocess, time, platform, Queue, threading, copy
 from datetime import datetime
 from xml.dom import minidom
 
@@ -302,7 +302,7 @@ def setEnv(variable, value, override=True):
         
         
 def getEnv():
-    return os.environ
+    return copy.deepcopy(os.environ)
 
 def delEnv(key):
     del os.environ[key]
