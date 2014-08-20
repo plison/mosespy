@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import re
 from mosespy.system import Path 
@@ -70,7 +71,7 @@ class CorpusProcessor():
         revertedSource = self.revertFile(corpus.getSourceFile())
         self.revertFile(corpus.getTargetFile())
         translation = self.revertFile(corpus.getTranslationFile())
-        aCorpus = AlignedCorpus(revertedSource.getStem, corpus.sourceLang, corpus.targetLang)
+        aCorpus = AlignedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang)
         newCorpus = TranslatedCorpus(aCorpus, translation)
 
         return newCorpus
@@ -111,7 +112,7 @@ class CorpusProcessor():
         s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
         if s:
             bleu = float(s.group(1))
-            return bleu
+            return bleu, bleu_output
         else:
             raise RuntimeError("BLEU score could not be extracted")
 
@@ -240,4 +241,3 @@ class TrueCaser():
         return self.executor.run_output(truecaseScript, stdin=inputText)
     
 
- 

@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+
+__author__ = 'Pierre Lison (plison@ifi.uio.no)'
+__copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
+__license__ = 'MIT License'
+__version__ = "$Date: $"    
+
 
 import random
 from mosespy.system import Path
@@ -114,12 +122,7 @@ class AlignedCorpus(object):
         self.targetLang = targetLang
         self.sourceCorpus = BasicCorpus(self.stem + "." + sourceLang)
         self.targetCorpus = BasicCorpus(self.stem + "." + targetLang)
-        
-        if not self.getSourceFile().exists():
-            raise RuntimeError(self.getSourceFile() + " does not exist")
-        if not self.getTargetFile().exists():
-            raise RuntimeError(self.getTargetFile() + " does not exist")
-        
+              
         nbLinesSource = self.getSourceFile().countNbLines()
         nbLinesTarget = self.getTargetFile().countNbLines()
         if nbLinesSource != nbLinesTarget:
@@ -139,12 +142,12 @@ class AlignedCorpus(object):
         return stems
                
  
-    def divideData(self, workPath, nbTuning=1000, nbTesting=3000, random=True):
+    def divideData(self, workPath, nbTuning=1000, nbTesting=3000, randomPick=True):
         workPath = Path(workPath)
         sourceLines = (self.stem + "." + self.sourceLang).readlines()
         targetLines = (self.stem + "." + self.targetLang).readlines()
             
-        if random:
+        if randomPick:
             tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
             testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
         else:

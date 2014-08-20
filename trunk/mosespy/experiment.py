@@ -1,12 +1,34 @@
 # -*- coding: utf-8 -*- 
 
+"""Creation, update and analysis of machine translation experiments
+based on the Moses platform (http://www.statmt.org/moses for details). 
+The central entity of this module is the Experiment class which allows
+the user to easily configure and run translation experiments.
+
+The module relies on the Moses platform, the MGIZA word alignment tool 
+and the IRSTLM language modelling tool, which need to be installed
+and compile in the base directory. 
+"""
+
+__author__ = 'Pierre Lison (plison@ifi.uio.no)'
+__copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
+__license__ = 'MIT License'
+__version__ = "$Date: $"
+
+# TODO: use the revision SVN tags to update the version
+# TODO: make sure all the path objects are named ...Path
+# TODO: get Moses, IRSTLM and MGIZA included as external SVN resources
+# TODO: write routines to automatically compile the code above
+# TODO: document the rest of the modules
+# TODO: more PyUnit tests (analyse errors, corpus, processing, etc.)
+# TODO: refactor code, make it more readable
+
 import json, copy,  re
 import mosespy.system as system
 import mosespy.analyser as analyser
 from mosespy.system import Path
 from mosespy.processing import CorpusProcessor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
-from mosespy.config import MosesConfig
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -16,21 +38,26 @@ irstlm_root = rootDir + "/irstlm"
 defaultAlignment = "grow-diag-final-and"
 defaultReordering = "msd-bidirectional-fe"
 
+
 class Experiment(object):
-    """Representation of a translation experiment. The experiment initially consists
-    of a name and a (source, target) language pair.  The experiment can be subsequently
-    updated by the following core operations:
-    - train a language model from data in the target language
-    - train a translation model (phrase and reordering tables) from aligned data
-    - tune the feature weights from aligned data
+    """Representation of a translation experiment. The experiment 
+    initially consists of a name and a (source, target) language pair.  
+    The experiment can be subsequently updated by the following core 
+    operations:
+    - train a language model from data in the target language,
+    - train a translation model (phrase and reordering tables) from 
+      aligned data,
+    - tune the feature weights from aligned data,
     - evaluate the resulting setup on test data (using e.g. BLEU).
     
-    The data and models produced during the experiment are stored in the directory
-    {expDir}/{name of experiment}.  In this directory, the JSON file settings.json
-    functions as a permanent representation of the experiment, allowing experiments
-    to be easily restarted."""
+    The data and models produced during the experiment are stored in 
+    the directory {expDir}/{name of experiment}.  In this directory, 
+    the JSON file settings.json functions as a permanent representation 
+    of the experiment, allowing experiments to be easily restarted.
+    """
     
     def __init__(self, expName, sourceLang=None, targetLang=None):
+        
         self.settings = {}
         self.settings["name"] = expName
         
@@ -134,7 +161,7 @@ class Experiment(object):
             print "Finished building translation model in directory " + tmDir.getDescription()
             self.settings["tm"]=tmDir
             if pruning:
-                self._prunePhraseTable()
+                self.prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
@@ -262,7 +289,8 @@ class Experiment(object):
         result = self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
         if result:
             transCorpus = TranslatedCorpus(testCorpus, transPath)
-            bleu = self.processor.getBleuScore(transCorpus)
+            bleu, bleu_output = self.processor.getBleuScore(transCorpus)
+            print bleu_output
             self.settings["test"] = {"stem":transCorpus.getStem(),
                                      "translation":transPath,
                                      "bleu":bleu}                            
@@ -316,7 +344,6 @@ class Experiment(object):
             (self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"]).remove()
             config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
             paths = config.getPaths()
-            print "Paths: " + str(paths)
             for f in (self.settings["tm"]+"/model").listdir():
                 absolutePath = Path(self.settings["tm"]+"/model/" + f)
                 if absolutePath not in paths and f !="moses.ini":
@@ -345,7 +372,7 @@ class Experiment(object):
         return newexp
  
    
-    def _prunePhraseTable(self, probThreshold=0.0001):
+    def prunePhraseTable(self, probThreshold=0.0001):
         
         if not self.settings.has_key("tm"):
             raise RuntimeError("Translation model is not yet constructed")
@@ -441,3 +468,117 @@ class Experiment(object):
             jsonFile.write(dump)
            
     
+    
+    
+
+class MosesConfig():
+    
+    def __init__(self, configFile):
+        self.configFile = Path(configFile)
+
+    def getPhraseTable(self):
+        parts = self._getParts() 
+        if parts.has_key("feature"):
+            for l in parts["feature"]:
+                if "PhraseDictionary" in l:
+                    s = re.search(re.escape("path=") + r"((\S)+)", l)
+                    if s:
+                        return Path(s.group(1))
+        print "Cannot find path to phrase table"
+        
+    
+    def replacePhraseTable(self, newPath, phraseType="PhraseDictionaryMemory"):
+        parts = self._getParts() 
+        if parts.has_key("feature"):
+            newList = []
+            for l in parts["feature"]:
+                if "PhraseDictionary" in l:
+                    s = re.search(re.escape("path=") + r"((\S)+)", l)
+                    if s:
+                        existingPath = s.group(1)
+                        l = l.replace(existingPath, newPath)
+                        l = l.replace(l.split()[0], phraseType)
+                newList.append(l)
+            parts["feature"] = newList
+        self._updateFile(parts)
+        
+
+    def getReorderingTable(self):
+        parts = self._getParts() 
+        if parts.has_key("feature"):
+            for l in parts["feature"]:
+                if "LexicalReordering" in l:
+                    s = re.search(re.escape("path=") + r"((\S)+)", l)
+                    if s:
+                        return Path(s.group(1))
+        print "Cannot find path to reordering table"
+        
+    
+    def replaceReorderingTable(self, newPath):
+        parts = self._getParts() 
+        if parts.has_key("feature"):
+            newList = []
+            for l in parts["feature"]:
+                if "LexicalReordering" in l:
+                    s = re.search(re.escape("path=") + r"((\S)+)", l)
+                    if s:
+                        existingPath = s.group(1)
+                        l = l.replace(existingPath, newPath)
+                newList.append(l)
+            parts["feature"] = newList
+        self._updateFile(parts)
+        
+    
+    def removePart(self, partname):
+        parts = self._getParts()
+        if parts.has_key(partname):
+            del parts[partname]
+        self._updateFile(parts)
+        
+    
+    def getPaths(self):
+        paths = set()
+        parts = self._getParts() 
+        for part in parts:
+            for l in parts[part]:
+                s = re.search(re.escape("path=") + r"((\S)+)", l)
+                if s:
+                    paths.add(Path(s.group(1)).getAbsolute())
+        return paths
+        
+    
+    def display(self):
+        lines = self.configFile.readlines()
+        for l in lines:
+            print l.strip()
+        
+    def _updateFile(self, newParts):
+        with open(self.configFile, 'w') as configFileD:
+            for part in newParts:
+                configFileD.write("[" + part + "]\n")
+                for l in newParts[part]:
+                    configFileD.write(l+"\n")
+                configFileD.write("\n")
+        
+    
+    def _getParts(self):
+        lines = self.configFile.readlines()
+        parts = {}
+        for  i in range(0, len(lines)):
+            l = lines[i].strip()
+            if l.startswith("[") and l.endswith("]"):
+                partType = l[1:-1]
+                start = i+1
+                end = len(lines)
+                for  j in range(i+1, len(lines)):
+                    l2 = lines[j].strip()
+                    if l2.startswith("[") and l2.endswith("]"):
+                        end = j-1
+                        break
+                parts[partType] = []
+                for line in lines[start:end]:
+                    if line.strip():
+                        parts[partType].append(line.strip())
+        return parts
+    
+

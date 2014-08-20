@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*- 
 
-import unittest, uuid, os, shutil 
-import mosespy.slurm as slurm
+import unittest
+import uuid
+import os
+import shutil 
 import mosespy.experiment as experiment
 from mosespy.system import Path, CommandExecutor
 from mosespy.processing import CorpusProcessor
 from mosespy.corpus import BasicCorpus, AlignedCorpus
-from mosespy.config import MosesConfig
+from mosespy.experiment import Experiment, MosesConfig
+from mosespy.slurm import SlurmExperiment
 
 inFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.fr"
 outFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.en"
@@ -46,7 +49,7 @@ class Pipeline(unittest.TestCase):
 
     def test_division(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10)
+        _, _, test = acorpus.divideData(self.tmpdir, 10, 10)
         self.assertTrue(os.path.exists(test.getStem()+".indices"))
         testlines = (test.getStem()+".en").readlines()
         indlines = (test.getStem()+".indices").readlines()
@@ -121,7 +124,7 @@ class Pipeline(unittest.TestCase):
         
     def test_langmodel(self):
         experiment.expDir = self.tmpdir + "/"
-        exp = experiment.Experiment("test", "fr", "en")
+        exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         result1 = exp.queryLanguageModel("Where is it ?")
         self.assertAlmostEqual(result1["logprob"], -6.29391, 3)
@@ -133,7 +136,7 @@ class Pipeline(unittest.TestCase):
     
     def test_translationmodel(self):
         experiment.expDir = self.tmpdir + "/"
-        exp = experiment.Experiment("test", "fr", "en")
+        exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(inFile.getStem(), pruning=False)
         self.assertTrue(exp.settings.has_key("tm"))
@@ -145,7 +148,7 @@ class Pipeline(unittest.TestCase):
         config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")
         self.assertEqual(config.getPhraseTable(), exp.settings["tm"]+"/model/phrase-table.gz")
         initSize = config.getPhraseTable().getSize()
-        exp._prunePhraseTable()
+        exp.prunePhraseTable()
         self.assertEqual(config.getPhraseTable(), exp.settings["tm"]+"/model/phrase-table.reduced.gz")        
         newSize = config.getPhraseTable().getSize()
         self.assertLess(newSize, initSize)
@@ -153,13 +156,13 @@ class Pipeline(unittest.TestCase):
     
     def test_tuning(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        train, tune, _ = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
         tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         tuneTargetLines = tune.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(tune.getStem() + "2.fr").writelines(tuneSourceLines)
         Path(tune.getStem() + "2.en").writelines(tuneTargetLines)
         experiment.expDir = self.tmpdir + "/"
-        exp = experiment.Experiment("test", "fr", "en")
+        exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem(), pruning=False)
         exp.tuneTranslationModel(tune.getStem() + "2")
@@ -198,13 +201,13 @@ class Pipeline(unittest.TestCase):
     
     def test_translate(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
         experiment.expDir = self.tmpdir + "/"
-        exp = experiment.Experiment("test", "fr", "en")
+        exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
         bleu = exp.evaluateBLEU(test.getStem()+"2")
@@ -219,13 +222,13 @@ class Pipeline(unittest.TestCase):
     def test_parallel(self):
   
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
         experiment.expDir = self.tmpdir + "/"
-        exp = slurm.SlurmExperiment("paralleltest", "fr", "en", maxJobs=2)
+        exp = SlurmExperiment("paralleltest", "fr", "en", maxJobs=2)
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
         self.assertTrue(exp.settings.has_key("tm"))
@@ -240,13 +243,13 @@ class Pipeline(unittest.TestCase):
     
     def test_copy(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
         experiment.expDir = self.tmpdir + "/"
-        exp = experiment.Experiment("test", "fr", "en")
+        exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
         exp = exp.copy("newexp")
@@ -258,9 +261,9 @@ class Pipeline(unittest.TestCase):
  
     def test_config(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        train, _, _ = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
-        exp = experiment.Experiment("test", "fr", "en")
+        exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
         config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")  

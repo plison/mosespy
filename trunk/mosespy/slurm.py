@@ -1,12 +1,12 @@
+# -*- coding: utf-8 -*-
 
 import re, uuid, copy
 import mosespy.experiment as experiment
 import mosespy.system as system
-from mosespy.experiment import Experiment 
+from mosespy.experiment import Experiment, MosesConfig 
 from mosespy.processing import CorpusProcessor
 from mosespy.corpus import AlignedCorpus
 from mosespy.system import CommandExecutor
-from mosespy.config import MosesConfig
 
 nodeMemory=60000
 nodeCpus = 16
@@ -103,7 +103,7 @@ class SlurmExperiment(Experiment):
             print "Finished building translation model in: " + tmDir.getDescription()
             self.settings["tm"]=tmDir
             if pruning:
-                self._prunePhraseTable()
+                self.prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
