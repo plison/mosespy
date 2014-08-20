@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 
-import os, shutil, subprocess, time, platform, Queue, threading, copy
+import os, shutil, subprocess, time, Queue, threading, copy
 from datetime import datetime
 from xml.dom import minidom
 

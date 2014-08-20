@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
