@@ -135,7 +135,7 @@ class Pipeline(unittest.TestCase):
         experiment.expDir = self.tmpdir + "/"
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
-        exp.trainTranslationModel(inFile.getStem())
+        exp.trainTranslationModel(inFile.getStem(), pruning=False)
         self.assertTrue(exp.settings.has_key("tm"))
         exp.executor.run("gunzip " + exp.settings["tm"]+"/model/phrase-table.gz")
         lines = Path(exp.settings["tm"]+"/model/phrase-table").readlines()
@@ -161,7 +161,7 @@ class Pipeline(unittest.TestCase):
         experiment.expDir = self.tmpdir + "/"
         exp = experiment.Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
-        exp.trainTranslationModel(train.getStem())
+        exp.trainTranslationModel(train.getStem(), pruning=False)
         exp.tuneTranslationModel(tune.getStem() + "2")
         self.assertTrue(exp.settings.has_key("ttm"))
         self.assertTrue(Path(exp.settings["ttm"]+"/run3.out").exists())
@@ -172,7 +172,9 @@ class Pipeline(unittest.TestCase):
                             set(['langmodel.blm.en', 'settings.json', 'translationmodel', 
                                   'truecasingmodel.en', 'truecasingmodel.fr', 'tunedmodel']))
         self.assertSetEqual(set(os.listdir(exp.settings["tm"])), set(["model"]))
-        self.assertSetEqual(set(os.listdir(exp.settings["tm"]+"/model")), set(["moses.ini"]))
+        self.assertSetEqual(set(os.listdir(exp.settings["tm"]+"/model")), 
+                            set(["phrase-table.gz", "moses.ini", 
+                                 "reordering-table.wbe-msd-bidirectional-fe.gz"]))
         self.assertSetEqual(set(os.listdir(exp.settings["ttm"])), set(["moses.ini"]))
 
     def test_paths(self):
@@ -251,7 +253,22 @@ class Pipeline(unittest.TestCase):
         bleu = exp.evaluateBLEU(test.getStem()+"2")
         self.assertTrue(exp.settings.has_key("test"))
         self.assertTrue(exp.settings["test"]["translation"])
-        self.assertAlmostEquals(bleu, 61.39, 2)          
+        self.assertAlmostEquals(bleu, 61.39, 2)    
+        
+ 
+    def test_config(self):
+        acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
+        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        experiment.expDir = self.tmpdir + "/"
+        exp = experiment.Experiment("test", "fr", "en")
+        exp.trainLanguageModel(outFile, preprocess=True)
+        exp.trainTranslationModel(train.getStem())
+        config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")  
+        Path(exp.settings["tm"]+"/model/moses.ini").printlines()
+        self.assertSetEqual(config.getPaths(), 
+                            set([exp.settings["lm"]["blm"],
+                                 exp.settings["tm"]+"/model/phrase-table.reduced.gz",
+                                 exp.settings["tm"]+"/model/reordering-table.wbe-msd-bidirectional-fe.gz"]))      
         
     def tearDown(self):
         shutil.rmtree(self.tmpdir)

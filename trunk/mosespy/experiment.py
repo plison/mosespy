@@ -115,7 +115,8 @@ class Experiment(object):
     
      
     def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
-                              reordering=defaultReordering, preprocess=True, nbThreads=2):
+                              reordering=defaultReordering, preprocess=True, 
+                              nbThreads=2, pruning=True):
         
         train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
         
@@ -132,7 +133,8 @@ class Experiment(object):
         if result:
             print "Finished building translation model in directory " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-        #    self._prunePhraseTable()
+            if pruning:
+                self._prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
