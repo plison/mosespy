@@ -304,6 +304,8 @@ def setEnv(variable, value, override=True):
 def getEnv():
     return os.environ
 
+def delEnv(key):
+    del os.environ[key]
 
 def extractLanguages():
     isostandard = minidom.parse(Path(__file__).getUp().getUp()+"/data/iso639.xml")
