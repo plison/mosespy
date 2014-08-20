@@ -1,8 +1,8 @@
 
-import re, uuid, threading, copy, Queue
+import re, uuid, copy
 import experiment, system
 from experiment import Experiment 
-from mosespy.processing import CorpusProcessor
+from processing import CorpusProcessor
 from corpus import AlignedCorpus
 from system import CommandExecutor
 from config import MosesConfig
@@ -11,85 +11,26 @@ nodeMemory=60000
 nodeCpus = 16
 nodeTime = "5:00:00"
 
-class SlurmExecutor(CommandExecutor):
-        
-    def __init__(self, account=None):
-        CommandExecutor.__init__(self)
-        if not account:
-            account = _getDefaultSlurmAccount()
-        if not account:
-            print "Warning: no SLURM account found, switching to normal execution"
-        self.account = account
-        
-        # System-dependent settings for the Abel cluster, change it to suit your needs
-        modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
-        system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
-                       + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
-                   +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        system.setEnv("PATH", "/opt/rocks/bin", override=False)
-        
-
-    def _getScript(self, script):    
-        if self.account:
-            name = str(uuid.uuid4())[0:5]
-            script = ("srun --account=" + self.account
-                      + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
-                      +" --job-name=" + name
-                      + " --cpus-per-task=" + str(nodeCpus)
-                      + " --time=" + nodeTime
-                      + " --propagate=NONE " 
-                      + " " + script)  
-        return script
-        
-    
-    def run(self, script, stdin=None, stdout=None):
-        if not "SLURM" in str(system.getEnv().keys()):
-            script = self._getScript(script)  
-        return super(SlurmExecutor,self).run(script, stdin, stdout)
-    
-    def run_queue(self, script, resultQueue, stdin=None, stdout=None):
-        if not "SLURM" in str(system.getEnv().keys()):
-            script = self._getScript(script)  
-        result = super(SlurmExecutor,self).run(script, stdin, stdout)
-        resultQueue.put(result)
-
-    
-    def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):  
-        print "starting parallel run for " + str(script) + " and " + str(jobArgs)
-        resultQueues = []
-        for i in range(0, len(jobArgs)):
-            jobArg = jobArgs[i]
-            filledScript = script%(jobArg)
-            stdin = stdins[i] if stdins else None
-            stdout = stdouts[i] if stdouts else None
-            resultQueue = Queue.Queue()
-            t = threading.Thread(target=self.run_queue, args=(filledScript, resultQueue, stdin, stdout))
-            resultQueues.append(resultQueue)
-            t.start()
-        result = system.waitForCompletion(resultQueues)
-        print "finished parallel run for " + str(script) + " and " + str(jobArgs) + ", final result is " + str(result)
-        return result
-    
-               
-        
 class SlurmExperiment(Experiment):
             
     def __init__(self, expName, sourceLang=None, targetLang=None, account=None, maxJobs=4):
         
         Experiment.__init__(self, expName, sourceLang, targetLang)
+        self.maxJobs = maxJobs
   
         if not system.existsExecutable("srun"):
             print "SLURM system not present, switching back to standard setup"
             return
-    
-        self.settings["account"] = account
-        self.maxJobs = maxJobs
+        
+        if not account:
+            account = _getDefaultSlurmAccount()    
+        self.account = account
         self.executor = SlurmExecutor(account)
         self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):
-        newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.settings["account"])
+        newexp = SlurmExperiment(nexExpName, self.settings["source"], self.settings["target"], self.account, self.maxJobs)
         settingscopy = copy.deepcopy(self.settings)
         for k in settingscopy.keys():
             if k != "name" and k!= "path":
@@ -97,12 +38,11 @@ class SlurmExperiment(Experiment):
         return newexp
     
     
-    def trainTranslationModel(self, trainStem, preprocess=True,alignment=experiment.defaultAlignment, 
-                              reordering=experiment.defaultReordering, nbThreads=nodeCpus):
+    def trainTranslationModel(self, trainStem, alignment=experiment.defaultAlignment, 
+                              reordering=experiment.defaultReordering, preprocess=True, nbThreads=nodeCpus):
         
         if self.maxJobs == 1:
-            Experiment.trainTranslationModel(self, trainStem, nbThreads)
-            return
+            return Experiment.trainTranslationModel(self, trainStem, alignment, reordering, preprocess, nbThreads)
              
         train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
         if preprocess:         
@@ -138,9 +78,7 @@ class SlurmExperiment(Experiment):
         if not r3:
             print "Construction of translation model FAILED (step 3)"
             return
-        
-        print "Finished step 3..."
-         
+                 
         tmDir.reset()
         (tmDir+"/model").make()
         alignFile = tmDir+"/model/aligned."+alignment
@@ -211,6 +149,33 @@ class SlurmExperiment(Experiment):
         return script  
 
 
+
+class SlurmExecutor(CommandExecutor):
+        
+    def __init__(self, account):
+        CommandExecutor.__init__(self)
+        self.account = account
+        
+        # System-dependent settings for the Abel cluster, change it to suit your needs
+        modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
+        system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
+                       + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                   +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        system.setEnv("PATH", "/opt/rocks/bin", override=False)
+        
+
+    def run(self, script, stdin=None, stdout=None):
+        if not "SLURM" in str(system.getEnv().keys()) and self.account:
+            name = str(uuid.uuid4())[0:5]
+            script = ("srun --account=" + self.account
+                      + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
+                      +" --job-name=" + name
+                      + " --cpus-per-task=" + str(nodeCpus)
+                      + " --time=" + nodeTime
+                      + " " + script) 
+        return CommandExecutor.run(script, stdin, stdout)
+               
+       
 def _getDefaultSlurmAccount():
     user = system.run_output("whoami")
     result = system.run_output("sacctmgr show User "+user + " -p")

@@ -3,7 +3,7 @@
 import json, copy,  re
 import system, analyser
 from system import Path
-from mosespy.processing import CorpusProcessor
+from processing import CorpusProcessor
 from corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
 from config import MosesConfig
 
@@ -101,7 +101,7 @@ class Experiment(object):
         self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
         self._recordState()
     
-    
+     
     def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True, nbThreads=2):
         
@@ -114,7 +114,7 @@ class Experiment(object):
                + self.settings["target"] + " with " + train.getStem())
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, trainStem, nbThreads, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
         tmDir.reset()
         result = self.executor.run(tmScript)
         if result:
@@ -203,7 +203,6 @@ class Experiment(object):
         
    
     def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
-    
         if preprocess:
             infile = self.processor.processFile(infile)
        
@@ -228,7 +227,7 @@ class Experiment(object):
 
         if filterDir:
             filterDir.remove()
-        
+       
         if not result:
             print "Translation of file " + infile + " FAILED"
         return result
@@ -241,7 +240,7 @@ class Experiment(object):
         
         if preprocess:
             testCorpus = self.processor.processCorpus(testCorpus, False)
-          
+                    
         transFile = testCorpus.getTargetFile().basename().addProperty("translated")  
         transPath = self.settings["path"] + "/" + transFile
         
