@@ -234,7 +234,23 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(Path(exp.settings["test"]["stem"]+".en").readlines()[2], "how you been ?\n")
         self.assertEqual(Path(exp.settings["test"]["translation"]).readlines()[2], "how vas-tu ? \n")
         self.assertAlmostEquals(bleu, 61.39, 2)  
-        
+    
+    
+    def test_copy(self):
+        acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
+        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
+        testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
+        Path(test.getStem() + "2.fr").writelines(testSourceLines)
+        Path(test.getStem() + "2.en").writelines(testTargetLines)
+        experiment.expDir = self.tmpdir + "/"
+        exp = experiment.Experiment("test", "fr", "en")
+        exp.trainLanguageModel(outFile, preprocess=True)
+        exp.trainTranslationModel(train.getStem())
+        bleu = exp.evaluateBLEU(test.getStem()+"2")
+        self.assertTrue(exp.settings.has_key("test"))
+        self.assertTrue(exp.settings["test"]["translation"])
+        self.assertAlmostEquals(bleu, 61.39, 2)          
         
     def tearDown(self):
         print ""
