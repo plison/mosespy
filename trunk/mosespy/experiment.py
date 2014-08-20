@@ -13,7 +13,7 @@ and compile in the base directory.
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date: $"
+__version__ = "$Date$"
 
 # TODO: use the revision SVN tags to update the version
 # TODO: make sure all the path objects are named ...Path

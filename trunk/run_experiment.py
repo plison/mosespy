@@ -3,13 +3,14 @@
 import sys
 from mosespy.slurm import SlurmExperiment
 from mosespy.experiment import Experiment
+import mosespy.experiment
 
-lmData = "./data/news-commentary/news-commentary-v8.fr-en.en"
 trainData = "./data/news-commentary/news-commentary-v8.fr-en"
 
-
 exp = Experiment("test", "fr", "en")
-lines = exp.divideData(trainData, lmData)
+print exp.analyseShortWords("true.en", "actual.en")
+
+#exp.doWholeShibang(trainData)
 
 #exp2 = exp.copy("opensub2")
 #exp.trainLanguageModel(lmData)

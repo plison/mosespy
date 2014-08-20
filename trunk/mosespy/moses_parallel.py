@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__author__ = 'Pierre Lison (plison@ifi.uio.no)'
+__copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
+__license__ = 'MIT License'
+__version__ = "$Date$"    
+
+
 import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import mosespy.slurm as slurm
