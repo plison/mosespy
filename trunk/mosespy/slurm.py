@@ -65,7 +65,9 @@ class SlurmExecutor(CommandExecutor):
             t = threading.Thread(target=self.run_queue, args=(filledScript, resultQueue, stdin, stdout))
             resultQueues.append(resultQueue)
             t.start()
-        return system.waitForCompletion(resultQueues)
+        result = system.waitForCompletion(resultQueues)
+        print "finished parallel run for " + str(script) + " and " + str(jobArgs) + ", final result is " + result
+        return result
     
                
         
@@ -135,6 +137,8 @@ class SlurmExperiment(Experiment):
         if not r3:
             print "Construction of translation model FAILED (step 3)"
             return
+        
+        print "Finished step 3..."
          
         tmDir.reset()
         (tmDir+"/model").make()
