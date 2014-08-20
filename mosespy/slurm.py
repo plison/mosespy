@@ -165,7 +165,7 @@ class SlurmExecutor(CommandExecutor):
         
 
     def run(self, script, stdin=None, stdout=None):
-        if not "SLURM" in str(system.getEnv().keys()) and self.account:
+        if self.account:
             name = str(uuid.uuid4())[0:5]
             script = ("srun --account=" + self.account
                       + " --mem-per-cpu=" + str(nodeMemory/nodeCpus) + "M"
