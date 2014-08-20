@@ -172,6 +172,7 @@ class SlurmExecutor(CommandExecutor):
                       +" --job-name=" + name
                       + " --cpus-per-task=" + str(nodeCpus)
                       + " --time=" + nodeTime
+                      + " --propagate=NONE "
                       + " " + script) 
         return CommandExecutor.run(self, script, stdin, stdout)
                
