@@ -203,10 +203,11 @@ class Experiment(object):
         
    
     def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
+
+        infile = Path(infile)
         if preprocess:
             infile = self.processor.processFile(infile)
        
-        infile = Path(infile)
         if filterModel:
             filterDir = self._getFilteredModel(infile)
             initFile = filterDir + "/moses.ini"
@@ -224,6 +225,7 @@ class Experiment(object):
         transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
         
         result = self.executor.run(transScript, stdout=outfile)
+        print "\n".join(Path(outfile).readlines())
 
         if filterDir:
             filterDir.remove()

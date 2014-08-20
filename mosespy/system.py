@@ -89,8 +89,7 @@ class CommandExecutor(object):
                 break
         print "Parallel processes successfully completed" 
         return True
-            
-
+        
     
     def _run_queue(self, script, resultQueue, stdin=None, stdout=None):
         result = self.run(script, stdin, stdout)

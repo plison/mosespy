@@ -180,7 +180,7 @@ class SlurmExecutor(CommandExecutor):
         for k in system.getEnv():
             if "SLURM" in k:
                 system.delEnv(k)
-        CommandExecutor.run_parallel(self, script, jobArgs, stdins, stdouts)
+        return CommandExecutor.run_parallel(self, script, jobArgs, stdins, stdouts)
 
                
        
