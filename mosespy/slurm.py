@@ -40,10 +40,12 @@ class SlurmExperiment(Experiment):
     
     
     def trainTranslationModel(self, trainStem, alignment=experiment.defaultAlignment, 
-                              reordering=experiment.defaultReordering, preprocess=True, nbThreads=nodeCpus):
+                              reordering=experiment.defaultReordering, preprocess=True, 
+                              nbThreads=nodeCpus, pruning=True):
         
         if self.maxJobs == 1:
-            return Experiment.trainTranslationModel(self, trainStem, alignment, reordering, preprocess, nbThreads)
+            return Experiment.trainTranslationModel(self, trainStem, alignment, reordering, 
+                                                    preprocess, nbThreads, pruning)
              
         train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
         if preprocess:         
@@ -100,7 +102,8 @@ class SlurmExperiment(Experiment):
         if result:
             print "Finished building translation model in: " + tmDir.getDescription()
             self.settings["tm"]=tmDir
-            self._prunePhraseTable()
+            if pruning:
+                self._prunePhraseTable()
             self._recordState()
         else:
             print "Construction of translation model FAILED"
