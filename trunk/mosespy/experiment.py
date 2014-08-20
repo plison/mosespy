@@ -314,9 +314,12 @@ class Experiment(object):
             (self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"]).remove()
             config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
             paths = config.getPaths()
+            print "Paths: " + str(paths)
             for f in (self.settings["tm"]+"/model").listdir():
-                if Path(f).getAbsolute() not in paths and f !="moses.ini":
-                    (self.settings["tm"]+"/model/" + f).remove()
+                absolutePath = Path(self.settings["tm"]+"/model/" + f)
+                if absolutePath not in paths and f !="moses.ini":
+                    print "Removing " + absolutePath
+                    absolutePath.remove()
         
         if self.settings.has_key("ttm"):
             for f in self.settings["ttm"].listdir():
