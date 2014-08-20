@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*- 
 
-import unittest, uuid, os, shutil
+import unittest, uuid, os, shutil, slurm
 import experiment
 from system import Path, CommandExecutor
-from mosespy.processing import CorpusProcessor
+from processing import CorpusProcessor
 from corpus import BasicCorpus, AlignedCorpus
 from config import MosesConfig
 
@@ -139,7 +139,7 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.settings.has_key("tm"))
         exp.executor.run("gunzip " + exp.settings["tm"]+"/model/phrase-table.gz")
         lines = Path(exp.settings["tm"]+"/model/phrase-table").readlines()
-        self.assertIn("veux te donner ||| want to give ||| 1 0.0705882 1 0.6 " 
+        self.assertIn("veux te donner ||| want to give ||| 1 0.0451128 1 1 "
                       + "||| 0-0 1-1 2-2 ||| 1 1 1 ||| ||| \n", lines)
         exp.executor.run("gzip " + exp.settings["tm"]+"/model/phrase-table")
         config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")
@@ -210,8 +210,30 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.settings["test"]["translation"])
         self.assertEqual(Path(exp.settings["test"]["stem"]+".fr").readlines()[2], "comment vas-tu ?\n")
         self.assertEqual(Path(exp.settings["test"]["stem"]+".en").readlines()[2], "how you been ?\n")
-        self.assertEqual(Path(exp.settings["test"]["translation"]).readlines()[2], "how's vas-tu ? \n")
-        self.assertAlmostEquals(bleu, 16.02, 2)
+        self.assertEqual(Path(exp.settings["test"]["translation"]).readlines()[2], "how vas-tu ? \n")
+        self.assertAlmostEquals(bleu, 61.39, 2)  
+        
+    
+    def test_parallel(self):
+  
+        acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
+        train, tune, test = acorpus.divideData(self.tmpdir, 10, 10, random=False)
+        testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
+        testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
+        Path(test.getStem() + "2.fr").writelines(testSourceLines)
+        Path(test.getStem() + "2.en").writelines(testTargetLines)
+        experiment.expDir = self.tmpdir + "/"
+        exp = slurm.SlurmExperiment("paralleltest", "fr", "en", maxJobs=2)
+        exp.trainLanguageModel(outFile, preprocess=True)
+        exp.trainTranslationModel(train.getStem())
+        self.assertTrue(exp.settings.has_key("tm"))
+        bleu = exp.evaluateBLEU(test.getStem()+"2")
+        self.assertTrue(exp.settings.has_key("test"))
+        self.assertTrue(exp.settings["test"]["translation"])
+        self.assertEqual(Path(exp.settings["test"]["stem"]+".fr").readlines()[2], "comment vas-tu ?\n")
+        self.assertEqual(Path(exp.settings["test"]["stem"]+".en").readlines()[2], "how you been ?\n")
+        self.assertEqual(Path(exp.settings["test"]["translation"]).readlines()[2], "how vas-tu ? \n")
+        self.assertAlmostEquals(bleu, 61.39, 2)  
         
         
     def tearDown(self):

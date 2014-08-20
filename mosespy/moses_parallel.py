@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 import sys, uuid, select
-import slurm
-from paths import Path
+import slurm, system
+from system import Path
 from corpus import BasicCorpus
 
 moses_root = Path(__file__).getAbsolute().getUp().getUp() + "/moses"
 decoder = moses_root + "/bin/moses "
 
-executor = slurm.SlurmExecutor()
+if system.existsExecutable("srun"):
+    executor = slurm.SlurmExecutor(slurm._getDefaultSlurmAccount())
+else:
+    executor = system.CommandExecutor()
 
 def getInput():
     lines = []
@@ -25,7 +28,7 @@ def getInput():
           
     if len(lines) > 0:
         print "Number of input lines: " + str(len(lines))
-        tmpInputFile = "./tmp" + str(uuid.uuid4())[0:6] + ".source"
+        tmpInputFile = "./inputtmp" + str(uuid.uuid4())[0:6] + ".source"
         with open(tmpInputFile, 'w') as tmpInput:
             tmpInput.writelines(lines)
         return Path(tmpInputFile)
@@ -150,7 +153,7 @@ def main():
     
     runParallelMoses(inputFile, arguments, stdout, nbJobs)
     
-    if inputFile and "tmp" in inputFile:
+    if inputFile and "inputtmp" in inputFile:
         inputFile.remove()
 
 

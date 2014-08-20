@@ -1,4 +1,4 @@
-import os, shutil, subprocess, time, platform
+import os, shutil, subprocess, time, platform, Queue, threading
 from datetime import datetime
 from xml.dom import minidom
 
@@ -14,7 +14,7 @@ class CommandExecutor(object):
    
     def run(self, script, stdin=None, stdout=None):
         self.callincr += 1
-        
+        curcall = int(self.callincr)
         str_stdin = ""
         if os.path.exists(str(stdin)):
             stdin_popen = open(stdin, 'r')
@@ -35,15 +35,16 @@ class CommandExecutor(object):
             stdout_popen = None
             
         if not self.quiet:     
-            print "[" + str(self.callincr) + "] Running " + script + str_stdin + str_stdout
+            print "[" + str(curcall) + "] Running " + script + str_stdin + str_stdout
         
         inittime = datetime.now()
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
         
         if not self.quiet:     
-            print "Task [" + str(self.callincr) + "] " + ("successful" if not p.returncode else "FAILED")
+            print "Task [" + str(curcall) + "] " + ("successful" if not p.returncode else "FAILED")
             print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]
+            
         if stdout_popen == subprocess.PIPE:
             return out_popen.strip()
         else:
@@ -52,12 +53,57 @@ class CommandExecutor(object):
     
     def run_output(self, script, stdin=None):
         return self.run(script, stdin, stdout=False)
+
     
+    def run_parallel(self, script, jobArgs, stdins=None, stdouts=None): 
+         
+        print "starting parallel run for " + str(script) + " and " + str(jobArgs)
+        resultQueues = []
+        for i in range(0, len(jobArgs)):
+            time.sleep(0.1)
+            jobArg = jobArgs[i]
+            filledScript = script%(jobArg)
+            stdin = stdins[i] if stdins else None
+            stdout = stdouts[i] if stdouts else None
+            resultQueue = Queue.Queue()
+            t = threading.Thread(target=self._run_queue, args=(filledScript, resultQueue, stdin, stdout))
+            resultQueues.append(resultQueue)
+            t.start()
+            
+        time.sleep(0.1)
+        print str(len(resultQueues)) + " processes started..."
+        for counter in range(0, 10000):
+            stillRunning = []
+            for q in resultQueues:
+                if not q.empty():
+                    if not q.get():
+                        print "One parallel task failed, aborting"
+                        return False
+                else:
+                    stillRunning.append(q)
+            resultQueues = stillRunning 
+            if len(resultQueues) > 0:
+                time.sleep(1)
+                if not (counter % 60):
+                    print "Number of running processes after %i mins: %i"%(counter/60, len(resultQueues))
+            else:
+                break
+        print "Parallel processes successfully completed" 
+        print "finished parallel run for " + str(script) + " and " + str(jobArgs)
+        return True
+            
+
+    
+    def _run_queue(self, script, resultQueue, stdin=None, stdout=None):
+        result = self.run(script, stdin, stdout)
+        resultQueue.put(result)
+
+   
 
     def performMacFix(self):
         if "/usr/local/bin" not in os.environ["PATH"]:
             os.environ["PATH"] = "/usr/local/bin:" + os.environ["PATH"]
-        if existsExecutable("gsplit"):
+        if not Path("./split").exists() and not Path("./sort").exists() and existsExecutable("gsplit"):
             print "Adapting executables to Mac OS X settings..."
             gsplit = os.popen("which gsplit").read().strip("\n")
             os.popen("ln -s " + gsplit + " split")
@@ -140,6 +186,12 @@ class Path(str):
     def reset(self):
         self.remove()
         os.makedirs(self)
+        
+    
+    def move(self, newLoc):
+        if self.exists():
+            shutil.move(self, newLoc)
+            
         
             
     def make(self):
@@ -243,30 +295,7 @@ def existsExecutable(command):
             return True
     return False
 
-    
-def waitForCompletion(resultQueues):
-    print "Parallel run of " + str(len(resultQueues)) + " processes"
-    time.sleep(0.1)
-    for counter in range(0, 10000):
-        stillRunning = []
-        for q in resultQueues:
-            if not q.empty():
-                if not q.get():
-                    print "One parallel task failed, aborting"
-                    return False
-            else:
-                stillRunning.append(q)
-        resultQueues = stillRunning 
-        if len(resultQueues) > 0:
-            time.sleep(1)
-            if not (counter % 60):
-                print "Number of running processes (%i mins): %i"%(counter/60, len(resultQueues))
-        else:
-            break
-    print "Parallel processes completed" 
-    return True 
-
-
+ 
 def setEnv(variable, value, override=True):
     if override:
         os.environ[variable] = value
