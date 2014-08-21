@@ -254,6 +254,8 @@ class AlignedCorpus(object):
                         duplicates.add(nextIndex) 
                 else:
                     break
+            if not (i % (len(sourcePairs)/100)):
+                print "Percentage of processed lines: " + str(i*100.0/(len(sourcePairs)-4))
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
         return duplicates
