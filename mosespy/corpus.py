@@ -211,33 +211,26 @@ class AlignedCorpus(object):
 
 
     def _drawRandomUnique(self, number, exclusion=None):
-        sourceRaw = self.getSourceFile().read()
-        targetRaw = self.getTargetFile().read()
-        sourceLines = sourceRaw.split("\n")
-        targetLines = targetRaw.split("\n")
+        sourceLines = self.getSourceFile().readlines()
+        targetLines = self.getTargetFile().readlines()
         start = 3
         end = self.getSourceFile().countNbLines() -2
         numbers = set()
-        
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
-                sourceWindow = (sourceLines[choice-2] + "\n" + sourceLines[choice-1] + "\n" 
-                                + sourceLines[choice] + "\n" + sourceLines[choice+1] + "\n"
-                                + sourceLines[choice+2]+"\n")
-                targetWindow = (targetLines[choice-2] + "\n" + targetLines[choice-1] + "\n" 
-                                + targetLines[choice] + "\n" + targetLines[choice+1] + "\n"
-                                + targetLines[choice+2]+"\n")
-                countSource = sourceRaw.count(sourceWindow)
-                countTarget = targetRaw.count(targetWindow)
-                if countSource == 0 or countTarget == 0:
-                    raise RuntimeError("error when drawing unique test sentences")
-                if countSource == 1 and countTarget == 1:
+                sourceWindow = [sourceLines[choice-2], sourceLines[choice-1], sourceLines[choice], 
+                                sourceLines[choice+1], sourceLines[choice+2]]
+                targetWindow = [targetLines[choice-2], targetLines[choice-1], targetLines[choice], 
+                                targetLines[choice+1], targetLines[choice+2]]
+                if isUniqueSublist(sourceLines, sourceWindow) and isUniqueSublist(targetLines, targetWindow):
                     numbers.add(choice)
-            if not (len(numbers) % (number/100)):
-                print "Percentage of test selection: " + str(((len(numbers)*100.0)/number)) + "\%"
+            if not (len(numbers) % (number/20)):
+                print "Percentage of sentence selection: " + str(((len(numbers)*100.0)/number)) + "%"
 
         return numbers
+    
+    
 
   
     def getStem(self):
@@ -274,7 +267,7 @@ class AlignedCorpus(object):
                     align["previoustarget"] = histories[i][-1]
                  
         return alignments
-            
+
 
 
 class TranslatedCorpus(AlignedCorpus):
@@ -554,3 +547,18 @@ class TrueCaser():
     
 
       
+
+
+def isUniqueSublist(fullLines, selection):
+    count = 0
+    for i in range(0, len(fullLines)):
+        for j in range(0, len(selection)):
+            lineInText = fullLines[i+j]
+            lineInSelection = selection[j]
+            if lineInText != lineInSelection:
+                break
+            if j == len(selection)-1:
+                count += 1
+                if count > 1:
+                    return False
+    return (count == 1)
