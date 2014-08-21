@@ -250,6 +250,8 @@ class AlignedCorpus(object):
         while True:
             if any([tr.is_alive() for tr in allThreads]):
                 time.sleep(1)
+            else:
+                break
   
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
