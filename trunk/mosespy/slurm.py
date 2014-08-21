@@ -191,7 +191,7 @@ class SlurmExecutor(CommandExecutor):
 
 def correctSlurmEnv():
     # System-dependent settings for the Abel cluster, change it to suit your needs
-    if system.existsExecutable("module"):
+    if system.existsExecutable("srun"):
         modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
         system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
                       + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
