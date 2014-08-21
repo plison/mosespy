@@ -172,7 +172,7 @@ class Path(str):
        
 
     def reset(self):
-        self.remove()
+        self.getAbsolute().remove()
         os.makedirs(self)
         
     
