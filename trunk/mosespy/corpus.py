@@ -225,9 +225,8 @@ class AlignedCorpus(object):
     
     def getDuplicateSources(self, window=4):
         sourceLines = self.getSourceFile().readlines()
-        sourcePairs = []
-        for i in range(0, len(sourceLines)):
-            sourcePairs.append((i, sourceLines[i]))
+        print "making pairs..."
+        sourcePairs = [(i, sourceLines[i]) for i in range(0, len(sourceLines))]
         print "start sorting..."
         sourcePairs.sort(key=lambda x: x[1])
         print "finished sorting"
