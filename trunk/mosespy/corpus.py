@@ -7,7 +7,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import re, threading, Queue
+import re, threading
 import random
 from mosespy.system import Path
 
@@ -238,7 +238,7 @@ class AlignedCorpus(object):
         indices.sort(key=lambda x : sourceLines[x])
         print "finished sorting..."
        
-        duplicates = Queue.Queue()
+        duplicates = set()
         chunck = len(indices)/nbThreads
         allThreads = []
         for t in range(0, nbThreads):
