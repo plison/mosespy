@@ -219,10 +219,10 @@ class AlignedCorpus(object):
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
-                sourceWindow = [sourceLines[choice-2].__hash__(), sourceLines[choice-1].__hash__(), sourceLines[choice].__hash__(), 
-                                sourceLines[choice+1].__hash__(), sourceLines[choice+2].__hash__()]
-                targetWindow = [targetLines[choice-2].__hash__(), targetLines[choice-1].__hash__(), targetLines[choice].__hash__(), 
-                                targetLines[choice+1].__hash__(), targetLines[choice+2].__hash__()]
+                sourceWindow = [sourceLines[choice-2], sourceLines[choice-1], sourceLines[choice], 
+                                sourceLines[choice+1], sourceLines[choice+2]]
+                targetWindow = [targetLines[choice-2], targetLines[choice-1], targetLines[choice], 
+                                targetLines[choice+1], targetLines[choice+2]]
                 if isUniqueSublist(sourceLines, sourceWindow) and isUniqueSublist(targetLines, targetWindow):
                     print "adding " + str(choice)
                     numbers.add(choice)
@@ -549,13 +549,13 @@ class TrueCaser():
         return self.executor.run_output(truecaseScript, stdin=inputText)
     
 
-      
-
+    
 
 def isUniqueSublist(fullLines, selection):
     count = 0
-    for i in range(0, len(fullLines)):
+    for i in range(0, len(fullLines)-len(selection)):
         for j in range(0, len(selection)):
+            print fullLines[i+j]
             if fullLines[i+j] != selection[j]:
                 break
             if j == len(selection)-1:
