@@ -234,8 +234,6 @@ class AlignedCorpus(object):
             for line in sourceFileD:
                 sourcePairs.append((i, line.__hash__()))
                 i += 1
-                if not (i % 1000):
-                    print "reading 1000 lines..."
         print "start sorting..."
         sourcePairs.sort(key=lambda x: x[1])
         print "finished sorting"
