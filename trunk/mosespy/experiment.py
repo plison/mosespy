@@ -30,8 +30,7 @@ import json, copy,  re
 import mosespy.system as system
 import mosespy.analyser as analyser
 from mosespy.system import Path
-from mosespy.processing import CorpusProcessor
-from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus
+from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus, CorpusProcessor
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"

@@ -9,8 +9,7 @@ import re, uuid, copy
 import mosespy.experiment as experiment
 import mosespy.system as system
 from mosespy.experiment import Experiment, MosesConfig 
-from mosespy.processing import CorpusProcessor
-from mosespy.corpus import AlignedCorpus
+from mosespy.corpus import AlignedCorpus, CorpusProcessor
 from mosespy.system import CommandExecutor
 
 nodeMemory=60000
