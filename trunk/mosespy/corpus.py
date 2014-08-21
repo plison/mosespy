@@ -229,38 +229,25 @@ class AlignedCorpus(object):
     def getDuplicateSources(self, window=4):
  
         print "making pairs..."
-        sourcePairs = []
-        with open(self.getSourceFile(), 'r') as sourceFileD:
-            i = 0
-            for line in sourceFileD:
-                sourcePairs.append((i, line.__hash__()))
-                i += 1
+        sourceLines = self.getSourceFile().readlines()
+        nbLines = len(sourceLines)
+        indices = range(0, nbLines)
         print "start sorting..."
-        sourcePairs.sort(key=lambda x: x[1])
-        print "finished sorting"
-        print "number of pairs: " + str(len(sourcePairs))
+        indices.sort(key=lambda x : sourceLines[x])
         duplicates = set()
-        for i in range(0, len(sourcePairs)-4):
-            curPair = sourcePairs[i]
-            curIndex = curPair[0]
-            curString = curPair[1]
-            for j in range(i+1, len(sourcePairs)-4):
-                nextPair = sourcePairs[j]
-                nextIndex = nextPair[0]
-                nextString = nextPair[1]
-                if not nextIndex in duplicates and curString == nextString:
-                    areEqual = True
-                    for k in range(1, window-1):
-                        if sourcePairs[curIndex+k][1] != sourcePairs[nextIndex+k][1]:
-                            areEqual = False
-                            break
-                    if areEqual:
-                        duplicates.add(curIndex)
-                        duplicates.add(nextIndex) 
-                else:
+        for i in range(0, nbLines):
+            curIndex = indices[i]
+            curWindow = sourceLines[curIndex:curIndex+window]
+            for j in range(i+1, nbLines-window):
+                nextIndex = indices[j]
+                nextWindow = sourceLines[nextIndex:nextIndex+window]
+                if curWindow[0] != nextWindow[0]:
                     break
-            if not (i % (len(sourcePairs)/100)):
-                print "Percentage of processed lines: " + str(i*100.0/(len(sourcePairs)-4))
+                elif curWindow == nextWindow:
+                    duplicates.add(curIndex)
+                    duplicates.add(nextIndex)
+            if not (i % (nbLines/100)):
+                print "Percentage of processed lines: " + str(i*100.0/(nbLines-window))
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
         return duplicates
