@@ -210,31 +210,46 @@ class AlignedCorpus(object):
         
 
 
-    def _drawRandomUnique(self, number, exclusion=None):
-        sourceLines = [l.__hash__() for l in self.getSourceFile().readlines()]
-        targetLines = [l.__hash__() for l in self.getTargetFile().readlines()]
-        start = 3
-        end = self.getSourceFile().countNbLines() -2
+    def _drawRandomUnique(self, number, exclusion=None, window=4):
+        start = 0
+        end = self.getSourceFile().countNbLines() -window
         numbers = set()
+        duplicates = self.getDuplicateSources(window)
+        print "Percentage of duplicates: "+ str(len(duplicates)*100.0 / self.getSourceFile().countNbLines())
+        
         while len(numbers) < number:
             choice = random.randrange(start, end)
-            if not exclusion or choice not in exclusion:
-                sourceWindow = [sourceLines[choice-2], sourceLines[choice-1], sourceLines[choice], 
-                                sourceLines[choice+1], sourceLines[choice+2]]
-                targetWindow = [targetLines[choice-2], targetLines[choice-1], targetLines[choice], 
-                                targetLines[choice+1], targetLines[choice+2]]
-                if isUniqueSublist(sourceLines, sourceWindow) and isUniqueSublist(targetLines, targetWindow):
-                    print "adding " + str(choice)
-                    numbers.add(choice)
-                else:
-                    print "skipping subtitle"
-            if not (len(numbers) % (number/20)):
-                print "Percentage of sentence selection: " + str(((len(numbers)*100.0)/number)) + "%"
+            if not choice in duplicates and (not exclusion or choice not in exclusion):
+                numbers.add(choice)
 
         return numbers
+     
     
-    
-
+    def getDuplicateSources(self, window=4):
+        sourceLines = self.getSourceFile().readlines()
+        sourcePairs = []
+        for i in range(0, len(sourceLines)):
+            sourcePairs.append((i, sourceLines[i]))
+        sourcePairs.sort(key=lambda x: x[1])
+        duplicates = set()
+        for i in range(0, len(sourcePairs)-4):
+            curPair = sourcePairs[i]
+            curIndex = curPair[0]
+            curString = curPair[1]
+            for j in range(i+1, len(sourcePairs)-4):
+                nextPair = sourcePairs[j]
+                nextIndex = nextPair[0]
+                nextString = nextPair[1]
+                if curString == nextString:
+                    curWindow = sourceLines[curIndex:curIndex+window]
+                    nextWindow = sourceLines[nextIndex:nextIndex+window]
+                    if curWindow == nextWindow:
+                        duplicates.add(curIndex)
+                        duplicates.add(nextIndex) 
+                else:
+                    break
+        return duplicates
+     
   
     def getStem(self):
         return self.stem
@@ -270,7 +285,6 @@ class AlignedCorpus(object):
                     align["previoustarget"] = histories[i][-1]
                  
         return alignments
-
 
 
 class TranslatedCorpus(AlignedCorpus):
@@ -548,17 +562,3 @@ class TrueCaser():
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         return self.executor.run_output(truecaseScript, stdin=inputText)
     
-
-    
-
-def isUniqueSublist(fullLines, selection):
-    count = 0
-    for i in range(0, len(fullLines)-len(selection)):
-        for j in range(0, len(selection)):
-            if fullLines[i+j] != selection[j]:
-                break
-            if j == len(selection)-1:
-                count += 1
-                if count > 1:
-                    return False
-    return (count == 1)
