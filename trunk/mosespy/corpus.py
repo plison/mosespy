@@ -158,7 +158,7 @@ class AlignedCorpus(object):
             window = 4
             toExclude = self.getDuplicateSources(window=window)
             tuningIndices =self. _drawRandom(nbTuning, exclusion=toExclude, window=window)
-            toExclude.union(tuningIndices)
+            toExclude = toExclude.union(tuningIndices)
             testingIndices = self._drawRandom(nbTesting, exclusion=toExclude, window=window)
         else:
             nbLines = self.getSourceFile().countNbLines()
@@ -247,7 +247,7 @@ class AlignedCorpus(object):
             tr.start()
             allThreads.append(tr)
         
-        time.sleep(0.5)
+        time.sleep(10)
         for t in allThreads:
             t.join()
   
@@ -305,7 +305,7 @@ def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
             elif curWindow == nextWindow:
                 duplicates.add(curIndex)
                 duplicates.add(nextIndex)
-        if not (i % (len(indices)/100)):
+        if len(indices) > 100 and not (i % (len(indices)/100)):
             print "Extraction of duplicates: " + str(i*100.0/len(indices))
 
 
