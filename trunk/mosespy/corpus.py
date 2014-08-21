@@ -157,7 +157,7 @@ class AlignedCorpus(object):
         if randomPick:
             window = 4
             duplicates = self.getDuplicateSources(window=window)
-            tuningIndices =self. _drawRandom(nbTuning, exclusion = duplicates, window=window)
+            tuningIndices =self. _drawRandom(nbTuning, exclusion=duplicates, window=window)
             testingIndices = self._drawRandom(nbTesting, exclusion=duplicates + tuningIndices, window=window)
         else:
             nbLines = self.getSourceFile().countNbLines()
@@ -254,6 +254,7 @@ class AlignedCorpus(object):
                         duplicates.add(curIndex)
                         duplicates.add(nextIndex) 
                 else:
+                    print "diff is " + str((j-i))
                     break
             if not (i % (len(sourcePairs)/100)):
                 print "Percentage of processed lines: " + str(i*100.0/(len(sourcePairs)-4))
