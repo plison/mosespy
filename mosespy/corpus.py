@@ -247,9 +247,9 @@ class AlignedCorpus(object):
             tr.start()
             allThreads.append(tr)
         
-        time.sleep(10)
-        for t in allThreads:
-            t.join()
+        while True:
+            if any([tr.is_alive() for tr in allThreads]):
+                time.sleep(1)
   
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
