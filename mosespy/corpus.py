@@ -268,8 +268,8 @@ class AlignedCorpus(object):
             histories = targetCorpus.getHistories()
             for i in range(0, len(alignments)):
                 align = alignments[i]
-                if histories.has_key(i):
-                    align["previoustarget"] = histories[i][-1] if len(histories[i]) > 0 else None
+                if histories.has_key(i) and len(histories[i]) > 0:
+                    align["previoustarget"] = histories[i][-1]
                  
         return alignments
             
