@@ -418,7 +418,7 @@ class CorpusProcessor():
         return trainCorpus, tuneCorpus, testCorpus
         
         
-    def extractSourceDuplicates(self, corpus, nbThreads=4):
+    def extractSourceDuplicates(self, corpus, nbThreads=32):
         
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
