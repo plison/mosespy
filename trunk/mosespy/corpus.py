@@ -155,10 +155,12 @@ class AlignedCorpus(object):
         workPath = Path(workPath)
         sourceLines = self.getSourceFile().readlines()
         targetLines = self.getTargetFile().readlines()
-            
+             
         if randomPick:
-            tuningIndices =self. _drawRandomUnique(nbTuning)
-            testingIndices = self._drawRandomUnique(nbTesting, exclusion=tuningIndices)
+            window = 4
+            duplicates = self.getDuplicateSources(window=window)
+            tuningIndices =self. _drawRandom(nbTuning, exclusion = duplicates, window=window)
+            testingIndices = self._drawRandom(nbTesting, exclusion=duplicates + tuningIndices, window=window)
         else:
             tuningIndices = range(0,len(sourceLines))[-nbTuning-nbTesting:-nbTesting]
             testingIndices = range(0,len(sourceLines))[-nbTesting:]
@@ -210,16 +212,12 @@ class AlignedCorpus(object):
         
 
 
-    def _drawRandomUnique(self, number, exclusion=None, window=4):
-        start = 0
-        end = self.getSourceFile().countNbLines() -window
-        numbers = set()
-        duplicates = self.getDuplicateSources(window)
-        print "Percentage of duplicates: "+ str(len(duplicates)*100.0 / self.getSourceFile().countNbLines())
-        
+    def _drawRandom(self, number, exclusion=None, window=4):
+
+        numbers = set()     
         while len(numbers) < number:
-            choice = random.randrange(start, end)
-            if not choice in duplicates and (not exclusion or choice not in exclusion):
+            choice = random.randrange(0, self.getSourceFile().countNbLines() -window)
+            if not exclusion or choice not in exclusion:
                 numbers.add(choice)
 
         return numbers
@@ -230,7 +228,9 @@ class AlignedCorpus(object):
         sourcePairs = []
         for i in range(0, len(sourceLines)):
             sourcePairs.append((i, sourceLines[i]))
+        print "start sorting..."
         sourcePairs.sort(key=lambda x: x[1])
+        print "finished sorting"
         duplicates = set()
         for i in range(0, len(sourcePairs)-4):
             curPair = sourcePairs[i]
@@ -248,6 +248,8 @@ class AlignedCorpus(object):
                         duplicates.add(nextIndex) 
                 else:
                     break
+        percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
+        print "Percentage of duplicates: "+ str(percent)
         return duplicates
      
   
