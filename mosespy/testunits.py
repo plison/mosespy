@@ -11,6 +11,7 @@ import uuid
 import os
 import shutil 
 import mosespy.experiment as experiment
+import mosespy.slurm as slurm
 from mosespy.system import Path, CommandExecutor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor
 from mosespy.experiment import Experiment, MosesConfig
@@ -24,6 +25,7 @@ class Pipeline(unittest.TestCase):
     def setUp(self):
         self.tmpdir = "./tmp" + str(uuid.uuid4())[0:6]
         os.makedirs(self.tmpdir)
+        slurm.correctSlurmEnv()
         
     def test_preprocessing(self):
         

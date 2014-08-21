@@ -168,13 +168,6 @@ class SlurmExecutor(CommandExecutor):
             print "Warning: cannot use SLURM bindings"
             return
         
-        # System-dependent settings for the Abel cluster, change it to suit your needs
-        modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
-        system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
-                       + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
-                   +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        system.setEnv("PATH", "/opt/rocks/bin", override=False)
-        
 
     def run(self, script, stdin=None, stdout=None):
         if not "SLURM" in str(system.getEnv().keys()) and self.account:
@@ -194,6 +187,16 @@ class SlurmExecutor(CommandExecutor):
                 system.delEnv(k)
         return CommandExecutor.run_parallel(self, script, jobArgs, stdins, stdouts)
 
+
+
+def correctSlurmEnv():
+    # System-dependent settings for the Abel cluster, change it to suit your needs
+    if system.existsExecutable("module"):
+        modScript = "module load intel openmpi.intel ; echo $LD_LIBRARY_PATH"
+        system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
+                      + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
+                      +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
+        system.setEnv("PATH", "/opt/rocks/bin", override=False)
                
        
 def _getDefaultSlurmAccount():
