@@ -224,7 +224,10 @@ class AlignedCorpus(object):
                 targetWindow = [targetLines[choice-2], targetLines[choice-1], targetLines[choice], 
                                 targetLines[choice+1], targetLines[choice+2]]
                 if isUniqueSublist(sourceLines, sourceWindow) and isUniqueSublist(targetLines, targetWindow):
+                    print "adding " + str(choice)
                     numbers.add(choice)
+                else:
+                    print "skipping subtitle"
             if not (len(numbers) % (number/20)):
                 print "Percentage of sentence selection: " + str(((len(numbers)*100.0)/number)) + "%"
 
@@ -553,9 +556,7 @@ def isUniqueSublist(fullLines, selection):
     count = 0
     for i in range(0, len(fullLines)):
         for j in range(0, len(selection)):
-            lineInText = fullLines[i+j]
-            lineInSelection = selection[j]
-            if lineInText != lineInSelection:
+            if fullLines[i+j] != selection[j]:
                 break
             if j == len(selection)-1:
                 count += 1
