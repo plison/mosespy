@@ -153,17 +153,20 @@ class AlignedCorpus(object):
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000, randomPick=True):
 
         workPath = Path(workPath)
-        sourceLines = self.getSourceFile().readlines()
-        targetLines = self.getTargetFile().readlines()
-             
+         
         if randomPick:
             window = 4
             duplicates = self.getDuplicateSources(window=window)
             tuningIndices =self. _drawRandom(nbTuning, exclusion = duplicates, window=window)
             testingIndices = self._drawRandom(nbTesting, exclusion=duplicates + tuningIndices, window=window)
         else:
-            tuningIndices = range(0,len(sourceLines))[-nbTuning-nbTesting:-nbTesting]
-            testingIndices = range(0,len(sourceLines))[-nbTesting:]
+            nbLines = self.getSourceFile().countNbLines()
+            tuningIndices = range(0,nbLines)[-nbTuning-nbTesting:-nbTesting]
+            testingIndices = range(0,nbLines)[-nbTesting:]
+
+        sourceLines = self.getSourceFile().readlines()
+        targetLines = self.getTargetFile().readlines()
+    
         trainSourceLines = []
         tuneSourceLines = []
         testSourceLines = []       
