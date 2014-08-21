@@ -22,12 +22,13 @@ class BasicCorpus(object):
 
         self.originCorpus = None
         self.originIndices = None
-        for indicesFile in [(self.corpusFile.getStem() + ".indices"), 
-                            (self.corpusFile.getStem().removeProperty() + ".indices")]:       
-            if indicesFile.exists():
-                indLines = indicesFile.readlines()
-                self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.corpusFile.getLang())
-                self.originIndices = [int(i.strip()) for i in indLines[1:]]
+        
+        indicesFile = (self.corpusFile.getStem() + ".indices")
+        if indicesFile.exists():
+            indLines = indicesFile.readlines()
+            self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.corpusFile.getLang())
+            self.originIndices = [int(i.strip()) for i in indLines[1:]]
+      
        
     def getCorpusFile(self):
         return self.corpusFile 
