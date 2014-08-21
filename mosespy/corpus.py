@@ -215,16 +215,18 @@ class AlignedCorpus(object):
         targetRaw = self.getTargetFile().read()
         sourceLines = sourceRaw.split("\n")
         targetLines = targetRaw.split("\n")
-        start = 2
-        end = self.getSourceFile().countNbLines() -1
+        start = 3
+        end = self.getSourceFile().countNbLines() -2
         numbers = set()
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
-                sourceWindow = (sourceLines[choice-2] + "\n" + sourceLines[choice-1] 
-                                + "\n" + sourceLines[choice] + "\n" + sourceLines[choice+1])
-                targetWindow = (targetLines[choice-2] + "\n" + targetLines[choice-1] 
-                                + "\n" + targetLines[choice] + "\n" + targetLines[choice+1])
+                sourceWindow = (sourceLines[choice-2] + "\n" + sourceLines[choice-1] + "\n" 
+                                + sourceLines[choice] + "\n" + sourceLines[choice+1] + "\n"
+                                + sourceLines[choice+2]+"\n")
+                targetWindow = (targetLines[choice-2] + "\n" + targetLines[choice-1] + "\n" 
+                                + targetLines[choice] + "\n" + targetLines[choice+1] + "\n"
+                                + targetLines[choice+2]+"\n")
                 countSource = sourceRaw.count(sourceWindow)
                 countTarget = targetRaw.count(targetWindow)
                 if countSource == 0 or countTarget == 0:
@@ -234,6 +236,8 @@ class AlignedCorpus(object):
                     numbers.add(choice)
                 else:
                     print "skipping subtitle since " + str(countSource) + " and " + str(countTarget)
+                    print "Source is " + sourceWindow
+                    print "Target is " + targetWindow
         return numbers
 
   
