@@ -62,7 +62,7 @@ class CorpusProcessor():
         tokFile.remove()
         
         if (rawFile.getStem() + ".indices").exists():
-            (rawFile.getStem() + ".indices").copy((rawFile.getStem() + ".true.indices"))
+            (rawFile.getStem() + ".indices").copy((trueFile.getStem() + "indices"))
         return trueFile  
     
     
@@ -99,7 +99,7 @@ class CorpusProcessor():
     
         untokFile.remove()
         if (processedFile.getStem() + ".indices").exists():
-            (processedFile.getStem() + ".indices").copy((processedFile.getStem() + ".read.indices"))
+            (processedFile.getStem() + ".indices").copy(finalFile.getStem() + ".indices")
         return finalFile
 
    
