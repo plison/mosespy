@@ -86,7 +86,7 @@ class CorpusProcessor():
         if not processedFile.exists():
             raise RuntimeError(processedFile + " does not exist")
         
-        untokFile = self.workPath + "/" + processedFile.basename().addProperty("detok") 
+        untokFile = self.workPath + "/" + processedFile.basename().changeProperty("detok") 
         self.tokeniser.detokeniseFile(processedFile,untokFile)
          
         finalFile = untokFile.changeProperty("read")
