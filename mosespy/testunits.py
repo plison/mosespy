@@ -11,8 +11,7 @@ import os
 import shutil 
 import mosespy.experiment as experiment
 from mosespy.system import Path, CommandExecutor
-from mosespy.processing import CorpusProcessor
-from mosespy.corpus import BasicCorpus, AlignedCorpus
+from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
 
