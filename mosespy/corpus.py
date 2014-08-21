@@ -156,9 +156,10 @@ class AlignedCorpus(object):
          
         if randomPick:
             window = 4
-            duplicates = self.getDuplicateSources(window=window)
-            tuningIndices =self. _drawRandom(nbTuning, exclusion=duplicates, window=window)
-            testingIndices = self._drawRandom(nbTesting, exclusion=duplicates + tuningIndices, window=window)
+            toExclude = self.getDuplicateSources(window=window)
+            tuningIndices =self. _drawRandom(nbTuning, exclusion=toExclude, window=window)
+            toExclude.union(tuningIndices)
+            testingIndices = self._drawRandom(nbTesting, exclusion=toExclude, window=window)
         else:
             nbLines = self.getSourceFile().countNbLines()
             tuningIndices = range(0,nbLines)[-nbTuning-nbTesting:-nbTesting]
