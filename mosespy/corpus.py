@@ -467,10 +467,7 @@ def  _extractSourceDuplicates(indicesFile, sourceFile, duplicatesFile, window=4)
             elif curWindow == nextWindow:
                 duplicates.add(curIndex)
                 duplicates.add(nextIndex)
-            if j > i+20:
-                print "Strange behaviour in the double loop...: i = " + str(i) + " and j=" +str(j)
-                print "curindex " + str(curIndex) + " - vs - " + str(nextIndex)
-                print "curwindow: " + str(curWindow) + " and nextwidnow: " + str(nextWindow)
+                break
         if len(indices) > 500 and not (i % (len(indices)/500)):
             print "Extraction of duplicates: " + str(i*100.0/len(indices))
     
