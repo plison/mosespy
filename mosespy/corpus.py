@@ -249,9 +249,12 @@ class AlignedCorpus(object):
                 nextIndex = nextPair[0]
                 nextString = nextPair[1]
                 if not nextIndex in duplicates and curString == nextString:
-                    curWindow = [pair[1] for pair in sourcePairs[curIndex:curIndex+window]]
-                    nextWindow = [pair[1] for pair in sourcePairs[nextIndex:nextIndex+window]]
-                    if curWindow == nextWindow:
+                    areEqual = True
+                    for k in range(1, window-1):
+                        if sourcePairs[curIndex+k][1] != sourcePairs[nextIndex+k][1]:
+                            areEqual = False
+                            break
+                    if areEqual:
                         duplicates.add(curIndex)
                         duplicates.add(nextIndex) 
                 else:
