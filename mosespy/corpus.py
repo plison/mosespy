@@ -9,6 +9,7 @@ __version__ = "$Date::                      $"
 
 import re
 import random
+import operator
 from mosespy.system import Path
 
 rootDir = Path(__file__).getUp().getUp()
@@ -227,18 +228,14 @@ class AlignedCorpus(object):
      
     
     def getDuplicateSources(self, window=4):
-        print "making pairs..."
-        sourcePairs = []
-        i = 0
-        with open(self.getSourceFile(), 'r') as sourceFileD:
-            print "here"
-            for line in sourceFileD:
-                sourcePairs.append((i, line))
-                i += 1
-            if not (i % 100):
-                print "reading 100 lines..."
+ 
+        sourceLines = self.getSourceFile().readlines()
+        sourceDict = {}
+        print "finished reading lines"
+        for i in range(0, len(sourceLines)):
+            sourceDict[i] = sourceLines[i]
         print "start sorting..."
-        sourcePairs.sort(key=lambda x: x[1])
+        sourcePairs = sorted(sourceDict.iteritems(), key=operator.itemgetter(1))
         print "finished sorting"
         duplicates = set()
         for i in range(0, len(sourcePairs)-4):
