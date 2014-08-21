@@ -7,7 +7,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import re, threading, time, Queue
+import re
 import random
 from mosespy.system import Path
 
@@ -148,73 +148,7 @@ class AlignedCorpus(object):
             raise RuntimeError("stems from split data in source and target are different")
         
         return stems
-               
- 
-    def divideData(self, workPath, nbTuning=1000, nbTesting=3000, randomPick=True):
-
-        workPath = Path(workPath)
-         
-        if randomPick:
-            window = 4
-            toExclude = self.getDuplicateSources(window=window)
-            tuningIndices =self. _drawRandom(nbTuning, exclusion=toExclude, window=window)
-            toExclude = toExclude.union(tuningIndices)
-            testingIndices = self._drawRandom(nbTesting, exclusion=toExclude, window=window)
-        else:
-            nbLines = self.getSourceFile().countNbLines()
-            tuningIndices = range(0,nbLines)[-nbTuning-nbTesting:-nbTesting]
-            testingIndices = range(0,nbLines)[-nbTesting:]
-
-        sourceLines = self.getSourceFile().readlines()
-        targetLines = self.getTargetFile().readlines()
-    
-        trainSourceLines = []
-        tuneSourceLines = []
-        testSourceLines = []       
-        print "Dividing source data..."
-        for i in range(0, len(sourceLines)):
-            sourceLine = sourceLines[i]
-            if i in tuningIndices:
-                tuneSourceLines.append(sourceLine)
-            elif i in testingIndices:
-                testSourceLines.append(sourceLine)
-            else:
-                trainSourceLines.append(sourceLine)
-        
-        trainTargetLines = []
-        tuneTargetLines = []
-        testTargetLines = []       
-        print "Dividing target data..."
-        for i in range(0, len(targetLines)):
-            targetLine = targetLines[i]
-            if i in tuningIndices:
-                tuneTargetLines.append(targetLine)
-            elif i in testingIndices:
-                testTargetLines.append(targetLine)
-            else:
-                trainTargetLines.append(targetLine)
-         
-        trainStem = workPath + "/" + (self.stem + ".train").basename()
-        (trainStem + "." + self.sourceLang).writelines(trainSourceLines) 
-        (trainStem + "." + self.targetLang).writelines(trainTargetLines)
-        trainCorpus = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
-        
-
-        tuneStem = workPath + "/" + (self.stem + ".tune").basename()
-        (tuneStem + "." + self.sourceLang).writelines(tuneSourceLines) 
-        (tuneStem + "." + self.targetLang).writelines(tuneTargetLines)
-        (tuneStem + ".indices").writelines([self.stem+"\n"] + [str(i)+"\n" for i in sorted(list(tuningIndices))])
-        tuneCorpus = AlignedCorpus(tuneStem, self.sourceLang, self.targetLang)
-
-        testStem = workPath + "/" + (self.stem + ".test").basename()
-        (testStem + "." + self.sourceLang).writelines(testSourceLines) 
-        (testStem + "." + self.targetLang).writelines(testTargetLines)
-        (testStem + ".indices").writelines([self.stem+"\n"] + [str(i)+"\n" for i in sorted(list(testingIndices))])
-        testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
   
-        return trainCorpus, tuneCorpus, testCorpus
-        
-
 
     def _drawRandom(self, number, exclusion=None, window=4):
 
@@ -227,43 +161,7 @@ class AlignedCorpus(object):
         return numbers
      
      
-                    
-    
-    def getDuplicateSources(self, window=4, nbThreads=16):
- 
-        print "Start search for duplicates..."
-        global globalSourceLines
-        globalSourceLines = self.getSourceFile().readlines()
-        nbLines = len(globalSourceLines)
-        indices = range(0, nbLines)
-        indices.sort(key=lambda x : globalSourceLines[x])
-        print "Finished sorting indices"
-       
-        duplicatesQueue = Queue.Queue()
-        step = len(indices)/nbThreads
-        allThreads = []
-
-        
-        for t in range(0, nbThreads):
-            tr = threading.Thread(target=_getDuplicateSources, 
-                                  args=(indices[t*step:t*step + step], duplicatesQueue))
-            tr.start()
-            allThreads.append(tr)
-        
-        while True:
-            if any([tr.is_alive() for tr in allThreads]):
-                time.sleep(1)
-            else:
-                break
-        
-        duplicates = set()
-        while not duplicatesQueue.empty():
-            duplicates.add(duplicatesQueue.get())
-            
-        percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
-        print "Percentage of duplicates: "+ str(percent)
-        return duplicates
-     
+          
   
     def getStem(self):
         return self.stem
@@ -300,22 +198,6 @@ class AlignedCorpus(object):
                  
         return alignments
 
-
-def _getDuplicateSources(indices, duplicates, window=4):
-    print "Start extracting duplicates for " + str(len(indices)) + " indices"
-    for i in range(0, len(indices)):
-        curIndex = indices[i]
-        curWindow = globalSourceLines[curIndex:curIndex+window]
-        for j in range(i+1, len(indices)-window):
-            nextIndex = indices[j]
-            nextWindow = globalSourceLines[nextIndex:nextIndex+window]
-            if curWindow[0] != nextWindow[0]:
-                break
-            elif curWindow == nextWindow:
-                duplicates.put(curIndex)
-                duplicates.put(nextIndex)
-        if len(indices) > 100 and not (i % (len(indices)/100)):
-            print "Extraction of duplicates: " + str(i*100.0/len(indices))
 
 
 class TranslatedCorpus(AlignedCorpus):
@@ -379,7 +261,6 @@ class CorpusProcessor():
             return cleanCorpus
         else:
             return trueCorpus
-    
 
     def processFile(self, rawFile):
          
@@ -468,7 +349,130 @@ class CorpusProcessor():
             return bleu, bleu_output
         else:
             raise RuntimeError("BLEU score could not be extracted")
+        
+             
+ 
+    def divideData(self, corpus, nbTuning=1000, nbTesting=3000, randomPick=True):
+        
+        if not isinstance(corpus, AlignedCorpus):
+            raise RuntimeError("corpus must be of type AlignedCorpus")
+         
+        if randomPick:
+            window = 4
+            toExclude = self.extractSourceDuplicates(corpus.getSourceCorpus())
+            tuningIndices =corpus._drawRandom(nbTuning, exclusion=toExclude, window=window)
+            toExclude = toExclude.union(tuningIndices)
+            testingIndices = corpus._drawRandom(nbTesting, exclusion=toExclude, window=window)
+        else:
+            nbLines = corpus.getSourceFile().countNbLines()
+            tuningIndices = range(0,nbLines)[-nbTuning-nbTesting:-nbTesting]
+            testingIndices = range(0,nbLines)[-nbTesting:]
 
+        sourceLines = corpus.getSourceFile().readlines()
+        targetLines = corpus.getTargetFile().readlines()
+    
+        trainSourceLines = []
+        tuneSourceLines = []
+        testSourceLines = []       
+        print "Dividing source data..."
+        for i in range(0, len(sourceLines)):
+            sourceLine = sourceLines[i]
+            if i in tuningIndices:
+                tuneSourceLines.append(sourceLine)
+            elif i in testingIndices:
+                testSourceLines.append(sourceLine)
+            else:
+                trainSourceLines.append(sourceLine)
+        
+        trainTargetLines = []
+        tuneTargetLines = []
+        testTargetLines = []       
+        print "Dividing target data..."
+        for i in range(0, len(targetLines)):
+            targetLine = targetLines[i]
+            if i in tuningIndices:
+                tuneTargetLines.append(targetLine)
+            elif i in testingIndices:
+                testTargetLines.append(targetLine)
+            else:
+                trainTargetLines.append(targetLine)
+         
+        trainStem = self.workPath + "/" + (corpus.stem + ".train").basename()
+        (trainStem + "." + corpus.sourceLang).writelines(trainSourceLines) 
+        (trainStem + "." + corpus.targetLang).writelines(trainTargetLines)
+        trainCorpus = AlignedCorpus(trainStem, corpus.sourceLang, corpus.targetLang)
+        
+
+        tuneStem = self.workPath + "/" + (corpus.stem + ".tune").basename()
+        (tuneStem + "." + corpus.sourceLang).writelines(tuneSourceLines) 
+        (tuneStem + "." + corpus.targetLang).writelines(tuneTargetLines)
+        (tuneStem + ".indices").writelines([corpus.stem+"\n"] + [str(i)+"\n" for i in sorted(list(tuningIndices))])
+        tuneCorpus = AlignedCorpus(tuneStem, corpus.sourceLang, corpus.targetLang)
+
+        testStem = self.workPath + "/" + (corpus.stem + ".test").basename()
+        (testStem + "." + corpus.sourceLang).writelines(testSourceLines) 
+        (testStem + "." + corpus.targetLang).writelines(testTargetLines)
+        (testStem + ".indices").writelines([corpus.stem+"\n"] + [str(i)+"\n" for i in sorted(list(testingIndices))])
+        testCorpus = AlignedCorpus(testStem, corpus.sourceLang, corpus.targetLang)
+  
+        return trainCorpus, tuneCorpus, testCorpus
+        
+        
+    def extractSourceDuplicates(self, corpus, nbThreads=6):
+        
+        if not isinstance(corpus, BasicCorpus):
+            raise RuntimeError("corpus must be of type BasicCorpus")
+        
+        print "Start search for duplicates..."
+        sourceLines = corpus.getCorpusFile().readlines()
+        nbLines = len(sourceLines)
+        indices = range(0, nbLines)
+        indices.sort(key=lambda x : sourceLines[x])
+        
+        step = len(indices)/nbThreads
+        for t in range(0, nbThreads):
+            localIndices = [str(localInd)+"\n" for localInd in indices[t*step:t*step + step]]
+            Path("ind"+str(t)).writelines(localIndices)
+            
+        args = [("ind"+str(t), corpus.getCorpusFile(), "dupl"+str(t)) for t in range(0, nbThreads)]
+        self.executor.run_parallel_function(_extractSourceDuplicates, args)
+        
+        duplicates = set()
+        for t in range(0, nbThreads):
+            duplicateFile = Path("dupl"+str(t))
+            localDuplicates = [int(l.strip()) for l in duplicateFile.readlines()]
+            duplicates = duplicates.union(localDuplicates)
+            duplicateFile.remove()
+            Path("ind"+str(t)).remove()
+            
+        print ("Duplicates found: " + str(len(duplicates)) 
+               + " (" + str(len(duplicates)*100.0/nbLines) + " of total)") 
+        return duplicates
+        
+        
+
+def  _extractSourceDuplicates(indicesFile, sourceFile, duplicatesFile, window=4):
+    indices = [int(indLine.strip()) for indLine in Path(indicesFile).readlines()] 
+    sourceLines = Path(sourceFile).readlines()
+    duplicates = set()  
+    for i in range(0, len(indices)):
+        curIndex = indices[i]
+        curWindow = sourceLines[curIndex:curIndex+window]
+        for j in range(i+1, len(indices)-window):
+            nextIndex = indices[j]
+            nextWindow = sourceLines[nextIndex:nextIndex+window]
+            if curWindow[0] != nextWindow[0]:
+                break
+            elif curWindow == nextWindow:
+                duplicates.add(curIndex)
+                duplicates.add(nextIndex)
+        if len(indices) > 100 and not (i % (len(indices)/100)):
+            print "Extraction of duplicates: " + str(i*100.0/len(indices))
+    
+    Path(duplicatesFile).writelines("\n".join([str(d) for d in duplicates]))
+
+
+          
          
 class Tokeniser():
     

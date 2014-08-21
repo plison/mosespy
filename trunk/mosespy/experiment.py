@@ -90,7 +90,7 @@ class Experiment(object):
     def doWholeShibang(self, alignedStem, lmFile=None):
         
         acorpus = AlignedCorpus(alignedStem, self.settings["source"], self.settings["target"])
-        train, tune, test = acorpus.divideData(self.settings["path"])
+        train, tune, test = self.processor.divideData(acorpus)
         
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
