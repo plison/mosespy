@@ -555,7 +555,6 @@ def isUniqueSublist(fullLines, selection):
     count = 0
     for i in range(0, len(fullLines)-len(selection)):
         for j in range(0, len(selection)):
-            print fullLines[i+j]
             if fullLines[i+j] != selection[j]:
                 break
             if j == len(selection)-1:
