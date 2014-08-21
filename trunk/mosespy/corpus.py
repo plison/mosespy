@@ -232,6 +232,7 @@ class AlignedCorpus(object):
     def getDuplicateSources(self, window=4, nbThreads=16):
  
         for t in range(0, nbThreads):
+            print "thread creation" + str(tr.name)
             tr = threading.Thread(target=_dummy(), args=())
             print "0right before starting thread " + str(tr.name)
             tr.start()
