@@ -304,8 +304,8 @@ def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
                 duplicates.add(curIndex)
                 duplicates.add(nextIndex)
                 print "found duplicates at lines " + str(curIndex) + "and " + str(nextIndex)
-                print "Data1: " + curWindow
-                print "Data2: " + nextWindow
+                print "Data1: " + "\n".join(curWindow)
+                print "Data2: " + "\n".join(nextWindow)
 
 
 class TranslatedCorpus(AlignedCorpus):
