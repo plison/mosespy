@@ -244,7 +244,7 @@ class AlignedCorpus(object):
         for t in range(0, nbThreads):
             print "creating indices..."
             subindices = indices[t*step:t*step + step]
-            tr = threading.Thread(target=_getDuplicateSources, args=(subindices, sourceLines, duplicates, window))
+            tr = threading.Thread(target=_getDuplicateSources, args=(subindices, sourceLines, window))
             print "right before starting thread " + str(tr.name)
             tr.start()
             print "starting thread " + str(tr.name)
@@ -297,7 +297,8 @@ class AlignedCorpus(object):
         return alignments
 
 
-def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
+def _getDuplicateSources(indices, sourceLines, window=4):
+    duplicates = set()
     print "Start extracting duplicates for " + str(len(indices)) + " indices"
     for i in range(0, len(indices)):
         curIndex = indices[i]
