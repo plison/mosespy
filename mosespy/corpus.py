@@ -231,6 +231,12 @@ class AlignedCorpus(object):
     
     def getDuplicateSources(self, window=4, nbThreads=16):
  
+        for t in range(0, nbThreads):
+            tr = threading.Thread(target=_dummy(), args=())
+            print "0right before starting thread " + str(tr.name)
+            tr.start()
+            print "0starting thread " + str(tr.name)
+            
         print "Start search for duplicates..."
         sourceLines = self.getSourceFile().readlines()
         nbLines = len(sourceLines)
@@ -241,11 +247,7 @@ class AlignedCorpus(object):
         duplicatesQueue = Queue.Queue()
         step = len(indices)/nbThreads
         allThreads = []
-        for t in range(0, nbThreads):
-            tr = threading.Thread(target=_dummy(), args=())
-            print "0right before starting thread " + str(tr.name)
-            tr.start()
-            print "0starting thread " + str(tr.name)
+
 
         for t in range(0, nbThreads):
             print "creating indices..."
