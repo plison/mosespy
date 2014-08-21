@@ -228,7 +228,9 @@ class AlignedCorpus(object):
         sourcePairs = []
         i = 0
         with open(self.getSourceFile(), 'r') as sourceFileD:
+            print "here"
             for line in sourceFileD:
+                print line
                 sourcePairs.append((i, line))
                 i += 1
             if not (i % 1000):
