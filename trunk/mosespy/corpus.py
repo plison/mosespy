@@ -7,7 +7,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import re, threading, time
+import re, threading, time, Queue
 import random
 from mosespy.system import Path
 
@@ -238,13 +238,19 @@ class AlignedCorpus(object):
         indices.sort(key=lambda x : sourceLines[x])
         print "Finished sorting indices"
        
-        duplicates = set()
+        duplicatesQueue = Queue.Queue()
         step = len(indices)/nbThreads
         allThreads = []
         for t in range(0, nbThreads):
+            tr = threading.Thread(target=_dummy(), args=())
+            print "0right before starting thread " + str(tr.name)
+            tr.start()
+            print "0starting thread " + str(tr.name)
+
+        for t in range(0, nbThreads):
             print "creating indices..."
             subindices = indices[t*step:t*step + step]
-            tr = threading.Thread(target=_getDuplicateSources, args=(subindices, sourceLines, window))
+            tr = threading.Thread(target=_getDuplicateSources, args=(subindices, sourceLines, duplicatesQueue, window))
             print "right before starting thread " + str(tr.name)
             tr.start()
             print "starting thread " + str(tr.name)
@@ -255,7 +261,11 @@ class AlignedCorpus(object):
                 time.sleep(1)
             else:
                 break
-  
+        
+        duplicates = set()
+        while not duplicatesQueue.empty():
+            duplicates.add(duplicatesQueue.get())
+            
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
         return duplicates
@@ -297,8 +307,11 @@ class AlignedCorpus(object):
         return alignments
 
 
-def _getDuplicateSources(indices, sourceLines, window=4):
-    duplicates = set()
+
+def _dummy():
+    print "yes!"
+
+def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
     print "Start extracting duplicates for " + str(len(indices)) + " indices"
     for i in range(0, len(indices)):
         curIndex = indices[i]
@@ -309,8 +322,8 @@ def _getDuplicateSources(indices, sourceLines, window=4):
             if curWindow[0] != nextWindow[0]:
                 break
             elif curWindow == nextWindow:
-                duplicates.add(curIndex)
-                duplicates.add(nextIndex)
+                duplicates.put(curIndex)
+                duplicates.put(nextIndex)
         if len(indices) > 100 and not (i % (len(indices)/100)):
             print "Extraction of duplicates: " + str(i*100.0/len(indices))
 
