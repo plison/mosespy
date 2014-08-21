@@ -255,7 +255,6 @@ class AlignedCorpus(object):
                         duplicates.add(curIndex)
                         duplicates.add(nextIndex) 
                 else:
-                    print "diff is " + str((j-i))
                     break
             if not (i % (len(sourcePairs)/100)):
                 print "Percentage of processed lines: " + str(i*100.0/(len(sourcePairs)-4))
