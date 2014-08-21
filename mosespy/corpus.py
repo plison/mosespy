@@ -38,7 +38,7 @@ class BasicCorpus(object):
         occurrences = {} 
         corpusLines = self.getCorpusFile().readlines()
         for i in range(0, len(corpusLines)):
-            corpusLine = corpusLines[i]
+            corpusLine = corpusLines[i].strip()
             if corpusLine not in occurrences:
                 occurrences[corpusLine] = set()
             occurrences[corpusLine].add(i)
@@ -49,12 +49,12 @@ class BasicCorpus(object):
         
         histories = {}
         corpusLines = self.getCorpusFile().readlines()
-        print "Trying to get the history of file " + self.getCorpusFile()
-        print "original corpus? " + str(self.originCorpus)
         if self.originCorpus:
             originLines = self.originCorpus.getCorpusFile().readlines()
         else:
             originLines = corpusLines
+            
+        originLines = [originLine.strip("\n") for originLine in originLines]
         
         for i in range(0, len(corpusLines)):
             origindex = self.originIndices[i] if self.originIndices else i
