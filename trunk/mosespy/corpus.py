@@ -211,18 +211,18 @@ class AlignedCorpus(object):
 
 
     def _drawRandomUnique(self, number, exclusion=None):
-        sourceLines = self.getSourceFile().readlines()
-        targetLines = self.getTargetFile().readlines()
+        sourceLines = [l.__hash() for l in self.getSourceFile().readlines()]
+        targetLines = [l.__hash() for l in self.getTargetFile().readlines()]
         start = 3
         end = self.getSourceFile().countNbLines() -2
         numbers = set()
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
-                sourceWindow = [sourceLines[choice-2], sourceLines[choice-1], sourceLines[choice], 
-                                sourceLines[choice+1], sourceLines[choice+2]]
-                targetWindow = [targetLines[choice-2], targetLines[choice-1], targetLines[choice], 
-                                targetLines[choice+1], targetLines[choice+2]]
+                sourceWindow = [sourceLines[choice-2].__hash(), sourceLines[choice-1].__hash(), sourceLines[choice].__hash(), 
+                                sourceLines[choice+1].__hash(), sourceLines[choice+2].__hash()]
+                targetWindow = [targetLines[choice-2].__hash(), targetLines[choice-1].__hash(), targetLines[choice].__hash(), 
+                                targetLines[choice+1].__hash(), targetLines[choice+2].__hash()]
                 if isUniqueSublist(sourceLines, sourceWindow) and isUniqueSublist(targetLines, targetWindow):
                     print "adding " + str(choice)
                     numbers.add(choice)
