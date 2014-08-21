@@ -148,13 +148,14 @@ class AlignedCorpus(object):
                
  
     def divideData(self, workPath, nbTuning=1000, nbTesting=3000, randomPick=True):
+
         workPath = Path(workPath)
-        sourceLines = (self.stem + "." + self.sourceLang).readlines()
-        targetLines = (self.stem + "." + self.targetLang).readlines()
+        sourceLines = self.getSourceFile().readlines()
+        targetLines = self.getTargetFile().readlines()
             
         if randomPick:
-            tuningIndices = _drawRandom(2, len(sourceLines), nbTuning)
-            testingIndices = _drawRandom(2, len(sourceLines), nbTesting, exclusion=tuningIndices)
+            tuningIndices =self. _drawRandomUnique(nbTuning)
+            testingIndices = self._drawRandomUnique(nbTesting, exclusion=tuningIndices)
         else:
             tuningIndices = range(0,len(sourceLines))[-nbTuning-nbTesting:-nbTesting]
             testingIndices = range(0,len(sourceLines))[-nbTesting:]
@@ -204,7 +205,27 @@ class AlignedCorpus(object):
   
         return trainCorpus, tuneCorpus, testCorpus
         
-    
+
+
+    def _drawRandomUnique(self, number, exclusion=None):
+        sourceRaw = self.getSourceFile().read()
+        targetRaw = self.getTargetFile().read()
+        sourceLines = sourceRaw.split()
+        targetLines = targetRaw.split()
+        start = 2
+        end = self.getSourceFile().countNbLines() -1
+        numbers = set()
+        while len(numbers) < number:
+            choice = random.randrange(start, end)
+            if not exclusion or choice not in exclusion:
+                sourceWindow = sourceLines[choice-2] + sourceLines[choice-1] + sourceLines[choice] + sourceLines[choice+1]
+                targetWindow = targetLines[choice-2] + targetLines[choice-1] + targetLines[choice] + targetLines[choice+1]
+                print "Source count: " + sourceRaw.count(sourceWindow)
+                print "Target count: " + targetRaw.count(targetWindow)
+                numbers.add(choice)
+        return numbers
+
+  
     def getStem(self):
         return self.stem
     
@@ -276,13 +297,3 @@ class TranslatedCorpus(AlignedCorpus):
 
  
             
-
-
-def _drawRandom(start, end, number, exclusion=None):
-    numbers = set()
-    while len(numbers) < number:
-        choice = random.randrange(start, end)
-        if not exclusion or choice not in exclusion:
-            numbers.add(choice)
-    return numbers
-

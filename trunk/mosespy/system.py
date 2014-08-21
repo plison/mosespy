@@ -261,6 +261,15 @@ class Path(str):
             return lines
         else:
             raise RuntimeError(self + " not an existing file")
+
+    def read(self):
+        if os.path.isfile(self):
+            with open(self, 'r') as fileD:
+                data = fileD.read()
+            return data
+        else:
+            raise RuntimeError(self + " not an existing file")
+
  
     def writelines(self, lines):
         with open(self, 'w') as fileD:
