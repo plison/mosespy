@@ -70,6 +70,9 @@ class Pipeline(unittest.TestCase):
         histories = test.getTargetCorpus().getHistories()
         self.assertGreater(len(occurrences), 8)
 
+        targetlines = [line.strip() for line in targetlines]
+        testlines = [line.strip() for line in testlines]
+        
         for i in range(0, len(testlines)):
             testLine = testlines[i]
             occ = occurrences[testLine]
