@@ -234,6 +234,7 @@ class AlignedCorpus(object):
         indices = range(0, nbLines)
         print "start sorting..."
         indices.sort(key=lambda x : sourceLines[x])
+        print "finished sorting..."
         duplicates = set()
         for i in range(0, nbLines):
             curIndex = indices[i]
@@ -250,6 +251,8 @@ class AlignedCorpus(object):
                 print "Percentage of processed lines: " + str(i*100.0/(nbLines-window))
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
+        for d in duplicates:
+            print str(sourceLines[d:d+window])
         return duplicates
      
   
