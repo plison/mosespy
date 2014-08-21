@@ -218,6 +218,7 @@ class AlignedCorpus(object):
         start = 3
         end = self.getSourceFile().countNbLines() -2
         numbers = set()
+        
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
@@ -232,12 +233,10 @@ class AlignedCorpus(object):
                 if countSource == 0 or countTarget == 0:
                     raise RuntimeError("error when drawing unique test sentences")
                 if countSource == 1 and countTarget == 1:
-                    print "Keeping subtitle!"
                     numbers.add(choice)
-                else:
-                    print "skipping subtitle since " + str(countSource) + " and " + str(countTarget)
-                    print "Source is " + sourceWindow
-                    print "Target is " + targetWindow
+            if not (len(numbers) % (number/100)):
+                print "Percentage of test selection: " + str(((len(numbers)*100.0)/numbers))
+
         return numbers
 
   
