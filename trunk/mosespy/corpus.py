@@ -7,7 +7,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import re
+import re, threading, Queue
 import random
 from mosespy.system import Path
 
@@ -225,8 +225,10 @@ class AlignedCorpus(object):
 
         return numbers
      
+     
+                    
     
-    def getDuplicateSources(self, window=4):
+    def getDuplicateSources(self, window=4, nbThreads=16):
  
         print "making pairs..."
         sourceLines = self.getSourceFile().readlines()
@@ -235,22 +237,22 @@ class AlignedCorpus(object):
         print "start sorting..."
         indices.sort(key=lambda x : sourceLines[x])
         print "finished sorting..."
-        duplicates = set()
-        for i in range(0, nbLines):
-            curIndex = indices[i]
-            curWindow = sourceLines[curIndex:curIndex+window]
-            for j in range(i+1, nbLines-window):
-                nextIndex = indices[j]
-                nextWindow = sourceLines[nextIndex:nextIndex+window]
-                if curWindow[0] != nextWindow[0]:
-                    break
-                elif curWindow == nextWindow:
-                    duplicates.add(curIndex)
-                    duplicates.add(nextIndex)
-            if not (i % (nbLines/100)):
-                print "Percentage of processed lines: " + str(i*100.0/(nbLines-window))
+       
+        duplicates = Queue.Queue()
+        chunck = len(indices)/nbThreads
+        allThreads = []
+        for t in range(0, nbThreads):
+            subindices = indices[t*chunck:t*chunck + chunck]
+            tr = threading.Thread(target=_getDuplicateSources, args=(subindices, sourceLines, duplicates, window))
+            tr.start()
+            allThreads.append(tr)
+        
+        for t in allThreads:
+            t.join()
+  
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
+        print "Duplicates: " + str(duplicates)
         for d in duplicates:
             print str(sourceLines[d:d+window])
         return duplicates
@@ -290,6 +292,20 @@ class AlignedCorpus(object):
                     align["previoustarget"] = histories[i][-1]
                  
         return alignments
+
+
+def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
+    for i in range(0, len(indices)):
+        curIndex = indices[i]
+        curWindow = sourceLines[curIndex:curIndex+window]
+        for j in range(i+1, len(indices)-window):
+            nextIndex = indices[j]
+            nextWindow = sourceLines[nextIndex:nextIndex+window]
+            if curWindow[0] != nextWindow[0]:
+                break
+            elif curWindow == nextWindow:
+                duplicates.add(curIndex)
+                duplicates.add(nextIndex)
 
 
 class TranslatedCorpus(AlignedCorpus):
