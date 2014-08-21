@@ -224,9 +224,13 @@ class AlignedCorpus(object):
      
     
     def getDuplicateSources(self, window=4):
-        sourceLines = self.getSourceFile().readlines()
         print "making pairs..."
-        sourcePairs = [(i, sourceLines[i]) for i in range(0, len(sourceLines))]
+        sourcePairs = []
+        i = 0
+        with open(self.getSourceFile(), 'r') as sourceFileD:
+            for line in sourceFileD:
+                sourcePairs.append((i, line))
+                i += 1
         print "start sorting..."
         sourcePairs.sort(key=lambda x: x[1])
         print "finished sorting"
@@ -240,8 +244,8 @@ class AlignedCorpus(object):
                 nextIndex = nextPair[0]
                 nextString = nextPair[1]
                 if curString == nextString:
-                    curWindow = sourceLines[curIndex:curIndex+window]
-                    nextWindow = sourceLines[nextIndex:nextIndex+window]
+                    curWindow = [pair[1] for pair in sourcePairs[curIndex:curIndex+window]]
+                    nextWindow = [pair[1] for pair in sourcePairs[nextIndex:nextIndex+window]]
                     if curWindow == nextWindow:
                         duplicates.add(curIndex)
                         duplicates.add(nextIndex) 
