@@ -218,7 +218,6 @@ class AlignedCorpus(object):
         start = 2
         end = self.getSourceFile().countNbLines() -1
         numbers = set()
-        nbDuplicates = 0
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
@@ -233,8 +232,7 @@ class AlignedCorpus(object):
                 if countSource == 1 and countTarget == 1:
                     numbers.add(choice)
                 else:
-                    nbDuplicates += 1
-        print "Number of duplicates found during the selection of sentences: " + str(nbDuplicates)
+                    print "skipping subtitle since " + str(countSource) + " and " + str(countTarget)
         return numbers
 
   
