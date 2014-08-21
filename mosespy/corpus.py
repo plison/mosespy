@@ -7,7 +7,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import re, threading
+import re, threading, time
 import random
 from mosespy.system import Path
 
@@ -247,6 +247,7 @@ class AlignedCorpus(object):
             tr.start()
             allThreads.append(tr)
         
+        time.sleep(0.5)
         for t in allThreads:
             t.join()
   
@@ -292,6 +293,7 @@ class AlignedCorpus(object):
 
 
 def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
+    print "Start extracting duplicates for " + str(len(indices)) + " indices"
     for i in range(0, len(indices)):
         curIndex = indices[i]
         curWindow = sourceLines[curIndex:curIndex+window]
@@ -304,7 +306,7 @@ def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
                 duplicates.add(curIndex)
                 duplicates.add(nextIndex)
         if not (i % (len(indices)/100)):
-                print "Extraction of duplicates: " + str(i*100.0/len(indices))
+            print "Extraction of duplicates: " + str(i*100.0/len(indices))
 
 
 class TranslatedCorpus(AlignedCorpus):
