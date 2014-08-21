@@ -232,11 +232,11 @@ class AlignedCorpus(object):
     def getDuplicateSources(self, window=4, nbThreads=16):
  
         print "Start search for duplicates..."
-        global sourceLines
-        sourceLines = self.getSourceFile().readlines()
-        nbLines = len(sourceLines)
+        global globalSourceLines
+        globalSourceLines = self.getSourceFile().readlines()
+        nbLines = len(globalSourceLines)
         indices = range(0, nbLines)
-        indices.sort(key=lambda x : sourceLines[x])
+        indices.sort(key=lambda x : globalSourceLines[x])
         print "Finished sorting indices"
        
         duplicatesQueue = Queue.Queue()
@@ -245,11 +245,9 @@ class AlignedCorpus(object):
 
         
         for t in range(0, nbThreads):
-            print "creating indices..."
-            tr = threading.Thread(target=_getDuplicateSources, args=(indices[t*step:t*step + step], duplicatesQueue))
-            print "right before starting thread " + str(tr.name)
+            tr = threading.Thread(target=_getDuplicateSources, 
+                                  args=(indices[t*step:t*step + step], duplicatesQueue))
             tr.start()
-            print "starting thread " + str(tr.name)
             allThreads.append(tr)
         
         while True:
@@ -307,10 +305,10 @@ def _getDuplicateSources(indices, duplicates, window=4):
     print "Start extracting duplicates for " + str(len(indices)) + " indices"
     for i in range(0, len(indices)):
         curIndex = indices[i]
-        curWindow = sourceLines[curIndex:curIndex+window]
+        curWindow = globalSourceLines[curIndex:curIndex+window]
         for j in range(i+1, len(indices)-window):
             nextIndex = indices[j]
-            nextWindow = sourceLines[nextIndex:nextIndex+window]
+            nextWindow = globalSourceLines[nextIndex:nextIndex+window]
             if curWindow[0] != nextWindow[0]:
                 break
             elif curWindow == nextWindow:
