@@ -454,7 +454,8 @@ class CorpusProcessor():
 def  _extractSourceDuplicates(indicesFile, sourceFile, duplicatesFile, window=4):
     indices = [int(indLine.strip()) for indLine in Path(indicesFile).readlines()] 
     sourceLines = Path(sourceFile).readlines()
-    duplicates = set()  
+    duplicates = set() 
+    print "Starting extracting source duplicates..." 
     for i in range(0, len(indices)):
         curIndex = indices[i]
         curWindow = sourceLines[curIndex:curIndex+window]
