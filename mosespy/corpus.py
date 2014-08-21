@@ -235,7 +235,7 @@ class AlignedCorpus(object):
                 if countSource == 1 and countTarget == 1:
                     numbers.add(choice)
             if not (len(numbers) % (number/100)):
-                print "Percentage of test selection: " + str(((len(numbers)*100.0)/number))
+                print "Percentage of test selection: " + str(((len(numbers)*100.0)/number)) + "\%"
 
         return numbers
 
