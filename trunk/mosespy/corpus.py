@@ -48,6 +48,8 @@ class BasicCorpus(object):
         
         histories = {}
         corpusLines = self.getCorpusFile().readlines()
+        print "Trying to get the history of file " + self.getCorpusFile()
+        print "original corpus? " + str(self.originCorpus)
         if self.originCorpus:
             originLines = self.originCorpus.getCorpusFile().readlines()
         else:
