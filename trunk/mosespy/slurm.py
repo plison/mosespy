@@ -167,6 +167,7 @@ class SlurmExecutor(CommandExecutor):
         if not self.account:
             print "Warning: cannot use SLURM bindings"
             return
+        correctSlurmEnv()
         
 
     def run(self, script, stdin=None, stdout=None):
