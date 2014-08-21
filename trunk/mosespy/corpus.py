@@ -440,11 +440,13 @@ class CorpusProcessor():
         duplicates = set()
         for t in range(0, nbThreads):
             duplicateFile = Path("dupl"+str(t))
-            localDuplicates = [int(l.strip()) for l in duplicateFile.readlines()]
-            duplicates = duplicates.union(localDuplicates)
-            duplicateFile.remove()
-            Path("ind"+str(t)).remove()
-            
+            if duplicateFile.exists():
+                localDuplicates = [int(l.strip()) for l in duplicateFile.readlines()]
+                duplicates = duplicates.union(localDuplicates)
+                duplicateFile.remove()
+                Path("ind"+str(t)).remove()
+            else:
+                print "Warning: file " + duplicateFile + " cannot be found"
         print ("Duplicates found: " + str(len(duplicates)) 
                + " (" + str(len(duplicates)*100.0/nbLines) + " of total)") 
         return duplicates
