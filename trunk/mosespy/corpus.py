@@ -230,13 +230,10 @@ class AlignedCorpus(object):
     
     def getDuplicateSources(self, window=4, nbThreads=16):
  
-        print "making pairs..."
         sourceLines = self.getSourceFile().readlines()
         nbLines = len(sourceLines)
         indices = range(0, nbLines)
-        print "start sorting..."
         indices.sort(key=lambda x : sourceLines[x])
-        print "finished sorting..."
        
         duplicates = set()
         chunck = len(indices)/nbThreads
