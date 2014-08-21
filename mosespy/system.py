@@ -64,9 +64,18 @@ class CommandExecutor(object):
     def run_output(self, script, stdin=None):
         return self.run(script, stdin, stdout=False)
 
+
+    def run_parallel_function(self, function, jobArgs, stdins=None, stdouts=None):
+        if not hasattr(function, '__call__'):
+            raise RuntimeError("function must be a python function")
+        fillerArgs =  ",".join(["'%s'"]*len(jobArgs[0]))
+        script = "python -c \"import %s ; %s(%s)\""%(function.__module__, function.__module__
+                                                    +"." + function.__name__, fillerArgs)
+        return self.run_parallel(script, jobArgs, stdins, stdouts)
+        
     
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None): 
-         
+        
         resultQueues = []
         for i in range(0, len(jobArgs)):
             time.sleep(0.1)

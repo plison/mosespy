@@ -12,6 +12,7 @@ import os
 import shutil 
 import mosespy.experiment as experiment
 import mosespy.slurm as slurm
+import mosespy.system as system
 from mosespy.system import Path, CommandExecutor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor
 from mosespy.experiment import Experiment, MosesConfig
@@ -56,7 +57,8 @@ class Pipeline(unittest.TestCase):
 
     def test_division(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        _, _, test = acorpus.divideData(self.tmpdir, 10, 10)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        _, _, test = processor.divideData(acorpus, 10, 10)
         self.assertTrue(os.path.exists(test.getStem()+".indices"))
         testlines = (test.getStem()+".en").readlines()
         indlines = (test.getStem()+".indices").readlines()
@@ -166,7 +168,8 @@ class Pipeline(unittest.TestCase):
     
     def test_tuning(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, tune, _ = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, tune, _ = processor.divideData(acorpus, 10, 10, randomPick=False)
         tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         tuneTargetLines = tune.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(tune.getStem() + "2.fr").writelines(tuneSourceLines)
@@ -211,7 +214,8 @@ class Pipeline(unittest.TestCase):
     
     def test_translate(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, _, test = processor.divideData(acorpus, 10, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
@@ -232,7 +236,8 @@ class Pipeline(unittest.TestCase):
     def test_parallel(self):
   
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, _, test = processor.divideData(acorpus, 10, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
@@ -253,7 +258,8 @@ class Pipeline(unittest.TestCase):
     
     def test_copy(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, _, test = processor.divideData(acorpus, 10, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
@@ -271,7 +277,8 @@ class Pipeline(unittest.TestCase):
  
     def test_config(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, _, _ = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, _, _ = processor.divideData(acorpus, 10, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
@@ -287,7 +294,8 @@ class Pipeline(unittest.TestCase):
  
     def test_analyse(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        train, _, test = acorpus.divideData(self.tmpdir, 10, 10, randomPick=False)
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, _, test = processor.divideData(acorpus, 10, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
