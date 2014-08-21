@@ -418,7 +418,7 @@ class CorpusProcessor():
         return trainCorpus, tuneCorpus, testCorpus
         
         
-    def extractSourceDuplicates(self, corpus, nbThreads=6):
+    def extractSourceDuplicates(self, corpus, nbThreads=32):
         
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
@@ -466,7 +466,9 @@ def  _extractSourceDuplicates(indicesFile, sourceFile, duplicatesFile, window=4)
             elif curWindow == nextWindow:
                 duplicates.add(curIndex)
                 duplicates.add(nextIndex)
-        if len(indices) > 100 and not (i % (len(indices)/100)):
+            if j > i+20:
+                print "Strange behaviour in the double loop..."
+        if len(indices) > 500 and not (i % (len(indices)/500)):
             print "Extraction of duplicates: " + str(i*100.0/len(indices))
     
     Path(duplicatesFile).writelines("\n".join([str(d) for d in duplicates]))
