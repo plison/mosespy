@@ -211,18 +211,18 @@ class AlignedCorpus(object):
 
 
     def _drawRandomUnique(self, number, exclusion=None):
-        sourceLines = [l.__hash() for l in self.getSourceFile().readlines()]
-        targetLines = [l.__hash() for l in self.getTargetFile().readlines()]
+        sourceLines = [l.__hash__() for l in self.getSourceFile().readlines()]
+        targetLines = [l.__hash__() for l in self.getTargetFile().readlines()]
         start = 3
         end = self.getSourceFile().countNbLines() -2
         numbers = set()
         while len(numbers) < number:
             choice = random.randrange(start, end)
             if not exclusion or choice not in exclusion:
-                sourceWindow = [sourceLines[choice-2].__hash(), sourceLines[choice-1].__hash(), sourceLines[choice].__hash(), 
-                                sourceLines[choice+1].__hash(), sourceLines[choice+2].__hash()]
-                targetWindow = [targetLines[choice-2].__hash(), targetLines[choice-1].__hash(), targetLines[choice].__hash(), 
-                                targetLines[choice+1].__hash(), targetLines[choice+2].__hash()]
+                sourceWindow = [sourceLines[choice-2].__hash__(), sourceLines[choice-1].__hash__(), sourceLines[choice].__hash__(), 
+                                sourceLines[choice+1].__hash__(), sourceLines[choice+2].__hash__()]
+                targetWindow = [targetLines[choice-2].__hash__(), targetLines[choice-1].__hash__(), targetLines[choice].__hash__(), 
+                                targetLines[choice+1].__hash__(), targetLines[choice+2].__hash__()]
                 if isUniqueSublist(sourceLines, sourceWindow) and isUniqueSublist(targetLines, targetWindow):
                     print "adding " + str(choice)
                     numbers.add(choice)
