@@ -229,7 +229,7 @@ class AlignedCorpus(object):
      
                     
     
-    def getDuplicateSources(self, window=4, nbThreads=16):
+    def getDuplicateSources(self, window=4, nbThreads=32):
  
         print "Start search for duplicates..."
         sourceLines = self.getSourceFile().readlines()
