@@ -238,6 +238,7 @@ class AlignedCorpus(object):
         print "start sorting..."
         sourcePairs.sort(key=lambda x: x[1])
         print "finished sorting"
+        print "number of pairs: " + str(len(sourcePairs))
         duplicates = set()
         for i in range(0, len(sourcePairs)-4):
             curPair = sourcePairs[i]
