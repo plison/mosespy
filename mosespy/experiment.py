@@ -15,7 +15,9 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
-# TODO: use the revision SVN tags to update the version
+# TODO: run tests on abel machines as well
+# TODO: make a unified treatment of threads (experiment, processor, etc.)
+# TODO: Replace settings dictionary with objects (and change copy and record accordingly)
 # TODO: make sure all the path objects are named ...Path
 # TODO: get Moses, IRSTLM and MGIZA included as external SVN resources
 # TODO: write routines to automatically compile the code above
@@ -132,10 +134,13 @@ class Experiment(object):
         blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
-
+        
         sbFile.remove()
         (lmFile + ".gz").remove()
         arpaFile.remove()
+
+        if blmFile.getSize() == 0:
+            raise RuntimeError("Error: generated language model is empty")
 
         self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
         self._recordState()
