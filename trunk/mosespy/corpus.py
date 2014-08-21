@@ -311,7 +311,9 @@ class AlignedCorpus(object):
 
 
 def _dummy():
-    print "yes!"
+    for i in range(0, 200):
+        print "yes!"
+        time.sleep(1)
 
 def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
     print "Start extracting duplicates for " + str(len(indices)) + " indices"
