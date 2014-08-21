@@ -20,6 +20,8 @@ class BasicCorpus(object):
         if not self.getCorpusFile().exists():
             raise RuntimeError(self.getCorpusFile() + " does not exist")    
 
+        self.originCorpus = None
+        self.originIndices = None
         for indicesFile in [(self.corpusFile.getStem() + ".indices"), 
                             (self.corpusFile.getStem().removeProperty() + ".indices")]:       
             if indicesFile.exists():
