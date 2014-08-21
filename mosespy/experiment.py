@@ -17,6 +17,7 @@ __version__ = "$Date::                      $"
 
 # TODO: run tests on abel machines as well
 # TODO: make a unified treatment of threads (experiment, processor, etc.)
+# TODO: corpus and processing in same module corpus
 # TODO: Replace settings dictionary with objects (and change copy and record accordingly)
 # TODO: make sure all the path objects are named ...Path
 # TODO: get Moses, IRSTLM and MGIZA included as external SVN resources

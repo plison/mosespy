@@ -60,6 +60,9 @@ class CorpusProcessor():
         
         normFile.remove()
         tokFile.remove()
+        
+        if (rawFile.getStem() + ".indices").exists():
+            (rawFile.getStem() + ".indices").copy((rawFile.getStem() + ".true.indices"))
         return trueFile  
     
     
@@ -83,6 +86,8 @@ class CorpusProcessor():
  
  
     def revertFile(self, processedFile):
+        
+        processedFile = Path(processedFile)
         if not processedFile.exists():
             raise RuntimeError(processedFile + " does not exist")
         
@@ -93,6 +98,8 @@ class CorpusProcessor():
         self.tokeniser.deescapeSpecialCharacters(untokFile, finalFile)
     
         untokFile.remove()
+        if (processedFile.getStem() + ".indices").exists():
+            (processedFile.getStem() + ".indices").copy((processedFile.getStem() + ".read.indices"))
         return finalFile
 
    

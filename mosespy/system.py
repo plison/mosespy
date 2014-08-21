@@ -180,6 +180,11 @@ class Path(str):
         if self.exists():
             shutil.move(self, newLoc)
             
+            
+    def copy(self, newLoc):
+        if self.exists():
+            shutil.copy(self, newLoc)
+            
     def printlines(self):
         if os.path.isfile(self):
             with open(self, 'r') as fileD:
@@ -272,6 +277,7 @@ def convertToPaths(element):
         for i in range(0, len(element)):
             element[i] = convertToPaths(element[i])
     return element
+
 
  
 def run(script, stdin=None, stdout=None):
