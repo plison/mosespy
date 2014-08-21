@@ -252,9 +252,6 @@ class AlignedCorpus(object):
   
         percent = len(duplicates)*100.0 / self.getSourceFile().countNbLines()
         print "Percentage of duplicates: "+ str(percent)
-        print "Duplicates: " + str(duplicates)
-        for d in duplicates:
-            print str(sourceLines[d:d+window])
         return duplicates
      
   
@@ -306,6 +303,9 @@ def _getDuplicateSources(indices, sourceLines, duplicates, window=4):
             elif curWindow == nextWindow:
                 duplicates.add(curIndex)
                 duplicates.add(nextIndex)
+                print "found duplicates at lines " + str(curIndex) + "and " + str(nextIndex)
+                print "Data1: " + curWindow
+                print "Data2: " + nextWindow
 
 
 class TranslatedCorpus(AlignedCorpus):
