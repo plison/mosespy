@@ -69,7 +69,7 @@ class CommandExecutor(object):
         if not hasattr(function, '__call__'):
             raise RuntimeError("function must be a python function")
         fillerArgs =  ",".join(["'%s'"]*len(jobArgs[0]))
-        script = "python -c \"import %s ; %s(%s)\""%(function.__module__, function.__module__
+        script = "python -u -c \"import %s ; %s(%s)\""%(function.__module__, function.__module__
                                                     +"." + function.__name__, fillerArgs)
         return self.run_parallel(script, jobArgs, stdins, stdouts)
         
