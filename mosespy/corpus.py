@@ -415,7 +415,7 @@ class CorpusProcessor():
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
         
-        print "Start search for duplicates..."
+        print "Start search for duplicates (%i splits)"%(nbSplits)
         sourceLines = corpus.getCorpusFile().readlines()
         nbLines = len(sourceLines)
         indices = range(0, nbLines)
