@@ -87,8 +87,7 @@ class Pipeline(unittest.TestCase):
             self.assertEquals(testLine, targetlines[oindices[0]])
             self.assertTrue(any([histories[i]==targetlines[max(0,q-2):q] for q in oindices]))
         
-        newFile = test.getTargetFile().addProperty("2") 
-        CorpusProcessor(self.tmpdir).filterOutLines( BasicCorpus(outFile), test.getTargetCorpus(), newFile)
+        newFile = CorpusProcessor(self.tmpdir).filterOutLines( BasicCorpus(outFile), test.getTargetCorpus())
         newlines = Path(newFile).readlines()
         intersect = set(testlines).intersection(set(newlines))
         self.assertTrue(all([targetlines.count(i) > 1 for i in intersect]))

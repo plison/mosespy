@@ -271,13 +271,14 @@ class CorpusProcessor():
         
 
         
-    def filterOutLines(self, fullCorpus, toRemoveCorpus, outputFile):
+    def filterOutLines(self, fullCorpus, toRemoveCorpus):
     
         inputLines = fullCorpus.getCorpusFile().readlines()
         
         occurrences = toRemoveCorpus.getOccurrences()
         histories = toRemoveCorpus.getHistories()     
 
+        outputFile = self.workPath + "/" + fullCorpus.getCorpusFile().basename().addProperty("filtered") 
         with open(outputFile, 'w', 1000000) as newLmFileD:                 
             skippedLines = []
             for i in range(2, len(inputLines)):
