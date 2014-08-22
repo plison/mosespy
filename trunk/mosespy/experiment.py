@@ -122,7 +122,7 @@ class Experiment(object):
         
         lmFile = self.settings["path"] + "/langmodel.lm." + trainFile.getLang()
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
-                    " -p improved-kneser-ney -o %s -n %i -t ./tmp-%s"
+                    " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.settings["name"])) 
         self.executor.run(lmScript)
                            
@@ -131,7 +131,7 @@ class Experiment(object):
         self.executor.run(arpaScript)  
 
         blmFile = self.settings["path"] + "/langmodel.blm." + trainFile.getLang()
-        blmScript = moses_root + "/bin/build_binary -w after -i " + " " + arpaFile + " " + blmFile
+        blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
         
