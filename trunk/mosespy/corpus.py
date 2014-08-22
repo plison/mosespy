@@ -341,14 +341,15 @@ class CorpusProcessor():
 
              
  
-    def divideData(self, corpus, nbTuning=1000, nbTesting=3000, randomPick=True, duplicatesWindow=4):
+    def divideData(self, corpus, nbTuning=1000, nbTesting=3000, 
+                   randomPick=True, duplicatesWindow=4):
         
         if not isinstance(corpus, AlignedCorpus):
             raise RuntimeError("corpus must be of type AlignedCorpus")
          
         if randomPick:
             nbLines = corpus.getSourceFile().countNbLines()
-            toExclude = self.extractDuplicates(corpus.getSourceCorpus(), window=duplicatesWindow)
+            toExclude = self.extractDuplicates(corpus.getSourceCorpus(), duplicatesWindow)
             tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
             toExclude = toExclude.union(tuningIndices)
             testingIndices = _drawRandom(nbTesting,nbLines, exclusion=toExclude)
@@ -395,19 +396,21 @@ class CorpusProcessor():
         tuneStem = self.workPath + "/" + (corpus.stem + ".tune").basename()
         (tuneStem + "." + corpus.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + corpus.targetLang).writelines(tuneTargetLines)
-        (tuneStem + ".indices").writelines([corpus.stem+"\n"] + [str(i)+"\n" for i in sorted(list(tuningIndices))])
+        (tuneStem + ".indices").writelines([corpus.stem+"\n"] + 
+                                           [str(i)+"\n" for i in sorted(list(tuningIndices))])
         tuneCorpus = AlignedCorpus(tuneStem, corpus.sourceLang, corpus.targetLang)
 
         testStem = self.workPath + "/" + (corpus.stem + ".test").basename()
         (testStem + "." + corpus.sourceLang).writelines(testSourceLines) 
         (testStem + "." + corpus.targetLang).writelines(testTargetLines)
-        (testStem + ".indices").writelines([corpus.stem+"\n"] + [str(i)+"\n" for i in sorted(list(testingIndices))])
+        (testStem + ".indices").writelines([corpus.stem+"\n"] + 
+                                           [str(i)+"\n" for i in sorted(list(testingIndices))])
         testCorpus = AlignedCorpus(testStem, corpus.sourceLang, corpus.targetLang)
   
         return trainCorpus, tuneCorpus, testCorpus
         
         
-    def extractDuplicates(self, corpus, nbSplits=4, window=4):
+    def extractDuplicates(self, corpus, nbSplits=32, window=4):
         
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
@@ -420,7 +423,8 @@ class CorpusProcessor():
         
         step = len(indices)/nbSplits    
         args = [(corpus.getCorpusFile(),window)]*nbSplits
-        stdins = [" ".join([str(i) for i in indices[t*step:t*step + step]]) for t in range(0, nbSplits)]
+        stdins = [" ".join([str(i) for i in indices[t*step:t*step + step]]) 
+                  for t in range(0, nbSplits)]
         outputs = self.executor.run_parallel_function(_printDuplicates, args,
                                                       stdins=stdins, stdouts=[True]*nbSplits)
         duplicates = set()
