@@ -6,6 +6,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
+import time
 import math
 import sys
 import re
@@ -422,16 +423,19 @@ class CorpusProcessor():
         indices.sort(key=lambda x : sourceLines[x])
         
         step = len(indices)/nbSplits    
-        args = [(corpus.getCorpusFile(),window)]*nbSplits
-        stdins = [" ".join([str(i) for i in indices[t*step:t*step + step]]) 
-                  for t in range(0, nbSplits)]
+        args = [(corpus.getCorpusFile(),"ind"+str(i), window) for i in range(0, nbSplits)]
+        for i in range(0, nbSplits):
+            Path("ind"+str(i)).writelines([" ".join([str(i) for j in indices[i*step:i*step + step]])])
         outputs = self.executor.run_parallel_function(_printDuplicates, args,
-                                                      stdins=stdins, stdouts=[True]*nbSplits)
+                                                      stdouts=[True]*nbSplits)
         duplicates = set()
         for output in outputs:
             duplicates = duplicates.union([int(d) for d in output.split()])
         print ("Duplicates found: " + str(len(duplicates)) 
                + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
+        
+        for i in range(0, nbSplits):
+            Path("ind"+str(i)).remove()
         return duplicates
  
 
@@ -564,10 +568,9 @@ class TrueCaser():
  
               
 
-def  _printDuplicates(sourceFile, window):
-    
+def  _printDuplicates(sourceFile, indicesFile, window):
     sys.stderr.write("Starting local extraction of source duplicates...\n") 
-    indices = [int(val) for val in sys.stdin.read().split()] 
+    indices = [int(val) for val in Path(indicesFile).read().split()] 
     sourceLines = Path(sourceFile).readlines()
     duplicates = set() 
     for i in range(0, len(indices)):
