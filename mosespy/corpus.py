@@ -191,7 +191,7 @@ class CorpusProcessor():
         normFile = self.workPath + "/" + rawFile.basename().addProperty("norm")
         self.tokeniser.normaliseFile(rawFile, normFile)
         tokFile = normFile.changeProperty("tok")
-        self.tokeniser.tokeniseFile(normFile, tokFile)
+        self.tokeniser.tokeniseFile(rawFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
         if not self.truecaser.isModelTrained(rawFile.getLang()):
