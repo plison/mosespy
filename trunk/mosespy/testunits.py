@@ -20,11 +20,12 @@ from mosespy.slurm import SlurmExperiment
 
 inFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.fr"
 outFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.en"
+duplicates = Path(__file__).getUp().getUp()+"/data/tests/withduplicates.txt"
 
 class Pipeline(unittest.TestCase):
 
     def setUp(self):
-        self.tmpdir = "./tmp" + str(uuid.uuid4())[0:6]
+        self.tmpdir = "./tmp" + str(uuid.uuid4())[0:8]
         os.makedirs(self.tmpdir)
         slurm.correctSlurmEnv()
         
@@ -87,7 +88,7 @@ class Pipeline(unittest.TestCase):
             self.assertTrue(any([histories[i]==targetlines[max(0,q-2):q] for q in oindices]))
         
         newFile = test.getTargetFile().addProperty("2") 
-        BasicCorpus(outFile).filterOutLines(test.getTargetFile(), newFile)
+        CorpusProcessor(self.tmpdir).filterOutLines( BasicCorpus(outFile), test.getTargetCorpus(), newFile)
         newlines = Path(newFile).readlines()
         intersect = set(testlines).intersection(set(newlines))
         self.assertTrue(all([targetlines.count(i) > 1 for i in intersect]))
@@ -103,7 +104,7 @@ class Pipeline(unittest.TestCase):
     
     def test_split(self):
         acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
-        splitStems = acorpus.splitData(self.tmpdir, 2)
+        splitStems = CorpusProcessor(self.tmpdir).splitData(acorpus, 2)
         self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
         self.assertTrue(Path(self.tmpdir + "/1.fr").exists())
         self.assertTrue(Path(self.tmpdir + "/0.en").exists())
@@ -119,7 +120,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(Path(self.tmpdir + "/1.fr").readlines()[0], inFile.readlines()[50])
         self.assertEquals(Path(self.tmpdir + "/1.en").readlines()[0], outFile.readlines()[50])
     
-        splitStems = acorpus.splitData(self.tmpdir, 3)
+        splitStems = CorpusProcessor(self.tmpdir).splitData(acorpus, 3)
         self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
         self.assertTrue(Path(self.tmpdir + "/1.fr").exists())
         self.assertTrue(Path(self.tmpdir + "/2.fr").exists())
@@ -311,6 +312,33 @@ class Pipeline(unittest.TestCase):
                       + "Source line:\t\t\tAh, n\'en parlons plus.\n" 
                       + "Current line (reference):\tAah, screw her.\n"
                       + "Current line (actual):\t\tAh, would heat parlons plus.", output)
+        
+    
+    def test_duplicates(self):
+        cp =CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        dupls = cp.extractDuplicates(BasicCorpus(duplicates))
+        self.assertEqual(len(dupls), 8)
+        self.assertIn(42856, dupls)
+        
+        
+    def test_mosesparallel(self):
+        acorpus = AlignedCorpus(inFile.getStem(), "fr", "en")
+        processor = CorpusProcessor(self.tmpdir, system.CommandExecutor())
+        train, _, _ = processor.divideData(acorpus, 10, 10, randomPick=False)
+        experiment.expDir = self.tmpdir + "/"
+        exp = Experiment("test", "fr", "en")
+        exp.trainLanguageModel(outFile, preprocess=True)
+        exp.trainTranslationModel(train.getStem())
+        output = system.run_output("./moses_parallel.py -f " + exp.settings["tm"]+"/model/moses.ini ",
+                                    stdin="qui êtes-vous ?\n")
+        self.assertEqual(output, "qui are you ?")
+        Path(self.tmpdir + "/transtest.fr").writelines(["qui êtes-vous ?\n", "tant pis .\n"])
+        output = system.run_output("./moses_parallel.py -f " + exp.settings["tm"]+"/model/moses.ini ",
+                                    stdin=(self.tmpdir + "/transtest.fr"))
+        self.assertEqual(output, "qui are you ? \ntant mind .")
+        output = system.run_output("./moses_parallel.py -jobs 2 -f " + exp.settings["tm"]+"/model/moses.ini ",
+                                    stdin=(self.tmpdir + "/transtest.fr"))
+        self.assertEqual(output, "qui are you ? \ntant mind .")
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)

@@ -6,9 +6,11 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
-
+import math
+import sys
 import re
 import random
+import mosespy.system as system
 from mosespy.system import Path
 
 rootDir = Path(__file__).getUp().getUp()
@@ -66,60 +68,6 @@ class BasicCorpus(object):
         return histories
 
 
-        
-    def filterOutLines(self, contentToRemove, outputFile):
-    
-        inputLines = self.getCorpusFile().readlines()
-        
-        contentToRemove = BasicCorpus(contentToRemove)
-        occurrences = contentToRemove.getOccurrences()
-        histories = contentToRemove.getHistories()     
-
-        with open(outputFile, 'w', 1000000) as newLmFileD:                 
-            skippedLines = []
-            for i in range(2, len(inputLines)):
-                l = inputLines[i]
-                toSkip = False
-                if l in occurrences:
-                    for index in occurrences[l]:
-                        if histories[index] == inputLines[i-2:i]:
-                            skippedLines.append(l)
-                            toSkip = True
-                if not toSkip:
-                    newLmFileD.write(l)                                
-    
-        print "Number of skipped lines: " + str(len(skippedLines))
-        return outputFile
-    
-    
-    
-    def splitData(self, outputDir, nbSplits):
-    
-        lines = self.getCorpusFile().readlines()
-        extension = "." + Path(self.getCorpusFile()).getLang()
-            
-        totalLines = len(lines) 
-        nbSplits = min(nbSplits, totalLines)
-        filenames = []
-        curSplit = 0
-        filename = Path(outputDir + "/" + str(curSplit) + extension)
-        filenames.append(filename)
-        curFile = open(filename, 'w')
-        nbLines = 0
-        for l in lines:
-            if nbLines >= (totalLines / nbSplits) and curSplit < nbSplits -1:
-                nbLines = 0
-                curFile.close()
-                curSplit += 1
-                filename = Path(outputDir + "/" + str(curSplit) + extension)
-                curFile = open(filename, 'w')
-                filenames.append(filename)
-            curFile.write(l)
-            nbLines += 1
-        curFile.close()
-        return filenames
-
-
 
 class AlignedCorpus(object):
     
@@ -134,34 +82,7 @@ class AlignedCorpus(object):
         nbLinesSource = self.getSourceFile().countNbLines()
         nbLinesTarget = self.getTargetFile().countNbLines()
         if nbLinesSource != nbLinesTarget:
-            raise RuntimeError("Number of lines for source and target are different")
-
-    
-    def splitData(self, outputDir, nbSplits):
-    
-        sourceCorpus = BasicCorpus(self.getSourceFile())
-        targetCorpus = BasicCorpus(self.getTargetFile())
-        sourceFiles = sourceCorpus.splitData(outputDir, nbSplits)
-        targetFiles = targetCorpus.splitData(outputDir, nbSplits)
-        stems = [filename.getStem() for filename in sourceFiles]
-        if stems != [filename.getStem() for filename in targetFiles]:
-            raise RuntimeError("stems from split data in source and target are different")
-        
-        return stems
-  
-
-    def _drawRandom(self, number, exclusion=None, window=4):
-
-        numbers = set()     
-        while len(numbers) < number:
-            choice = random.randrange(0, self.getSourceFile().countNbLines() -window)
-            if not exclusion or choice not in exclusion:
-                numbers.add(choice)
-
-        return numbers
-     
-     
-          
+            raise RuntimeError("Number of lines for source and target are different")          
   
     def getStem(self):
         return self.stem
@@ -237,9 +158,9 @@ class TranslatedCorpus(AlignedCorpus):
 
 class CorpusProcessor():
     
-    def __init__(self, workPath, executor, nbThreads=2):
+    def __init__(self, workPath, executor=None, nbThreads=2):
         self.workPath = Path(workPath)
-        self.executor = executor
+        self.executor = executor if executor else system.CommandExecutor()
         self.tokeniser = Tokeniser(executor, nbThreads)
         self.truecaser = TrueCaser(executor, workPath+"/truecasingmodel")
         
@@ -350,19 +271,88 @@ class CorpusProcessor():
         else:
             raise RuntimeError("BLEU score could not be extracted")
         
+
+        
+    def filterOutLines(self, fullCorpus, toRemoveCorpus, outputFile):
+    
+        inputLines = fullCorpus.getCorpusFile().readlines()
+        
+        occurrences = toRemoveCorpus.getOccurrences()
+        histories = toRemoveCorpus.getHistories()     
+
+        with open(outputFile, 'w', 1000000) as newLmFileD:                 
+            skippedLines = []
+            for i in range(2, len(inputLines)):
+                l = inputLines[i]
+                toSkip = False
+                if l in occurrences:
+                    for index in occurrences[l]:
+                        if histories[index] == inputLines[i-2:i]:
+                            skippedLines.append(l)
+                            toSkip = True
+                if not toSkip:
+                    newLmFileD.write(l)                                
+    
+        print "Number of skipped lines: " + str(len(skippedLines))
+        return outputFile
+    
+    
+    def splitData(self, corpus, nbSplits):
+    
+        if isinstance(corpus, AlignedCorpus):
+            
+            sourceFiles = self.splitData(corpus.getSourceCorpus(), nbSplits)
+            targetFiles = self.splitData(corpus.getTargetCorpus(), nbSplits)
+            stems = [filename.getStem() for filename in sourceFiles]
+            if stems != [filename.getStem() for filename in targetFiles]:
+                raise RuntimeError("stems from split data in source and target are different")
+            return stems
+        
+        elif isinstance(corpus, BasicCorpus):
+              
+            lines = corpus.getCorpusFile().readlines()
+            if corpus.getCorpusFile().getLang():
+                extension = "." + corpus.getCorpusFile().getLang()
+            else:
+                extension = ""
+                
+            totalLines = len(lines) 
+            nbSplits = min(nbSplits, totalLines)
+            filenames = []
+            curSplit = 0
+            filename = Path(self.workPath + "/" + str(curSplit) + extension)
+            filenames.append(filename)
+            curFile = open(filename, 'w')
+            nbLines = 0
+            for l in lines:
+                if nbLines >= (totalLines / nbSplits) and curSplit < nbSplits -1:
+                    nbLines = 0
+                    curFile.close()
+                    curSplit += 1
+                    filename = Path(self.workPath + "/" + str(curSplit) + extension)
+                    curFile = open(filename, 'w')
+                    filenames.append(filename)
+                curFile.write(l)
+                nbLines += 1
+            curFile.close()
+            return filenames
+        
+        else:
+            raise RuntimeError("corpus must be an AlignedCorpus or BasicCorpus")
+
              
  
-    def divideData(self, corpus, nbTuning=1000, nbTesting=3000, randomPick=True):
+    def divideData(self, corpus, nbTuning=1000, nbTesting=3000, randomPick=True, duplicatesWindow=4):
         
         if not isinstance(corpus, AlignedCorpus):
             raise RuntimeError("corpus must be of type AlignedCorpus")
          
         if randomPick:
-            window = 4
-            toExclude = self.extractSourceDuplicates(corpus.getSourceCorpus())
-            tuningIndices =corpus._drawRandom(nbTuning, exclusion=toExclude, window=window)
+            nbLines = corpus.getSourceFile().countNbLines()
+            toExclude = self.extractDuplicates(corpus.getSourceCorpus(), window=duplicatesWindow)
+            tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
             toExclude = toExclude.union(tuningIndices)
-            testingIndices = corpus._drawRandom(nbTesting, exclusion=toExclude, window=window)
+            testingIndices = _drawRandom(nbTesting,nbLines, exclusion=toExclude)
         else:
             nbLines = corpus.getSourceFile().countNbLines()
             tuningIndices = range(0,nbLines)[-nbTuning-nbTesting:-nbTesting]
@@ -418,7 +408,7 @@ class CorpusProcessor():
         return trainCorpus, tuneCorpus, testCorpus
         
         
-    def extractSourceDuplicates(self, corpus, nbThreads=32):
+    def extractDuplicates(self, corpus, nbSplits=4, window=4):
         
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
@@ -429,53 +419,18 @@ class CorpusProcessor():
         indices = range(0, nbLines)
         indices.sort(key=lambda x : sourceLines[x])
         
-        step = len(indices)/nbThreads
-        for t in range(0, nbThreads):
-            localIndices = [str(localInd)+"\n" for localInd in indices[t*step:t*step + step]]
-            Path("ind"+str(t)).writelines(localIndices)
-            
-        args = [("ind"+str(t), corpus.getCorpusFile(), "dupl"+str(t)) for t in range(0, nbThreads)]
-        self.executor.run_parallel_function(_extractSourceDuplicates, args)
-        
+        step = len(indices)/nbSplits    
+        args = [(corpus.getCorpusFile(),window)]*nbSplits
+        stdins = [" ".join([str(i) for i in indices[t*step:t*step + step]]) for t in range(0, nbSplits)]
+        outputs = self.executor.run_parallel_function(_printDuplicates, args,
+                                                      stdins=stdins, stdouts=[True]*nbSplits)
         duplicates = set()
-        for t in range(0, nbThreads):
-            duplicateFile = Path("dupl"+str(t))
-            if duplicateFile.exists():
-                localDuplicates = [int(l.strip()) for l in duplicateFile.readlines()]
-                duplicates = duplicates.union(localDuplicates)
-                duplicateFile.remove()
-                Path("ind"+str(t)).remove()
-            else:
-                print "Warning: file " + duplicateFile + " cannot be found"
+        for output in outputs:
+            duplicates = duplicates.union([int(d) for d in output.split()])
         print ("Duplicates found: " + str(len(duplicates)) 
-               + " (" + str(len(duplicates)*100.0/nbLines) + " of total)") 
+               + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
         return duplicates
-        
-        
-
-def  _extractSourceDuplicates(indicesFile, sourceFile, duplicatesFile, window=4):
-    print "Starting extracting source duplicates..." 
-    indices = [int(indLine.strip()) for indLine in Path(indicesFile).readlines()] 
-    sourceLines = Path(sourceFile).readlines()
-    duplicates = set() 
-    print "Starting loop..." 
-    for i in range(0, len(indices)):
-        curIndex = indices[i]
-        curWindow = sourceLines[curIndex:curIndex+window]
-        for j in range(i+1, len(indices)-window):
-            nextIndex = indices[j]
-            nextWindow = sourceLines[nextIndex:nextIndex+window]
-            if curWindow[0] != nextWindow[0]:
-                break
-            elif curWindow == nextWindow:
-                duplicates.add(curIndex)
-                duplicates.add(nextIndex)
-                break
-        if len(indices) > 500 and not (i % (len(indices)/500)):
-            print "Extraction of duplicates: " + str(i*100.0/len(indices))
-    
-    Path(duplicatesFile).writelines("\n".join([str(d) for d in duplicates]))
-
+ 
 
           
          
@@ -601,4 +556,42 @@ class TrueCaser():
             raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         return self.executor.run_output(truecaseScript, stdin=inputText)
+ 
+ 
+ 
+              
+
+def  _printDuplicates(sourceFile, window):
     
+    sys.stderr.write("Starting local extraction of source duplicates...\n") 
+    indices = [int(val) for val in sys.stdin.read().split()] 
+    sourceLines = Path(sourceFile).readlines()
+    duplicates = set() 
+    for i in range(0, len(indices)):
+        curIndex = indices[i]
+        curWindow = sourceLines[curIndex:curIndex+window]
+        for j in range(i+1, len(indices)-window):
+            nextIndex = indices[j]
+            nextWindow = sourceLines[nextIndex:nextIndex+window]
+            if curWindow[0] != nextWindow[0]:
+                break
+            elif curWindow == nextWindow:
+                duplicates.add(curIndex)
+                duplicates.add(nextIndex)
+                break
+        if len(indices) > 100 and not (i % (len(indices)/100)):
+            sys.stderr.write("Extraction of duplicates: " + str(math.ceil(i*10000/len(indices)) / 100) + " %\n")
+    
+    print " ".join([str(d) for d in duplicates])
+
+       
+
+def _drawRandom(nbToDraw, maxValue, exclusion=None):
+
+    numbers = set()     
+    while len(numbers) < nbToDraw:
+        choice = random.randrange(0, maxValue)
+        if not exclusion or choice not in exclusion:
+            numbers.add(choice)
+
+    return numbers   

@@ -11,7 +11,7 @@ import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import mosespy.slurm as slurm
 from mosespy.system import Path
-from mosespy.corpus import BasicCorpus
+from mosespy.corpus import BasicCorpus, CorpusProcessor
 
 moses_root = Path(__file__).getAbsolute().getUp().getUp() + "/moses"
 decoder = moses_root + "/bin/moses "
@@ -28,13 +28,9 @@ def getInput():
             lines.append(line)
         else:
             break  
-          
+               
     if len(lines) > 0:
-        print "Number of input lines: " + str(len(lines))
-        tmpInputFile = "./inputtmp" + str(uuid.uuid4())[0:6] + ".source"
-        with open(tmpInputFile, 'w') as tmpInput:
-            tmpInput.writelines(lines)
-        return Path(tmpInputFile)
+        return "".join(lines)
     else:
         return None
 
@@ -99,10 +95,12 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
             globalCount += 1
    
 
-def splitDecoding(inputFile, mosesArgs, nbJobs):
+def splitDecoding(sourceInput, mosesArgs, nbJobs):
     splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
     splitDir.reset()
-    infiles = BasicCorpus(inputFile).splitData(splitDir, nbJobs)
+    if not isinstance(sourceInput, Path):
+        sourceInput = Path(splitDir + "/fullsource.tmp").writelines([sourceInput])
+    infiles = CorpusProcessor(splitDir).splitData(BasicCorpus(sourceInput), nbJobs)
     print "Data split in " + str(len(infiles))
     
     splits = []
@@ -119,24 +117,23 @@ def splitDecoding(inputFile, mosesArgs, nbJobs):
     
         
         
-def runParallelMoses(inputFile, mosesArgs, outStream, nbJobs):
+def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
          
     executor = slurm.SlurmExecutor()        
-    if not inputFile:
+    if not sourceInput:
         print "Running decoder: " + decoder + mosesArgs
         executor.run(decoder + mosesArgs, stdout=outStream)
         
-    elif nbJobs == 1 or inputFile.getSize() < 1000:
-        print "Running decoder: " + decoder + mosesArgs + " < " + inputFile
-        executor.run(decoder + mosesArgs, stdin=inputFile, stdout=outStream)
+    elif nbJobs == 1 or not isinstance(sourceInput, Path):
+        print "Running decoder: " + decoder + mosesArgs + " < " + sourceInput
+        executor.run(decoder + mosesArgs, stdin=sourceInput, stdout=outStream)
     else:
-        
-        splits = splitDecoding(inputFile, mosesArgs, nbJobs)
+        splits = splitDecoding(sourceInput, mosesArgs, nbJobs)
         jobArgs = [split["args"] for split in splits]
         stdins = [split["in"] for split in splits]
         stdouts = [split["out"] for split in splits]
         executor.run_parallel(decoder + " %s", jobArgs, stdins, stdouts)
- 
+
         mergeOutFiles([split["out"] for split in splits], outStream)
         
         if "-n-best-list" in mosesArgs:
@@ -153,14 +150,10 @@ def main():
 
     nbJobs = getNbJobs()
     arguments = getMosesArguments()
-    inputFile = getInput()
+    sourceInput = getInput()
     
-    runParallelMoses(inputFile, arguments, stdout, nbJobs)
+    runParallelMoses(sourceInput, arguments, stdout, nbJobs)
     
-    if inputFile and "inputtmp" in inputFile:
-        inputFile.remove()
-
-
 
 if __name__ == "__main__":
     main()

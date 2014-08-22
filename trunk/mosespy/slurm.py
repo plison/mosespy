@@ -61,7 +61,8 @@ class SlurmExperiment(Experiment):
     
         splitDir = self.settings["path"] + "/splits"
         splitDir.reset()
-        splitStems = train.splitData(splitDir, self.maxJobs/2)
+        
+        splitStems = CorpusProcessor(splitDir, self.executor, nodeCpus).splitData(train, self.maxJobs/2)
         print "Split data: " + str(splitStems)
         tmDir = self.settings["path"] + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)

@@ -29,9 +29,11 @@ class CommandExecutor(object):
         if os.path.exists(str(stdin)):
             stdin_popen = open(stdin, 'r')
             str_stdin = " < " + stdin
+            stdin = None
         elif isinstance(stdin, basestring):
             stdin_popen = subprocess.PIPE
-            str_stdin = " <<< \"" + stdin + "\""
+            stdin_cut = stdin if len(stdin)< 50 else (stdin[0:50] + "...")
+            str_stdin = " <<< \"" + stdin_cut + "\""
         else:
             stdin_popen = None
         
@@ -39,7 +41,7 @@ class CommandExecutor(object):
         if os.path.exists(os.path.dirname(str(stdout))):
             stdout_popen = open(stdout, 'w')
             str_stdout = " > " + stdout
-        elif stdout is not None and not stdout:
+        elif stdout is not None and stdout==True:
             stdout_popen = subprocess.PIPE
         else:
             stdout_popen = None
@@ -50,7 +52,6 @@ class CommandExecutor(object):
         inittime = datetime.now()
         p = subprocess.Popen(script, shell=True, stdin=stdin_popen, stdout=stdout_popen)
         out_popen = p.communicate(stdin)[0]
-        
         if not self.quiet:     
             print "Task [" + str(curcall) + "] " + ("successful" if not p.returncode else "FAILED")
             print "Execution time: " + (str(datetime.now() - inittime)).split(".")[0]
@@ -62,13 +63,20 @@ class CommandExecutor(object):
     
     
     def run_output(self, script, stdin=None):
-        return self.run(script, stdin, stdout=False)
+        return self.run(script, stdin, stdout=True)
 
 
     def run_parallel_function(self, function, jobArgs, stdins=None, stdouts=None):
         if not hasattr(function, '__call__'):
             raise RuntimeError("function must be a python function")
-        fillerArgs =  ",".join(["'%s'"]*len(jobArgs[0]))
+        fillerArgs =  ""
+        for arg in jobArgs[0]:
+            if isinstance(arg, basestring):
+                fillerArgs += "'%s'"
+            elif isinstance(arg, int):
+                fillerArgs += "%i"
+            if not arg == jobArgs[0][len(jobArgs[0])-1]:
+                fillerArgs += ","
         script = "python -u -c \"import %s ; %s(%s)\""%(function.__module__, function.__module__
                                                     +"." + function.__name__, fillerArgs)
         return self.run_parallel(script, jobArgs, stdins, stdouts)
@@ -84,30 +92,34 @@ class CommandExecutor(object):
             stdin = stdins[i] if stdins else None
             stdout = stdouts[i] if stdouts else None
             resultQueue = Queue.Queue()
-            t = threading.Thread(target=self._run_queue, args=(filledScript, resultQueue, stdin, stdout))
+            t = threading.Thread(target=self._run_queue, 
+                                 args=(filledScript, resultQueue, stdin, stdout))
             resultQueues.append(resultQueue)
             t.start()
             
         time.sleep(0.1)
         print str(len(resultQueues)) + " processes started..."
+        results = {}
         for counter in range(0, 10000):
-            stillRunning = []
-            for q in resultQueues:
-                if not q.empty():
-                    if not q.get():
+            for rqi in range(0, len(resultQueues)):
+                q = resultQueues[rqi]
+                if not results.has_key(rqi) and not q.empty():
+                    val = q.get()
+                    if stdouts == None and val == False:
                         print "One parallel task failed, aborting"
                         return False
-                else:
-                    stillRunning.append(q)
-            resultQueues = stillRunning 
-            if len(resultQueues) > 0:
+                    results[rqi] = val
+            
+            if len(results) < len(resultQueues):
                 time.sleep(1)
                 if not (counter % 60):
-                    print "Number of running processes after %i mins: %i"%(counter/60, len(resultQueues))
+                    print ("Nb. of running processes after %i mins: %i"
+                           %(counter/60, len(resultQueues) - len(results)))
             else:
                 break
+        
         print "Parallel processes successfully completed" 
-        return True
+        return True if stdout==None else [v for (_,v) in sorted(results.items())]
         
     
     def _run_queue(self, script, resultQueue, stdin=None, stdout=None):
@@ -283,6 +295,7 @@ class Path(str):
     def writelines(self, lines):
         with open(self, 'w') as fileD:
             fileD.writelines(lines)
+        return self
     
 
 def convertToPaths(element):
