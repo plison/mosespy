@@ -330,7 +330,7 @@ class Pipeline(unittest.TestCase):
         exp.trainTranslationModel(train.getStem())
         output = system.run_output("./moses_parallel.py -f " + exp.settings["tm"]+"/model/moses.ini ",
                                     stdin="qui êtes-vous ?\n")
-        self.assertEqual(output, "qui are you ?")
+        self.assertEqual(output, "qui are you ?") 
         Path(self.tmpdir + "/transtest.fr").writelines(["qui êtes-vous ?\n", "tant pis .\n"])
         output = system.run_output("./moses_parallel.py -f " + exp.settings["tm"]+"/model/moses.ini ",
                                     stdin=(self.tmpdir + "/transtest.fr"))
