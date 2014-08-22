@@ -434,7 +434,7 @@ class CorpusProcessor():
             duplicates = duplicates.union([int(d) for d in output.split()])
         print ("Duplicates found: " + str(len(duplicates)) 
                + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
-        print duplicates
+
         for i in range(0, nbSplits):
             Path("ind"+str(i)).remove()
         return duplicates
