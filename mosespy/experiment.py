@@ -95,7 +95,7 @@ class Experiment(object):
         if not lmFile:
             lmFile = alignedStem + "." + self.settings["target"]
         newLmFile = self.settings["path"] + "/" + lmFile.basename().addProperty("filtered") 
-        BasicCorpus(lmFile).filterOutLines(test.getTargetFile(), newLmFile)
+        self.processor.filterOutLines(BasicCorpus(lmFile), test, newLmFile)
 
         self.trainLanguageModel(newLmFile)
         
