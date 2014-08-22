@@ -21,13 +21,13 @@ from mosespy.slurm import SlurmExperiment
 inFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.fr"
 outFile = Path(__file__).getUp().getUp()+"/data/tests/subtitles.en"
 duplicates = Path(__file__).getUp().getUp()+"/data/tests/withduplicates.txt"
+slurm.correctSlurmEnv()
 
 class Pipeline(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = "./tmp" + str(uuid.uuid4())[0:8]
         os.makedirs(self.tmpdir)
-        slurm.correctSlurmEnv()
         
     def test_preprocessing(self):
         
@@ -156,7 +156,7 @@ class Pipeline(unittest.TestCase):
         exp.executor.run("gunzip " + exp.settings["tm"]+"/model/phrase-table.gz")
         lines = Path(exp.settings["tm"]+"/model/phrase-table").readlines()
         self.assertIn("veux te donner ||| want to give ||| 1 0.0451128 1 1 "
-                      + "||| 0-0 1-1 2-2 ||| 1 1 1 ||| ||| \n", lines)
+                      + "||| 0-0 1-1 2-2 ||| 1 1 1 ||| |||\n", lines)
         exp.executor.run("gzip " + exp.settings["tm"]+"/model/phrase-table")
         config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")
         self.assertEqual(config.getPhraseTable(), exp.settings["tm"]+"/model/phrase-table.gz")
@@ -318,7 +318,7 @@ class Pipeline(unittest.TestCase):
         cp =CorpusProcessor(self.tmpdir, system.CommandExecutor())
         dupls = cp.extractDuplicates(BasicCorpus(duplicates))
         self.assertEqual(len(dupls), 8)
-        self.assertIn(42856, dupls)
+        self.assertIn(691, dupls)
         
         
     def test_mosesparallel(self):
