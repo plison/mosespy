@@ -411,7 +411,7 @@ class CorpusProcessor():
         return trainCorpus, tuneCorpus, testCorpus
         
         
-    def extractDuplicates(self, corpus, window=4, nbSplits=32):
+    def extractDuplicates(self, corpus, window=4, nbSplits=6):
         
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
@@ -425,7 +425,8 @@ class CorpusProcessor():
         step = len(indices)/nbSplits    
         args = [(corpus.getCorpusFile(),"ind"+str(i), window) for i in range(0, nbSplits)]
         for i in range(0, nbSplits):
-            Path("ind"+str(i)).writelines([" ".join([str(i) for j in indices[i*step:i*step + step]])])
+            Path("ind"+str(i)).writelines([" ".join([str(j) for j in indices[i*step:i*step + step]])])
+        
         outputs = self.executor.run_parallel_function(_printDuplicates, args,
                                                       stdouts=[True]*nbSplits)
         duplicates = set()
@@ -433,7 +434,7 @@ class CorpusProcessor():
             duplicates = duplicates.union([int(d) for d in output.split()])
         print ("Duplicates found: " + str(len(duplicates)) 
                + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
-        
+        print duplicates
         for i in range(0, nbSplits):
             Path("ind"+str(i)).remove()
         return duplicates
@@ -586,7 +587,8 @@ def  _printDuplicates(sourceFile, indicesFile, window):
                 duplicates.add(nextIndex)
                 break
         if len(indices) > 100 and not (i % (len(indices)/100)):
-            sys.stderr.write("Extraction of duplicates: " + str(math.ceil(i*10000/len(indices)) / 100) + " %\n")
+            sys.stderr.write("Extraction of duplicates: " + 
+                             str(math.ceil(i*10000/len(indices)) / 100) + " %\n")
     
     print " ".join([str(d) for d in duplicates])
 
