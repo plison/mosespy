@@ -58,7 +58,7 @@ class Experiment(object):
     of the experiment, allowing experiments to be easily restarted.
     """
     
-    def __init__(self, expName, sourceLang=None, targetLang=None):
+    def __init__(self, expName, sourceLang=None, targetLang=None, nbThreads=2):
         
         self.settings = {}
         self.settings["name"] = expName
@@ -84,7 +84,8 @@ class Experiment(object):
                + "-" + self.settings["target"] + ") successfully started")
         
         self.executor = system.CommandExecutor()
-        self.processor = CorpusProcessor(self.settings["path"], self.executor)
+        self.nbThreads = nbThreads
+        self.processor = CorpusProcessor(self.settings["path"], self.executor, self.nbThreads)
 
     
     def doWholeShibang(self, alignedStem, lmFile=None):
@@ -135,7 +136,7 @@ class Experiment(object):
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
         
-   #     sbFile.remove()
+        sbFile.remove()
         (lmFile + ".gz").remove()
         arpaFile.remove()
 
@@ -148,7 +149,7 @@ class Experiment(object):
      
     def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True, 
-                              nbThreads=2, pruning=True):
+                              pruning=True):
         
         train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
         
@@ -159,7 +160,7 @@ class Experiment(object):
                + self.settings["target"] + " with " + train.getStem())
 
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
         tmDir.reset()
         result = self.executor.run(tmScript)
         if result:
@@ -172,18 +173,18 @@ class Experiment(object):
             print "Construction of translation model FAILED"
   
 
-    def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=2):
+    def tuneTranslationModel(self, tuningStem, preprocess=True):
         
         tuning = AlignedCorpus(tuningStem, self.settings["source"], self.settings["target"])
         
         if preprocess:         
-            tuning = self.processor.processCorpus(tuning)
+            tuning = self.processor.processCorpus(tuning, False)
         
         print ("Tuning translation model " + self.settings["source"] + "-" 
                + self.settings["target"] + " with " + tuning.getStem())
         
         tuneDir = self.settings["path"]+"/tunedmodel"
-        tuningScript = self._getTuningScript(tuneDir, tuning.getStem(), nbThreads)
+        tuningScript = self._getTuningScript(tuneDir, tuning.getStem())
         tuneDir.reset()
         result = self.executor.run(tuningScript)
         if result:
@@ -228,7 +229,7 @@ class Experiment(object):
 
       
    
-    def translate(self, text, preprocess=True, nbThreads=2):
+    def translate(self, text, preprocess=True):
         if self.settings.has_key("btm"):
             initFile = self.settings["btm"] + "/moses.ini"
         elif self.settings.has_key("ttm"):
@@ -243,12 +244,12 @@ class Experiment(object):
         if preprocess:
             text = self.processor.processText(text, self.settings["source"])
             
-        transScript = self._getTranslateScript(initFile, nbThreads)
+        transScript = self._getTranslateScript(initFile)
 
         return self.executor.run_output(transScript, stdin=text)
         
    
-    def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=2):
+    def translateFile(self, infile, outfile, preprocess=True, filterModel=True):
 
         infile = Path(infile)
         if preprocess:
@@ -268,7 +269,7 @@ class Experiment(object):
         print ("Translating file \"" + infile + "\" from " + 
                self.settings["source"] + " to " + self.settings["target"])
 
-        transScript = self._getTranslateScript(initFile, nbThreads, inputFile=infile)
+        transScript = self._getTranslateScript(initFile, infile)
         
         result = self.executor.run(transScript, stdout=outfile)
 
@@ -406,7 +407,7 @@ class Experiment(object):
         
 
 
-    def _getTrainScript(self ,tmDir, trainData, nbThreads, alignment, reordering):
+    def _getTrainScript(self ,tmDir, trainData, alignment, reordering):
         if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"): 
             raise RuntimeError("Language model for " + self.settings["target_long"] 
                                + " is not yet trained")
@@ -420,12 +421,12 @@ class Experiment(object):
                     +":"+self.settings["lm"]["blm"]+":8"       # 8 because binarised with KenLM
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel"
-                    )%(nbThreads, nbThreads)
+                    )%(self.nbThreads, self.nbThreads)
         return tmScript
                        
         
         
-    def _getTuningScript(self, tuneDir, tuningStem, nbThreads):
+    def _getTuningScript(self, tuneDir, tuningStem):
 
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.settings["source"] + " " 
@@ -434,14 +435,14 @@ class Experiment(object):
                       + self.settings["tm"] + "/model/moses.ini " 
                       + " --mertdir " + moses_root + "/bin/"
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
-                      )%(nbThreads)
+                      )%(self.nbThreads)
         return tuneScript
         
 
     
-    def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
+    def _getTranslateScript(self, initFile, inputFile=None):
         script = (moses_root + "/bin/moses -f " + initFile.encode('utf-8') 
-                + " -v 0 -threads " + str(nbThreads))
+                + " -v 0 -threads " + str(self.nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
         return script

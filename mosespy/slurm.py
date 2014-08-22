@@ -28,6 +28,7 @@ class SlurmExperiment(Experiment):
             return
         
         self.executor = SlurmExecutor(account)
+        self.nbThreads = nodeCpus
         self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
         
     
@@ -45,11 +46,11 @@ class SlurmExperiment(Experiment):
     
     def trainTranslationModel(self, trainStem, alignment=experiment.defaultAlignment, 
                               reordering=experiment.defaultReordering, preprocess=True, 
-                              nbThreads=nodeCpus, pruning=True):
+                              pruning=True):
         
         if self.maxJobs == 1:
             return Experiment.trainTranslationModel(self, trainStem, alignment, reordering, 
-                                                    preprocess, nbThreads, pruning)
+                                                    preprocess, pruning)
              
         train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
         if preprocess:         
@@ -65,27 +66,24 @@ class SlurmExperiment(Experiment):
         splitStems = CorpusProcessor(splitDir, self.executor, nodeCpus).splitData(train, self.maxJobs/2)
         print "Split data: " + str(splitStems)
         tmDir = self.settings["path"] + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, train.getStem(), nbThreads, alignment, reordering)
+        tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
         jobArgs1 = [(stem, stem, " --last-step 1") for stem in splitStems]
         r1 = self.executor.run_parallel(slotScript, jobArgs1)
         if not r1:
-            print "Construction of translation model FAILED (step 1)"
-            return
+            raise RuntimeError("Construction of translation model FAILED (step 1)")
   
         jobArgs2 = [(stem, stem, " --first-step 2 --last-step 2 --direction 1") for stem in splitStems]
         jobArgs3 = [(stem, stem, " --first-step 2 --last-step 2 --direction 2") for stem in splitStems]
         r2 = self.executor.run_parallel(slotScript, jobArgs2 + jobArgs3)
         if not r2:
-            print "Construction of translation model FAILED (step 2)"
-            return
+            raise RuntimeError("Construction of translation model FAILED (step 2)")
 
         jobArgs4 = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
         r3 = self.executor.run_parallel(slotScript, jobArgs4)
         if not r3:
-            print "Construction of translation model FAILED (step 3)"
-            return
+            raise RuntimeError("Construction of translation model FAILED (step 3)")
                  
         tmDir.reset()
         (tmDir+"/model").make()
@@ -111,16 +109,16 @@ class SlurmExperiment(Experiment):
                 self.prunePhraseTable()
             self._recordState()
         else:
-            print "Construction of translation model FAILED"
+            raise RuntimeError("Construction of translation model FAILED (step 4)")
  
       
-    def tuneTranslationModel(self, tuningStem, preprocess=True, nbThreads=nodeCpus):
-        Experiment.tuneTranslationModel(self, tuningStem, preprocess, nbThreads)
+    def tuneTranslationModel(self, tuningStem, preprocess=True):
+        Experiment.tuneTranslationModel(self, tuningStem, preprocess)
         config = MosesConfig(self.settings["ttm"]+"/moses.ini")
         config.removePart("jobs")
 
 
-    def _getTuningScript(self, tuneDir, tuningStem, nbThreads):
+    def _getTuningScript(self, tuneDir, tuningStem):
         nbDecodingJobs = self._getNbDecodingJobs(tuningStem + "." + self.settings["source"])
         tuneScript = (experiment.moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.settings["source"] + " " 
@@ -130,27 +128,18 @@ class SlurmExperiment(Experiment):
                       + " --mertdir " + experiment.moses_root + "/bin/"
                       + " --decoder-flags=\'-jobs %i -threads %i -v 0' "
                       + " --working-dir " + tuneDir
-                      )%(nbDecodingJobs, nbThreads)
+                      )%(nbDecodingJobs, self.nbThreads)
         return tuneScript
 
-
-    def translate(self, text, preprocess=True, nbThreads=nodeCpus):
-        return Experiment.translate(self, text, preprocess, nbThreads)
-    
-    
-    def translateFile(self, infile, outfile, preprocess=True, filterModel=True, nbThreads=nodeCpus):
-        return Experiment.translateFile(self, infile, outfile, preprocess, 
-                                        filterModel, nbThreads)
-        
  
     def _getNbDecodingJobs(self, sourceFile):
         nblines = sourceFile.countNbLines()
         return min(self.maxJobs, max(1,nblines/1000))
 
 
-    def _getTranslateScript(self, initFile, nbThreads, inputFile=None):
+    def _getTranslateScript(self, initFile, inputFile=None):
         script = (experiment.rootDir + "/mosespy/moses_parallel.py -f " + initFile.encode('utf-8') 
-                + " -v 0 -threads " + str(nbThreads))
+                + " -v 0 -threads " + str(self.nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
             maxJobs = self._getNbDecodingJobs(inputFile)

@@ -154,8 +154,6 @@ class TranslatedCorpus(AlignedCorpus):
         return alignments
 
  
-
-
 class CorpusProcessor():
     
     def __init__(self, workPath, executor=None, nbThreads=2):
