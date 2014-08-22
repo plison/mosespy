@@ -131,11 +131,11 @@ class Experiment(object):
         self.executor.run(arpaScript)  
 
         blmFile = self.settings["path"] + "/langmodel.blm." + trainFile.getLang()
-        blmScript = moses_root + "/bin/build_binary -w after " + " " + arpaFile + " " + blmFile
+        blmScript = moses_root + "/bin/build_binary " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
         
-        sbFile.remove()
+   #     sbFile.remove()
         (lmFile + ".gz").remove()
         arpaFile.remove()
 
