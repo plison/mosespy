@@ -86,23 +86,7 @@ class Experiment(object):
         self.executor = system.CommandExecutor()
         self.nbThreads = nbThreads
         self.processor = CorpusProcessor(self.settings["path"], self.executor, self.nbThreads)
-
-    
-    def doWholeShibang(self, alignedStem, lmFile=None):
-        
-        acorpus = AlignedCorpus(alignedStem, self.settings["source"], self.settings["target"])
-        train, tune, test = self.processor.divideData(acorpus)
-        
-        if not lmFile:
-            lmFile = alignedStem + "." + self.settings["target"]
-        newLmFile = self.processor.filterOutLines(BasicCorpus(lmFile), test)
-
-        self.trainLanguageModel(newLmFile)
-        
-        self.trainTranslationModel(train.getStem())
-        self.tuneTranslationModel(tune.getStem())
-        self.evaluateBLEU(test.getStem())
-                    
+              
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
   

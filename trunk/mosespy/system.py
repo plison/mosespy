@@ -291,6 +291,10 @@ class Path(str):
         else:
             raise RuntimeError(self + " not an existing file")
 
+    def write(self, text):
+        with open(self, 'w') as fileD:
+            fileD.write(text)
+        return self
  
     def writelines(self, lines):
         with open(self, 'w') as fileD:

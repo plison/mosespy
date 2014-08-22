@@ -341,22 +341,27 @@ class CorpusProcessor():
             raise RuntimeError("corpus must be an AlignedCorpus or BasicCorpus")
 
              
- 
-    def divideData(self, corpus, nbTuning=1000, nbTesting=3000, 
-                   randomPick=True, duplicatesWindow=4):
+    def divideData(self, corpus, nbTuning=1000, nbDevelop=3000, 
+                   nbTesting=3000, randomPick=True, duplicatesWindow=4):
         
         if not isinstance(corpus, AlignedCorpus):
             raise RuntimeError("corpus must be of type AlignedCorpus")
-         
+        
+        if nbTuning + nbDevelop + nbTesting > corpus.getSourceFile().countNbLines():
+            raise RuntimeError("cannot divide such small amount of data")
+        
         if randomPick:
             nbLines = corpus.getSourceFile().countNbLines()
             toExclude = self.extractDuplicates(corpus.getSourceCorpus(), duplicatesWindow)
             tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
             toExclude = toExclude.union(tuningIndices)
+            developIndices =_drawRandom(nbDevelop, nbLines, exclusion=toExclude)
+            toExclude = toExclude.union(developIndices)
             testingIndices = _drawRandom(nbTesting,nbLines, exclusion=toExclude)
         else:
             nbLines = corpus.getSourceFile().countNbLines()
-            tuningIndices = range(0,nbLines)[-nbTuning-nbTesting:-nbTesting]
+            tuningIndices = range(0,nbLines)[-nbTuning-nbTesting-nbDevelop:-nbDevelop-nbTesting]
+            developIndices = range(0,nbLines)[-nbDevelop-nbTesting:-nbTesting]
             testingIndices = range(0,nbLines)[-nbTesting:]
 
         sourceLines = corpus.getSourceFile().readlines()
@@ -364,12 +369,15 @@ class CorpusProcessor():
     
         trainSourceLines = []
         tuneSourceLines = []
+        devSourceLines = []       
         testSourceLines = []       
         print "Dividing source data..."
         for i in range(0, len(sourceLines)):
             sourceLine = sourceLines[i]
             if i in tuningIndices:
                 tuneSourceLines.append(sourceLine)
+            elif i in developIndices:
+                devSourceLines.append(sourceLine)
             elif i in testingIndices:
                 testSourceLines.append(sourceLine)
             else:
@@ -377,29 +385,39 @@ class CorpusProcessor():
         
         trainTargetLines = []
         tuneTargetLines = []
+        devTargetLines = []
         testTargetLines = []       
         print "Dividing target data..."
         for i in range(0, len(targetLines)):
             targetLine = targetLines[i]
             if i in tuningIndices:
                 tuneTargetLines.append(targetLine)
+            elif i in developIndices:
+                devTargetLines.append(targetLine)
             elif i in testingIndices:
                 testTargetLines.append(targetLine)
             else:
                 trainTargetLines.append(targetLine)
-         
+        
         trainStem = self.workPath + "/" + (corpus.stem + ".train").basename()
         (trainStem + "." + corpus.sourceLang).writelines(trainSourceLines) 
         (trainStem + "." + corpus.targetLang).writelines(trainTargetLines)
         trainCorpus = AlignedCorpus(trainStem, corpus.sourceLang, corpus.targetLang)
         
-
+        
         tuneStem = self.workPath + "/" + (corpus.stem + ".tune").basename()
         (tuneStem + "." + corpus.sourceLang).writelines(tuneSourceLines) 
         (tuneStem + "." + corpus.targetLang).writelines(tuneTargetLines)
         (tuneStem + ".indices").writelines([corpus.stem+"\n"] + 
                                            [str(i)+"\n" for i in sorted(list(tuningIndices))])
         tuneCorpus = AlignedCorpus(tuneStem, corpus.sourceLang, corpus.targetLang)
+
+        devStem = self.workPath + "/" + (corpus.stem + ".dev").basename()
+        (devStem + "." + corpus.sourceLang).writelines(devSourceLines) 
+        (devStem + "." + corpus.targetLang).writelines(devTargetLines)
+        (devStem + ".indices").writelines([corpus.stem+"\n"] + 
+                                           [str(i)+"\n" for i in sorted(list(developIndices))])
+        devCorpus = AlignedCorpus(devStem, corpus.sourceLang, corpus.targetLang)
 
         testStem = self.workPath + "/" + (corpus.stem + ".test").basename()
         (testStem + "." + corpus.sourceLang).writelines(testSourceLines) 
@@ -408,10 +426,10 @@ class CorpusProcessor():
                                            [str(i)+"\n" for i in sorted(list(testingIndices))])
         testCorpus = AlignedCorpus(testStem, corpus.sourceLang, corpus.targetLang)
   
-        return trainCorpus, tuneCorpus, testCorpus
+        return trainCorpus, tuneCorpus, devCorpus, testCorpus
         
         
-    def extractDuplicates(self, corpus, window=4, nbSplits=32):
+    def extractDuplicates(self, corpus, window=4, nbSplits=20):
         
         if not isinstance(corpus, BasicCorpus):
             raise RuntimeError("corpus must be of type BasicCorpus")
@@ -423,10 +441,11 @@ class CorpusProcessor():
         indices.sort(key=lambda x : sourceLines[x])
         
         step = len(indices)/nbSplits    
-        args = [(corpus.getCorpusFile(),"ind"+str(i), window) for i in range(0, nbSplits)]
+        indicesFiles = [Path(self.workPath + "/ind"+str(i)) for i in range(0, nbSplits)]
         for i in range(0, nbSplits):
-            Path("ind"+str(i)).writelines([" ".join([str(j) for j in indices[i*step:i*step + step]])])
+            indicesFiles[i].write(" ".join([str(j) for j in indices[i*step:i*step + step]]))
         
+        args = [(corpus.getCorpusFile(),indicesFile, window) for indicesFile in indicesFiles]
         outputs = self.executor.run_parallel_function(_printDuplicates, args,
                                                       stdouts=[True]*nbSplits)
         duplicates = set()
@@ -435,8 +454,6 @@ class CorpusProcessor():
         print ("Duplicates found: " + str(len(duplicates)) 
                + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
 
-        for i in range(0, nbSplits):
-            Path("ind"+str(i)).remove()
         return duplicates
  
 
@@ -571,7 +588,8 @@ class TrueCaser():
 
 def  _printDuplicates(sourceFile, indicesFile, window):
     sys.stderr.write("Starting local extraction of source duplicates...\n") 
-    indices = [int(val) for val in Path(indicesFile).read().split()] 
+    indicesFile = Path(indicesFile)
+    indices = [int(val) for val in indicesFile.read().split()] 
     sourceLines = Path(sourceFile).readlines()
     duplicates = set() 
     for i in range(0, len(indices)):
@@ -590,6 +608,7 @@ def  _printDuplicates(sourceFile, indicesFile, window):
             sys.stderr.write("Extraction of duplicates: " + 
                              str(math.ceil(i*10000/len(indices)) / 100) + " %\n")
     
+   # indicesFile.remove()
     print " ".join([str(d) for d in duplicates])
 
        
