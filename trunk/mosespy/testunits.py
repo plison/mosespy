@@ -339,6 +339,10 @@ class Pipeline(unittest.TestCase):
         output = system.run_output("./moses_parallel.py -jobs 2 -f " + exp.settings["tm"]+"/model/moses.ini ",
                                     stdin=(self.tmpdir + "/transtest.fr"))
         self.assertEqual(output, "qui are you ? \ntant mind .")
+        
+        
+        
+        # binarise model!
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
