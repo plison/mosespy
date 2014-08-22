@@ -122,7 +122,7 @@ class Experiment(object):
         
         lmFile = self.settings["path"] + "/langmodel.lm." + trainFile.getLang()
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
-                    " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
+                    " -p improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.settings["name"])) 
         self.executor.run(lmScript)
                            
