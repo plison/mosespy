@@ -34,6 +34,7 @@ class BasicCorpus(object):
             indLines = indicesFile.readlines()
             self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.corpusFile.getLang())
             self.originIndices = [int(i.strip()) for i in indLines[1:]]
+            print "Found connection to original corpus"
       
        
     def getCorpusFile(self):
@@ -190,7 +191,7 @@ class CorpusProcessor():
         normFile = self.workPath + "/" + rawFile.basename().addProperty("norm")
         self.tokeniser.normaliseFile(rawFile, normFile)
         tokFile = normFile.changeProperty("tok")
-        self.tokeniser.tokeniseFile(rawFile, tokFile)
+        self.tokeniser.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
         if not self.truecaser.isModelTrained(rawFile.getLang()):
