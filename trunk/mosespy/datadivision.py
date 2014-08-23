@@ -181,7 +181,6 @@ def filterOutLines(fullCorpus, toRemoveCorpus):
             toSkip = False
             if l in occurrences:
                 for index in occurrences[l]:
-                    print "indexes are : " + str(index)
                     if histories[index] == [iline.strip("\n") for iline in inputLines[i-2:i]]:
                         skippedLines.append(l)
                         toSkip = True
