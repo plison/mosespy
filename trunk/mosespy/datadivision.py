@@ -6,15 +6,16 @@ from mosespy.system import Path
 
 
 
-def divideData(corpus, outputPath, nbTuning=1000, nbDevelop=3000, 
+def divideData(corpus, nbTuning=1000, nbDevelop=3000, 
                nbTesting=3000, randomPick=True, duplicatesWindow=4):
     
-    outputPath = Path(outputPath)
     if not isinstance(corpus, AlignedCorpus):
         raise RuntimeError("corpus must be of type AlignedCorpus")
     
     if nbTuning + nbDevelop + nbTesting > corpus.getSourceFile().countNbLines():
         raise RuntimeError("cannot divide such small amount of data")
+    
+    outputPath = corpus.getSourceFile().getUp()
     
     if randomPick:
         nbLines = corpus.getSourceFile().countNbLines()
@@ -165,14 +166,16 @@ def _drawRandom(nbToDraw, maxValue, exclusion=None):
     return numbers   
 
  
-def filterOutLines(fullCorpus, toRemoveCorpus, outputPath):
+def filterOutLines(fullCorpus, toRemoveCorpus):
 
     inputLines = fullCorpus.getCorpusFile().readlines()
     
     occurrences = toRemoveCorpus.getOccurrences()
-    histories = toRemoveCorpus.getHistories()     
+    histories = toRemoveCorpus.getHistories() 
+    print occurrences
+    print histories    
 
-    outputFile = outputPath + "/" + fullCorpus.getCorpusFile().basename().addProperty("filtered") 
+    outputFile = fullCorpus.getCorpusFile().addProperty("filtered") 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
         skippedLines = []
         for i in range(2, len(inputLines)):
