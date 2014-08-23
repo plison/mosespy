@@ -302,18 +302,6 @@ class Path(str):
         return self
     
 
-def convertToPaths(element):
-    if isinstance(element, basestring):
-        element = Path(element)
-    elif isinstance(element, dict):
-        for k in element.keys():
-            element[k] = convertToPaths(element[k])
-    elif isinstance(element, list):
-        for i in range(0, len(element)):
-            element[i] = convertToPaths(element[i])
-    return element
-
-
  
 def run(script, stdin=None, stdout=None):
     return CommandExecutor(True).run(script, stdin, stdout)

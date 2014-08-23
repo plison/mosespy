@@ -29,16 +29,20 @@ class SlurmExperiment(Experiment):
         
         self.executor = SlurmExecutor(account)
         self.nbThreads = nodeCpus
-        self.processor = CorpusProcessor(self.settings["path"], self.executor, nodeCpus)
+        self.processor = CorpusProcessor(self.expPath, self.executor, nodeCpus)
         
     
     def copy(self, nexExpName):
-        newexp = SlurmExperiment(nexExpName, self.settings["source"], 
-                                 self.settings["target"], self.executor.account, self.maxJobs)
-        settingscopy = copy.deepcopy(self.settings)
-        for k in settingscopy.keys():
-            if k != "name" and k!= "path":
-                newexp.settings[k] = settingscopy[k]
+        newexp = SlurmExperiment(nexExpName, self.sourceLang, 
+                                 self.targetLang, self.executor.account, self.maxJobs)
+        newexp.lm = self.lm
+        newexp.tm = self.tm
+        newexp.nbThreads = self.nbThreads
+        newexp.ngram_order = self.ngram_order
+        newexp.iniFile = self.iniFile
+        newexp.sourceLang = self.sourceLang
+        newexp.targetLang = self.targetLang
+        newexp.test = self.test
         newexp.processor = self.processor
         newexp.maxJobs = self.maxJobs
         return newexp
@@ -52,20 +56,20 @@ class SlurmExperiment(Experiment):
             return Experiment.trainTranslationModel(self, trainStem, alignment, reordering, 
                                                     preprocess, pruning)
              
-        train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
+        train = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
         if preprocess:         
             train = self.processor.processCorpus(train)
         
-        print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " +  train.getStem()
+        print ("Building translation model " + self.sourceLang + "-" 
+               + self.targetLang + " with " +  train.getStem()
                + " with " + str(self.maxJobs) + " splits")
     
-        splitDir = self.settings["path"] + "/splits"
+        splitDir = self.expPath + "/splits"
         splitDir.reset()
         
         splitStems = CorpusProcessor(splitDir, self.executor, nodeCpus).splitData(train, self.maxJobs/2)
         print "Split data: " + str(splitStems)
-        tmDir = self.settings["path"] + "/translationmodel"
+        tmDir = self.expPath + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
            
         slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
@@ -104,7 +108,8 @@ class SlurmExperiment(Experiment):
         
         if result:
             print "Finished building translation model in: " + tmDir.getDescription()
-            self.settings["tm"]=tmDir
+            self.tm=tmDir + "/model"
+            self.iniFile = self.tm + "/moses.ini"
             if pruning:
                 self.prunePhraseTable()
             self._recordState()
@@ -114,17 +119,17 @@ class SlurmExperiment(Experiment):
       
     def tuneTranslationModel(self, tuningStem, preprocess=True):
         Experiment.tuneTranslationModel(self, tuningStem, preprocess)
-        config = MosesConfig(self.settings["ttm"]+"/moses.ini")
+        config = MosesConfig(self.iniFile)
         config.removePart("jobs")
 
 
     def _getTuningScript(self, tuneDir, tuningStem):
-        nbDecodingJobs = self._getNbDecodingJobs(tuningStem + "." + self.settings["source"])
+        nbDecodingJobs = self._getNbDecodingJobs(tuningStem + "." + self.sourceLang)
         tuneScript = (experiment.moses_root + "/scripts/training/mert-moses.pl" + " " 
-                      + tuningStem + "." + self.settings["source"] + " " 
-                      + tuningStem + "." + self.settings["target"] + " "
+                      + tuningStem + "." + self.sourceLang + " " 
+                      + tuningStem + "." + self.targetLang + " "
                       + experiment.rootDir + "/mosespy/moses_parallel.py "
-                      + self.settings["tm"] + "/model/moses.ini " 
+                      + self.iniFile
                       + " --mertdir " + experiment.moses_root + "/bin/"
                       + " --decoder-flags=\'-jobs %i -threads %i -v 0' "
                       + " --working-dir " + tuneDir

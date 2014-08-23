@@ -143,7 +143,7 @@ class Pipeline(unittest.TestCase):
         result2 = exp.queryLanguageModel("unrelated phrase I find here")
         self.assertAlmostEqual(result2["logprob"], -8.35604, 3)
         self.assertEqual(result2["OOVs"], 3)
-        self.assertTrue(exp.settings.has_key("lm"))
+        self.assertTrue(exp.lm)
         
     
     def test_translationmodel(self):
@@ -151,17 +151,17 @@ class Pipeline(unittest.TestCase):
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(inFile.getStem(), pruning=False)
-        self.assertTrue(exp.settings.has_key("tm"))
-        exp.executor.run("gunzip " + exp.settings["tm"]+"/model/phrase-table.gz")
-        lines = Path(exp.settings["tm"]+"/model/phrase-table").readlines()
+        self.assertTrue(exp.tm)
+        exp.executor.run("gunzip " + exp.tm+"/phrase-table.gz")
+        lines = Path(exp.tm + "/phrase-table").readlines()
         self.assertIn("veux te donner ||| want to give ||| 1 0.0451128 1 1 "
                       + "||| 0-0 1-1 2-2 ||| 1 1 1 ||| |||\n", lines)
-        exp.executor.run("gzip " + exp.settings["tm"]+"/model/phrase-table")
-        config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")
-        self.assertEqual(config.getPhraseTable(), exp.settings["tm"]+"/model/phrase-table.gz")
+        exp.executor.run("gzip " + exp.tm + "/phrase-table")
+        config = MosesConfig(exp.tm + "/moses.ini")
+        self.assertEqual(config.getPhraseTable(), exp.tm + "/phrase-table.gz")
         initSize = config.getPhraseTable().getSize()
         exp.prunePhraseTable()
-        self.assertEqual(config.getPhraseTable(), exp.settings["tm"]+"/model/phrase-table.reduced.gz")        
+        self.assertEqual(config.getPhraseTable(), exp.tm + "/phrase-table.reduced.gz")        
         newSize = config.getPhraseTable().getSize()
         self.assertLess(newSize, initSize)
         
@@ -178,19 +178,19 @@ class Pipeline(unittest.TestCase):
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem(), pruning=False)
         exp.tuneTranslationModel(tune.getStem() + "2")
-        self.assertTrue(exp.settings.has_key("ttm"))
-        self.assertTrue(Path(exp.settings["ttm"]+"/run3.out").exists())
-        self.assertTrue(Path(exp.settings["ttm"]+"/moses.ini").exists())
+        self.assertIn("tunedmodel", exp.iniFile)
+        self.assertTrue(Path(exp.iniFile.getUp()+"/run3.out").exists())
+        self.assertTrue(Path(exp.iniFile).exists())
         
         exp.reduceSize()
-        self.assertSetEqual(set(os.listdir(exp.settings["path"])), 
+        self.assertSetEqual(set(os.listdir(exp.expPath)), 
                             set(['langmodel.blm.en', 'settings.json', 'translationmodel', 
                                   'truecasingmodel.en', 'truecasingmodel.fr', 'tunedmodel']))
-        self.assertSetEqual(set(os.listdir(exp.settings["tm"])), set(["model"]))
-        self.assertSetEqual(set(os.listdir(exp.settings["tm"]+"/model")), 
+        self.assertSetEqual(set(os.listdir(exp.tm.getUp())), set(["model"]))
+        self.assertSetEqual(set(os.listdir(exp.tm + "")), 
                             set(["phrase-table.gz", "moses.ini", 
                                  "reordering-table.wbe-msd-bidirectional-fe.gz"]))
-        self.assertSetEqual(set(os.listdir(exp.settings["ttm"])), set(["moses.ini"]))
+        self.assertSetEqual(set(os.listdir(exp.iniFile.getUp())), set(["moses.ini"]))
 
     def test_paths(self):
         p = Path(self.tmpdir + "/blabla.en")
@@ -223,11 +223,11 @@ class Pipeline(unittest.TestCase):
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
         bleu = exp.evaluateBLEU(test.getStem()+"2")
-        self.assertTrue(exp.settings.has_key("test"))
-        self.assertTrue(exp.settings["test"]["translation"])
-        self.assertEqual(Path(exp.settings["test"]["stem"]+".fr").readlines()[2], "comment vas-tu ?\n")
-        self.assertEqual(Path(exp.settings["test"]["stem"]+".en").readlines()[2], "how you been ?\n")
-        self.assertEqual(Path(exp.settings["test"]["translation"]).readlines()[2], "how vas-tu ? \n")
+        self.assertTrue(exp.test)
+        self.assertTrue(exp.test["translation"])
+        self.assertEqual(Path(exp.test["stem"]+".fr").readlines()[2], "comment vas-tu ?\n")
+        self.assertEqual(Path(exp.test["stem"]+".en").readlines()[2], "how you been ?\n")
+        self.assertEqual(Path(exp.test["translation"]).readlines()[2], "how vas-tu ? \n")
         self.assertAlmostEquals(bleu, 61.39, 2)  
         
     
@@ -243,13 +243,13 @@ class Pipeline(unittest.TestCase):
         exp = SlurmExperiment("paralleltest", "fr", "en", maxJobs=2)
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
-        self.assertTrue(exp.settings.has_key("tm"))
+        self.assertTrue(exp.tm)
         bleu = exp.evaluateBLEU(test.getStem()+"2")
-        self.assertTrue(exp.settings.has_key("test"))
-        self.assertTrue(exp.settings["test"]["translation"])
-        self.assertEqual(Path(exp.settings["test"]["stem"]+".fr").readlines()[2], "comment vas-tu ?\n")
-        self.assertEqual(Path(exp.settings["test"]["stem"]+".en").readlines()[2], "how you been ?\n")
-        self.assertEqual(Path(exp.settings["test"]["translation"]).readlines()[2], "how vas-tu ? \n")
+        self.assertTrue(exp.test)
+        self.assertTrue(exp.test["translation"])
+        self.assertEqual(Path(exp.test["stem"]+".fr").readlines()[2], "comment vas-tu ?\n")
+        self.assertEqual(Path(exp.test["stem"]+".en").readlines()[2], "how you been ?\n")
+        self.assertEqual(Path(exp.test["translation"]).readlines()[2], "how vas-tu ? \n")
         self.assertAlmostEquals(bleu, 61.39, 2)  
     
     
@@ -266,8 +266,8 @@ class Pipeline(unittest.TestCase):
         exp.trainTranslationModel(train.getStem())
         exp = exp.copy("newexp")
         bleu = exp.evaluateBLEU(test.getStem()+"2")
-        self.assertTrue(exp.settings.has_key("test"))
-        self.assertTrue(exp.settings["test"]["translation"])
+        self.assertTrue(exp.test)
+        self.assertTrue(exp.test["translation"])
         self.assertAlmostEquals(bleu, 61.39, 2)    
         
  
@@ -278,12 +278,21 @@ class Pipeline(unittest.TestCase):
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
-        config = MosesConfig(exp.settings["tm"]+"/model/moses.ini")  
-        Path(exp.settings["tm"]+"/model/moses.ini").printlines()
+        config = MosesConfig(exp.iniFile)  
         self.assertSetEqual(config.getPaths(), 
-                            set([exp.settings["lm"]["blm"],
-                                 exp.settings["tm"]+"/model/phrase-table.reduced.gz",
-                                 exp.settings["tm"]+"/model/reordering-table.wbe-msd-bidirectional-fe.gz"]))      
+                            set([exp.lm,
+                                 exp.tm+"/phrase-table.reduced.gz",
+                                 exp.tm+"/reordering-table.wbe-msd-bidirectional-fe.gz"]))  
+        
+        exp2 = Experiment("test")
+        self.assertEqual(exp2.sourceLang, "fr")   
+        self.assertEqual(exp2.targetLang, "en")   
+        self.assertEqual(exp2.lm, exp.lm)  
+        self.assertEqual(exp2.ngram_order, exp.ngram_order)  
+        self.assertEqual(exp2.tm, exp.tm)
+        self.assertEqual(exp2.tm, exp.expPath+"/translationmodel/model") 
+        self.assertEqual(exp2.iniFile, exp.expPath+"/translationmodel/model/moses.ini") 
+        self.assertEqual(exp.test, None)
  
  
  
@@ -320,20 +329,21 @@ class Pipeline(unittest.TestCase):
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
-        output = system.run_output("./moses_parallel.py -f " + exp.settings["tm"]+"/model/moses.ini ",
+        output = system.run_output("./moses_parallel.py -f " + exp.iniFile,
                                     stdin="qui êtes-vous ?\n")
         self.assertEqual(output, "qui are you ?") 
         Path(self.tmpdir + "/transtest.fr").writelines(["qui êtes-vous ?\n", "tant pis .\n"])
-        output = system.run_output("./moses_parallel.py -f " + exp.settings["tm"]+"/model/moses.ini ",
+        output = system.run_output("./moses_parallel.py -f " + exp.iniFile,
                                     stdin=(self.tmpdir + "/transtest.fr"))
         self.assertEqual(output, "qui are you ? \ntant mind .")
-        output = system.run_output("./moses_parallel.py -jobs 2 -f " + exp.settings["tm"]+"/model/moses.ini ",
+        output = system.run_output("./moses_parallel.py -jobs 2 -f " + exp.iniFile,
                                     stdin=(self.tmpdir + "/transtest.fr"))
         self.assertEqual(output, "qui are you ? \ntant mind .")
         
         
         
         # binarise model!
+        # Json!
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
