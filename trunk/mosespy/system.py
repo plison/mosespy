@@ -205,6 +205,8 @@ class Path(str):
     def copy(self, newLoc):
         if self.exists():
             shutil.copy(self, newLoc)
+            return Path(newLoc + "/" + self.basename())
+            
             
     def printlines(self):
         if os.path.isfile(self):
