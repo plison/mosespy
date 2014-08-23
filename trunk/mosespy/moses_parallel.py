@@ -10,6 +10,7 @@ __version__ = "$Date::                      $"
 import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import mosespy.slurm as slurm
+import mosespy.system as system
 from mosespy.system import Path
 from mosespy.corpus import BasicCorpus, CorpusProcessor
 
@@ -119,15 +120,15 @@ def splitDecoding(sourceInput, mosesArgs, nbJobs):
         
 def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
          
-    executor = slurm.SlurmExecutor()        
     if not sourceInput:
         print "Running decoder: " + decoder + mosesArgs
-        executor.run(decoder + mosesArgs, stdout=outStream)
+        system.run(decoder + mosesArgs, stdout=outStream)
         
     elif nbJobs == 1 or not isinstance(sourceInput, Path):
         print "Running decoder: " + decoder + mosesArgs + " < " + sourceInput
-        executor.run(decoder + mosesArgs, stdin=sourceInput, stdout=outStream)
+        system.run(decoder + mosesArgs, stdin=sourceInput, stdout=outStream)
     else:
+        executor = slurm.SlurmExecutor()        
         splits = splitDecoding(sourceInput, mosesArgs, nbJobs)
         jobArgs = [split["args"] for split in splits]
         stdins = [split["in"] for split in splits]
