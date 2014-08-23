@@ -171,6 +171,7 @@ def filterOutLines(fullCorpus, toRemoveCorpus):
     inputLines = fullCorpus.getCorpusFile().readlines()
     
     occurrences = toRemoveCorpus.getOccurrences()
+    print occurrences
     histories = toRemoveCorpus.getHistories()  
 
     outputFile = fullCorpus.getCorpusFile().addProperty("filtered") 
