@@ -30,7 +30,7 @@ import json, copy,  re
 import mosespy.system as system
 import mosespy.analyser as analyser
 from mosespy.system import Path
-from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus, CorpusProcessor
+from mosespy.corpus import AlignedCorpus, TranslatedCorpus, CorpusProcessor
 
 rootDir = Path(__file__).getUp().getUp()
 expDir = rootDir + "/experiments/"
@@ -59,34 +59,32 @@ class Experiment(object):
     """
     
     def __init__(self, expName, sourceLang=None, targetLang=None, nbThreads=2):
+                
+        self.expPath = Path(expDir+expName).getAbsolute()
+        self.lm = None
+        self.ngram_order = None
+        self.tm = None
+        self.iniFile = None
+        self.test = None
         
-        self.settings = {}
-        self.settings["name"] = expName
-        
-        self.settings["path"] = Path(expDir+self.settings["name"]).getAbsolute()
-        
-        jsonFile = self.settings["path"]+"/settings.json"
+        jsonFile = self.expPath+"/settings.json"
         if jsonFile.exists():
-            print "Existing experiment, reloading known settings..."
-            self.settings = json.loads(open(jsonFile).read())
-            self.settings = system.convertToPaths(self.settings)
+            self._reloadState()
         else:
-            self.settings["path"].make()
+            self.expPath.make()
             if sourceLang:
-                self.settings["source"] = sourceLang
-                self.settings["source_long"] = system.getLanguage(sourceLang)
+                self.sourceLang = sourceLang
             if targetLang:
-                self.settings["target"] = targetLang
-                self.settings["target_long"] = system.getLanguage(targetLang)
+                self.targetLang = targetLang
                 
         self._recordState()
-        print ("Experiment " + expName + " (" + self.settings["source"]  
-               + "-" + self.settings["target"] + ") successfully started")
+        print ("Experiment " + expName + " (" + self.sourceLang  
+               + "-" + self.targetLang + ") successfully started")
         
         self.executor = system.CommandExecutor()
         self.nbThreads = nbThreads
-        self.processor = CorpusProcessor(self.settings["path"], self.executor, self.nbThreads)
-              
+        self.processor = CorpusProcessor(self.expPath, self.executor, self.nbThreads)
+           
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
   
@@ -100,21 +98,21 @@ class Experiment(object):
 
         print "Building language model based on " + trainFile
         
-        sbFile = self.settings["path"] + "/" + trainFile.basename().changeProperty("sb")
+        sbFile = self.expPath + "/" + trainFile.basename().changeProperty("sb")
                 
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
-        lmFile = self.settings["path"] + "/langmodel.lm." + trainFile.getLang()
+        lmFile = self.expPath + "/langmodel.lm." + trainFile.getLang()
         lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
-                    )%(sbFile, lmFile, ngram_order, self.settings["name"])) 
+                    )%(sbFile, lmFile, ngram_order, self.expPath.basename())) 
         self.executor.run(lmScript)
                            
-        arpaFile = self.settings["path"] + "/langmodel.arpa." + trainFile.getLang()
+        arpaFile = self.expPath + "/langmodel.arpa." + trainFile.getLang()
         arpaScript = (irstlm_root + "/bin/compile-lm" + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
 
-        blmFile = self.settings["path"] + "/langmodel.blm." + trainFile.getLang()
+        blmFile = self.expPath + "/langmodel.blm." + trainFile.getLang()
         blmScript = moses_root + "/bin/build_binary -w after -i " + " " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
@@ -126,7 +124,8 @@ class Experiment(object):
         if blmFile.getSize() == 0:
             raise RuntimeError("Error: generated language model is empty")
 
-        self.settings["lm"] = {"ngram_order":ngram_order, "blm": blmFile}
+        self.lm = blmFile
+        self.ngram_order = ngram_order
         self._recordState()
     
      
@@ -134,21 +133,22 @@ class Experiment(object):
                               reordering=defaultReordering, preprocess=True, 
                               pruning=True):
         
-        train = AlignedCorpus(trainStem, self.settings["source"], self.settings["target"])
+        train = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
         
         if preprocess:         
             train = self.processor.processCorpus(train)
        
-        print ("Building translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + train.getStem())
+        print ("Building translation model " + self.sourceLang + "-" 
+               + self.targetLang + " with " + train.getStem())
 
-        tmDir = self.settings["path"] + "/translationmodel"
+        tmDir = self.expPath + "/translationmodel"
         tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
         tmDir.reset()
         result = self.executor.run(tmScript)
         if result:
             print "Finished building translation model in directory " + tmDir.getDescription()
-            self.settings["tm"]=tmDir
+            self.tm= tmDir + "/model"
+            self.iniFile = self.tm +"/moses.ini"
             if pruning:
                 self.prunePhraseTable()
             self._recordState()
@@ -158,36 +158,36 @@ class Experiment(object):
 
     def tuneTranslationModel(self, tuningStem, preprocess=True):
         
-        tuning = AlignedCorpus(tuningStem, self.settings["source"], self.settings["target"])
+        tuning = AlignedCorpus(tuningStem, self.sourceLang, self.targetLang)
         
         if preprocess:         
             tuning = self.processor.processCorpus(tuning, False)
         
-        print ("Tuning translation model " + self.settings["source"] + "-" 
-               + self.settings["target"] + " with " + tuning.getStem())
+        print ("Tuning translation model " + self.sourceLang + "-" 
+               + self.targetLang + " with " + tuning.getStem())
         
-        tuneDir = self.settings["path"]+"/tunedmodel"
+        tuneDir = self.expPath+"/tunedmodel"
         tuningScript = self._getTuningScript(tuneDir, tuning.getStem())
         tuneDir.reset()
         result = self.executor.run(tuningScript)
         if result:
             print "Finished tuning translation model in directory " + tuneDir.getDescription()
-            self.settings["ttm"]=tuneDir
+            self.iniFile = tuneDir + "/moses.ini"
             self._recordState()
         else:
             print "Tuning of translation model FAILED"
           
 
 
-
+    # BROKEN!!
     def binariseModel(self):
-        print "Binarise translation model " + self.settings["source"] + " -> " + self.settings["target"]
-        if not self.settings.has_key("ttm"):
+        print "Binarise translation model " + self.sourceLang + " -> " + self.targetLang
+        if not self.iniFile:
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
-        binaDir = self.settings["path"]+"/binmodel"
-        phraseTable = self.settings["tm"]+"/model/phrase-table.gz"
-        reorderingTable = self.settings["tm"]+"/model/reordering-table.wbe-" + self.settings["reordering"] + ".gz"
+        binaDir = self.expPath+"/binmodel"
+        phraseTable = self.tm+"/model/phrase-table.gz"
+        reorderingTable = self.tm+"/model/reordering-table.wbe-" + " --- " + ".gz"
         
         binaDir.reset()
         binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
@@ -202,32 +202,26 @@ class Experiment(object):
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
          
-        config = MosesConfig(self.settings["ttm"]+"/moses.ini")
+        config = MosesConfig(self.iniFile)
         config.replacePhraseTable(binaDir+"/phrase-table", "PhraseDictionaryBinary")
         config.replaceReorderingTable(binaDir+"/reordering-table")
         
-        self.settings["btm"] = binaDir
+        self.tm = binaDir
         self._recordState()
         print "Finished binarising the translation model in directory " + binaDir.getDescription()
 
       
    
     def translate(self, text, preprocess=True):
-        if self.settings.has_key("btm"):
-            initFile = self.settings["btm"] + "/moses.ini"
-        elif self.settings.has_key("ttm"):
-            initFile = self.settings["ttm"] + "/moses.ini"
-        elif self.settings.has_key("tm"):
-            initFile = self.settings["tm"] + "/model/moses.ini"
-        else:
+        if not self.iniFile:
             raise RuntimeError("Translation model is not yet trained and tuned!")
         print ("Translating text: \"" + text + "\" from " + 
-               self.settings["source"] + " to " + self.settings["target"])
+               self.sourceLang + " to " + self.targetLang)
 
         if preprocess:
-            text = self.processor.processText(text, self.settings["source"])
+            text = self.processor.processText(text, self.sourceLang)
             
-        transScript = self._getTranslateScript(initFile)
+        transScript = self._getTranslateScript(self.iniFile)
 
         return self.executor.run_output(transScript, stdin=text)
         
@@ -241,16 +235,13 @@ class Experiment(object):
         if filterModel:
             filterDir = self._getFilteredModel(infile)
             initFile = filterDir + "/moses.ini"
-        elif self.settings.has_key("btm"):
-            initFile = self.settings["btm"] + "/moses.ini"
-        elif self.settings.has_key("ttm"):
-            initFile = self.settings["ttm"] + "/moses.ini"
-        elif self.settings.has_key("tm"):
-            initFile = self.settings["tm"] + "/model/moses.ini"
+        elif self.iniFile:
+            initFile = self.iniFile
         else:
             raise RuntimeError("Translation model is not yet trained!")
+        
         print ("Translating file \"" + infile + "\" from " + 
-               self.settings["source"] + " to " + self.settings["target"])
+               self.sourceLang + " to " + self.targetLang)
 
         transScript = self._getTranslateScript(initFile, infile)
         
@@ -266,35 +257,34 @@ class Experiment(object):
        
     def evaluateBLEU(self, testData, preprocess=True):
  
-        testCorpus = AlignedCorpus(testData, self.settings["source"], self.settings["target"])
+        testCorpus = AlignedCorpus(testData, self.sourceLang, self.targetLang)
         print ("Evaluating BLEU scores with test data: " + testData)
         
         if preprocess:
             testCorpus = self.processor.processCorpus(testCorpus, False)
                     
         transFile = testCorpus.getTargetFile().basename().addProperty("translated")  
-        transPath = self.settings["path"] + "/" + transFile
+        transPath = self.expPath + "/" + transFile
         
         result = self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
         if result:
             transCorpus = TranslatedCorpus(testCorpus, transPath)
             bleu, bleu_output = self.processor.getBleuScore(transCorpus)
             print bleu_output
-            self.settings["test"] = {"stem":transCorpus.getStem(),
-                                     "translation":transPath,
-                                     "bleu":bleu}                            
+            self.test = {"stem":transCorpus.getStem(),
+                         "translation":transPath,
+                         "bleu":bleu}                            
             self._recordState()
             return bleu
  
  
     def analyseErrors(self):
         
-        if not self.settings.has_key("test"):
+        if not self.test:
             raise RuntimeError("you must first perform an evaluation before the analysis")
         
-        lastTest = self.settings["test"]
-        testCorpus = AlignedCorpus(lastTest["stem"], self.settings["source"], self.settings["target"])
-        translatedCorpus = TranslatedCorpus(testCorpus, lastTest["translation"])
+        testCorpus = AlignedCorpus(self.test["stem"], self.sourceLang, self.targetLang)
+        translatedCorpus = TranslatedCorpus(testCorpus, self.test["translation"])
                      
         translatedCorpus = self.processor.revertCorpus(translatedCorpus)
       
@@ -307,10 +297,9 @@ class Experiment(object):
 
 
     def queryLanguageModel(self, text):
-        if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"):
+        if not self.lm:
             raise RuntimeError("Language model is not yet trained")
-        blmFile = self.settings["lm"]["blm"]
-        queryScript = (moses_root + "/bin/query "+ blmFile)
+        queryScript = (moses_root + "/bin/query "+ self.lm)
         output = self.executor.run_output(queryScript, text+"\n")
         regex = (r".*" + re.escape("Total:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+" 
                  + re.escape("Perplexity including OOVs:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+"  
@@ -327,46 +316,50 @@ class Experiment(object):
     
    
     def reduceSize(self):
-        if self.settings.has_key("tm"):
-            (self.settings["tm"]+"/corpus").remove()
-            (self.settings["tm"]+"/giza." + self.settings["source"] + "-" + self.settings["target"]).remove()
-            (self.settings["tm"]+"/giza." + self.settings["target"] + "-" + self.settings["source"]).remove()
-            config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
+        if self.tm:
+            (self.tm.getUp()+"/corpus").remove()
+            (self.tm.getUp()+"/giza." + self.sourceLang + "-" + self.targetLang).remove()
+            (self.tm.getUp()+"/giza." + self.targetLang + "-" + self.sourceLang).remove()
+            config = MosesConfig(self.iniFile)
             paths = config.getPaths()
-            for f in (self.settings["tm"]+"/model").listdir():
-                absolutePath = Path(self.settings["tm"]+"/model/" + f)
+            for f in (self.tm).listdir():
+                absolutePath = Path(self.tm+"/" + f)
                 if absolutePath not in paths and f !="moses.ini":
                     print "Removing " + absolutePath
                     absolutePath.remove()
         
-        if self.settings.has_key("ttm"):
-            for f in self.settings["ttm"].listdir():
-                fi = self.settings["ttm"] + "/" + f
+        if self.iniFile.getUp() != self.tm:
+            for f in self.iniFile.getUp().listdir():
+                fi = self.iniFile.getUp() + "/" + f
                 if f !="moses.ini":
                     fi.remove()
-        for f in self.settings["path"].listdir():
+        for f in self.expPath.listdir():
             if "model" not in f and "settings" not in f:
-                (self.settings["path"]+"/" + f).remove()
+                (self.expPath+"/" + f).remove()
 
-        print "Finished reducing the size of experiment directory " + self.settings["path"]
+        print "Finished reducing the size of experiment directory " + self.expPath
  
     
     def copy(self, nexExpName):
-        newexp = Experiment(nexExpName, self.settings["source"], self.settings["target"])
-        settingscopy = copy.deepcopy(self.settings)
-        for k in settingscopy.keys():
-            if k != "name" and k!= "path":
-                newexp.settings[k] = settingscopy[k]
+        newexp = Experiment(nexExpName, self.sourceLang, self.targetLang)
+        newexp.lm = self.lm
+        newexp.tm = self.tm
+        newexp.nbThreads = self.nbThreads
+        newexp.ngram_order = self.ngram_order
+        newexp.iniFile = self.iniFile
+        newexp.sourceLang = self.sourceLang
+        newexp.targetLang = self.targetLang
+        newexp.test = self.test
         newexp.processor = self.processor
         return newexp
  
    
     def prunePhraseTable(self, probThreshold=0.0001):
         
-        if not self.settings.has_key("tm"):
+        if not self.tm or not self.iniFile:
             raise RuntimeError("Translation model is not yet constructed")
         
-        config = MosesConfig(self.settings["tm"]+"/model/moses.ini")
+        config = MosesConfig(self.iniFile)
         phrasetable = config.getPhraseTable()
         newtable = Path(config.getPhraseTable()[:-2] + "reduced.gz")
 
@@ -381,9 +374,6 @@ class Experiment(object):
         result = self.executor.run(pruneScript)
         if result:        
             config.replacePhraseTable(newtable)                          
-            if self.settings.has_key("ttm") and (self.settings["ttm"] + "/moses.ini").exists():
-                config = MosesConfig(self.settings["ttm"]+"/moses.ini")
-                config.replacePhraseTable(newtable)        
             phrasetable.remove()              
         else:
             print "Pruning of translation table FAILED"
@@ -391,17 +381,15 @@ class Experiment(object):
 
 
     def _getTrainScript(self ,tmDir, trainData, alignment, reordering):
-        if not self.settings.has_key("lm") or not self.settings["lm"].has_key("blm"): 
-            raise RuntimeError("Language model for " + self.settings["target_long"] 
-                               + " is not yet trained")
-
+        if not self.lm: 
+            raise RuntimeError("LM for " + self.targetLang  + " not yet trained")
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  trainData
-                    + " -f " + self.settings["source"] + " -e " + self.settings["target"] 
+                    + " -f " + self.sourceLang + " -e " + self.targetLang 
                     + " -alignment " + alignment + " " 
                     + " -reordering " + reordering + " "
-                    + " -lm 0:" +str(self.settings["lm"]["ngram_order"])
-                    +":"+self.settings["lm"]["blm"]+":8"       # 8 because binarised with KenLM
+                    + " -lm 0:" +str(self.ngram_order)
+                    +":"+self.lm+":8"       # 8 because binarised with KenLM
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel"
                     )%(self.nbThreads, self.nbThreads)
@@ -412,10 +400,10 @@ class Experiment(object):
     def _getTuningScript(self, tuneDir, tuningStem):
 
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
-                      + tuningStem + "." + self.settings["source"] + " " 
-                      + tuningStem + "." + self.settings["target"] + " "
+                      + tuningStem + "." + self.sourceLang + " " 
+                      + tuningStem + "." + self.targetLang + " "
                       + moses_root + "/bin/moses "
-                      + self.settings["tm"] + "/model/moses.ini " 
+                      + self.iniFile
                       + " --mertdir " + moses_root + "/bin/"
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(self.nbThreads)
@@ -433,18 +421,14 @@ class Experiment(object):
     
     def _getFilteredModel(self, testSource):
         
-        if self.settings.has_key("ttm"):
-            initFile = self.settings["ttm"] + "/moses.ini"
-        if self.settings.has_key("tm"):
-            initFile = self.settings["tm"] + "/model/moses.ini"
-        else:
+        if not self.iniFile:
             raise RuntimeError("Translation model is not yet tuned")
 
-        filteredDir = self.settings["path"]+ "/filteredmodel-" +  testSource.basename().getStem()
+        filteredDir = self.expPath+ "/filteredmodel-" +  testSource.basename().getStem()
         filteredDir.remove()
 
         filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
-                        + filteredDir + " " + initFile + " "
+                        + filteredDir + " " + self.iniFile + " "
                         + testSource)
                         #+ " -Binarizer "  + moses_root+"/bin/processPhraseTable")
         self.executor.run(filterScript)
@@ -452,14 +436,43 @@ class Experiment(object):
             
     
     def _recordState(self):
-        dump = json.dumps(self.settings)
-        with open(self.settings["path"]+"/settings.json", 'w') as jsonFile:
+        settings = {"path":self.expPath, "source":self.sourceLang, "target":self.targetLang}
+        if self.lm:
+            settings["lm"] = self.lm
+        if self.ngram_order:
+            settings["ngram_order"] = self.ngram_order
+        if self.tm:
+            settings["tm"] = self.tm
+        if self.iniFile:
+            settings["ini"] = self.iniFile
+        if self.test:
+            settings["test"] = self.test
+        dump = json.dumps(settings)
+        with open(self.expPath+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
+            
+            
+    def _reloadState(self):
+        print "Existing experiment, reloading known settings..."
+        with open(self.expPath+"/settings.json", 'r') as jsonFile:
+            settings = json.loads(jsonFile.read())
+            if settings.has_key("source"):
+                self.sourceLang = settings["source"]
+            if settings.has_key("target"):
+                self.targetLang = settings["target"]
+            if settings.has_key("lm"):
+                self.lm = Path(settings["lm"])
+            if settings.has_key("ngram_order"):
+                self.ngram_order = int(settings["ngram_order"])
+            if settings.has_key("tm"):
+                self.tm = Path(settings["tm"])
+            if settings.has_key("ini"):
+                self.iniFile = Path(settings["ini"])
+            if settings.has_key("test"):
+                self.test = settings["test"]
+            
            
     
-    
-    
-
 class MosesConfig():
     
     def __init__(self, configFile):
