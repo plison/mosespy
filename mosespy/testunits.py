@@ -30,7 +30,7 @@ class Pipeline(unittest.TestCase):
         self.outFile = (Path(__file__).getUp().getUp()+"/data/tests/subtitles.en").copy(self.tmpdir)
         self.duplicatesFile = (Path(__file__).getUp().getUp()+"/data/tests/withduplicates.txt").copy(self.tmpdir)
         
-    def preprocessing(self):
+    def test_preprocessing(self):
         
         processor = CorpusProcessor(self.tmpdir, CommandExecutor())
         trueFile = processor.processFile(self.inFile)
@@ -57,7 +57,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(len(os.listdir(self.tmpdir)), 8)
 
 
-    def division(self):
+    def test_division(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         _, _, _, test = datadivision.divideData(acorpus, 10, 0, 10)
         self.assertTrue(os.path.exists(test.getStem()+".indices"))
@@ -101,7 +101,7 @@ class Pipeline(unittest.TestCase):
             self.assertTrue(any([not q or align["previoustarget"]==targetlines[q-1] for q in oindices]))
         
     
-    def split(self):
+    def test_split(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         splitStems = CorpusProcessor(self.tmpdir).splitData(acorpus, 2)
         self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
@@ -134,7 +134,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(len(Path(self.tmpdir + "/2.en").readlines()), 34)
 
         
-    def langmodel(self):
+    def test_langmodel(self):
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
@@ -146,7 +146,7 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.lm)
         
     
-    def translationmodel(self):
+    def test_translationmodel(self):
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
@@ -166,7 +166,7 @@ class Pipeline(unittest.TestCase):
         self.assertLess(newSize, initSize)
         
     
-    def tuning(self):
+    def test_tuning(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         train, tune, _, _ = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
         tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
@@ -192,7 +192,7 @@ class Pipeline(unittest.TestCase):
                                  "reordering-table.wbe-msd-bidirectional-fe.gz"]))
         self.assertSetEqual(set(os.listdir(exp.iniFile.getUp())), set(["moses.ini"]))
 
-    def paths(self):
+    def test_paths(self):
         p = Path(self.tmpdir + "/blabla.en")
         self.assertFalse(p.exists())
         self.assertEqual(p.getAbsolute().getUp().getUp(), Path(__file__).getUp().getUp())
@@ -211,7 +211,7 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(p.getDescription(), p + " (0K)")
     
     
-    def translate(self):
+    def test_translate(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
@@ -231,7 +231,7 @@ class Pipeline(unittest.TestCase):
         self.assertAlmostEquals(bleu, 61.39, 2)  
         
     
-    def parallel(self):
+    def test_parallel(self):
   
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
@@ -253,7 +253,7 @@ class Pipeline(unittest.TestCase):
         self.assertAlmostEquals(bleu, 61.39, 2)  
     
     
-    def copy(self):
+    def test_copy(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
@@ -271,7 +271,7 @@ class Pipeline(unittest.TestCase):
         self.assertAlmostEquals(bleu, 61.39, 2)    
         
  
-    def config(self):
+    def test_config(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         train, _, _, _ = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
@@ -296,7 +296,7 @@ class Pipeline(unittest.TestCase):
  
  
  
-    def analyse(self):
+    def test_analyse(self):
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
@@ -316,7 +316,7 @@ class Pipeline(unittest.TestCase):
                       + "Current line (actual):\t\tAh, would heat parlons plus.", output)
         
     
-    def duplicates(self):
+    def test_duplicates(self):
         dupls = datadivision.extractDuplicates(BasicCorpus(self.duplicatesFile))
         self.assertEqual(len(dupls), 8)
         self.assertIn(691, dupls)
