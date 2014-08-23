@@ -171,20 +171,18 @@ def filterOutLines(fullCorpus, toRemoveCorpus):
     inputLines = fullCorpus.getCorpusFile().readlines()
     
     occurrences = toRemoveCorpus.getOccurrences()
-    print occurrences
     histories = toRemoveCorpus.getHistories()  
 
     outputFile = fullCorpus.getCorpusFile().addProperty("filtered") 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
         skippedLines = []
         for i in range(2, len(inputLines)):
-            l = inputLines[i]
+            l = inputLines[i].strip()
             toSkip = False
             if l in occurrences:
                 for index in occurrences[l]:
                     print "indexes are : " + str(index)
-                    print "comparing " + str(histories[index]) + " with " + str(inputLines[i-2:i])
-                    if histories[index] == inputLines[i-2:i]:
+                    if histories[index] == [iline.strip("\n") for iline in inputLines[i-2:i]]:
                         skippedLines.append(l)
                         toSkip = True
             if not toSkip:
