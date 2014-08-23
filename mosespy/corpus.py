@@ -34,7 +34,6 @@ class BasicCorpus(object):
             indLines = indicesFile.readlines()
             self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.corpusFile.getLang())
             self.originIndices = [int(i.strip()) for i in indLines[1:]]
-            print "Found connection to original corpus"
       
        
     def getCorpusFile(self):
