@@ -329,14 +329,14 @@ class Pipeline(unittest.TestCase):
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
-        output = system.run_output("./moses_parallel.py -f " + exp.iniFile,
+        output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -f " + exp.iniFile,
                                     stdin="qui êtes-vous ?\n")
         self.assertEqual(output, "qui are you ?") 
         Path(self.tmpdir + "/transtest.fr").writelines(["qui êtes-vous ?\n", "tant pis .\n"])
-        output = system.run_output("./moses_parallel.py -f " + exp.iniFile,
+        output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -f " + exp.iniFile,
                                     stdin=(self.tmpdir + "/transtest.fr"))
         self.assertEqual(output, "qui are you ? \ntant mind .")
-        output = system.run_output("./moses_parallel.py -jobs 2 -f " + exp.iniFile,
+        output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -jobs 2 -f " + exp.iniFile,
                                     stdin=(self.tmpdir + "/transtest.fr"))
         self.assertEqual(output, "qui are you ? \ntant mind .")
         
