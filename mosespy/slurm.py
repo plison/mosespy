@@ -180,8 +180,9 @@ class SlurmExecutor(CommandExecutor):
     def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):
         if len(jobArgs) == 1:
             stdin = stdins[0] if isinstance(stdins,list) else None
-            stdout = stdins[0] if isinstance(stdouts,list) else None
-            return self.run(script%(jobArgs[0]), stdin, stdout) 
+            stdout = stdouts[0] if isinstance(stdouts,list) else None
+            result = self.run(script%(jobArgs[0]), stdin, stdout) 
+            return [result] if stdouts else result
         for k in system.getEnv():
             if "SLURM" in k:
                 system.delEnv(k)

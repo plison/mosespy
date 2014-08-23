@@ -153,7 +153,7 @@ class Pipeline(unittest.TestCase):
         exp.trainTranslationModel(self.inFile.getStem(), pruning=False)
         self.assertTrue(exp.tm)
         exp.executor.run("gunzip " + exp.tm+"/phrase-table.gz")
-        lines = Path(exp.tm + "/phrase-table").readlines()
+        lines = Path(exp.tm + "/phrase-table").read()
         self.assertIn("veux te donner ||| want to give ||| ", lines)
         exp.executor.run("gzip " + exp.tm + "/phrase-table")
         config = MosesConfig(exp.tm + "/moses.ini")
