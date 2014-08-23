@@ -19,7 +19,7 @@ def divideData(corpus, nbTuning=1000, nbDevelop=3000,
     
     if randomPick:
         nbLines = corpus.getSourceFile().countNbLines()
-        toExclude = extractDuplicates(corpus.getSourceCorpus(), outputPath, duplicatesWindow)
+        toExclude = extractDuplicates(corpus.getSourceCorpus(), duplicatesWindow)
         
         tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
         toExclude = toExclude.union(tuningIndices)
@@ -97,7 +97,9 @@ def divideData(corpus, nbTuning=1000, nbDevelop=3000,
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
     
-def extractDuplicates(corpus, outputPath, window=4, nbSplits=20):
+def extractDuplicates(corpus, window=4, nbSplits=2):
+    
+    outputPath = corpus.getCorpusFile().getUp()
     
     if not isinstance(corpus, BasicCorpus):
         raise RuntimeError("corpus must be of type BasicCorpus")
