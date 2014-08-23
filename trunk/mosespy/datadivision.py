@@ -185,7 +185,7 @@ def filterOutLines(fullCorpus, toRemoveCorpus):
                         skippedLines.append(l)
                         toSkip = True
             if not toSkip:
-                newLmFileD.write(l)                                
+                newLmFileD.write(l+"\n")                                
 
     print "Number of skipped lines: " + str(len(skippedLines))
     return outputFile
