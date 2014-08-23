@@ -97,7 +97,7 @@ def divideData(corpus, nbTuning=1000, nbDevelop=3000,
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
     
-def extractDuplicates(corpus, window=4, nbSplits=2):
+def extractDuplicates(corpus, window=4, nbSplits=1):
     
     outputPath = corpus.getCorpusFile().getUp()
     
