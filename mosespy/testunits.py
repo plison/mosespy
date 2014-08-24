@@ -58,8 +58,8 @@ class Pipeline(unittest.TestCase):
 
 
     def test_division(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        _, _, _, test = datadivision.divideData(acorpus, 10, 0, 10)
+        _, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                10, 0, 10)
         self.assertTrue(os.path.exists(test.getStem()+".indices"))
         testlines = (test.getStem()+".en").readlines()
         indlines = (test.getStem()+".indices").readlines()
@@ -87,7 +87,7 @@ class Pipeline(unittest.TestCase):
             self.assertEquals(testLine, targetlines[oindices[0]])
             self.assertTrue(any([histories[i]==targetlines[max(0,q-2):q] for q in oindices]))
         
-        newFile = datadivision.filterOutLines( BasicCorpus(self.outFile), test.getTargetCorpus())
+        newFile = datadivision.filterOutLines(self.outFile, test.getTargetFile())
         newlines = Path(newFile).readlines()
         intersect = set(testlines).intersection(set(newlines))
         self.assertTrue(all([targetlines.count(i) > 1 for i in intersect]))
@@ -166,8 +166,8 @@ class Pipeline(unittest.TestCase):
         
     
     def test_tuning(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, tune, _, _ = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
+        train, tune, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                    10, 0, 10, randomPick=False)
         tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         tuneTargetLines = tune.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(tune.getStem() + "2.fr").writelines(tuneSourceLines)
@@ -211,8 +211,8 @@ class Pipeline(unittest.TestCase):
     
     
     def test_translate(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
+        train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                    10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
@@ -230,10 +230,9 @@ class Pipeline(unittest.TestCase):
         self.assertAlmostEquals(bleu, 61.39, delta=2)  
         
     
-    def test_parallel(self):
-  
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
+    def test_parallel(self):  
+        train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en",
+                                                     10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
@@ -253,8 +252,8 @@ class Pipeline(unittest.TestCase):
     
     
     def test_copy(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
+        train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                    10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
@@ -271,8 +270,8 @@ class Pipeline(unittest.TestCase):
         
  
     def test_config(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, _, _, _ = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
+        train, _, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                 10, 0, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
@@ -296,8 +295,8 @@ class Pipeline(unittest.TestCase):
  
  
     def test_analyse(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, _, _, test = datadivision.divideData(acorpus, 10, 0, 10, randomPick=False)
+        train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                    10, 0, 10, randomPick=False)
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
@@ -316,14 +315,14 @@ class Pipeline(unittest.TestCase):
         
     
     def test_duplicates(self):
-        dupls = datadivision.extractDuplicates(BasicCorpus(self.duplicatesFile))
+        dupls = datadivision.extractDuplicates(self.duplicatesFile)
         self.assertEqual(len(dupls), 8)
         self.assertIn(691, dupls)
         
         
     def test_mosesparallel(self):
-        acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
-        train, _, _, _ = datadivision.divideData(acorpus, 10, 0, 10,randomPick=False)
+        train, _, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
+                                                 10, 0, 10,randomPick=False)
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
