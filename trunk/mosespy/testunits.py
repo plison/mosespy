@@ -178,7 +178,7 @@ class Pipeline(unittest.TestCase):
         exp.trainTranslationModel(train.getStem(), pruning=False)
         exp.tuneTranslationModel(tune.getStem() + "2")
         self.assertIn("tunedmodel", exp.iniFile)
-        self.assertTrue(Path(exp.iniFile.getUp()+"/run3.out").exists())
+        self.assertTrue(Path(exp.iniFile.getUp()+"/run2.out").exists())
         self.assertTrue(Path(exp.iniFile).exists())
         
         exp.reduceSize()

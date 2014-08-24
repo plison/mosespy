@@ -8,9 +8,9 @@ __version__ = "$Date::                      $"
 import re, uuid, copy
 import mosespy.experiment as experiment
 import mosespy.system as system
-from mosespy.experiment import Experiment, MosesConfig 
+from mosespy.experiment import Experiment 
 from mosespy.corpus import AlignedCorpus, CorpusProcessor
-from mosespy.system import CommandExecutor
+from mosespy.system import CommandExecutor, Path
 
 nodeMemory=60000
 nodeCpus = 16
@@ -30,6 +30,7 @@ class SlurmExperiment(Experiment):
         self.executor = SlurmExecutor(account)
         self.nbThreads = nodeCpus
         self.processor = CorpusProcessor(self.expPath, self.executor, nodeCpus)
+        self.decoder = Path(__file__).getUp().getAbsolute() + "/moses_parallel.py"
         
     
     def copy(self, nexExpName):
@@ -37,13 +38,11 @@ class SlurmExperiment(Experiment):
                                  self.targetLang, self.executor.account, self.maxJobs)
         newexp.lm = self.lm
         newexp.tm = self.tm
-        newexp.nbThreads = self.nbThreads
         newexp.ngram_order = self.ngram_order
         newexp.iniFile = self.iniFile
         newexp.sourceLang = self.sourceLang
         newexp.targetLang = self.targetLang
         newexp.test = self.test
-        newexp.processor = self.processor
         newexp.maxJobs = self.maxJobs
         return newexp
     
@@ -62,7 +61,7 @@ class SlurmExperiment(Experiment):
         
         print ("Building translation model " + self.sourceLang + "-" 
                + self.targetLang + " with " +  train.getStem()
-               + " with " + str(self.maxJobs) + " splits")
+               + " with " + str(self.maxJobs/2) + " splits")
     
         splitDir = self.expPath + "/splits"
         splitDir.reset()
@@ -116,41 +115,6 @@ class SlurmExperiment(Experiment):
         else:
             raise RuntimeError("Construction of translation model FAILED (step 4)")
  
-      
-    def tuneTranslationModel(self, tuningStem, preprocess=True):
-        Experiment.tuneTranslationModel(self, tuningStem, preprocess)
-        config = MosesConfig(self.iniFile)
-        config.removePart("jobs")
-
-
-    def _getTuningScript(self, tuneDir, tuningStem):
-        nbDecodingJobs = self._getNbDecodingJobs(tuningStem + "." + self.sourceLang)
-        tuneScript = (experiment.moses_root + "/scripts/training/mert-moses.pl" + " " 
-                      + tuningStem + "." + self.sourceLang + " " 
-                      + tuningStem + "." + self.targetLang + " "
-                      + experiment.rootDir + "/mosespy/moses_parallel.py "
-                      + self.iniFile
-                      + " --mertdir " + experiment.moses_root + "/bin/"
-                      + " --decoder-flags=\'-jobs %i -threads %i -v 0' "
-                      + " --working-dir " + tuneDir
-                      )%(nbDecodingJobs, self.nbThreads)
-        return tuneScript
-
- 
-    def _getNbDecodingJobs(self, sourceFile):
-        nblines = sourceFile.countNbLines()
-        return min(self.maxJobs, max(1,nblines/1000))
-
-
-    def _getTranslateScript(self, initFile, inputFile=None):
-        script = (experiment.rootDir + "/mosespy/moses_parallel.py -f " + initFile.encode('utf-8') 
-                + " -v 0 -threads " + str(self.nbThreads))
-        if inputFile:
-            script += " -input-file "+ inputFile
-            maxJobs = self._getNbDecodingJobs(inputFile)
-            script += " -jobs " + str(maxJobs)
-        return script  
-
 
 
 class SlurmExecutor(CommandExecutor):
