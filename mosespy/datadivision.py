@@ -96,7 +96,7 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDevelop=300
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
     
-def extractDuplicates(corpusFile, window=4, nbSplits=1):
+def extractDuplicates(corpusFile, window=4, nbSplits=2):
     
     corpus = BasicCorpus(corpusFile)
     outputPath = corpusFile.getUp()

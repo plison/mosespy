@@ -69,31 +69,27 @@ class CommandExecutor(object):
     def run_parallel_function(self, function, jobArgs, stdins=None, stdouts=None):
         if not hasattr(function, '__call__'):
             raise RuntimeError("function must be a python function")
-        fillerArgs =  ""
-        for arg in jobArgs[0]:
-            if isinstance(arg, basestring):
-                fillerArgs += "'%s'"
-            elif isinstance(arg, int):
-                fillerArgs += "%i"
-            if not arg == jobArgs[0][len(jobArgs[0])-1]:
-                fillerArgs += ","
-        script = "python -u -c \"import %s ; %s(%s)\""%(function.__module__, function.__module__
-                                                    +"." + function.__name__, fillerArgs)
-        return self.run_parallel(script, jobArgs, stdins, stdouts)
+        scripts = []
+        for arg in jobArgs:
+            argStr = ",".join(["'"+x+"'" if isinstance(x,basestring) else str(x) for x in arg])
+            fullFunction = function.__module__+"."+function.__name__
+            script = ("python -u -c \"import %s ;"%(function.__module__)
+                      + " %s(%s)\""%(fullFunction, argStr))
+            scripts.append(script)
+        return self.run_parallel(scripts, stdins, stdouts)
         
     
-    def run_parallel(self, script, jobArgs, stdins=None, stdouts=None): 
+    def run_parallel(self, scripts, stdins=None, stdouts=None): 
         
         resultQueues = []
-        for i in range(0, len(jobArgs)):
+        for i in range(0, len(scripts)):
             time.sleep(0.1)
-            jobArg = jobArgs[i]
-            filledScript = script%(jobArg)
+            script = scripts[i]
             stdin = stdins[i] if stdins else None
             stdout = stdouts[i] if stdouts else None
             resultQueue = Queue.Queue()
             t = threading.Thread(target=self._run_queue, 
-                                 args=(filledScript, resultQueue, stdin, stdout))
+                                 args=(script, resultQueue, stdin, stdout))
             resultQueues.append(resultQueue)
             t.start()
             
@@ -326,7 +322,7 @@ def existsExecutable(command):
 def setEnv(variable, value, override=True):
     if override or not os.environ.has_key(variable):
         os.environ[variable] = value
-    elif not value in os.environ[variable]:
+    elif not os.environ[variable].startswith(value):
         os.environ[variable] = value + ":" + os.environ[variable]
         
         
