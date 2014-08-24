@@ -6,12 +6,11 @@ from mosespy.system import Path
 
 
 
-def divideData(corpus, nbTuning=1000, nbDevelop=3000, 
+def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDevelop=3000, 
                nbTesting=3000, randomPick=True, duplicatesWindow=4):
     
-    if not isinstance(corpus, AlignedCorpus):
-        raise RuntimeError("corpus must be of type AlignedCorpus")
-    
+    corpus = AlignedCorpus(alignedStem, sourceLang, targetLang)
+   
     if nbTuning + nbDevelop + nbTesting > corpus.getSourceFile().countNbLines():
         raise RuntimeError("cannot divide such small amount of data")
     
@@ -19,7 +18,7 @@ def divideData(corpus, nbTuning=1000, nbDevelop=3000,
     
     if randomPick:
         nbLines = corpus.getSourceFile().countNbLines()
-        toExclude = extractDuplicates(corpus.getSourceCorpus(), duplicatesWindow)
+        toExclude = extractDuplicates(corpus.getSourceFile(), duplicatesWindow)
         
         tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
         toExclude = toExclude.union(tuningIndices)
@@ -97,12 +96,10 @@ def divideData(corpus, nbTuning=1000, nbDevelop=3000,
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
     
-def extractDuplicates(corpus, window=4, nbSplits=1):
+def extractDuplicates(corpusFile, window=4, nbSplits=1):
     
-    outputPath = corpus.getCorpusFile().getUp()
-    
-    if not isinstance(corpus, BasicCorpus):
-        raise RuntimeError("corpus must be of type BasicCorpus")
+    corpus = BasicCorpus(corpusFile)
+    outputPath = corpusFile.getUp()
     
     print "Start search for duplicates (%i splits)"%(nbSplits)
     sourceLines = corpus.getCorpusFile().readlines()
@@ -126,6 +123,34 @@ def extractDuplicates(corpus, window=4, nbSplits=1):
            + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
 
     return duplicates
+
+
+def filterOutLines(fullCorpusFile, toRemoveFile):
+
+    fullCorpus = BasicCorpus(fullCorpusFile)
+    toRemoveCorpus = BasicCorpus(toRemoveFile)
+    
+    inputLines = fullCorpus.getCorpusFile().readlines()
+    
+    occurrences = toRemoveCorpus.getOccurrences()
+    histories = toRemoveCorpus.getHistories()  
+
+    outputFile = fullCorpus.getCorpusFile().addProperty("filtered") 
+    with open(outputFile, 'w', 1000000) as newLmFileD:                 
+        skippedLines = []
+        for i in range(2, len(inputLines)):
+            l = inputLines[i].strip()
+            toSkip = False
+            if l in occurrences:
+                for index in occurrences[l]:
+                    if histories[index] == [iline.strip("\n") for iline in inputLines[i-2:i]]:
+                        skippedLines.append(l)
+                        toSkip = True
+            if not toSkip:
+                newLmFileD.write(l+"\n")                                
+
+    print "Number of skipped lines: " + str(len(skippedLines))
+    return outputFile
 
 
 
@@ -168,27 +193,3 @@ def _drawRandom(nbToDraw, maxValue, exclusion=None):
     return numbers   
 
  
-def filterOutLines(fullCorpus, toRemoveCorpus):
-
-    inputLines = fullCorpus.getCorpusFile().readlines()
-    
-    occurrences = toRemoveCorpus.getOccurrences()
-    histories = toRemoveCorpus.getHistories()  
-
-    outputFile = fullCorpus.getCorpusFile().addProperty("filtered") 
-    with open(outputFile, 'w', 1000000) as newLmFileD:                 
-        skippedLines = []
-        for i in range(2, len(inputLines)):
-            l = inputLines[i].strip()
-            toSkip = False
-            if l in occurrences:
-                for index in occurrences[l]:
-                    if histories[index] == [iline.strip("\n") for iline in inputLines[i-2:i]]:
-                        skippedLines.append(l)
-                        toSkip = True
-            if not toSkip:
-                newLmFileD.write(l+"\n")                                
-
-    print "Number of skipped lines: " + str(len(skippedLines))
-    return outputFile
-
