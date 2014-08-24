@@ -192,7 +192,7 @@ class SlurmExecutor(CommandExecutor):
 
 def correctSlurmEnv():
     # System-dependent settings for the Abel cluster, change it to suit your needs
-    if system.existsExecutable("srun") and "boost" not in system.getEnv()["LD_LIBRARY_PATH"]:
+    if system.existsExecutable("srun"):
         modScript = "module load intel ; echo $LD_LIBRARY_PATH"
         system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
                       + "/cluster/home/plison/libs/boost_1_55_0/lib64:" 
