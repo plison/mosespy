@@ -323,9 +323,9 @@ def existsExecutable(command):
 
  
 def setEnv(variable, value, override=True):
-    if override:
+    if override or not os.environ.has_key(variable):
         os.environ[variable] = value
-    else:
+    elif not value in os.environ[variable]:
         os.environ[variable] = value + ":" + os.environ[variable]
         
         
