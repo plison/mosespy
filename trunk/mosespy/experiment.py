@@ -133,6 +133,9 @@ class Experiment(object):
                               reordering=defaultReordering, preprocess=True, 
                               pruning=True):
         
+        if not self.lm:
+            raise RuntimeError("Language model not yet constructed")
+        
         train = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
         
         if preprocess:         
@@ -157,6 +160,9 @@ class Experiment(object):
   
 
     def tuneTranslationModel(self, tuningStem, preprocess=True):
+        
+        if not self.tm:
+            raise RuntimeError("Translation model not yet constructed")
         
         tuning = AlignedCorpus(tuningStem, self.sourceLang, self.targetLang)
         
