@@ -149,15 +149,16 @@ class Experiment(object):
         tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
         tmDir.reset()
         result = self.executor.run(tmScript)
-        if result:
-            print "Finished building translation model in directory " + tmDir.getDescription()
-            self.tm= tmDir + "/model"
-            self.iniFile = self.tm +"/moses.ini"
-            if pruning:
-                self.prunePhraseTable()
-            self._recordState()
-        else:
+        if (not result or (tmDir + "/model/phrase-table.gz").getSize() < 1000
+            or not (tmDir +"/model/moses.ini").exists()):
             raise RuntimeError("Construction of translation model FAILED")
+            
+        print "Finished building translation model in directory " + tmDir.getDescription()
+        self.tm= tmDir + "/model"
+        self.iniFile = self.tm +"/moses.ini"
+        if pruning:
+            self.prunePhraseTable()
+        self._recordState()
   
 
     def tuneTranslationModel(self, tuningStem, preprocess=True):
@@ -177,13 +178,13 @@ class Experiment(object):
         tuningScript = self._getTuningScript(tuneDir, tuning.getStem())
         tuneDir.reset()
         result = self.executor.run(tuningScript)
-        if result:
-            print "Finished tuning translation model in directory " + tuneDir.getDescription()
-            self.iniFile = tuneDir + "/moses.ini"
-            self._recordState()
-        else:
+        if not result or not (tuneDir + "/moses.ini").exists():
             raise RuntimeError("Tuning of translation model FAILED")
-          
+            
+        print "Finished tuning translation model in directory " + tuneDir.getDescription()
+        self.iniFile = tuneDir + "/moses.ini"
+        self._recordState()
+      
 
 
     # BROKEN!!

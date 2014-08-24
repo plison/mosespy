@@ -241,7 +241,8 @@ class Path(str):
             else:
                 return number
         else:
-            return None       
+            print "cannot find file " + self
+            return -1     
 
 
     def getDescription(self):
