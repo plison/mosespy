@@ -132,8 +132,7 @@ class Experiment(object):
      
     def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True, 
-                              pruning=True):
-        
+                              pruning=True):    
         if not self.lm:
             raise RuntimeError("Language model not yet constructed")
         
@@ -145,11 +144,9 @@ class Experiment(object):
         print ("Building translation model " + self.sourceLang + "-" 
                + self.targetLang + " with " + train.getStem())
 
-        tmDir = self.expPath + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
-        tmDir.reset()
-        result = self.executor.run(tmScript)
-        if (not result or (tmDir + "/model/phrase-table.gz").getSize() < 1000
+        tmDir = self._constructTranslationModel(train, alignment, reordering)
+        
+        if ((tmDir + "/model/phrase-table.gz").getSize() < 1000
             or not (tmDir +"/model/moses.ini").exists()):
             raise RuntimeError("Construction of translation model FAILED")
             
@@ -159,6 +156,17 @@ class Experiment(object):
         if pruning:
             self.prunePhraseTable()
         self._recordState()
+        
+    
+    def _constructTranslationModel(self, trainCorpus, alignment, reordering):
+        tmDir = self.expPath + "/translationmodel"
+        tmDir.reset()
+        tmScript = self._getTrainScript(tmDir, trainCorpus.getStem(), alignment, reordering)
+        result = self.executor.run(tmScript)
+        if not result:
+            raise RuntimeError("construction of translation model FAILED")
+        return tmDir
+
   
 
     def tuneTranslationModel(self, tuningStem, preprocess=True):
@@ -194,8 +202,8 @@ class Experiment(object):
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
         binaDir = self.expPath+"/binmodel"
-        phraseTable = self.tm+"/model/phrase-table.gz"
-        reorderingTable = self.tm+"/model/reordering-table.wbe-" + " --- " + ".gz"
+        phraseTable = self.tm+"/phrase-table.gz"
+        reorderingTable = self.tm+"/reordering-table.wbe-" + " --- " + ".gz"
         
         binaDir.reset()
         binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
@@ -386,7 +394,8 @@ class Experiment(object):
         
 
 
-    def _getTrainScript(self ,tmDir, trainData, alignment, reordering):
+    def _getTrainScript(self ,tmDir, trainData, alignment, reordering, 
+                        firstStep=1, lastStep=7, direction=None):
         if not self.lm: 
             raise RuntimeError("LM for " + self.targetLang  + " not yet trained")
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
@@ -397,8 +406,12 @@ class Experiment(object):
                     + " -lm 0:" +str(self.ngram_order)
                     +":"+self.lm+":8"       # 8 because binarised with KenLM
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
-                    + " -cores %i -mgiza -mgiza-cpus %i -parallel"
-                    )%(self.nbThreads, self.nbThreads)
+                    + " -cores %i -mgiza -mgiza-cpus %i -parallel "
+                    + " -- first-step %i --last-step %i "
+                    + " -sort-buffer-size 20%% -sort-compress gzip -sort-parallel %i" 
+                    )%(self.nbThreads, self.nbThreads, firstStep, lastStep, self.nbThreads)
+        if direction:
+            tmScript += " --direction " + str(direction)
         return tmScript
                        
         

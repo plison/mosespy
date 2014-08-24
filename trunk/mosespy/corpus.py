@@ -271,12 +271,13 @@ class CorpusProcessor():
             raise RuntimeError("BLEU score could not be extracted")
           
     
-    def splitData(self, corpus, nbSplits):
+    def splitData(self, corpus, nbSplits, outputDir=None):
     
+        outputDir = outputDir if outputDir else self.workPath
         if isinstance(corpus, AlignedCorpus):
             
-            sourceFiles = self.splitData(corpus.getSourceCorpus(), nbSplits)
-            targetFiles = self.splitData(corpus.getTargetCorpus(), nbSplits)
+            sourceFiles = self.splitData(corpus.getSourceCorpus(), nbSplits, outputDir)
+            targetFiles = self.splitData(corpus.getTargetCorpus(), nbSplits, outputDir)
             stems = [filename.getStem() for filename in sourceFiles]
             if stems != [filename.getStem() for filename in targetFiles]:
                 raise RuntimeError("stems from split data in source and target are different")
@@ -294,7 +295,7 @@ class CorpusProcessor():
             nbSplits = min(nbSplits, totalLines)
             filenames = []
             curSplit = 0
-            filename = Path(self.workPath + "/" + str(curSplit) + extension)
+            filename = Path(outputDir + "/" + str(curSplit) + extension)
             filenames.append(filename)
             curFile = open(filename, 'w')
             nbLines = 0
@@ -303,7 +304,7 @@ class CorpusProcessor():
                     nbLines = 0
                     curFile.close()
                     curSplit += 1
-                    filename = Path(self.workPath + "/" + str(curSplit) + extension)
+                    filename = Path(outputDir + "/" + str(curSplit) + extension)
                     curFile = open(filename, 'w')
                     filenames.append(filename)
                 curFile.write(l)

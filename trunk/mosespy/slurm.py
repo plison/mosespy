@@ -45,46 +45,31 @@ class SlurmExperiment(Experiment):
         newexp.test = self.test
         newexp.maxJobs = self.maxJobs
         return newexp
+         
     
-    
-    def trainTranslationModel(self, trainStem, alignment=experiment.defaultAlignment, 
-                              reordering=experiment.defaultReordering, preprocess=True, 
-                              pruning=True):
+    def _constructTranslationModel(self, trainCorpus, alignment, reordering):
         
-        if self.maxJobs == 1:
-            return Experiment.trainTranslationModel(self, trainStem, alignment, reordering, 
-                                                    preprocess, pruning)
-             
-        train = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
-        if preprocess:         
-            train = self.processor.processCorpus(train)
-        
-        print ("Building translation model " + self.sourceLang + "-" 
-               + self.targetLang + " with " +  train.getStem()
-               + " with " + str(self.maxJobs/2) + " splits")
-    
         splitDir = self.expPath + "/splits"
         splitDir.reset()
         
-        splitStems = CorpusProcessor(splitDir, self.executor, nodeCpus).splitData(train, self.maxJobs/2)
-        print "Split data: " + str(splitStems)
+        splitStems = self.processor.splitData(trainCorpus, self.maxJobs/2, splitDir)
         tmDir = self.expPath + "/translationmodel"
-        tmScript = self._getTrainScript(tmDir, train.getStem(), alignment, reordering)
            
-        slotScript = tmScript.replace(tmDir, "%s").replace(train.getStem(), "%s") + " %s"
-        jobArgs1 = [(stem, stem, " --last-step 1") for stem in splitStems]
-        r1 = self.executor.run_parallel(slotScript, jobArgs1)
+        scripts1 = [self._getTrainScript(stem, stem, alignment, reordering, 1, 1) 
+                    for stem in splitStems]
+        r1 = self.executor.run_parallel(scripts1)
         if not r1:
             raise RuntimeError("Construction of translation model FAILED (step 1)")
-  
-        jobArgs2 = [(stem, stem, " --first-step 2 --last-step 2 --direction 1") for stem in splitStems]
-        jobArgs3 = [(stem, stem, " --first-step 2 --last-step 2 --direction 2") for stem in splitStems]
-        r2 = self.executor.run_parallel(slotScript, jobArgs2 + jobArgs3)
+
+        scripts2 = [self._getTrainScript(stem, stem, alignment, reordering, 2, 2, direct) 
+                    for stem in splitStems for direct in [1,2]]
+        r2 = self.executor.run_parallel(scripts2)
         if not r2:
             raise RuntimeError("Construction of translation model FAILED (step 2)")
 
-        jobArgs4 = [(stem, stem, " --first-step 3 --last-step 3") for stem in splitStems]
-        r3 = self.executor.run_parallel(slotScript, jobArgs4)
+        scripts3 = [self._getTrainScript(stem, stem, alignment, reordering, 3, 3)
+                    for stem in splitStems]
+        r3 = self.executor.run_parallel(scripts3)
         if not r3:
             raise RuntimeError("Construction of translation model FAILED (step 3)")
                  
@@ -99,21 +84,13 @@ class SlurmExperiment(Experiment):
                         if partline.strip():
                             align.write(partline.strip('\n') + '\n')
         splitDir.remove()
-                            
-        tmScript +=  (" -sort-buffer-size " + str(nodeMemory/4) + "M " 
-        #              + "-sort-batch-size 1024 " 
-                    + " -sort-compress gzip -sort-parallel " + str(nodeCpus))              
-        result = self.executor.run(tmScript + " --first-step 4")
-        
-        if result:
-            print "Finished building translation model in: " + tmDir.getDescription()
-            self.tm=tmDir + "/model"
-            self.iniFile = self.tm + "/moses.ini"
-            if pruning:
-                self.prunePhraseTable()
-            self._recordState()
-        else:
+                    
+        script4 = self._getTrainScript(tmDir, trainCorpus.getStem(), alignment, reordering, 4) 
+        r4 = self.executor.run(script4)
+        if not r4:
             raise RuntimeError("Construction of translation model FAILED (step 4)")
+        return tmDir
+
  
 
 
@@ -141,16 +118,16 @@ class SlurmExecutor(CommandExecutor):
         return CommandExecutor.run(self, script, stdin, stdout)
     
     
-    def run_parallel(self, script, jobArgs, stdins=None, stdouts=None):
-        if len(jobArgs) == 1:
+    def run_parallel(self, scripts, stdins=None, stdouts=None):
+        if len(scripts) == 1:
             stdin = stdins[0] if isinstance(stdins,list) else None
             stdout = stdouts[0] if isinstance(stdouts,list) else None
-            result = self.run(script%(jobArgs[0]), stdin, stdout) 
+            result = self.run(scripts[0], stdin, stdout) 
             return [result] if stdouts else result
         for k in system.getEnv():
             if "SLURM" in k:
                 system.delEnv(k)
-        return CommandExecutor.run_parallel(self, script, jobArgs, stdins, stdouts)
+        return CommandExecutor.run_parallel(self, scripts, stdins, stdouts)
 
 
 
