@@ -407,7 +407,7 @@ class Experiment(object):
                     +":"+self.lm+":8"       # 8 because binarised with KenLM
                     + " -external-bin-dir " + mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel "
-                    + " -- first-step %i --last-step %i "
+                    + " --first-step %i --last-step %i "
                     + " -sort-buffer-size 20%% -sort-compress gzip -sort-parallel %i" 
                     )%(self.nbThreads, self.nbThreads, firstStep, lastStep, self.nbThreads)
         if direction:
