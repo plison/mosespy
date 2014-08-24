@@ -395,7 +395,7 @@ class Experiment(object):
 
 
     def _getTrainScript(self ,tmDir, trainData, alignment, reordering, 
-                        firstStep=1, lastStep=7, direction=None):
+                        firstStep=1, lastStep=9, direction=None):
         if not self.lm: 
             raise RuntimeError("LM for " + self.targetLang  + " not yet trained")
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
