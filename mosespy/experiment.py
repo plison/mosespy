@@ -84,6 +84,7 @@ class Experiment(object):
         self.executor = system.CommandExecutor()
         self.nbThreads = nbThreads
         self.processor = CorpusProcessor(self.expPath, self.executor, self.nbThreads)
+        self.decoder = moses_root + "/bin/moses"
            
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
@@ -156,7 +157,7 @@ class Experiment(object):
                 self.prunePhraseTable()
             self._recordState()
         else:
-            print "Construction of translation model FAILED"
+            raise RuntimeError("Construction of translation model FAILED")
   
 
     def tuneTranslationModel(self, tuningStem, preprocess=True):
@@ -181,7 +182,7 @@ class Experiment(object):
             self.iniFile = tuneDir + "/moses.ini"
             self._recordState()
         else:
-            print "Tuning of translation model FAILED"
+            raise RuntimeError("Tuning of translation model FAILED")
           
 
 
@@ -257,8 +258,7 @@ class Experiment(object):
             filterDir.remove()
        
         if not result:
-            print "Translation of file " + infile + " FAILED"
-        return result
+            raise RuntimeError("Translation of file " + str(infile) + " FAILED")
         
        
     def evaluateBLEU(self, testData, preprocess=True):
@@ -273,15 +273,14 @@ class Experiment(object):
         transPath = self.expPath + "/" + transFile
         
         result = self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
-        if result:
-            transCorpus = TranslatedCorpus(testCorpus, transPath)
-            bleu, bleu_output = self.processor.getBleuScore(transCorpus)
-            print bleu_output
-            self.test = {"stem":transCorpus.getStem(),
-                         "translation":transPath,
-                         "bleu":bleu}                            
-            self._recordState()
-            return bleu
+        transCorpus = TranslatedCorpus(testCorpus, transPath)
+        bleu, bleu_output = self.processor.getBleuScore(transCorpus)
+        print bleu_output
+        self.test = {"stem":transCorpus.getStem(),
+                     "translation":transPath,
+                     "bleu":bleu}                            
+        self._recordState()
+        return bleu
  
  
     def analyseErrors(self):
@@ -408,7 +407,7 @@ class Experiment(object):
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.sourceLang + " " 
                       + tuningStem + "." + self.targetLang + " "
-                      + moses_root + "/bin/moses "
+                      + self.decoder + " "
                       + self.iniFile
                       + " --mertdir " + moses_root + "/bin/"
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
@@ -418,7 +417,7 @@ class Experiment(object):
 
     
     def _getTranslateScript(self, initFile, inputFile=None):
-        script = (moses_root + "/bin/moses -f " + initFile.encode('utf-8') 
+        script = (self.decoder  + " -f " + initFile.encode('utf-8') 
                 + " -v 0 -threads " + str(self.nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
