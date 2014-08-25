@@ -15,28 +15,18 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
-# TODO: run tests on abel machines as well
-# TODO: make a unified treatment of threads (experiment, processor, etc.)
-# TODO: corpus and processing in same module corpus
-# TODO: Replace settings dictionary with objects (and change copy and record accordingly)
-# TODO: make sure all the path objects are named ...Path
-# TODO: get Moses, IRSTLM and MGIZA included as external SVN resources
-# TODO: write routines to automatically compile the code above
-# TODO: document the rest of the modules
-# TODO: more PyUnit tests (analyse errors, corpus, processing, etc.)
-# TODO: refactor code, make it more readable
-
-import json, copy,  re
+import json,  re
 import mosespy.system as system
 import mosespy.analyser as analyser
 from mosespy.system import Path
 from mosespy.corpus import AlignedCorpus, TranslatedCorpus, CorpusProcessor
 
-rootDir = Path(__file__).getUp().getUp()
-expDir = rootDir + "/experiments/"
-moses_root = rootDir + "/moses" 
-mgizapp_root = rootDir + "/mgizapp"
-irstlm_root = rootDir + "/irstlm"
+rootPath = Path(__file__).getUp().getUp()
+expDir = rootPath + "/experiments/"
+moses_root = rootPath + "/moses" 
+mgizapp_root = rootPath + "/mgizapp"
+irstlm_root = rootPath + "/irstlm"
+
 defaultAlignment = "grow-diag-final-and"
 defaultReordering = "msd-bidirectional-fe"
 
@@ -195,15 +185,15 @@ class Experiment(object):
       
 
 
-    # BROKEN!!
     def binariseModel(self):
         print "Binarise translation model " + self.sourceLang + " -> " + self.targetLang
         if not self.iniFile:
             raise RuntimeError("Translation model has not yet been trained and tuned")
         
         binaDir = self.expPath+"/binmodel"
-        phraseTable = self.tm+"/phrase-table.gz"
-        reorderingTable = self.tm+"/reordering-table.wbe-" + " --- " + ".gz"
+        config = MosesConfig(self.iniFile)
+        phraseTable = config.getPhraseTable()
+        reorderingTable = config.getReorderingTable()
         
         binaDir.reset()
         binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
@@ -218,7 +208,6 @@ class Experiment(object):
         if not result2:
             raise RuntimeError("could not binarise translation model (lexical table process)")
          
-        config = MosesConfig(self.iniFile)
         config.replacePhraseTable(binaDir+"/phrase-table", "PhraseDictionaryBinary")
         config.replaceReorderingTable(binaDir+"/reordering-table")
         
@@ -234,6 +223,7 @@ class Experiment(object):
         print ("Translating text: \"" + text + "\" from " + 
                self.sourceLang + " to " + self.targetLang)
 
+        text = text.strip("\n") + "\n"
         if preprocess:
             text = self.processor.processText(text, self.sourceLang)
             
@@ -281,7 +271,7 @@ class Experiment(object):
         transFile = testCorpus.getTargetFile().basename().addProperty("translated")  
         transPath = self.expPath + "/" + transFile
         
-        result = self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
+        self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
         transCorpus = TranslatedCorpus(testCorpus, transPath)
         bleu, bleu_output = self.processor.getBleuScore(transCorpus)
         print bleu_output
@@ -432,7 +422,7 @@ class Experiment(object):
     
     def _getTranslateScript(self, initFile, inputFile=None):
         script = (self.decoder  + " -f " + initFile.encode('utf-8') 
-                + " -v 0 -threads " + str(self.nbThreads))
+                + "  -threads " + str(self.nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
         return script
