@@ -1235,12 +1235,6 @@ int lmtable::mybsearch(char *ar, table_entry_pos_t n, int size, char *key, table
 	
 #endif
 	
-	for (unsigned int i=0;i<n;i++){
-		
-		unsigned char* tmp = (unsigned char *) (ar + (i * size));
-		
-		result=codecmp((char *)key,(char *)tmp);
-	}
 	while (low < high) {
 		
 #ifdef INTERP_SEARCH
