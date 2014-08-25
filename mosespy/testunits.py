@@ -27,9 +27,9 @@ class Pipeline(unittest.TestCase):
     def setUp(self):
         self.tmpdir = Path(__file__).getUp().getUp() + "/tmp" + str(uuid.uuid4())[0:8]
         os.makedirs(self.tmpdir)
-        self.inFile = (Path(__file__).getUp().getUp()+"/data/tests/subtitles.fr").copy(self.tmpdir)
-        self.outFile = (Path(__file__).getUp().getUp()+"/data/tests/subtitles.en").copy(self.tmpdir)
-        self.duplicatesFile = (Path(__file__).getUp().getUp()+"/data/tests/withduplicates.txt").copy(self.tmpdir)
+        self.inFile = (Path(__file__).getUp()+"/data/subtitles.fr").copy(self.tmpdir)
+        self.outFile = (Path(__file__).getUp()+"/data/subtitles.en").copy(self.tmpdir)
+        self.duplicatesFile = (Path(__file__).getUp()+"/data/withduplicates.txt").copy(self.tmpdir)
         
     def test_preprocessing(self):
         

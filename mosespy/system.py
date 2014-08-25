@@ -516,7 +516,7 @@ def extractLanguages():
     """Extracts possible language codes following the ISO standard.
     
     """
-    isostandard = minidom.parse(Path(__file__).getUp().getUp()+"/data/iso639.xml")
+    isostandard = minidom.parse(Path(__file__).getUp()+"/data/iso639.xml")
     itemlist = isostandard.getElementsByTagName('iso_639_entry') 
     languagesdict = {}
     for item in itemlist :
