@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
+"""Module for creating, manipulating and processing various types
+of corpus.  A corpus can either be monolingual (BasicCorpus) or 
+bilingual (AlignedCorpus and TranslatedCorpus).  The class
+CorpusProcessor provides functions for easily preprocessing 
+and splitting such corpora.
 
+"""
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
@@ -14,9 +20,18 @@ rootPath = Path(__file__).getUp().getUp()
 moses_root = rootPath + "/moses" 
 
 class BasicCorpus(object):
+    """A basic, monolingual corpus, composed of a sequence of lines.
+    
+    """
          
     def __init__(self, corpusFile):
+        """Creates a corpus object based on the corpus file. 
         
+        If an associated 'indices' file can also be found in the same directory 
+        as the corpus file, the corpus is assumed to be derived from a bigger
+        corpus (see method divideData in datadivision).
+               
+       """ 
         self.corpusFile = Path(corpusFile)
         
         if not self.getCorpusFile().exists():
@@ -28,15 +43,23 @@ class BasicCorpus(object):
         indicesFile = (self.corpusFile.getStem() + ".indices")
         if indicesFile.exists():
             indLines = indicesFile.readlines()
-            self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.corpusFile.getLang())
+            self.originCorpus = BasicCorpus(indLines[0].strip() 
+                                             + "." + self.corpusFile.getLang())
             self.originIndices = [int(i.strip()) for i in indLines[1:]]
       
        
     def getCorpusFile(self):
+        """Returns the path for the corpus.
+        
+        """
         return self.corpusFile 
          
     def getOccurrences(self):
+        """Returns a dictionary where the keys correspond to occurrences
+        of particular lines, and the values are sets of line numbers
+        from the corpus.
         
+        """
         occurrences = {} 
         corpusLines = self.getCorpusFile().readlines()
         for i in range(0, len(corpusLines)):
@@ -48,6 +71,17 @@ class BasicCorpus(object):
         return occurrences
    
     def getHistories(self, historyWindow=2):
+        """Returns a dictionary where the keys correspond to the line
+        numbers, and the values represent the list of lines that immediately
+        precedes this line.
+        
+        If the corpus is derived from a bigger corpus, this bigger corpus
+        is employed to extract these histories.
+        
+        Args:
+            historyWindow (int): the number of lines to include in the
+                local history for each line.
+        """
         
         histories = {}
         corpusLines = self.getCorpusFile().readlines()
@@ -65,11 +99,17 @@ class BasicCorpus(object):
         return histories
 
 
-
 class AlignedCorpus(object):
+    """Representation of an aligned corpus.
+    
+    """
     
     def __init__(self, stem, sourceLang, targetLang):
+        """Constructs the aligned corpus from a corpus stem, a source
+        language code and a target language code. The two files
+        {stem}.{sourceLang} and {stem}.{targetLang} must exist.
         
+        """
         self.stem = Path(stem)
         self.sourceLang = sourceLang
         self.targetLang = targetLang
@@ -79,31 +119,53 @@ class AlignedCorpus(object):
         nbLinesSource = self.getSourceFile().countNbLines()
         nbLinesTarget = self.getTargetFile().countNbLines()
         if nbLinesSource != nbLinesTarget:
-            raise RuntimeError("Number of lines for source and target are different")          
+            raise RuntimeError("Nb. of lines for source and target are different")          
   
     def getStem(self):
+        """Returns the stem for the aligned corpus.
+        
+        """
         return self.stem
     
     def getSourceFile(self):
+        """Returns the path to the source file.
+        
+        """
         return self.sourceCorpus.getCorpusFile()
         
     def getTargetFile(self):
+        """Returns the path to the target file.
+        
+        """
         return self.targetCorpus.getCorpusFile()
     
     def getSourceCorpus(self):
+        """Returns a BasicCorpus object based on the source data.
+        
+        """
         return self.sourceCorpus
 
     def getTargetCorpus(self):
+        """Returns a BasicCorpus object based on the target data.
+        
+        """
         return self.targetCorpus
     
     def getAlignments(self, addHistory=False): 
+        """Returns a list of dictionaries (of length corresponding
+        to the number of lines in the corpus), where each dictionary
+        entry encodes the source sentence, the target sentence, and
+        (if addHistory is set to true), the history of the target
+        sentence.
         
+        """
         sourceLines = self.getSourceFile().readlines()
         targetLines = self.getTargetFile().readlines()      
             
         alignments = []
         for i in range(0, len(sourceLines)):
-            align = {"source": sourceLines[i].strip(), "target": targetLines[i].strip()}
+            align = {"source": sourceLines[i].strip(), 
+                     "target": targetLines[i].strip()}
             alignments.append(align)
             
         if addHistory:
@@ -119,8 +181,16 @@ class AlignedCorpus(object):
 
 
 class TranslatedCorpus(AlignedCorpus):
+    """Representation of an aligned corpus that also includes
+    actual translations in addition to the source and target references.
+    
+    """
     
     def __init__(self, corpus, translationFile):
+        """Creates a new translated corpus based on an aligned corpus
+        and a file of actual translations.
+        
+        """
         if not isinstance(corpus, AlignedCorpus):
             raise RuntimeError("corpus must be an AlignedCorpus object")
         AlignedCorpus.__init__(self, corpus.getStem(), corpus.sourceLang, corpus.targetLang)
@@ -131,16 +201,23 @@ class TranslatedCorpus(AlignedCorpus):
         if translationFile.getLang() != self.targetLang:
             raise RuntimeError("language for reference and actual translations differ")
         elif translationFile.countNbLines() != self.getTargetFile().countNbLines():
-            raise RuntimeError("reference and actual translation do not have the same number of lines")
+            raise RuntimeError("Nb. of lines in reference and translation are different")
         
         self.translationFile = translationFile
           
+          
     def getTranslationFile(self):
+        """Returns the file of actual translations for the corpus.
+        
+        """
         return self.translationFile
             
    
     def getAlignments(self, addHistory=False): 
+        """Returns the list of alignments for the corpus, including for 
+        each line both the source, target, and translation sentences.
         
+        """
         alignments = AlignedCorpus.getAlignments(self, addHistory)
         
         translationLines = self.translationFile.readlines()
@@ -152,15 +229,38 @@ class TranslatedCorpus(AlignedCorpus):
 
  
 class CorpusProcessor():
+    """Processor for various types of corpus data.  The processor
+    is used to tokenise, detokenise, truecase, clean, and split
+    the content of monolingual and bilingual corpora.
+    
+    """
     
     def __init__(self, workPath, executor=None, nbThreads=2):
+        """Creates a new processor.
+        
+        Args:
+            workPath (str): directory in which to store intermediate files
+            executor: executor for the processing commands
+            nbThreads (int): number of threads to employ
+        
+        """
         self.workPath = Path(workPath)
-        self.executor = executor if executor else system.CommandExecutor()
+        self.executor = executor if executor else system.ShellExecutor()
         self.tokeniser = Tokeniser(executor, nbThreads)
         self.truecaser = TrueCaser(executor, workPath+"/truecasingmodel")
         
-    def processCorpus(self, corpus, maxLength=80):
         
+    def processCorpus(self, corpus, maxLength=80):
+        """Process an aligned corpus. Both the source and target side of the
+        corpus are normalised, tokenised, truecased, and cleaned (cut-off 
+        beyond a certain length).
+        
+        Args:
+            corpus: an aligned corpus
+            maxLength (int): the maximum length for sentence, in number of
+                words. If maxLength==False, no maximum length is set.
+        
+        """
         if not isinstance(corpus, AlignedCorpus):
             raise RuntimeError("aligned data must be of type AlignedCorpus")
    
@@ -170,7 +270,7 @@ class CorpusProcessor():
         trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
         
         if maxLength:
-            cleanStem = trueSource.getStem().changeProperty("clean")
+            cleanStem = trueSource.getStem().changeFlag("clean")
             cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
             trueSource.remove()
             trueTarget.remove()
@@ -178,14 +278,19 @@ class CorpusProcessor():
         else:
             return trueCorpus
 
+
     def processFile(self, rawFile):
+        """Process an individual file, by normalising, tokenising and
+        truecasing it.  Intermediary files are deleted, and the final
+        truecased file is returned.
          
+         """
         rawFile = Path(rawFile)
         
         # STEP 1: tokenisation
-        normFile = self.workPath + "/" + rawFile.basename().addProperty("norm")
+        normFile = self.workPath + "/" + rawFile.basename().addFlag("norm")
         self.tokeniser.normaliseFile(rawFile, normFile)
-        tokFile = normFile.changeProperty("tok")
+        tokFile = normFile.changeFlag("tok")
         self.tokeniser.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
@@ -193,7 +298,7 @@ class CorpusProcessor():
             self.truecaser.trainModel(tokFile)
             
         # STEP 3: truecasing   
-        trueFile = tokFile.changeProperty("true")
+        trueFile = tokFile.changeFlag("true")
         self.truecaser.truecaseFile(tokFile, trueFile) 
         
         normFile.remove()
@@ -205,12 +310,19 @@ class CorpusProcessor():
     
     
     def processText(self, text, lang):
+        """Tokenise and truecase the text, and returns the result.
+        
+        """
         tokText = self.tokeniser.tokenise(text, lang).strip("\n") + "\n" 
         trueText = self.truecaser.truecase(tokText, lang).strip("\n") + "\n" 
         return trueText
  
  
     def revertCorpus(self, corpus):
+        """Reverts the corpus content by 'detokenising' it and deescaping
+        special characters.
+        
+        """
         if not isinstance(corpus, TranslatedCorpus):
             raise RuntimeError("aligned data must be of type TranslatedCorpus")
         
@@ -219,46 +331,68 @@ class CorpusProcessor():
         translation = self.revertFile(corpus.getTranslationFile())
         aCorpus = AlignedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang)
         newCorpus = TranslatedCorpus(aCorpus, translation)
-
         return newCorpus
  
  
     def revertFile(self, processedFile):
+        """Reverts the file content by 'detokenising' it and deescaping
+        special characters.
+        
+        """
         
         processedFile = Path(processedFile)
         if not processedFile.exists():
             raise RuntimeError(processedFile + " does not exist")
         
-        untokFile = self.workPath + "/" + processedFile.basename().changeProperty("detok") 
+        untokFile = self.workPath + "/" + processedFile.basename().changeFlag("detok") 
         self.tokeniser.detokeniseFile(processedFile,untokFile)
          
-        finalFile = untokFile.changeProperty("read")
-        self.tokeniser.deescapeSpecialCharacters(untokFile, finalFile)
+        finalFile = untokFile.changeFlag("read")
+        self.tokeniser.deescapeFile(untokFile, finalFile)
     
         untokFile.remove()
         if (processedFile.getStem() + ".indices").exists():
             (processedFile.getStem() + ".indices").copy(finalFile.getStem() + ".indices")
         return finalFile
+    
+    
+    def revertText(self, text, lang):
+        """Reverts the text by 'detokenising' it, deescaping special characters
+        and returning the result.
+        
+        """
+        detokText = self.tokeniser.detokenise(text, lang).strip("\n") + "\n" 
+        finalText = self.tokeniser.deescape(detokText).strip("\n")
+        return finalText
 
    
     def cutCorpus(self, inputCorpus, outputStem, maxLength):
-                   
+        """Cleans the corpus by pruning out sentences with a length
+        beyond the maximum length.
+        
+        """
         cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
-                       inputCorpus.getStem() + " " + inputCorpus.sourceLang + " " + inputCorpus.targetLang + " " 
+                       inputCorpus.getStem() + " " + inputCorpus.sourceLang 
+                       + " " + inputCorpus.targetLang + " " 
                        + outputStem + " 1 " + str(maxLength))
         result = self.executor.run(cleanScript)
         if not result:
             raise RuntimeError("Cleaning of aligned files has failed")
         outputSource = outputStem+"."+inputCorpus.sourceLang
         outputTarget = outputStem+"."+inputCorpus.targetLang
-        print "New cleaned files: " + outputSource.getDescription() + " and " + outputTarget.getDescription()
+        print ("New cleaned files: " + outputSource.getDescription() 
+               + " and " + outputTarget.getDescription())
         return AlignedCorpus(outputStem, inputCorpus.sourceLang, inputCorpus.targetLang)
   
         
     def getBleuScore(self, translatedCorpus):
+        """Returns the BLEU score for the translated corpus.
+        
+        """
         bleuScript = (moses_root  + "/scripts/generic/multi-bleu.perl -lc " 
                       + translatedCorpus.getTargetFile())
-        bleu_output = self.executor.run_output(bleuScript, stdin=translatedCorpus.getTranslationFile())       
+        translation = translatedCorpus.getTranslationFile()
+        bleu_output = self.executor.run_output(bleuScript, stdin=translation)       
         s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)
         if s:
             bleu = float(s.group(1))
@@ -268,7 +402,15 @@ class CorpusProcessor():
           
     
     def splitData(self, corpus, nbSplits, outputDir=None):
-    
+        """Splits the corpus into a number of splits.
+        
+        Args:
+            corpus: a basic or aligned corpus to split
+            nbSplits: the number of splits to use
+            outputDir: the output directory for the splits. Defaults
+                to self.workPath.
+        
+        """
         outputDir = outputDir if outputDir else self.workPath
         if isinstance(corpus, AlignedCorpus):
             
@@ -313,12 +455,22 @@ class CorpusProcessor():
 
          
 class Tokeniser():
+    """Tokeniser component for processing corpora.
     
+    """
     def __init__(self, executor, nbThreads=2):
+        """Creates a new tokeniser based on the provided executor and number
+        of threads.
+        
+        """
         self.executor = executor
         self.nbThreads = nbThreads
      
     def normaliseFile(self, inputFile, outputFile):
+        """Normalises the punctuation of the file and write the output in
+        outputFile.
+        
+        """
         lang = inputFile.getLang()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
@@ -335,33 +487,12 @@ class Tokeniser():
         outputFile.writelines(outlines)
         tmpFile.remove()
         
-   
-    
-    def deescapeSpecialCharacters(self, inputFile, outputFile):
-        if not inputFile.exists():
-            raise RuntimeError("raw file " + inputFile + " does not exist")
-                        
-        deescapeScript = moses_root + "/scripts/tokenizer/deescape-special-chars.perl "
-        result = self.executor.run(deescapeScript, inputFile, outputFile)
-        if not result:
-            raise RuntimeError("Deescaping of special characters in %s has failed"%(inputFile))
-
-      
-    def detokeniseFile(self, inputFile, outputFile):
-        lang = inputFile.getLang()
-        if not inputFile.exists():
-            raise RuntimeError("raw file " + inputFile + " does not exist")
-                        
-        print "Start detokenisation of file \"" + inputFile + "\""
-        detokScript = moses_root + "/scripts/tokenizer/detokenizer.perl -l " + lang
-        result = self.executor.run(detokScript, inputFile, outputFile)
-        if not result:
-            raise RuntimeError("Detokenisation of %s has failed"%(inputFile))
-
-        print "New detokenised file: " + outputFile.getDescription() 
-
-      
+       
     def tokeniseFile(self, inputFile, outputFile):
+        """Tokenises inputFile and writes the output in outputFile.
+        
+        
+        """
         lang = inputFile.getLang()
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
@@ -379,18 +510,80 @@ class Tokeniser():
     
     
     def tokenise(self, inputText, lang):
+        """Tokenises the text (for the given language) and returns the
+        output.
+        
+        """
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
         return self.executor.run_output(tokScript, stdin=inputText)
-                
+    
+
+    def detokeniseFile(self, inputFile, outputFile):
+        """Detokenises inputFile and write the result in outputFile.
+        
+        """
+        lang = inputFile.getLang()
+        if not inputFile.exists():
+            raise RuntimeError("raw file " + inputFile + " does not exist")
+                        
+        print "Start detokenisation of file \"" + inputFile + "\""
+        detokScript = moses_root + "/scripts/tokenizer/detokenizer.perl -l " + lang
+        result = self.executor.run(detokScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Detokenisation of %s has failed"%(inputFile))
+
+        print "New detokenised file: " + outputFile.getDescription() 
+
+            
+    def detokenise(self, inputText, lang):
+        """Detokenises the text (for the provided language) and returns the output.
+        
+        """
+        tokScript = moses_root + "/scripts/tokenizer/detokenizer.perl" + " -l " + lang
+        return self.executor.run_output(tokScript, stdin=inputText)
+  
+
+    def deescapeFile(self, inputFile, outputFile):
+        """Deescapes special characters in the input file and write the result in
+        outputFile.
+        
+        """
+        if not inputFile.exists():
+            raise RuntimeError("File " + inputFile + " does not exist")
+                        
+        deescapeScript = moses_root + "/scripts/tokenizer/deescape-special-chars.perl "
+        result = self.executor.run(deescapeScript, inputFile, outputFile)
+        if not result:
+            raise RuntimeError("Deescaping of special characters in %s has failed"%(inputFile))
+  
+    
+    def deescape(self, inputText):   
+        """Deescapes special characters in the text and returns the result.
+        
+        """             
+        deescapeScript = moses_root + "/scripts/tokenizer/deescape-special-chars.perl "
+        return self.executor.run_output(deescapeScript, inputText)
+
 
 
 class TrueCaser():
-          
+    """Truecaser to process corpora content.
+    
+    """
+    
     def __init__(self, executor, modelStem):
+        """Creates a new truecaser with the following executor, and stem for model
+        files.
+        
+        """
         self.executor = executor
         self.modelStem = Path(modelStem)
                
+               
     def trainModel(self, inputFile):
+        """Trains a truecasing model based on the provided input file.
+        
+        """
         if not inputFile.exists():
             raise RuntimeError("Tokenised file " + inputFile + " does not exist")
         
@@ -406,11 +599,18 @@ class TrueCaser():
     
     
     def isModelTrained(self, lang):
+        """Returns true if a truecasing model has been trained for the provided
+        language, and false otherwise.
+        
+        """
         return Path(self.modelStem + "." + lang).exists()
         
             
     def truecaseFile(self, inputFile, outputFile):
-       
+        """Truecase the input file and write the result in outputFile. 
+        A truecasing model for the input file language must be present.
+        
+        """
         if not inputFile.exists():
             raise RuntimeError("tokenised file " + inputFile + " does not exist")
     
@@ -429,6 +629,10 @@ class TrueCaser():
     
     
     def truecase(self, inputText, lang):
+        """Truecase the text (for the provided language) and returns the result.
+        A truecasing model for the input language must be present.
+        
+        """
         if not self.isModelTrained(lang):
             raise RuntimeError("model file for " + lang + " does not exist")
 

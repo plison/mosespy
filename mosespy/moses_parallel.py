@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Augmented version of the Moses decoder that allows for
+parallel decoding of input sentences on multiple nodes.
+
+"""
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
-
 
 import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -18,6 +21,10 @@ moses_root = Path(__file__).getAbsolute().getUp().getUp() + "/moses"
 decoder = moses_root + "/bin/moses "
 
 def getInput():
+    """Returns the decoder input, coming from either an input file
+    or from standard input.
+    
+    """
     lines = []
     for i in range(1, len(sys.argv)):
         if "-input-file" in sys.argv[i-1]:
@@ -37,6 +44,9 @@ def getInput():
 
 
 def getNbJobs():
+    """Returns the number of parallel jobs to employ for the decoding.
+    
+    """
     nbJobs = 1
     for i in range(1, len(sys.argv)):
         arg = sys.argv[i]
@@ -47,6 +57,9 @@ def getNbJobs():
 
 
 def getMosesArguments():
+    """Returns a list of arguments for the Moses decoder.
+    
+    """
     argsToRemove = ["-jobs", "-input-file"]
     arguments = []
     for i in range(1, len(sys.argv)):
@@ -62,6 +75,10 @@ def getMosesArguments():
 
 
 def mergeOutFiles(outfiles, outStream):
+    """Merges output files from parallel decoding processes on 
+    separate splits of data.
+    
+    """
     for outfile_part in outfiles:
         with open(outfile_part, 'r') as part:
             for partline in part.readlines():
@@ -71,6 +88,10 @@ def mergeOutFiles(outfiles, outStream):
        
        
 def getArgumentValue(args, key):
+    """Returns the value for the argument 'key' in the list of Moses
+    arguments 'args'.
+    
+    """
     split = args.split()
     for i in range(0, len(split)):
         if i > 0 and key == split[i-1].strip():
@@ -78,7 +99,12 @@ def getArgumentValue(args, key):
     return None
 
 def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
-    print "Merging nbest files " + str(nbestOutPartFiles) + " into " + str(nbestOutFile) 
+    """Merges N-best files coming from parallel decoding of distinct
+    splits of data.
+    
+    """
+    print ("Merging nbest files " + str(nbestOutPartFiles) 
+           + " into " + str(nbestOutFile))
     localCount = 0
     globalCount = 0
     with open(nbestOutFile, 'w') as nbestout_full:
@@ -90,13 +116,20 @@ def mergeNbestOutFiles(nbestOutPartFiles, nbestOutFile):
                         if newCount == localCount + 1:
                             localCount += 1
                             globalCount += 1
-                        partline = partline.replace(str(newCount), str(globalCount), 1).strip("\n")+"\n"
+                        partline = partline.replace(str(newCount), 
+                                                    str(globalCount), 1)
+                        partline = partline.strip("\n")+"\n"
                         nbestout_full.write(partline)
             localCount = 0
             globalCount += 1
    
 
 def splitDecoding(sourceInput, mosesArgs, nbJobs):
+    """Splits the decoding task on the source input onto a number
+    of parallel jobs, and returns a list of sub-tasks, each with
+    an input file, output file, and corresponding arguments.
+    
+    """
     splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
     splitDir.reset()
     if not isinstance(sourceInput, Path):
@@ -119,7 +152,15 @@ def splitDecoding(sourceInput, mosesArgs, nbJobs):
         
         
 def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
-         
+    """Run the Moses decoder on the sourceInput.
+    
+    Args:
+        sourceInput (str): the source input (either file path or text).
+        mosesArgs (str): arguments for the Moses decoder
+        outStream (stream): output stream for the decoding output
+        nbJobs: number of parallel jobs to use
+        
+    """  
     if not sourceInput:
         print "Running decoder: " + decoder + mosesArgs
         system.run(decoder + mosesArgs, stdout=outStream)
@@ -144,8 +185,11 @@ def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
         splits[0]["in"].getUp().remove()
                          
 
-def main():      
 
+if __name__ == "__main__":
+    """Runs the parallel decoder.
+    
+    """
     stdout = sys.stdout
     sys.stdout = sys.stderr
 
@@ -154,7 +198,3 @@ def main():
     sourceInput = getInput()
     
     runParallelMoses(sourceInput, arguments, stdout, nbJobs)
-    
-
-if __name__ == "__main__":
-    main()

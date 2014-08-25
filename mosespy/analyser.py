@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+"""Module employed to analyse translation results.
+
+"""
 
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
@@ -8,13 +11,14 @@ __version__ = "$Date::                      $"
 
 
 import string
-      
-def printSummary(alignments):
-    
+from mosespy.corpus import TranslatedCorpus
+     
+     
+def analyseResults(results):
+    if not isinstance(results, TranslatedCorpus):
+        raise RuntimeError("results must be of type TranslatedCorpus")
+    alignments = results.getAlignments(addHistory=True)
     analyseAllErrors(alignments)
-    #analyser.analyseShortAnswers(alignments)
-    #analyseQuestions(alignments)
-    #analyseBigErrors(alignments)
        
 
 
@@ -83,6 +87,9 @@ def analyseBigErrors(alignments):
 
 
 def extractNgrams(tokens, size):
+    """Extract the n-grams of a particular size in the list of tokens.
+    
+    """
     ngrams = []
     if len(tokens) < size:
         return ngrams   
@@ -92,6 +99,10 @@ def extractNgrams(tokens, size):
     
 
 def getBLEUScore(reference, actual, ngrams=4):
+    """Returns the BLEU score between the reference and actual translations,
+    with an n-gram of a particular maximum size.
+    
+    """
     if len(reference) != len(actual):
         raise RuntimeError("reference and actual translation lines have different lengths")
     for i in range(0, len(reference)):
@@ -111,6 +122,10 @@ def getBLEUScore(reference, actual, ngrams=4):
 
 
 def getWER(reference, actual):
+    """Returns the Word Error Rate between the reference and actual
+    translations.
+    
+    """
     refTokens = reference.split()
     actualTokens = actual.split()
     if len(refTokens) == 0:
@@ -118,7 +133,6 @@ def getWER(reference, actual):
     if len(refTokens) < len(actualTokens):
         return getWER(actual, reference)
  
-    # len(refTokens) >= len(actualTokens)
     if len(actualTokens) == 0:
         return len(refTokens)
  
