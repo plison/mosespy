@@ -32,6 +32,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		3D324C9019AB0F570079850A /* crc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D324BF119AA69560079850A /* crc.cpp */; };
 		3D4565341164C94E00119984 /* shiftlm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD58865D11256D3700BDFA30 /* shiftlm.cpp */; };
 		3D4565351164C95800119984 /* shiftlm.h in Headers */ = {isa = PBXBuildFile; fileRef = AD58865E11256D3700BDFA30 /* shiftlm.h */; };
 		3D4565371164C9DC00119984 /* normcache.h in Headers */ = {isa = PBXBuildFile; fileRef = AD58865C11256D3700BDFA30 /* normcache.h */; };
@@ -259,6 +260,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3D324BF119AA69560079850A /* crc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = crc.cpp; path = src/crc.cpp; sourceTree = "<group>"; };
+		3D324BF219AA69560079850A /* crc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = crc.h; path = src/crc.h; sourceTree = "<group>"; };
 		3D4F4D70135C481600E85480 /* compile-lm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "compile-lm"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4D8B135C48E800E85480 /* ngt */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ngt; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D4F4D96135C48EC00E85480 /* quantize-lm */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "quantize-lm"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -457,6 +460,8 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3D324BF119AA69560079850A /* crc.cpp */,
+				3D324BF219AA69560079850A /* crc.h */,
 				3DC9B821175E31AC00089688 /* verify-caching.cpp */,
 				3DC9B7FC175E2F6A00089688 /* score-lm.cpp */,
 				3D86C79D16104E2600205CAE /* plsa.cpp */,
@@ -939,6 +944,7 @@
 				3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */,
 				3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */,
 				3DC9B83A175E346D00089688 /* score-lm.cpp in Sources */,
+				3D324C9019AB0F570079850A /* crc.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1076,8 +1082,11 @@
 			buildSettings = {
 				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
 				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_DEBUGGING_SYMBOLS = full;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
@@ -1095,7 +1104,7 @@
 				GENERATE_PROFILING_CODE = YES;
 				OTHER_CPLUSPLUSFLAGS = "";
 				PREBINDING = NO;
-				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				RUN_CLANG_STATIC_ANALYZER = NO;
 				STRIP_INSTALLED_PRODUCT = NO;
 				WARNING_CFLAGS = (
@@ -1109,6 +1118,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
@@ -1123,6 +1134,7 @@
 				GCC_WARN_UNUSED_VALUE = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				PREBINDING = NO;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				WARNING_CFLAGS = (
 					"$(inherited)",
 					"-Wall",
@@ -1457,6 +1469,7 @@
 			buildSettings = {
 				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
 				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
@@ -1480,7 +1493,7 @@
 					"-DLMT_CACHE_ENABLE=1",
 				);
 				PREBINDING = NO;
-				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = NO;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				RUN_CLANG_STATIC_ANALYZER = NO;
 				STRIP_INSTALLED_PRODUCT = NO;
 				WARNING_CFLAGS = (
