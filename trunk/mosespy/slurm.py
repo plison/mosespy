@@ -50,6 +50,7 @@ class SlurmExperiment(Experiment):
             maxJobs (int): maximum number of SLURM jobs to run in parallel
             
         """
+        self.executor = SlurmExecutor(account)
         Experiment.__init__(self, expName, sourceLang, targetLang)
         self.maxJobs = maxJobs
   
@@ -57,7 +58,6 @@ class SlurmExperiment(Experiment):
             print "SLURM system not present, switching back to standard setup"
             return
         
-        self.executor = SlurmExecutor(account)
         self.nbThreads = nodeCpus
         self.processor = CorpusProcessor(self.expPath, self.executor, nodeCpus)
         self.decoder = Path(__file__).getUp().getAbsolute() + "/moses_parallel.py"
