@@ -6,10 +6,9 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 import re, uuid, copy
-import mosespy.experiment as experiment
 import mosespy.system as system
 from mosespy.experiment import Experiment 
-from mosespy.corpus import AlignedCorpus, CorpusProcessor
+from mosespy.corpus import CorpusProcessor
 from mosespy.system import CommandExecutor, Path
 
 nodeMemory=60000
@@ -124,10 +123,15 @@ class SlurmExecutor(CommandExecutor):
             stdout = stdouts[0] if isinstance(stdouts,list) else None
             result = self.run(scripts[0], stdin, stdout) 
             return [result] if stdouts else result
+        
+        currentEnv = copy.deepcopy(system.getEnv())
         for k in system.getEnv():
             if "SLURM" in k:
                 system.delEnv(k)
-        return CommandExecutor.run_parallel(self, scripts, stdins, stdouts)
+        result = CommandExecutor.run_parallel(self, scripts, stdins, stdouts)
+        for k in currentEnv:
+            system.setEnv(k, currentEnv[k])
+        return result
 
 
 

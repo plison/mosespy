@@ -192,4 +192,3 @@ def _drawRandom(nbToDraw, maxValue, exclusion=None):
     
     return numbers   
 
- 

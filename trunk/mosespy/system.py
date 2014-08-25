@@ -6,6 +6,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
+import re
 import os, shutil, subprocess, time, Queue, threading, copy
 from datetime import datetime
 from xml.dom import minidom

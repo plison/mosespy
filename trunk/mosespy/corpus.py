@@ -6,16 +6,12 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
-import time
-import math
-import sys
 import re
-import random
 import mosespy.system as system
 from mosespy.system import Path
 
-rootDir = Path(__file__).getUp().getUp()
-moses_root = rootDir + "/moses" 
+rootPath = Path(__file__).getUp().getUp()
+moses_root = rootPath + "/moses" 
 
 class BasicCorpus(object):
          
@@ -209,8 +205,8 @@ class CorpusProcessor():
     
     
     def processText(self, text, lang):
-        tokText = self.tokeniser.tokenise(text, lang)                 
-        trueText = self.truecaser.truecase(tokText, lang)        
+        tokText = self.tokeniser.tokenise(text, lang).strip("\n") + "\n" 
+        trueText = self.truecaser.truecase(tokText, lang).strip("\n") + "\n" 
         return trueText
  
  
@@ -384,7 +380,7 @@ class Tokeniser():
     
     def tokenise(self, inputText, lang):
         tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
-        return self.executor.run_output(tokScript, stdin=inputText).strip()
+        return self.executor.run_output(tokScript, stdin=inputText)
                 
 
 
@@ -433,9 +429,10 @@ class TrueCaser():
     
     
     def truecase(self, inputText, lang):
+        if not self.isModelTrained(lang):
+            raise RuntimeError("model file for " + lang + " does not exist")
+
         modelFile = Path(self.modelStem + "." + lang)
-        if not modelFile.exists():
-            raise RuntimeError("model file " + modelFile + " does not exist")
         truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
         return self.executor.run_output(truecaseScript, stdin=inputText)
  

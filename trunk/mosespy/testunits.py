@@ -14,7 +14,7 @@ import mosespy.experiment as experiment
 import mosespy.slurm as slurm
 import mosespy.system as system
 from mosespy.system import Path, CommandExecutor
-from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor
+from mosespy.corpus import AlignedCorpus, CorpusProcessor
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
 import mosespy.datadivision as datadivision
@@ -321,27 +321,39 @@ class Pipeline(unittest.TestCase):
         
         
     def test_mosesparallel(self):
-        train, _, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
-                                                 10, 0, 10,randomPick=False)
         experiment.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
-        exp.trainTranslationModel(train.getStem())
+        exp.trainTranslationModel(self.inFile.getStem())
         output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -f " + exp.iniFile,
                                     stdin="qui êtes-vous ?\n")
-        self.assertEqual(output, "qui are you ?") 
+        self.assertEqual(output, "Who are you ?") 
         Path(self.tmpdir + "/transtest.fr").writelines(["qui êtes-vous ?\n", "tant pis .\n"])
         output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -f " + exp.iniFile,
                                     stdin=(self.tmpdir + "/transtest.fr"))
-        self.assertEqual(output, "qui are you ? \ntant mind .")
+        self.assertEqual(output, "Who are you ? \ntant mind .")
         output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -jobs 2 -f " + exp.iniFile,
                                     stdin=(self.tmpdir + "/transtest.fr"))
-        self.assertEqual(output, "qui are you ? \ntant mind .")
+        self.assertEqual(output, "Who are you ? \ntant mind .")
         
         
-        
-        # binarise model!
-        # Json!
+    def test_binarise(self):
+        experiment.expDir = self.tmpdir + "/"
+        exp = Experiment("test", "fr", "en")
+        exp.trainLanguageModel(self.outFile, preprocess=True)
+        exp.trainTranslationModel(self.inFile.getStem())
+        output = system.run_output(Path(__file__).getUp() + "/moses_parallel.py -f " + exp.iniFile,
+                                    stdin="qui êtes-vous ?\n")
+        self.assertEqual(output, "Who are you ?")
+        output = system.run_output(Path(__file__).getUp().getUp() + "/moses/bin/moses -f " + exp.iniFile,
+                                    stdin="qui êtes-vous ?\n")
+        self.assertEqual(output, "Who are you ?")
+        self.assertEquals(exp.translate("qui êtes-vous?"), "Who are you ?")
+        self.assertEquals(exp.translate("qui êtes-vous ?", preprocess=False), "Who are you ?")
+        exp.binariseModel()
+        self.assertIn("PhraseDictionaryBinary", exp.iniFile.read())
+        self.assertIn("/binmodel", exp.iniFile.read())
+        self.assertEquals(exp.translate("qui êtes-vous?"), "Who are you ?")
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
