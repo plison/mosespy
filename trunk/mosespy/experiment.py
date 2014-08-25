@@ -2,12 +2,32 @@
 
 """Creation, update and analysis of machine translation experiments
 based on the Moses platform (http://www.statmt.org/moses for details). 
-The central entity of this module is the Experiment class which allows
-the user to easily configure and run translation experiments.
-
 The module relies on the Moses platform, the MGIZA word alignment tool 
 and the IRSTLM language modelling tool, which need to be installed
 and compile in the base directory. 
+
+The central entity of this module is the Experiment class which allows
+the user to easily configure and run translation experiments. 
+
+A typical way to run an entire experiment (from training to evaluation)
+is as such:
+    exp = Experiment("name of experiment", sourceLang, targetLang)
+    exp.trainLanguageModel(lmData)
+    exp.trainTranslationModel(trainingData)
+    exp.tuneTranslationModel(tuningData)
+    exp.evaluateBLEU(testData)
+    
+SourceLang and targetLang refer to language codes(such as 'fr' or 'de').  
+lmData corresponds to the training file used to estimate the language model, 
+while trainingData, tuningData and testData refer to aligned corpora (respectively
+for constructing the translation models, tuning the parameters and evaluating
+the translation quality).
+
+As is the convention in SMT,  an aligned corpora is represented by two files, 
+"{corpus-name}.{source-lang} and {corpus-name}.{target-lang} with the
+same number of lines.  The aligned corpus is then referred to by its stem 
+(i.e. {corpus-name}).    
+    
 """
 
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
@@ -17,7 +37,6 @@ __version__ = "$Date::                      $"
 
 import json,  re
 import mosespy.system as system
-import mosespy.analyser as analyser
 from mosespy.system import Path
 from mosespy.corpus import AlignedCorpus, TranslatedCorpus, CorpusProcessor
 
@@ -46,38 +65,66 @@ class Experiment(object):
     the directory {expDir}/{name of experiment}.  In this directory, 
     the JSON file settings.json functions as a permanent representation 
     of the experiment, allowing experiments to be easily restarted.
+    
     """
     
     def __init__(self, expName, sourceLang=None, targetLang=None, nbThreads=2):
+        """Start a new experiment with the given name.  If an experiment of 
+        same name already exists, its state is reloaded (based on the JSON
+        file that records the experiment state). 
+        
+        Args: 
+            sourceLang (str): language code for the source language
+            targetLang (str): language code for the target language
+            nbThreads (int): number of parallel threads to use
+        
+        """
                 
         self.expPath = Path(expDir+expName).getAbsolute()
         self.lm = None
         self.ngram_order = None
         self.tm = None
         self.iniFile = None
-        self.test = None
+        self.results = None
         
         jsonFile = self.expPath+"/settings.json"
         if jsonFile.exists():
             self._reloadState()
         else:
-            self.expPath.make()
+            self.expPath.reset()
             if sourceLang:
                 self.sourceLang = sourceLang
             if targetLang:
                 self.targetLang = targetLang
-                
+        
+        checkEnvironment()
+        
         self._recordState()
         print ("Experiment " + expName + " (" + self.sourceLang  
                + "-" + self.targetLang + ") successfully started")
         
-        self.executor = system.CommandExecutor()
+        self.executor = system.ShellExecutor()
         self.nbThreads = nbThreads
         self.processor = CorpusProcessor(self.expPath, self.executor, self.nbThreads)
         self.decoder = moses_root + "/bin/moses"
-           
+                   
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
+        """Trains the language model used for the experiment.  The method starts
+        by inserting start and end characters <s> and </s> to the lines of the
+        training files, then estimates the model parameters, builds the model, and
+        finally binarises it in the KenLM format.
+        
+        Args:
+            trainFile (str): path to the file containing the training data.      
+            preprocess (bool): whether to tokenise and truecase the training data
+                before estimating the model parameters
+            ngram_order: order of the N-gram
+    
+        If the operation is successful, the binarised language model is set to the
+        instance variable self.lm, and the N-gram order to self.ngram_order.
+        
+        """
   
         system.setEnv("IRSTLM", irstlm_root)
         trainFile = Path(trainFile).getAbsolute()
@@ -89,7 +136,7 @@ class Experiment(object):
 
         print "Building language model based on " + trainFile
         
-        sbFile = self.expPath + "/" + trainFile.basename().changeProperty("sb")
+        sbFile = self.expPath + "/" + trainFile.basename().changeFlag("sb")
                 
         self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
         
@@ -100,11 +147,11 @@ class Experiment(object):
         self.executor.run(lmScript)
                            
         arpaFile = self.expPath + "/langmodel.arpa." + trainFile.getLang()
-        arpaScript = (irstlm_root + "/bin/compile-lm" + " --text=yes %s %s"%(lmFile+".gz", arpaFile))
+        arpaScript = (irstlm_root + "/bin/compile-lm --text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
 
         blmFile = self.expPath + "/langmodel.blm." + trainFile.getLang()
-        blmScript = moses_root + "/bin/build_binary -w after -i " + " " + arpaFile + " " + blmFile
+        blmScript = moses_root + "/bin/build_binary -w after -i " + arpaFile + " " + blmFile
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
         
@@ -122,7 +169,32 @@ class Experiment(object):
      
     def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
                               reordering=defaultReordering, preprocess=True, 
-                              pruning=True):    
+                              pruning=True):  
+        """Trains the translation model for the experiment.  The method relies on
+        the Moses script train-model.perl to construct the phrase and reordering
+        tables.  MGIZA++ is employed for the word alignment.
+        
+        The language model must be trained prior to calling this method (else,
+        a runtime error is raised).  
+        
+        Args:
+            trainStem (str): path to the aligned corpus used for training the model.  
+                The files {trainStem}.{sourceLang} and {trainStem}.{targetLang} must 
+                be present in the file system and include the same number of lines.
+            alignment (str): optional heuristic for the word alignment. cf. the Moses 
+                website for details. Default is 'grow-diag-final-and'
+            reordering (str): optional type of model for the reordering. Default is
+                'msd-bidirectional-fe'.
+            preprocess (bool): whether to tokenise and truecase the training data
+                prior to the model estimation.
+            pruning (bool): whether to prune the phrase table after constructing the
+                model, to remove phrase pairs with near-zero probabilities.
+        
+        Once all training operations are completed, the method sets the self.tm
+        variable to the directory containing the phrase and reordering tables, and
+        the variable self.ini to the Moses.ini file.
+        
+        """
         if not self.lm:
             raise RuntimeError("Language model not yet constructed")
         
@@ -144,22 +216,29 @@ class Experiment(object):
         self.tm= tmDir + "/model"
         self.iniFile = self.tm +"/moses.ini"
         if pruning:
-            self.prunePhraseTable()
+            self._prunePhraseTable()
         self._recordState()
         
-    
-    def _constructTranslationModel(self, trainCorpus, alignment, reordering):
-        tmDir = self.expPath + "/translationmodel"
-        tmDir.reset()
-        tmScript = self._getTrainScript(tmDir, trainCorpus.getStem(), alignment, reordering)
-        result = self.executor.run(tmScript)
-        if not result:
-            raise RuntimeError("construction of translation model FAILED")
-        return tmDir
-
-  
-
+ 
     def tuneTranslationModel(self, tuningStem, preprocess=True):
+        """Tunes the weights of the translation model components in order
+        to optimise the translation accuracy on the tuning set.  The method
+        employs the mert-moses.pl script for this purpose.
+        
+        The method requires the translation model to be constructed prior to 
+        called this method (else, a runtime error is raised).
+        
+        Args:
+            tuningStem (str): path to the aligned corpus for tuning. The files 
+                {tuningStem}.{sourceLang} and {tuningStem}.{targetLang} must 
+                be present and include the same number of lines.
+            preprocess (bool): whether to tokenise and truecase the data
+                prior to the tuning process.
+        
+        At the end of the operation, the method changes the self.iniFile to
+        the new moses.ini file that contains the final component weights.
+        
+        """
         
         if not self.tm:
             raise RuntimeError("Translation model not yet constructed")
@@ -183,9 +262,149 @@ class Experiment(object):
         self.iniFile = tuneDir + "/moses.ini"
         self._recordState()
       
+      
+   
+    def translate(self, text, preprocess=True):
+        """ Translates the text given as argument and returns the result.
+        
+        The translation model must be constructed (and tuned) prior to calling
+        this method (else, a runtime error is raised).
+        
+        Args:
+            text (str): the text to translate.  Each sentence must be separated
+                by a line break.
+            preprocess (bool): whether to tokenise and truecase the text
+                prior to translation.
+        
+        After translation, the translated output is automatically 'detokenised' and 
+        special characters are also 'deescaped' in order to get printable output.
+        
+        """   
+        
+        if not self.iniFile:
+            raise RuntimeError("Translation model is not yet trained and tuned!")
+        print ("Translating text: \"" + text + "\" from " + 
+               self.sourceLang + " to " + self.targetLang)
+
+        text = text.strip("\n") + "\n"
+        if preprocess:
+            text = self.processor.processText(text, self.sourceLang)
+            
+        transScript = self._getTranslateScript()
+        translation = self.executor.run_output(transScript, stdin=text)
+        return self.processor.revertText(translation, self.targetLang)
+        
+   
+    def translateFile(self, infile, outfile, preprocess=True, filterModel=True,
+                      revertOutput=True):
+        """Translates sentences from 'infile' and writes the results in 'outfile'.
+        
+        The translation model must be constructed (and tuned) prior to calling
+        this method (else, a runtime error is raised).
+        
+        Args:
+            infile (str): the input file to translate. The input file must
+                include sentences in the source language, and its file extension
+                must correspond to the source language code.
+            outfile (str): the output file in which to write the translations.
+                Its file extension must correspond to the target language code.
+            preprocess (bool): whether to tokenise and truecase the input
+                prior to translation.
+            filterModel (bool): whether to filter the phrase-table to reduce
+                it to the pairs necessary for translating 'infile'.  The 
+                filtering takes some time but speeds up the decoding.
+            revertOutput (bool): whether to detokenise and deescape the translation
+                outputs (useful to get good-looking output, but not appropriate
+                for evaluation on reference translations).     
+        
+        """   
+        
+        infile = Path(infile)
+        outfile = Path(outfile)
+        if infile.getLang()!=self.sourceLang:
+            print "Input file must have extension %s"%(self.sourceLang)
+        if outfile.getLang()!=self.targetLang:
+            print "Output file must have extension %s"%(self.targetLang)
+            
+        if preprocess:
+            infile = self.processor.processFile(infile)
+       
+        if filterModel:
+            filterDir = self._getFilteredModel(infile)
+            initFile = filterDir + "/moses.ini"
+        elif self.iniFile:
+            initFile = self.iniFile
+        else:
+            raise RuntimeError("Translation model is not yet trained!")
+        
+        print ("Translating file \"" + infile + "\" from " + 
+               self.sourceLang + " to " + self.targetLang)
+
+        transScript = self._getTranslateScript(initFile, infile)
+        
+        result = self.executor.run(transScript, stdout=outfile)
+                    
+        if filterDir:
+            filterDir.remove()
+       
+        if not result:
+            raise RuntimeError("Translation of file " + str(infile) + " FAILED")
+        
+        if revertOutput: 
+            outfile_reverted = self.processor.revertFile(outfile)
+            outfile_reverted.rename(outfile)
+        
+       
+    def evaluateBLEU(self, testStem, preprocess=True):
+        """Evaluates the translation quality on development/test data, and 
+        returns its BLEU score.
+        
+        Args:
+            testStem (str): the path to the aligned corpus for the evaluation.  
+                The files {testStem}.{sourceLang} and {testStem}.{targetLang} 
+                must be present and include the same number of lines.
+            preprocess (bool): whether to tokenise and truecase the test data
+                prior to the evaluation.
+                
+        At the end of the evaluation, the translation results and their BLEU score 
+        are returned, and the instance variable self.results records the translation 
+        results (useful for later analysis).
+                
+        TODO: allow for more than one reference translation
+        TODO: allow for other metrics than BLEU
+        
+        """
+ 
+        testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
+        print ("Evaluating BLEU scores with test data: " + testStem)
+        
+        if preprocess:
+            testCorpus = self.processor.processCorpus(testCorpus, False)
+                    
+        
+        transFile = testCorpus.getTargetFile().basename().addFlag("translated", reverseOrder=True)  
+        transPath = self.expPath + "/" + transFile
+        
+        self.translateFile(testCorpus.getSourceFile(), transPath, False, True, False)    
+        results = TranslatedCorpus(testCorpus, transPath)
+        bleu, bleu_output = self.processor.getBleuScore(results)
+        print bleu_output
+        
+        self.results = self.processor.revertCorpus(results)
+        self._recordState()
+        
+        return results, bleu
+    
 
 
     def binariseModel(self):
+        """Binarises the phrase and reordering tables.  This operation takes some
+        time but makes the models must faster to load at decoding time.
+        
+        The translation model must already be constructed before calling this method.
+        
+        """
+        
         print "Binarise translation model " + self.sourceLang + " -> " + self.targetLang
         if not self.iniFile:
             raise RuntimeError("Translation model has not yet been trained and tuned")
@@ -215,92 +434,23 @@ class Experiment(object):
         self._recordState()
         print "Finished binarising the translation model in directory " + binaDir.getDescription()
 
-      
-   
-    def translate(self, text, preprocess=True):
-        if not self.iniFile:
-            raise RuntimeError("Translation model is not yet trained and tuned!")
-        print ("Translating text: \"" + text + "\" from " + 
-               self.sourceLang + " to " + self.targetLang)
-
-        text = text.strip("\n") + "\n"
-        if preprocess:
-            text = self.processor.processText(text, self.sourceLang)
-            
-        transScript = self._getTranslateScript(self.iniFile)
-
-        return self.executor.run_output(transScript, stdin=text)
-        
-   
-    def translateFile(self, infile, outfile, preprocess=True, filterModel=True):
-
-        infile = Path(infile)
-        if preprocess:
-            infile = self.processor.processFile(infile)
-       
-        if filterModel:
-            filterDir = self._getFilteredModel(infile)
-            initFile = filterDir + "/moses.ini"
-        elif self.iniFile:
-            initFile = self.iniFile
-        else:
-            raise RuntimeError("Translation model is not yet trained!")
-        
-        print ("Translating file \"" + infile + "\" from " + 
-               self.sourceLang + " to " + self.targetLang)
-
-        transScript = self._getTranslateScript(initFile, infile)
-        
-        result = self.executor.run(transScript, stdout=outfile)
-
-        if filterDir:
-            filterDir.remove()
-       
-        if not result:
-            raise RuntimeError("Translation of file " + str(infile) + " FAILED")
-        
-       
-    def evaluateBLEU(self, testData, preprocess=True):
- 
-        testCorpus = AlignedCorpus(testData, self.sourceLang, self.targetLang)
-        print ("Evaluating BLEU scores with test data: " + testData)
-        
-        if preprocess:
-            testCorpus = self.processor.processCorpus(testCorpus, False)
-                    
-        transFile = testCorpus.getTargetFile().basename().addProperty("translated")  
-        transPath = self.expPath + "/" + transFile
-        
-        self.translateFile(testCorpus.getSourceFile(), transPath, False, True)    
-        transCorpus = TranslatedCorpus(testCorpus, transPath)
-        bleu, bleu_output = self.processor.getBleuScore(transCorpus)
-        print bleu_output
-        self.test = {"stem":transCorpus.getStem(),
-                     "translation":transPath,
-                     "bleu":bleu}                            
-        self._recordState()
-        return bleu
- 
- 
-    def analyseErrors(self):
-        
-        if not self.test:
-            raise RuntimeError("you must first perform an evaluation before the analysis")
-        
-        testCorpus = AlignedCorpus(self.test["stem"], self.sourceLang, self.targetLang)
-        translatedCorpus = TranslatedCorpus(testCorpus, self.test["translation"])
-                     
-        translatedCorpus = self.processor.revertCorpus(translatedCorpus)
-      
-        alignments = translatedCorpus.getAlignments(addHistory=True)   
-        analyser.printSummary(alignments)
-        
-        translatedCorpus.getSourceFile().remove()
-        translatedCorpus.getTargetFile().remove()
-        translatedCorpus.getTranslationFile().remove()
-
 
     def queryLanguageModel(self, text):
+        """Queries the language model with a given sentence.  The method returns the
+        log-prob, perplexity, number of tokens and out-of-vocabulary tokens for the
+        sentence given the current language model.
+        
+        The language model must already be constructed before calling this method.
+        
+        Args:
+            text (str): the sentence to query.
+            
+        Returns:
+            A dictionary with the following values: 'logprob' (log-probability for the 
+                sentence), 'perplexity' (perplexity including OOVs), 'perplexity2' (excluding 
+                OOVs), 'OOVs' (number of OOVs tokens), and 'tokens' (number of tokens).
+        
+        """
         if not self.lm:
             raise RuntimeError("Language model is not yet trained")
         queryScript = (moses_root + "/bin/query "+ self.lm)
@@ -320,6 +470,11 @@ class Experiment(object):
     
    
     def reduceSize(self):
+        """Reduces the size of the experiment directory by removing all uncessary files, 
+        such as intermediary corpus files and optional files generated during the model
+        training and tuning.
+        
+        """
         if self.tm:
             (self.tm.getUp()+"/corpus").remove()
             (self.tm.getUp()+"/giza." + self.sourceLang + "-" + self.targetLang).remove()
@@ -345,6 +500,12 @@ class Experiment(object):
  
     
     def copy(self, nexExpName):
+        """Copies the current experiment under a new name.
+        
+        Args:
+            newExpName (str): the new name for the copied experiment.
+        
+        """
         newexp = Experiment(nexExpName, self.sourceLang, self.targetLang)
         newexp.lm = self.lm
         newexp.tm = self.tm
@@ -353,12 +514,20 @@ class Experiment(object):
         newexp.iniFile = self.iniFile
         newexp.sourceLang = self.sourceLang
         newexp.targetLang = self.targetLang
-        newexp.test = self.test
+        newexp.results = self.results
         newexp.processor = self.processor
         return newexp
  
    
-    def prunePhraseTable(self, probThreshold=0.0001):
+    def _prunePhraseTable(self, probThreshold=0.0001):
+        """Prune the phrase table with the provided probability threshold.
+        
+        The translation model must already be constructed before calling this method.
+        
+        Args:
+            probThreshold: the probability threshold under which phrase pairs are pruned.
+            
+        """
         
         if not self.tm or not self.iniFile:
             raise RuntimeError("Translation model is not yet constructed")
@@ -368,13 +537,12 @@ class Experiment(object):
         newtable = Path(config.getPhraseTable()[:-2] + "reduced.gz")
 
         if not phrasetable.exists():
-            print "Original phrase table has been removed, pruning canceled"
+            print "Original phrase table has been removed, pruning cancelled"
             return
         
         zcatExec = "gzcat" if system.existsExecutable("gzcat") else "zcat"
-        pruneScript = (zcatExec + " %s | " + moses_root + "/scripts/training" 
-                       + "/threshold-filter.perl " + str(probThreshold) + " | gzip - > %s"
-                       )%(phrasetable, newtable)
+        pruneScript = (zcatExec + " %s|" + moses_root + "/scripts/training/threshold-filter.perl " 
+                       + str(probThreshold) + " | gzip - > %s")%(phrasetable, newtable)
         result = self.executor.run(pruneScript)
         if result:        
             config.replacePhraseTable(newtable)                          
@@ -383,9 +551,41 @@ class Experiment(object):
             print "Pruning of translation table FAILED"
         
 
+    def _constructTranslationModel(self, trainCorpus, alignment, reordering):
+        """Internal method for constructing a translation model given a training 
+        corpus, an alignment heuristic and a reordering method. The method returns 
+        the directory containing the resulting model data.
+        
+        The method should not be called from outside the module, please use 
+        trainTranslationModel(...) instead.
+        
+        """
+        tmDir = self.expPath + "/translationmodel"
+        tmDir.reset()
+        tmScript = self._getTrainScript(tmDir, trainCorpus.getStem(), alignment, reordering)
+        result = self.executor.run(tmScript)
+        if not result:
+            raise RuntimeError("construction of translation model FAILED")
+        return tmDir
+
+
 
     def _getTrainScript(self ,tmDir, trainData, alignment, reordering, 
                         firstStep=1, lastStep=9, direction=None):
+        """Forges the training script (based on train-model.perl) given the provided
+        arguments.
+        
+        Args:
+            tmDir (str): directory in which to put all the files
+            trainData (str): stem for the training data
+            alignment (str): alignment heuristic
+            reordering (str): reordering method
+            firstStep (int): first step for the training (see http://statmt.org/moses)
+            lastStep (int): last step for the training
+            direction (int): direction for the estimation in step 2.  If left
+                unspecified, both directions are estimated.
+        
+        """
         if not self.lm: 
             raise RuntimeError("LM for " + self.targetLang  + " not yet trained")
         tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
@@ -407,6 +607,13 @@ class Experiment(object):
         
         
     def _getTuningScript(self, tuneDir, tuningStem):
+        """Forges the tuning script (based on mert-moses.pl) given the provided arguments.
+        
+        Args:
+            tuneDir: directory in which to put all the tuning files
+            tuningStem: stem for the tuning data.
+            
+        """
 
         tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.sourceLang + " " 
@@ -420,16 +627,33 @@ class Experiment(object):
         
 
     
-    def _getTranslateScript(self, initFile, inputFile=None):
+    def _getTranslateScript(self, initFile=None, inputFile=None):
+        """Forges the translation script (based on the Moses decoder) given the provided
+        moses.ini configuration file and the input file to translate.
+        
+        Args:
+            initFile: Moses configuration file.  If left unspecified, uses self.iniFile.
+            inputFile: input file to translate.  If left unspecified, translated from
+                standard input.
+        
+        """
+        if not initFile:
+            initFile = self.iniFile
         script = (self.decoder  + " -f " + initFile.encode('utf-8') 
-                + "  -threads " + str(self.nbThreads))
+                + " -v 0 -threads " + str(self.nbThreads))
         if inputFile:
             script += " -input-file "+ inputFile
         return script
                                                                    
     
     def _getFilteredModel(self, testSource):
+        """Constructs a filtered translation model that is tailored for the particular
+        testing data.
         
+        Args:
+            testSource: the aligned data to apply for the filter.
+            
+        """
         if not self.iniFile:
             raise RuntimeError("Translation model is not yet tuned")
 
@@ -445,6 +669,9 @@ class Experiment(object):
             
     
     def _recordState(self):
+        """Records the current state of the experiment in the JSON file.
+        
+        """
         settings = {"path":self.expPath, "source":self.sourceLang, "target":self.targetLang}
         if self.lm:
             settings["lm"] = self.lm
@@ -454,14 +681,18 @@ class Experiment(object):
             settings["tm"] = self.tm
         if self.iniFile:
             settings["ini"] = self.iniFile
-        if self.test:
-            settings["test"] = self.test
+        if self.results:
+            settings["results"] = {"stem":self.results.getStem(), 
+                                   "translation":self.results.getTranslationFile()}
         dump = json.dumps(settings)
         with open(self.expPath+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
             
             
     def _reloadState(self):
+        """Reloads the experiment variables given the existing JSON file.
+        
+        """
         print "Existing experiment, reloading known settings..."
         with open(self.expPath+"/settings.json", 'r') as jsonFile:
             settings = json.loads(jsonFile.read())
@@ -477,17 +708,31 @@ class Experiment(object):
                 self.tm = Path(settings["tm"])
             if settings.has_key("ini"):
                 self.iniFile = Path(settings["ini"])
-            if settings.has_key("test"):
-                self.test = settings["test"]
+            if settings.has_key("results"):
+                initCorpus = AlignedCorpus(settings["results"]["stem"], self.sourceLang, self.targetLang)
+                self.results = TranslatedCorpus(initCorpus, settings["results"]["translation"])
             
            
     
 class MosesConfig():
+    """Representation of a moses.ini configuration file.  The class provides
+    functions to easily extract and modify information in this file.
+    
+    """
     
     def __init__(self, configFile):
+        """Creates a new MosesConfig object based on the configuration file.
+        
+        """
         self.configFile = Path(configFile)
+        if not self.configFile.exists():
+            raise RuntimeError("File " + self.configFile + " does not exist")
 
     def getPhraseTable(self):
+        """Returns the path to the phrase table file specified in the
+        configuration file.
+        
+        """
         parts = self._getParts() 
         if parts.has_key("feature"):
             for l in parts["feature"]:
@@ -499,6 +744,11 @@ class MosesConfig():
         
     
     def replacePhraseTable(self, newPath, phraseType="PhraseDictionaryMemory"):
+        """Replaces the path to the phrase table with a new path.  In addition,
+        the type of the phrase table can be modified (useful when doing e.g.
+        binarisation).
+        
+        """
         parts = self._getParts() 
         if parts.has_key("feature"):
             newList = []
@@ -515,6 +765,10 @@ class MosesConfig():
         
 
     def getReorderingTable(self):
+        """Returns the path to the reordering table file as specified in the
+        configuration file.
+        
+        """
         parts = self._getParts() 
         if parts.has_key("feature"):
             for l in parts["feature"]:
@@ -526,6 +780,9 @@ class MosesConfig():
         
     
     def replaceReorderingTable(self, newPath):
+        """Replaces the path to the reordering table with a new path.
+        
+        """
         parts = self._getParts() 
         if parts.has_key("feature"):
             newList = []
@@ -541,6 +798,9 @@ class MosesConfig():
         
     
     def removePart(self, partname):
+        """Removes a section in the configuration file.
+        
+        """
         parts = self._getParts()
         if parts.has_key(partname):
             del parts[partname]
@@ -548,6 +808,9 @@ class MosesConfig():
         
     
     def getPaths(self):
+        """Returns all file paths specified in the configuration file.
+        
+        """
         paths = set()
         parts = self._getParts() 
         for part in parts:
@@ -559,11 +822,18 @@ class MosesConfig():
         
     
     def display(self):
+        """ Prints out the configuration file to standard output.
+        
+        """
         lines = self.configFile.readlines()
         for l in lines:
             print l.strip()
         
     def _updateFile(self, newParts):
+        """ Updates the configuration file with new sections, and writes
+        the result onto the file.
+        
+        """
         with open(self.configFile, 'w') as configFileD:
             for part in newParts:
                 configFileD.write("[" + part + "]\n")
@@ -573,6 +843,10 @@ class MosesConfig():
         
     
     def _getParts(self):
+        """Returns a dictionary containing the text in each section of
+        the moses.ini configuration file.
+        
+        """
         lines = self.configFile.readlines()
         parts = {}
         for  i in range(0, len(lines)):
@@ -591,5 +865,45 @@ class MosesConfig():
                     if line.strip():
                         parts[partType].append(line.strip())
         return parts
+    
+    
+
+def checkEnvironment():
+    """Checking that all executables and binaries are in place for the experiment.
+    If not, raises a runtime error. All third-party tools (Moses, MGIZA++ IRSTLM)
+    must be present and compiled. Furthermore, the method also checks that some
+    shell tools such as sort and zcat are present with a recent version (to 
+    allow for e.g. parallel sorting). 
+    
+    Note that on Mac OS X, one may need to install the 'coreutils' package using
+    brew to get things to work properly.
+    
+    """
+    if not moses_root.exists():
+        raise RuntimeError("Moses directory does not exist")
+    elif not (moses_root + "/bin/moses").exists():
+        raise RuntimeError("Moses is not compiled!")
+    elif not mgizapp_root.exists():
+        raise RuntimeError("MGIZA++ directory does not exist")
+    elif not (mgizapp_root + "/bin/mgiza").exists():
+        raise RuntimeError("MGIZA++ is not compiled!")
+    elif not irstlm_root.exists():
+        raise RuntimeError("IRSTLM directory does not exist")
+    elif not (irstlm_root+"/bin/compile-lm").exists():
+        raise RuntimeError("IRSTLM is not compiled!")
+    
+    # Correcting strange bug when Eclipse changes the default PATH
+    if "/usr/local/bin" not in system.getEnv()["PATH"]:
+        system.setEnv("PATH", "/usr/local/bin", override=False)
+
+    sortCmd = "gsort" if system.existsExecutable("gsort") else "sort"
+    if len(str(system.run_output(sortCmd + " --help | grep \"parallel\""))) < 2:
+        raise RuntimeError("sort command does not accept parallel switch, please upgrade!")
+    zcatCmd = "gzcat" if system.existsExecutable("gzcat") else "zcat"
+    zcatTest = "touch test ; gzip test ; %s test.gz ; rm test.gz"%(zcatCmd)
+    if len(str(system.run_output(zcatTest))) > 2:
+        raise RuntimeError("zcat command does not work properly, please upgrade!")
+        
+
     
 

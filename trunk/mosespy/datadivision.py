@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+
+"""Module for dividing aligned data into several parts, respectively 
+corresponding to the training, tuning, development and testing set.
+
+"""
+__author__ = 'Pierre Lison (plison@ifi.uio.no)'
+__copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
+__license__ = 'MIT License'
+__version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 import sys, math, random
 import mosespy.slurm as slurm
@@ -5,13 +15,37 @@ from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
 
 
-
-def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDevelop=3000, 
+def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
                nbTesting=3000, randomPick=True, duplicatesWindow=4):
+    """Divides the aligned data into distinct parts. Since datasets (such 
+    as subtitles corpora) often contain duplicates sentences, the method 
+    seeks to avoid selecting sentences that can also be found in other 
+    parts of the dataset.
     
+    In addition, indices files are also generated to allow for 'backtracking'
+    the selected sentences in the original corpus.
+    
+    Args:
+        alignedStem (str): stem for the aligned data
+        sourceLang (str): source language code
+        targetLang (str): target language code
+        nbTuning (int): number of sentences to select for the tuning set
+        nbDev (int): number of sentences for the development set
+        nbTesting (int): number of sentences for the testing set
+        randomPick (bool): whether to pick tuning, development and testing
+            sentences randomly (if True), or at the end of the data set 
+            (if False).
+        duplicatesWindow (int): number of sentences to take into account
+            when searching for duplicates in the data set.
+    
+    Returns:
+        Four aligned corpora corresponding to the training, tuning,
+        development and test data. 
+    
+    """
     corpus = AlignedCorpus(alignedStem, sourceLang, targetLang)
    
-    if nbTuning + nbDevelop + nbTesting > corpus.getSourceFile().countNbLines():
+    if nbTuning + nbDev + nbTesting > corpus.getSourceFile().countNbLines():
         raise RuntimeError("cannot divide such small amount of data")
     
     outputPath = corpus.getSourceFile().getUp()
@@ -22,13 +56,13 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDevelop=300
         
         tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
         toExclude = toExclude.union(tuningIndices)
-        developIndices =_drawRandom(nbDevelop, nbLines, exclusion=toExclude)
+        developIndices =_drawRandom(nbDev, nbLines, exclusion=toExclude)
         toExclude = toExclude.union(developIndices)
         testingIndices = _drawRandom(nbTesting,nbLines, exclusion=toExclude)
     else:
         nbLines = corpus.getSourceFile().countNbLines()
-        tuningIndices = range(0,nbLines)[-nbTuning-nbTesting-nbDevelop:-nbDevelop-nbTesting]
-        developIndices = range(0,nbLines)[-nbDevelop-nbTesting:-nbTesting]
+        tuningIndices = range(0,nbLines)[-nbTuning-nbTesting-nbDev:-nbDev-nbTesting]
+        developIndices = range(0,nbLines)[-nbDev-nbTesting:-nbTesting]
         testingIndices = range(0,nbLines)[-nbTesting:]
 
     sourceLines = corpus.getSourceFile().readlines()
@@ -96,8 +130,12 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDevelop=300
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
     
-def extractDuplicates(corpusFile, window=4, nbSplits=2):
+def extractDuplicates(corpusFile, window=4, nbSplits=1):
+    """Extract the set of line numbers in the corpus that contain duplicate 
+    sentences (i.e. that contain the same source and target sentences for
+    both the current line and its local history).
     
+    """
     corpus = BasicCorpus(corpusFile)
     outputPath = corpusFile.getUp()
     
@@ -114,8 +152,8 @@ def extractDuplicates(corpusFile, window=4, nbSplits=2):
     
     args = [(corpus.getCorpusFile(),indicesFile, window) for indicesFile in indicesFiles]
     
-    outputs = slurm.SlurmExecutor().run_parallel_function(_printDuplicates, args,
-                                                      stdouts=[True]*nbSplits)
+    outputs = slurm.SlurmExecutor().run_parallel_function(_printDuplicates, 
+                                                          args, stdouts=True)
     duplicates = set()
     for output in outputs:
         duplicates = duplicates.union([int(d) for d in output.split()])
@@ -126,7 +164,11 @@ def extractDuplicates(corpusFile, window=4, nbSplits=2):
 
 
 def filterOutLines(fullCorpusFile, toRemoveFile):
-
+    """Filters out sentences from the corpus represented by toRemoveFile
+    from the corpus in fullCorpusFile.  This method is used to prune 
+    language model data from development and test sentences.
+    
+    """
     fullCorpus = BasicCorpus(fullCorpusFile)
     toRemoveCorpus = BasicCorpus(toRemoveFile)
     
@@ -135,7 +177,7 @@ def filterOutLines(fullCorpusFile, toRemoveFile):
     occurrences = toRemoveCorpus.getOccurrences()
     histories = toRemoveCorpus.getHistories()  
 
-    outputFile = fullCorpus.getCorpusFile().addProperty("filtered") 
+    outputFile = fullCorpus.getCorpusFile().addFlag("filtered") 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
         skippedLines = []
         for i in range(2, len(inputLines)):
@@ -155,6 +197,10 @@ def filterOutLines(fullCorpusFile, toRemoveFile):
 
 
 def  _printDuplicates(sourceFile, indicesFile, window):
+    """Process the indices in indicesFile in the source file, and 
+    prints the duplicates in the standard output.  
+    
+    """
     sys.stderr.write("Starting local extraction of source duplicates...\n") 
     indicesFile = Path(indicesFile)
     indices = [int(val) for val in indicesFile.read().split()] 
@@ -181,9 +227,15 @@ def  _printDuplicates(sourceFile, indicesFile, window):
 
    
 
-      
 def _drawRandom(nbToDraw, maxValue, exclusion=None):
+    """Draws random numbers from 0 to maxValue.
     
+    Args:
+        nbToDraw (int): number of numbers to draw
+        maxValue (int): max value for the numbers to draw
+        exclusion (set): numbers to exclude
+        
+    """
     numbers = set()     
     while len(numbers) < nbToDraw:
         choice = random.randrange(0, maxValue)
