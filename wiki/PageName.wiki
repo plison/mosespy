@@ -1,4 +1,3 @@
-
 =!MosesPy=
 
  * Current version 0.2
@@ -12,7 +11,7 @@ The !MosesPy interface is a Python package designed to ease the use of the Moses
 The interface relies on 3 third-party tools: the [http://statmt.org/moses Moses] toolkit itself (and its set of processing scripts), the multi-threaded GIZA ([http://www.kyloo.net/software/doku.php/mgiza:overview MGIZA++]), and the [https://hlt.fbk.eu/technologies/irstlm-irst-language-modelling-toolkit IRSTLM] language modelling toolkit.
 
 !MosesPy is released under an MIT license. Note that this license only 
-applies to the MosesPy package, not the third-party tools!
+applies to the !MosesPy package, not the third-party tools!
 
 
 == How to install !MosesPy==
