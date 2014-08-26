@@ -301,7 +301,7 @@ class CorpusProcessor():
          
          """
         if not isinstance(rawCorpus, BasicCorpus):
-            raise RuntimeError("rawCorpus must be of type BasicCorpus")
+            rawCorpus = BasicCorpus(rawCorpus)
         
         # STEP 1: tokenisation
         normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
@@ -356,8 +356,8 @@ class CorpusProcessor():
         
         """
         if not isinstance(processedCorpus, BasicCorpus):
-            raise RuntimeError("processedCorpus must be of type BasicCorpus")
-            
+            processedCorpus = BasicCorpus(processedCorpus)
+                        
         untokFile = self.workPath + "/" + processedCorpus.basename().changeFlag("detok") 
         self.tokeniser.detokeniseFile(processedCorpus,untokFile)
          
@@ -465,7 +465,7 @@ class CorpusProcessor():
             return filenames
         
         else:
-            raise RuntimeError("corpus must be an AlignedCorpus or BasicCorpus")
+            return self.splitData(BasicCorpus(corpus), nbSplits, outputDir)
 
          
 class Tokeniser():
