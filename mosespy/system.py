@@ -58,7 +58,7 @@ class Path(str):
         
         """
         str.__init__(self, path)
-
+ 
     def getStem(self):
         """Returns the stem of the file path (i.e. without the extension).
         
