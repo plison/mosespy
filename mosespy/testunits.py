@@ -10,7 +10,7 @@ import unittest
 import uuid
 import os
 import shutil 
-import mosespy.experiment as experiment
+import mosespy.constants as constants
 import mosespy.slurm as slurm
 import mosespy.system as system
 import mosespy.analyser as analyser
@@ -136,7 +136,7 @@ class Pipeline(unittest.TestCase):
 
         
     def test_langmodel(self):
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         result1 = exp.queryLanguageModel("Where is it ?")
@@ -148,7 +148,7 @@ class Pipeline(unittest.TestCase):
         
     
     def test_translationmodel(self):
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test2", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(self.inFile.getStem(), pruning=False)
@@ -174,7 +174,7 @@ class Pipeline(unittest.TestCase):
         tuneTargetLines = tune.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(tune.getStem() + "2.fr").writelines(tuneSourceLines)
         Path(tune.getStem() + "2.en").writelines(tuneTargetLines)
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem(), pruning=False)
@@ -219,7 +219,7 @@ class Pipeline(unittest.TestCase):
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -244,7 +244,7 @@ class Pipeline(unittest.TestCase):
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = SlurmExperiment("paralleltest", "fr", "en", maxJobs=2)
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -265,7 +265,7 @@ class Pipeline(unittest.TestCase):
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -279,7 +279,7 @@ class Pipeline(unittest.TestCase):
     def test_config(self):
         train, _, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                  10, 0, 10, randomPick=False)
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -303,7 +303,7 @@ class Pipeline(unittest.TestCase):
     def test_analyse(self):
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -327,7 +327,7 @@ class Pipeline(unittest.TestCase):
         
         
     def test_mosesparallel(self):
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(self.inFile.getStem())
@@ -344,7 +344,7 @@ class Pipeline(unittest.TestCase):
         
         
     def test_binarise(self):
-        experiment.expDir = self.tmpdir + "/"
+        constants.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(self.inFile.getStem())

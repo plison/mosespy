@@ -14,11 +14,9 @@ import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import mosespy.slurm as slurm
 import mosespy.system as system
+import mosespy.constants as constants
 from mosespy.system import Path
 from mosespy.corpus import BasicCorpus, CorpusProcessor
-
-moses_root = Path(__file__).getAbsolute().getUp().getUp() + "/moses"
-decoder = moses_root + "/bin/moses "
 
 def getInput():
     """Returns the decoder input, coming from either an input file
@@ -161,20 +159,21 @@ def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
         nbJobs: number of parallel jobs to use
         
     """  
+    decoder_withargs = constants.decoder + " " + mosesArgs
     if not sourceInput:
-        print "Running decoder: " + decoder + mosesArgs
-        system.run(decoder + mosesArgs, stdout=outStream)
+        print "Running decoder: " + decoder_withargs
+        system.run(decoder_withargs, stdout=outStream)
         
     elif nbJobs == 1 or not isinstance(sourceInput, Path):
-        print "Running decoder: " + decoder + mosesArgs + " < " + sourceInput
-        system.run(decoder + mosesArgs, stdin=sourceInput, stdout=outStream)
+        print "Running decoder: " + decoder_withargs + " < " + sourceInput
+        system.run(decoder_withargs, stdin=sourceInput, stdout=outStream)
     else:
         executor = slurm.SlurmExecutor()        
         splits = splitDecoding(sourceInput, mosesArgs, nbJobs)
         jobArgs = [split["args"] for split in splits]
         stdins = [split["in"] for split in splits]
         stdouts = [split["out"] for split in splits]
-        executor.run_parallel(decoder + " %s", jobArgs, stdins, stdouts)
+        executor.run_parallel(constants.decoder + " %s", jobArgs, stdins, stdouts)
 
         mergeOutFiles([split["out"] for split in splits], outStream)
         

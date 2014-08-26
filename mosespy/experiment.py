@@ -37,17 +37,10 @@ __version__ = "$Date::                      $"
 
 import json,  re
 import mosespy.system as system
+import mosespy.constants as constants
 from mosespy.system import Path
 from mosespy.corpus import AlignedCorpus, TranslatedCorpus, CorpusProcessor
 
-rootPath = Path(__file__).getUp().getUp()
-expDir = rootPath + "/experiments/"
-moses_root = rootPath + "/moses" 
-mgizapp_root = rootPath + "/mgizapp"
-irstlm_root = rootPath + "/irstlm"
-
-defaultAlignment = "grow-diag-final-and"
-defaultReordering = "msd-bidirectional-fe"
 
 
 class Experiment(object):
@@ -80,7 +73,7 @@ class Experiment(object):
         
         """
                 
-        self.expPath = Path(expDir+expName).getAbsolute()
+        self.expPath = Path(constants.expDir+expName).getAbsolute()
         self.lm = None
         self.ngram_order = None
         self.tm = None
@@ -106,7 +99,7 @@ class Experiment(object):
         self.executor = system.ShellExecutor()
         self.nbThreads = nbThreads
         self.processor = CorpusProcessor(self.expPath, self.executor, self.nbThreads)
-        self.decoder = moses_root + "/bin/moses"
+        self.decoder = constants.decoder
                    
     
     def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
@@ -126,7 +119,7 @@ class Experiment(object):
         
         """
   
-        system.setEnv("IRSTLM", irstlm_root)
+        system.setEnv("IRSTLM", constants.irstlm_root)
         trainFile = Path(trainFile).getAbsolute()
         if not trainFile.exists():
             raise RuntimeError("File " + trainFile + " does not exist")
@@ -138,20 +131,22 @@ class Experiment(object):
         
         sbFile = self.expPath + "/" + trainFile.basename().changeFlag("sb")
                 
-        self.executor.run(irstlm_root + "/bin/add-start-end.sh", trainFile, sbFile)
+        self.executor.run(constants.irstlm_root+"/bin/add-start-end.sh", trainFile, sbFile)
         
         lmFile = self.expPath + "/langmodel.lm." + trainFile.getLang()
-        lmScript = ((irstlm_root + "/bin/build-lm.sh" + " -i %s" +
+        lmScript = ((constants.irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.expPath.basename())) 
         self.executor.run(lmScript)
                            
         arpaFile = self.expPath + "/langmodel.arpa." + trainFile.getLang()
-        arpaScript = (irstlm_root + "/bin/compile-lm --text=yes %s %s"%(lmFile+".gz", arpaFile))
+        arpaScript = (constants.irstlm_root + "/bin/compile-lm "
+                      + "--text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
 
         blmFile = self.expPath + "/langmodel.blm." + trainFile.getLang()
-        blmScript = moses_root + "/bin/build_binary -w after -i " + arpaFile + " " + blmFile
+        blmScript = (constants.moses_root + "/bin/build_binary -w after " 
+                     + " -i " + arpaFile + " " + blmFile)
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
         
@@ -167,9 +162,9 @@ class Experiment(object):
         self._recordState()
     
      
-    def trainTranslationModel(self, trainStem, alignment=defaultAlignment, 
-                              reordering=defaultReordering, preprocess=True, 
-                              pruning=True):  
+    def trainTranslationModel(self, trainStem, alignment=constants.defaultAlignment, 
+                              reordering=constants.defaultReordering, 
+                              preprocess=True, pruning=True):  
         """Trains the translation model for the experiment.  The method relies on
         the Moses script train-model.perl to construct the phrase and reordering
         tables.  MGIZA++ is employed for the word alignment.
@@ -386,13 +381,12 @@ class Experiment(object):
         transPath = self.expPath + "/" + transFile
         
         self.translateFile(testCorpus.getSourceFile(), transPath, False, True, False)    
-        results = TranslatedCorpus(testCorpus, transPath)
-        bleu, bleu_output = self.processor.getBleuScore(results)
-        print bleu_output
-        
+        results = TranslatedCorpus(testCorpus, transPath)        
         self.results = self.processor.revertCorpus(results)
         self._recordState()
         
+        bleu, bleu_output = self.processor.getBleuScore(results)
+        print bleu_output
         return results, bleu
     
 
@@ -415,13 +409,13 @@ class Experiment(object):
         reorderingTable = config.getReorderingTable()
         
         binaDir.reset()
-        binScript = (moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
+        binScript = (constants.moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
                      + " -nscores 5 -out " + binaDir + "/phrase-table")
         result1 = self.executor.run(binScript)
         if not result1:
             raise RuntimeError("could not binarise translation model (phrase table process)")
         
-        binScript2 = (moses_root + "/bin/processLexicalTable" + " -in " + reorderingTable 
+        binScript2 = (constants.moses_root + "/bin/processLexicalTable" + " -in " + reorderingTable 
                       + " -out " + binaDir + "/reordering-table")
         result2 = self.executor.run(binScript2)
         if not result2:
@@ -453,7 +447,7 @@ class Experiment(object):
         """
         if not self.lm:
             raise RuntimeError("Language model is not yet trained")
-        queryScript = (moses_root + "/bin/query "+ self.lm)
+        queryScript = (constants.moses_root + "/bin/query "+ self.lm)
         output = self.executor.run_output(queryScript, text+"\n")
         regex = (r".*" + re.escape("Total:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+" 
                  + re.escape("Perplexity including OOVs:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+"  
@@ -541,7 +535,8 @@ class Experiment(object):
             return
         
         zcatExec = "gzcat" if system.existsExecutable("gzcat") else "zcat"
-        pruneScript = (zcatExec + " %s|" + moses_root + "/scripts/training/threshold-filter.perl " 
+        pruneScript = (zcatExec + " %s|" + constants.moses_root 
+                       + "/scripts/training/threshold-filter.perl " 
                        + str(probThreshold) + " | gzip - > %s")%(phrasetable, newtable)
         result = self.executor.run(pruneScript)
         if result:        
@@ -588,14 +583,14 @@ class Experiment(object):
         """
         if not self.lm: 
             raise RuntimeError("LM for " + self.targetLang  + " not yet trained")
-        tmScript = (moses_root + "/scripts/training/train-model.perl" + " "
+        tmScript = (constants.moses_root + "/scripts/training/train-model.perl" + " "
                     + "--root-dir " + tmDir + " -corpus " +  trainData
                     + " -f " + self.sourceLang + " -e " + self.targetLang 
                     + " -alignment " + alignment + " " 
                     + " -reordering " + reordering + " "
                     + " -lm 0:" +str(self.ngram_order)
                     +":"+self.lm+":8"       # 8 because binarised with KenLM
-                    + " -external-bin-dir " + mgizapp_root + "/bin" 
+                    + " -external-bin-dir " + constants.mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel "
                     + " --first-step %i --last-step %i "
                     + " -sort-buffer-size 20%% -sort-compress gzip -sort-parallel %i" 
@@ -615,12 +610,12 @@ class Experiment(object):
             
         """
 
-        tuneScript = (moses_root + "/scripts/training/mert-moses.pl" + " " 
+        tuneScript = (constants.moses_root + "/scripts/training/mert-moses.pl" + " " 
                       + tuningStem + "." + self.sourceLang + " " 
                       + tuningStem + "." + self.targetLang + " "
                       + self.decoder + " "
                       + self.iniFile
-                      + " --mertdir " + moses_root + "/bin/"
+                      + " --mertdir " + constants.moses_root + "/bin/"
                       + " --decoder-flags=\'-threads %i -v 0' --working-dir " + tuneDir
                       )%(self.nbThreads)
         return tuneScript
@@ -660,7 +655,7 @@ class Experiment(object):
         filteredDir = self.expPath+ "/filteredmodel-" +  testSource.basename().getStem()
         filteredDir.remove()
 
-        filterScript = (moses_root + "/scripts/training/filter-model-given-input.pl "
+        filterScript = (constants.moses_root + "/scripts/training/filter-model-given-input.pl "
                         + filteredDir + " " + self.iniFile + " "
                         + testSource)
                         #+ " -Binarizer "  + moses_root+"/bin/processPhraseTable")
@@ -879,17 +874,17 @@ def checkEnvironment():
     brew to get things to work properly.
     
     """
-    if not moses_root.exists():
+    if not constants.moses_root.exists():
         raise RuntimeError("Moses directory does not exist")
-    elif not (moses_root + "/bin/moses").exists():
+    elif not (constants.moses_root + "/bin/moses").exists():
         raise RuntimeError("Moses is not compiled!")
-    elif not mgizapp_root.exists():
+    elif not constants.mgizapp_root.exists():
         raise RuntimeError("MGIZA++ directory does not exist")
-    elif not (mgizapp_root + "/bin/mgiza").exists():
+    elif not (constants.mgizapp_root + "/bin/mgiza").exists():
         raise RuntimeError("MGIZA++ is not compiled!")
-    elif not irstlm_root.exists():
+    elif not constants.irstlm_root.exists():
         raise RuntimeError("IRSTLM directory does not exist")
-    elif not (irstlm_root+"/bin/compile-lm").exists():
+    elif not (constants.irstlm_root+"/bin/compile-lm").exists():
         raise RuntimeError("IRSTLM is not compiled!")
     
     # Correcting strange bug when Eclipse changes the default PATH
