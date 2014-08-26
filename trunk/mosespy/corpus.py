@@ -56,7 +56,7 @@ class BasicCorpus(Path):
         corpus (see method divideData in the datadivision module).
                
        """ 
-        Path.__init__(self, corpusFile)
+        Path.__init__(corpusFile)
             
         if not self.exists():
             raise IOError(self + " does not exist")    
