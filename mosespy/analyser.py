@@ -173,12 +173,9 @@ def getWER(reference, actual):
   
 
 def _translationTuple(align):
-    source = align["source"].lower().translate(string.maketrans("",""),
-                                               string.punctuation).strip()
-    target = align["target"].lower().translate(string.maketrans("",""),
-                                               string.punctuation).strip()
-    trans = align["translation"].lower().translate(string.maketrans("",""),
-                                                   string.punctuation).strip()
+    source = align["source"].lower().strip()
+    target = align["target"].lower().strip()
+    trans = align["translation"].lower().strip()
     return (source, target, trans)
                                                    
 
