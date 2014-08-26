@@ -1,6 +1,6 @@
 =!MosesPy=
 
- * Current version 0.2
+ * Current version: 0.2
  * Main developer: [http://folk.uio.no/plison Pierre Lison] ([mailto:plison@ifi.uio.no plison@ifi.uio.no])
 
 
