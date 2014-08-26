@@ -58,14 +58,16 @@ class ErrorAnalyser():
         for cond in self.conditions:
             print "Analysis of errors under the condition: %s"%(str(cond))
             print "----------------------"
+            incr = 1
             for align in alignments:
                 if cond.isSatisfiedBy(align):
+                    print "%i. Source line:\t\t\t %s"%(incr, align.source)
                     if align.targethistory:
-                        print "Previous line (reference):\t" + align.targethistory
-                    print "Source line:\t\t\t" + align.source
-                    print "Current line (reference):\t" + align.target
-                    print "Current line (actual):\t\t" + align.translation
+                        print "(Previous line (reference):\t" + align.targethistory + ")"
+                    print "   Current line (reference):\t" + align.target
+                    print "   Current line (actual):\t\t" + align.translation
                     print "----------------------"
+                    incr += 1
       
 
 class Condition():
