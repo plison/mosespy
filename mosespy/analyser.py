@@ -63,9 +63,9 @@ class ErrorAnalyser():
                 if cond.isSatisfiedBy(align):
                     if align.targethistory:
                         print "\tPrevious line:\t" + align.targethistory
-                    print "%i.\tTarget (reference):\t%s"%(incr, align.target)
+                    print "%i.\tTarget (actual):\t%s"%(incr, align.translation)
                     WER = getWER(align.target, align.translation)
-                    print "\tTarget (actual):\t" + align.translation + " (WER=%i%%)"%(WER*100)
+                    print "\tTarget (reference):\t" + align.target + " (WER=%i%%)"%(WER*100)
                     print "\tSource:\t\t\t%s"%(align.source)
                     print "----------------------"
                     incr += 1
