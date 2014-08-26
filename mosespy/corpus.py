@@ -127,6 +127,36 @@ class BasicCorpus(Path):
         return histories
 
 
+
+class AlignedPair():
+    """Representation of a pair of aligned (source,target) sentences, 
+    along with some optional information such as actual translations
+    and history of preceding sentences.
+    
+    """
+    def __init__(self, source, target):
+        """Creates a new pair with a source and target sentence.
+        
+        """
+        self.source = source
+        self.target = target
+        self.translation = None
+        self.targethistory = None
+        
+    def addTargetHistory(self, history):
+        """Adds a history of previous sentence to the pair.
+        
+        """
+        self.targethistory = history
+        
+    def addTranslation(self, translation):
+        """Adds the translation for the source sentence actually produced
+        by the translation system.
+        
+        """
+        self.translation = translation
+        
+
 class AlignedCorpus(object):
     """Representation of an aligned corpus.
     
@@ -184,8 +214,8 @@ class AlignedCorpus(object):
         
     
     def getAlignments(self, addHistory=False): 
-        """Returns a list of dictionaries (of length corresponding
-        to the number of lines in the corpus), where each dictionary
+        """Returns a list of alignment objects (of length corresponding
+        to the number of lines in the corpus), where each alignment
         entry encodes the source sentence, the target sentence, and
         (if addHistory is set to true), the history of the target
         sentence.
@@ -196,17 +226,16 @@ class AlignedCorpus(object):
             
         alignments = []
         for i in range(0, len(sourceLines)):
-            align = {"source": sourceLines[i].strip(), 
-                     "target": targetLines[i].strip()}
-            alignments.append(align)
+            pair = AlignedPair(sourceLines[i].strip(),targetLines[i].strip())
+            alignments.append(pair)
             
         if addHistory:
             targetCorpus = BasicCorpus(self.getTargetCorpus())
             histories = targetCorpus.getHistories()
             for i in range(0, len(alignments)):
-                align = alignments[i]
+                pair = alignments[i]
                 if histories.has_key(i) and len(histories[i]) > 0:
-                    align["previoustarget"] = histories[i][-1]
+                    pair.addTargetHistory(histories[i][-1])
                  
         return alignments
 
@@ -261,8 +290,8 @@ class TranslatedCorpus(AlignedCorpus):
         
         translationLines = self.translationCorpus.readlines()
         for i in range(0, len(alignments)):
-            alignment = alignments[i]
-            alignment["translation"] = translationLines[i].strip()
+            pair = alignments[i]
+            pair.addTranslation(translationLines[i].strip())
                 
         return alignments
 
