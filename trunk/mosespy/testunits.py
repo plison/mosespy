@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*- 
 
+"""Unit testing methods for the MosesPy pipeline.  If the code is not 
+broken, all testing methods should pass. 
+
+"""
+
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
@@ -10,7 +15,7 @@ import unittest
 import uuid
 import os
 import shutil 
-import mosespy.constants as constants
+import mosespy.install as install
 import mosespy.slurm as slurm
 import mosespy.system as system
 import mosespy.analyser as analyser
@@ -23,8 +28,14 @@ import mosespy.datadivision as datadivision
 slurm.correctSlurmEnv()
 
 class Pipeline(unittest.TestCase):
+    """Test suite for the MosesPy pipeline.
+    
+    """
 
     def setUp(self):
+        """Setting up the test (using a temporary directory).
+        
+        """
         self.tmpdir = Path(__file__).getUp().getUp() + "/tmp" + str(uuid.uuid4())[0:8]
         os.makedirs(self.tmpdir)
         self.inFile = (Path(__file__).getUp()+"/data/subtitles.fr").copy(self.tmpdir)
@@ -32,7 +43,9 @@ class Pipeline(unittest.TestCase):
         self.duplicatesFile = (Path(__file__).getUp()+"/data/withduplicates.txt").copy(self.tmpdir)
         
     def test_preprocessing(self):
+        """Tests the preprocessing (tokenisation, truecasing) of aligned corpora.
         
+        """
         processor = CorpusProcessor(self.tmpdir, ShellExecutor())
         trueFile = processor.processFile(self.inFile)
         trueLines = trueFile.readlines()
@@ -59,6 +72,10 @@ class Pipeline(unittest.TestCase):
 
 
     def test_division(self):
+        """Tests the methods used to divide raw data into training, tuning,
+        development and testing sets.
+        
+        """
         _, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                 10, 0, 10)
         self.assertTrue(os.path.exists(test.getStem()+".indices"))
@@ -103,6 +120,9 @@ class Pipeline(unittest.TestCase):
         
     
     def test_split(self):
+        """Tests the methods to split aligned data in splits of equal size.
+        
+        """
         acorpus = AlignedCorpus(self.inFile.getStem(), "fr", "en")
         splitStems = CorpusProcessor(self.tmpdir).splitData(acorpus, 2)
         self.assertTrue(Path(self.tmpdir + "/0.fr").exists())
@@ -136,7 +156,10 @@ class Pipeline(unittest.TestCase):
 
         
     def test_langmodel(self):
-        constants.expDir = self.tmpdir + "/"
+        """Tests the methods to build and binarise language models.
+        
+        """
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         result1 = exp.queryLanguageModel("Where is it ?")
@@ -148,7 +171,10 @@ class Pipeline(unittest.TestCase):
         
     
     def test_translationmodel(self):
-        constants.expDir = self.tmpdir + "/"
+        """Tests the methods to build translation models.
+        
+        """
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test2", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(self.inFile.getStem(), pruning=False)
@@ -168,13 +194,16 @@ class Pipeline(unittest.TestCase):
         
     
     def test_tuning(self):
+        """Tests the methods to tune the parameters of a translation configuration.
+        
+        """
         train, tune, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
         tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         tuneTargetLines = tune.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(tune.getStem() + "2.fr").writelines(tuneSourceLines)
         Path(tune.getStem() + "2.en").writelines(tuneTargetLines)
-        constants.expDir = self.tmpdir + "/"
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem(), pruning=False)
@@ -194,6 +223,9 @@ class Pipeline(unittest.TestCase):
         self.assertSetEqual(set(os.listdir(exp.iniFile.getUp())), set(["moses.ini"]))
 
     def test_paths(self):
+        """Tests the methods used for manipulating file paths.
+        
+        """
         p = Path(self.tmpdir + "/blabla.en")
         self.assertFalse(p.exists())
         self.assertEqual(p.getAbsolute().getUp().getUp(), Path(__file__).getUp().getUp())
@@ -213,13 +245,16 @@ class Pipeline(unittest.TestCase):
     
     
     def test_translate(self):
+        """Tests the translation methods.
+        
+        """
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
-        constants.expDir = self.tmpdir + "/"
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -237,14 +272,17 @@ class Pipeline(unittest.TestCase):
         exp.translateFile(exp.results.getSourceFile(), self.tmpdir + "/translation.en", revertOutput=True)
         self.assertEqual((self.tmpdir + "/translation.en").readlines()[2], "how vas-tu?\n")
     
-    def test_parallel(self):  
+    def test_parallel(self): 
+        """Tests the use of parallel jobs for training the translation model.
+        
+        """ 
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en",
                                                      10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
-        constants.expDir = self.tmpdir + "/"
+        install.expDir = self.tmpdir + "/"
         exp = SlurmExperiment("paralleltest", "fr", "en", maxJobs=2)
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -259,13 +297,16 @@ class Pipeline(unittest.TestCase):
     
     
     def test_copy(self):
+        """Tests the method to copy experiments.
+        
+        """
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
         testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
         testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
-        constants.expDir = self.tmpdir + "/"
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -277,9 +318,12 @@ class Pipeline(unittest.TestCase):
         
  
     def test_config(self):
+        """Tests the manipulation of configuration files.
+        
+        """
         train, _, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                  10, 0, 10, randomPick=False)
-        constants.expDir = self.tmpdir + "/"
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -301,9 +345,12 @@ class Pipeline(unittest.TestCase):
  
  
     def test_analyse(self):
+        """Tests the methods for error analysis.
+        
+        """
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
-        constants.expDir = self.tmpdir + "/"
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(train.getStem())
@@ -321,13 +368,19 @@ class Pipeline(unittest.TestCase):
         
     
     def test_duplicates(self):
+        """Tests the extraction of duplicates.
+        
+        """
         dupls = datadivision.extractDuplicates(self.duplicatesFile)
         self.assertEqual(len(dupls), 8)
         self.assertIn(691, dupls)
         
         
     def test_mosesparallel(self):
-        constants.expDir = self.tmpdir + "/"
+        """Tests the parallel version of the Moses decoder.
+
+        """
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(self.inFile.getStem())
@@ -344,7 +397,10 @@ class Pipeline(unittest.TestCase):
         
         
     def test_binarise(self):
-        constants.expDir = self.tmpdir + "/"
+        """Tests the binarisation of translation and reordering models.
+        
+        """
+        install.expDir = self.tmpdir + "/"
         exp = Experiment("test", "fr", "en")
         exp.trainLanguageModel(self.outFile, preprocess=True)
         exp.trainTranslationModel(self.inFile.getStem())
@@ -362,7 +418,14 @@ class Pipeline(unittest.TestCase):
         self.assertEquals(exp.translate("qui êtes-vous?"), "Who are you?")
 
     def tearDown(self):
+        """Removes the temporary directory used for the test.
+        
+        """
         shutil.rmtree(self.tmpdir)
 
+
 if __name__ == '__main__':
+    """Runs the test.
+    
+    """
     unittest.main()

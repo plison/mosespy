@@ -14,7 +14,7 @@ import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import mosespy.slurm as slurm
 import mosespy.system as system
-import mosespy.constants as constants
+import mosespy.install as install
 from mosespy.system import Path
 from mosespy.corpus import BasicCorpus, CorpusProcessor
 
@@ -159,7 +159,7 @@ def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
         nbJobs: number of parallel jobs to use
         
     """  
-    decoder_withargs = constants.decoder + " " + mosesArgs
+    decoder_withargs = install.decoder + " " + mosesArgs
     if not sourceInput:
         print "Running decoder: " + decoder_withargs
         system.run(decoder_withargs, stdout=outStream)
@@ -173,7 +173,7 @@ def runParallelMoses(sourceInput, mosesArgs, outStream, nbJobs):
         jobArgs = [split["args"] for split in splits]
         stdins = [split["in"] for split in splits]
         stdouts = [split["out"] for split in splits]
-        executor.run_parallel(constants.decoder + " %s", jobArgs, stdins, stdouts)
+        executor.run_parallel(install.decoder + " %s", jobArgs, stdins, stdouts)
 
         mergeOutFiles([split["out"] for split in splits], outStream)
         
