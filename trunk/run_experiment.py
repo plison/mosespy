@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*- 
 
-import sys
 from mosespy.experiment import Experiment
 
 trainData = "./data/news-commentary/news-commentary-v8.fr-en"
