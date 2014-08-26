@@ -43,7 +43,7 @@ def analyseResults(results):
         raise RuntimeError("results must be of type TranslatedCorpus")
     alignments = results.getAlignments(addHistory=True)
     analyseShortAnswers(alignments)
-       
+    analyseQuestions(alignments)   
 
         
 def analyseAllErrors(alignments):
@@ -77,15 +77,16 @@ def analyseShortAnswers(alignments):
         print "----------------------"
    
 
-
 def analyseQuestions(alignments):
         
     print "Analysis of questions"
     print "----------------------"
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
-        if "?" in align["target"] and WER >= 0.25:
+        if "?" in align["target"] and WER >= 0.3:
             print "Source line:\t\t\t" + align["source"]
+            if align.has_key("previoustarget"):
+                print "Previous line (reference):\t" + align["previoustarget"]
             print "Current line (reference):\t" + align["target"]
             print "Current line (actual):\t\t" + align["translation"]
             print "----------------------"
