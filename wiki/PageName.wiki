@@ -28,8 +28,12 @@ and run translation experiments.  A simple example of experiment is
 shown in the file `run_experiment.py`.  Of course, you will need to download  the data to run the experiment:
  * the training data is available at [http://www.statmt.org/wmt13/training-parallel-nc-v8.tgz]
  * the tuning and testing data are available at [http://www.statmt.org/wmt12/dev.tgz]
+
+Once you have downloaded the data, modify the corresponding paths in `run_experiment.py`, and run the script:
+{{{
+	$ python run_experiment.py
+}}}
  
- As you might notice, this experiment is a replica of the baseline setup
- described in the Moses [http://www.statmt.org/moses/?n=Moses.Baseline Baseline system], but is  substantially easier to run.  The final BLEU score at the end of this experiment example should be around 23.50.
+As you might notice, this experiment is a replica of the baseline setup described in the Moses [http://www.statmt.org/moses/?n=Moses.Baseline Baseline system], but is  substantially easier to run.  The final BLEU score at the end of this experiment example should be around 23.50.
  
  
