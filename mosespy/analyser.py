@@ -35,28 +35,22 @@ __version__ = "$Date::                      $"
 
 
 import string
+from collections import Counter  
 from mosespy.corpus import TranslatedCorpus
-     
      
 def analyseResults(results):
     if not isinstance(results, TranslatedCorpus):
         raise RuntimeError("results must be of type TranslatedCorpus")
     alignments = results.getAlignments(addHistory=True)
-    analyseAllErrors(alignments)
+    analyseShortAnswers(alignments)
        
 
-
-def compare(line1, line2):
-    line1 = line1.lower().translate(string.maketrans("",""), string.punctuation).strip()
-    line2 = line2.lower().translate(string.maketrans("",""), string.punctuation).strip()
-    return line1 == line2
-    
-    
+        
 def analyseAllErrors(alignments):
     print "Analysis of all errors"
     print "----------------------"
     for align in alignments:
-        if not compare(align["target"], align["translation"]):
+        if not _compare(align["target"], align["translation"]):
             if align.has_key("previoustarget"):
                 print "Previous line (reference):\t" + align["previoustarget"]
             print "Source line:\t\t\t" + align["source"]
@@ -69,15 +63,18 @@ def analyseShortAnswers(alignments):
 
     print "Analysis of short words"
     print "----------------------"
+    errorDict = Counter()
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
         if len(align["target"].split()) <= 3 and WER >= 0.5:
-            if align.has_key("previoustarget"):
-                print "Previous line (reference):\t" + align["previoustarget"]
-            print "Source line:\t\t\t" + align["source"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
-            print "----------------------"
+            tupleTrans = _translationTuple(align)
+            errorDict[tupleTrans] += 1
+    for transError in errorDict.most_common(20):
+        print "Source line:\t\t\t" + transError[0][0]
+        print "Target line (reference):\t" + transError[0][1]
+        print "Target line (actual):\t\t" + transError[0][2]
+        print "Number of occurrences: " + transError[1]
+        print "----------------------"
    
 
 
@@ -173,4 +170,19 @@ def getWER(reference, actual):
     return (previous_row[-1]+0.0)/len(refTokens)
   
 
+def _translationTuple(align):
+    source = align["source"].lower().translate(string.maketrans("",""),
+                                               string.punctuation).strip()
+    target = align["target"].lower().translate(string.maketrans("",""),
+                                               string.punctuation).strip()
+    trans = align["translation"].lower().translate(string.maketrans("",""),
+                                                   string.punctuation).strip()
+    return (source, target, trans)
+                                                   
+
+def _compare(line1, line2):
+    line1 = line1.lower().translate(string.maketrans("",""), string.punctuation).strip()
+    line2 = line2.lower().translate(string.maketrans("",""), string.punctuation).strip()
+    return line1 == line2
+    
         
