@@ -73,7 +73,7 @@ def analyseShortAnswers(alignments):
         print "Source line:\t\t\t" + transError[0][0]
         print "Target line (reference):\t" + transError[0][1]
         print "Target line (actual):\t\t" + transError[0][2]
-        print "Number of occurrences: " + transError[1]
+        print "Number of occurrences: " + str(transError[1])
         print "----------------------"
    
 
