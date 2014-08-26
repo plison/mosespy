@@ -127,7 +127,7 @@ class Path(str):
             shutil.rmtree(self, ignore_errors=True)
        
 
-    def reset(self):
+    def resetdir(self):
         """Remove the current path and replaces it by an empty
         directory.
         
@@ -135,6 +135,15 @@ class Path(str):
         self.getAbsolute().remove()
         os.makedirs(self)
         
+
+    def resetfile(self):
+        """Remove the current path and replaces it by an empty
+        file.
+        
+        """
+        self.getAbsolute().remove()
+        with open(self, 'a'):
+            os.utime(self, None) 
     
     def move(self, newLoc):
         """Moves the file or directory to a new location.
@@ -151,6 +160,7 @@ class Path(str):
             if Path(newname).exists():
                 Path(newname).remove()
             os.rename(self, newname)
+            return Path(newname)
             
             
     def copy(self, newLoc):
@@ -160,21 +170,7 @@ class Path(str):
         if self.exists():
             shutil.copy(self, newLoc)
             return Path(newLoc + "/" + self.basename())
-            
-            
-    def printlines(self):
-        """Prints the content of the file (provided the path
-        refers to a path).
-        
-        """
-        if os.path.isfile(self):
-            with open(self, 'r') as fileD:
-                for line in fileD.readlines():
-                    print line.strip()
-        else:
-            raise RuntimeError(self + " not an existing file")
-         
-            
+             
     def __add__(self, other):
         """Concatenates the path with a string (or another path).
         

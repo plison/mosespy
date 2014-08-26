@@ -39,7 +39,7 @@ import json,  re
 import mosespy.system as system
 import mosespy.install as install
 from mosespy.system import Path
-from mosespy.corpus import AlignedCorpus, TranslatedCorpus, CorpusProcessor
+from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus, CorpusProcessor
 
 
 
@@ -84,7 +84,7 @@ class Experiment(object):
         if jsonFile.exists():
             self._reloadState()
         else:
-            self.expPath.reset()
+            self.expPath.resetdir()
             if sourceLang:
                 self.sourceLang = sourceLang
             if targetLang:
@@ -117,34 +117,29 @@ class Experiment(object):
         If the operation is successful, the binarised language model is set to the
         instance variable self.lm, and the N-gram order to self.ngram_order.
         
-        """
-  
-        system.setEnv("IRSTLM", install.irstlm_root)
-        trainFile = Path(trainFile).getAbsolute()
-        if not trainFile.exists():
-            raise RuntimeError("File " + trainFile + " does not exist")
-        
-        if preprocess:
-            trainFile = self.processor.processFile(trainFile)
-
+        """     
+           
         print "Building language model based on " + trainFile
+        train = BasicCorpus(trainFile)
+        if preprocess:
+            train = self.processor.processCorpus(train)
         
-        sbFile = self.expPath + "/" + trainFile.basename().changeFlag("sb")
-                
-        self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", trainFile, sbFile)
+        sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
+        self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", train, sbFile)
         
-        lmFile = self.expPath + "/langmodel.lm." + trainFile.getLang()
+        lmFile = self.expPath + "/langmodel.lm." + train.getLang()
+        system.setEnv("IRSTLM", install.irstlm_root)
         lmScript = ((install.irstlm_root + "/bin/build-lm.sh" + " -i %s" +
                     " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
                     )%(sbFile, lmFile, ngram_order, self.expPath.basename())) 
         self.executor.run(lmScript)
                            
-        arpaFile = self.expPath + "/langmodel.arpa." + trainFile.getLang()
+        arpaFile = self.expPath + "/langmodel.arpa." + train.getLang()
         arpaScript = (install.irstlm_root + "/bin/compile-lm "
                       + "--text=yes %s %s"%(lmFile+".gz", arpaFile))
         self.executor.run(arpaScript)  
 
-        blmFile = self.expPath + "/langmodel.blm." + trainFile.getLang()
+        blmFile = self.expPath + "/langmodel.blm." + train.getLang()
         blmScript = (install.moses_root + "/bin/build_binary -w after " 
                      + " -i " + arpaFile + " " + blmFile)
         self.executor.run(blmScript)
@@ -196,7 +191,7 @@ class Experiment(object):
         train = AlignedCorpus(trainStem, self.sourceLang, self.targetLang)
         
         if preprocess:         
-            train = self.processor.processCorpus(train)
+            train = self.processor.processAlignedCorpus(train)
        
         print ("Building translation model " + self.sourceLang + "-" 
                + self.targetLang + " with " + train.getStem())
@@ -241,14 +236,14 @@ class Experiment(object):
         tuning = AlignedCorpus(tuningStem, self.sourceLang, self.targetLang)
         
         if preprocess:         
-            tuning = self.processor.processCorpus(tuning, False)
+            tuning = self.processor.processAlignedCorpus(tuning, False)
         
         print ("Tuning translation model " + self.sourceLang + "-" 
                + self.targetLang + " with " + tuning.getStem())
         
         tuneDir = self.expPath+"/tunedmodel"
         tuningScript = self._getTuningScript(tuneDir, tuning.getStem())
-        tuneDir.reset()
+        tuneDir.resetdir()
         result = self.executor.run(tuningScript)
         if not result or not (tuneDir + "/moses.ini").exists():
             raise RuntimeError("Tuning of translation model FAILED")
@@ -314,40 +309,41 @@ class Experiment(object):
         
         """   
         
-        infile = Path(infile)
-        outfile = Path(outfile)
-        if infile.getLang()!=self.sourceLang:
+        inCorpus = BasicCorpus(infile)
+        Path(outfile).resetfile()
+        outCorpus = BasicCorpus(outfile)
+        if inCorpus.getLang()!=self.sourceLang:
             print "Input file must have extension %s"%(self.sourceLang)
-        if outfile.getLang()!=self.targetLang:
+        if outCorpus.getLang()!=self.targetLang:
             print "Output file must have extension %s"%(self.targetLang)
             
         if preprocess:
-            infile = self.processor.processFile(infile)
+            inCorpus = self.processor.processCorpus(inCorpus)
        
         if filterModel:
-            filterDir = self._getFilteredModel(infile)
+            filterDir = self._getFilteredModel(inCorpus)
             initFile = filterDir + "/moses.ini"
         elif self.iniFile:
             initFile = self.iniFile
         else:
             raise RuntimeError("Translation model is not yet trained!")
         
-        print ("Translating file \"" + infile + "\" from " + 
+        print ("Translating file \"" + inCorpus + "\" from " + 
                self.sourceLang + " to " + self.targetLang)
 
-        transScript = self._getTranslateScript(initFile, infile)
+        transScript = self._getTranslateScript(initFile, inCorpus)
         
-        result = self.executor.run(transScript, stdout=outfile)
+        result = self.executor.run(transScript, stdout=outCorpus)
                     
         if filterDir:
             filterDir.remove()
        
         if not result:
-            raise RuntimeError("Translation of file " + str(infile) + " FAILED")
+            raise RuntimeError("Translation of file " + str(inCorpus) + " FAILED")
         
         if revertOutput: 
-            outfile_reverted = self.processor.revertFile(outfile)
-            outfile_reverted.rename(outfile)
+            outCorpus = self.processor.revertCorpus(outCorpus)
+            outCorpus.rename(outfile)
         
        
     def evaluateBLEU(self, testStem, preprocess=True):
@@ -374,15 +370,15 @@ class Experiment(object):
         print ("Evaluating BLEU scores with test data: " + testStem)
         
         if preprocess:
-            testCorpus = self.processor.processCorpus(testCorpus, False)
+            testCorpus = self.processor.processAlignedCorpus(testCorpus, False)
                     
         
-        transFile = testCorpus.getTargetFile().basename().addFlag("translated", reverseOrder=True)  
+        transFile = testCorpus.getTargetCorpus().basename().addFlag("translated", reverseOrder=True)  
         transPath = self.expPath + "/" + transFile
         
-        self.translateFile(testCorpus.getSourceFile(), transPath, False, True, False)    
+        self.translateFile(testCorpus.getSourceCorpus(), transPath, False, True, False)    
         results = TranslatedCorpus(testCorpus, transPath)        
-        self.results = self.processor.revertCorpus(results)
+        self.results = self.processor.revertTranslatedCorpus(results)
         self._recordState()
         
         bleu, bleu_output = self.processor.getBleuScore(results)
@@ -408,7 +404,7 @@ class Experiment(object):
         phraseTable = config.getPhraseTable()
         reorderingTable = config.getReorderingTable()
         
-        binaDir.reset()
+        binaDir.resetdir()
         binScript = (install.moses_root + "/bin/processPhraseTable" + " -ttable 0 0 " + phraseTable 
                      + " -nscores 5 -out " + binaDir + "/phrase-table")
         result1 = self.executor.run(binScript)
@@ -556,7 +552,7 @@ class Experiment(object):
         
         """
         tmDir = self.expPath + "/translationmodel"
-        tmDir.reset()
+        tmDir.resetdir()
         tmScript = self._getTrainScript(tmDir, trainCorpus.getStem(), alignment, reordering)
         result = self.executor.run(tmScript)
         if not result:
@@ -678,7 +674,7 @@ class Experiment(object):
             settings["ini"] = self.iniFile
         if self.results:
             settings["results"] = {"stem":self.results.getStem(), 
-                                   "translation":self.results.getTranslationFile()}
+                                   "translation":self.results.getTranslationCorpus()}
         dump = json.dumps(settings)
         with open(self.expPath+"/settings.json", 'w') as jsonFile:
             jsonFile.write(dump)
