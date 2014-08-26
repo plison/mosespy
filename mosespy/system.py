@@ -53,9 +53,6 @@ class Path(str):
     
     """
     
-    def __new__(cls, value):
-        obj = str.__new__(cls, value)
-        return obj
 
     def getStem(self):
         """Returns the stem of the file path (i.e. without the extension).
