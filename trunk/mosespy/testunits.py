@@ -44,9 +44,10 @@ import mosespy.slurm as slurm
 import mosespy.system as system
 import mosespy.analyser as analyser
 from mosespy.system import Path, ShellExecutor
-from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor
+from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
+from mosespy.analyser import Condition, OrCondition
 import mosespy.datadivision as datadivision
 
 slurm.correctSlurmEnv()
@@ -138,9 +139,9 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(len(alignments), 10)
         for i in range(0, len(testlines)):
             align = alignments[i]
-            self.assertEqual(align["target"],testlines[i].strip())
+            self.assertEqual(align.target,testlines[i].strip())
             oindices = [k for k, x in enumerate(targetlines) if x == testlines[i]]
-            self.assertTrue(any([not q or align["previoustarget"]==targetlines[q-1] for q in oindices]))
+            self.assertTrue(any([not q or align.targethistory==targetlines[q-1] for q in oindices]))
         
     
     def test_split(self):
@@ -382,7 +383,7 @@ class Pipeline(unittest.TestCase):
     
         sys.stdout = open(self.tmpdir + "/out.txt", 'w')         
         exp.evaluateBLEU(test.getStem())
-        analyser.analyseResults(exp.results)
+        analyser.analyseResults(exp.results, Condition())
         sys.stdout.flush()
         output = Path(self.tmpdir + "/out.txt").read()
         self.assertIn("Previous line (reference):\tI\'m sorry to hear that.\n" 
@@ -440,6 +441,29 @@ class Pipeline(unittest.TestCase):
         self.assertIn("PhraseDictionaryBinary", exp.iniFile.read())
         self.assertIn("/binmodel", exp.iniFile.read())
         self.assertEquals(exp.translate("qui êtes-vous?"), "Who are you?")
+        
+        
+    
+    def test_analysisconditions(self):
+        """Tests the construction of conditions for the error analysis.
+        
+        """
+        cond = Condition(inSource="toch", wer=(0.4, 0.8))
+        self.assertEqual(str(cond), "'toch' in source and WER in [0.40,0.80]")
+        pair = AlignedPair("dat is toch waar", "mais c' est vrai")
+        self.assertTrue(cond.isSatisfiedBy(pair))
+        self.assertFalse(cond.isSatisfiedBy(AlignedPair("en wat denk je daarom ?", 
+                                                        "tu en penses quoi ?")))
+        pair.addTranslation("c' est vrai")
+        self.assertFalse(cond.isSatisfiedBy(pair))
+        pair.addTranslation("c' est quand même vrai hein")
+        self.assertTrue(cond.isSatisfiedBy(pair))
+        cond = Condition(inTranslation="hein", wer=(0.4, 0.8), length=(5, 10))
+        self.assertFalse(cond.isSatisfiedBy(pair))
+        cond2 = Condition(inTranslation="hein", wer=(0.2, 0.8), length=(4, 10))
+        self.assertTrue(OrCondition(cond, cond2).isSatisfiedBy(pair))
+        self.assertFalse(OrCondition(cond, cond).isSatisfiedBy(pair))
+        
 
     def tearDown(self):
         """Removes the temporary directory used for the test.

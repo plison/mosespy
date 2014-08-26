@@ -35,79 +35,150 @@ __version__ = "$Date::                      $"
 
 
 import string
-from collections import Counter  
 from mosespy.corpus import TranslatedCorpus
+
+
+class Condition():
+    """Condition on an alignment pair, made of:
+        - substrings that must be found in the source, target and/or 
+        translation sentences
+        - lower and upper bounds on the Word Error Rate between target 
+        and translation
+        - lower and upper bounds on the sentence length (on target)
+        
+    These conditions are interpreted conjunctively, i.e. all parts must
+    be true in order for the condition to be satisfied.  Disjunctive
+    conditions must use the DisjunctiveCondition class.
+    
+    """
+    def __init__(self, **kwargs):
+        """Creates an empty condition.
+        
+        """
+        self.inSource = []
+        self.inTarget = []
+        self.inTranslation = []
+        self.wer = (0, 1)
+        self.length = (0, 100)
+        
+        if "inSource" in kwargs:
+            self.inSource.append(kwargs["inSource"])
+        if "inTarget" in kwargs:
+            self.inTarget.append(kwargs["inTarget"])
+        if "inTranslation" in kwargs:
+            self.inTranslation.append(kwargs["inTranslation"])
+        if "wer" in kwargs:
+            self.wer = kwargs["wer"]
+        if "length" in kwargs:
+            self.length = kwargs["length"]
+        
      
-def analyseResults(results):
+    def isSatisfiedBy(self, pair):
+        """Returns true if the alignment pair satisfied all elements
+        of the condition, and false otherwise.
+        
+        """
+        for inS in self.inSource:
+            if inS not in pair.source:
+                return False
+        for inT in self.inTarget:
+            if inT not in pair.target:
+                return False
+        for inT in self.inTranslation:
+            if pair.translation and inT not in pair.translation:
+                return False
+            
+        targetSplits = pair.target.split()
+        if (len(targetSplits) < self.length[0] or 
+            len(targetSplits) > self.length[1]):
+            return False
+        
+        if pair.translation:
+            WER = getWER(pair.target, pair.translation)
+            if (WER < self.wer[0] or WER > self.wer[1]):
+                return False
+        
+        return True
+    
+    def __str__(self):
+        """Returns a string representation of the condition.
+        
+        """
+        subconds = []
+        for inS in self.inSource:
+            subconds.append("'%s' in source"%(inS))
+        for inT in self.inTarget:
+            subconds.append("'%s' in target"%(inT))
+        
+        if self.length != (0, 100):
+            subconds.append("sentence length in [%i,%i]"
+                            %(self.length[0], self.length[1])) 
+             
+        if self.wer != (0, 1):
+            subconds.append("WER in [%.2f,%.2f]"
+                            %(self.wer[0], self.wer[1]))
+            
+        return " and ".join(subconds) if subconds else "True"
+    
+    
+
+class OrCondition():
+    """Representation of a disjunctive condition, i.e. the  condition
+    will be true if at least one subcondition is true.
+    
+    """
+    def __init__(self, *subconditions):
+        """Creates a new condition made of the disjunctive combination
+        of the subconditions.
+        
+        """
+        self.subconditions = subconditions
+        
+    def isSatisfiedBy(self, pair):
+        """Returns true if at least one subcondition is satisfied by the
+        alignment pair, and false otherwise.
+        
+        """
+        for subcondition in self.subconditions:
+            if subcondition.isSatisfiedBy(pair):
+                return True
+        return False
+    
+    def __str__(self):
+        """Returns a string representation of the condition.
+        
+        """
+        return " or ".join([str(subcond) for subcond in self.subconditions])
+        
+
+
+def analyseResults(results, *condition):
+    """Analyse the translation results (encoded as a translated corpus)
+    under a set of one or more conditions.
+    
+    """
     if not isinstance(results, TranslatedCorpus):
         raise RuntimeError("results must be of type TranslatedCorpus")
     alignments = results.getAlignments(addHistory=True)
- #   analyseShortAnswers(alignments)
- #   analyseQuestions(alignments)   
-    analyseErrorsWithSubstring(alignments, "toch")
+    for cond in condition:
+        print "COND IS : " + str(cond)
+        analyseResultsUnderCondition(alignments, cond)
+      
         
-def analyseAllErrors(alignments):
-    print "Analysis of all errors"
-    print "----------------------"
-    for align in alignments:
-        if not _compare(align["target"], align["translation"]):
-            if align.has_key("previoustarget"):
-                print "Previous line (reference):\t" + align["previoustarget"]
-            print "Source line:\t\t\t" + align["source"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
-            print "----------------------"
-
-     
-def analyseShortAnswers(alignments):
-
-    print "Analysis of short words"
-    print "----------------------"
-    errorDict = Counter()
-    for align in alignments:
-        WER = getWER(align["target"], align["translation"])
-        if len(align["target"].split()) <= 3 and WER >= 0.5:
-            tupleTrans = _translationTuple(align)
-            errorDict[tupleTrans] += 1
-    for transError in errorDict.most_common(20):
-        print "Source line:\t\t\t" + transError[0][0]
-        print "Target line (reference):\t" + transError[0][1]
-        print "Target line (actual):\t\t" + transError[0][2]
-        print "Number of occurrences: " + str(transError[1])
-        print "----------------------"
-   
- 
-
-
-def analyseErrorsWithSubstring(alignments, substring):
-       
-    print "Analysis of questions"
-    print "----------------------"
-    for align in alignments:
-        WER = getWER(align["target"], align["translation"])
-        if substring in align["target"].lower() and WER >= 0.3:
-            print "Source line:\t\t\t" + align["source"]
-            if align.has_key("previoustarget"):
-                print "Previous line (reference):\t" + align["previoustarget"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
-            print "----------------------"
-            
-            
-def analyseBigErrors(alignments):
+def analyseResultsUnderCondition(alignments, condition):
+    """Analyse the alignment pairs under a particular condition.
     
-    
-    print "Analysis of large translation errors"
+    """
+    print "Analysis of errors under the condition: %s"%(str(condition))
     print "----------------------"
     for align in alignments:
-        WER = getWER(align["target"], align["translation"])
-        if WER >= 0.7:
-            print "Source line:\t\t\t" + align["source"]
-            print "Current line (reference):\t" + align["target"]
-            print "Current line (actual):\t\t" + align["translation"]
+        if condition.isSatisfiedBy(align):
+            if align.targethistory:
+                print "Previous line (reference):\t" + align.targethistory
+            print "Source line:\t\t\t" + align.source
+            print "Current line (reference):\t" + align.target
+            print "Current line (actual):\t\t" + align.translation
             print "----------------------"
-
-
 
 
 def extractNgrams(tokens, size):
