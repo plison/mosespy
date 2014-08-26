@@ -52,6 +52,12 @@ class Path(str):
     has been tokenised.
     
     """
+    
+    def __init__(self, path):
+        """Creates a new path.
+        
+        """
+        str.__init__(self, path)
 
     def getStem(self):
         """Returns the stem of the file path (i.e. without the extension).
