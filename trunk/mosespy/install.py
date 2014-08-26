@@ -62,6 +62,7 @@ def compile_mgizapp():
     if not result3:
         raise RuntimeError("Use of 'make install' for MGIZA++ has failed.  Please compile "
                            + "MGIZA++ manually (see program documentation).")
+    system.copy(mgizapp_root+"/scripts/merge_alignment.py", mgizapp_root + "/bin")
                          
 
 def compile_irstlm():
