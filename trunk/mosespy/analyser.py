@@ -42,9 +42,9 @@ def analyseResults(results):
     if not isinstance(results, TranslatedCorpus):
         raise RuntimeError("results must be of type TranslatedCorpus")
     alignments = results.getAlignments(addHistory=True)
-    analyseShortAnswers(alignments)
-    analyseQuestions(alignments)   
-
+ #   analyseShortAnswers(alignments)
+ #   analyseQuestions(alignments)   
+    analyseErrorsWithSubstring(alignments, "toch")
         
 def analyseAllErrors(alignments):
     print "Analysis of all errors"
@@ -76,22 +76,24 @@ def analyseShortAnswers(alignments):
         print "Number of occurrences: " + str(transError[1])
         print "----------------------"
    
+ 
 
-def analyseQuestions(alignments):
-        
+
+def analyseErrorsWithSubstring(alignments, substring):
+       
     print "Analysis of questions"
     print "----------------------"
     for align in alignments:
         WER = getWER(align["target"], align["translation"])
-        if "?" in align["target"] and WER >= 0.3:
+        if substring in align["target"].lower() and WER >= 0.3:
             print "Source line:\t\t\t" + align["source"]
             if align.has_key("previoustarget"):
                 print "Previous line (reference):\t" + align["previoustarget"]
             print "Current line (reference):\t" + align["target"]
             print "Current line (actual):\t\t" + align["translation"]
             print "----------------------"
-
-
+            
+            
 def analyseBigErrors(alignments):
     
     
