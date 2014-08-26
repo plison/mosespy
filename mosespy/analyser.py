@@ -63,7 +63,7 @@ class ErrorAnalyser():
                 if cond.isSatisfiedBy(align):
                     print "%i.\tSource:\t\t%s"%(incr, align.source)
                     if align.targethistory:
-                        print "\t[Previous (reference):\t" + align.targethistory + "]"
+                        print "\t[Previous:\t\t" + align.targethistory + "]"
                     print "\tTarget (reference):\t" + align.target
                     print "\tTarget (actual):\t" + align.translation
                     print "----------------------"
