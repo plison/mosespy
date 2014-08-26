@@ -129,7 +129,7 @@ def splitDecoding(sourceInput, mosesArgs, nbJobs):
     
     """
     splitDir = Path("./tmp" + str(uuid.uuid4())[0:6])
-    splitDir.reset()
+    splitDir.resetdir()
     if not isinstance(sourceInput, Path):
         sourceInput = Path(splitDir + "/fullsource.tmp").writelines([sourceInput])
     infiles = CorpusProcessor(splitDir).splitData(BasicCorpus(sourceInput), nbJobs)

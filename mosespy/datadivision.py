@@ -45,14 +45,14 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
     """
     corpus = AlignedCorpus(alignedStem, sourceLang, targetLang)
    
-    if nbTuning + nbDev + nbTesting > corpus.getSourceFile().countNbLines():
+    if nbTuning + nbDev + nbTesting > corpus.countNbLines():
         raise RuntimeError("cannot divide such small amount of data")
     
-    outputPath = corpus.getSourceFile().getUp()
+    outputPath = corpus.getSourceCorpus().getUp()
     
     if randomPick:
-        nbLines = corpus.getSourceFile().countNbLines()
-        toExclude = extractDuplicates(corpus.getSourceFile(), duplicatesWindow)
+        nbLines = corpus.countNbLines()
+        toExclude = extractDuplicates(corpus.getSourceCorpus(), duplicatesWindow)
         
         tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
         toExclude = toExclude.union(tuningIndices)
@@ -60,13 +60,13 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
         toExclude = toExclude.union(developIndices)
         testingIndices = _drawRandom(nbTesting,nbLines, exclusion=toExclude)
     else:
-        nbLines = corpus.getSourceFile().countNbLines()
+        nbLines = corpus.countNbLines()
         tuningIndices = range(0,nbLines)[-nbTuning-nbTesting-nbDev:-nbDev-nbTesting]
         developIndices = range(0,nbLines)[-nbDev-nbTesting:-nbTesting]
         testingIndices = range(0,nbLines)[-nbTesting:]
 
-    sourceLines = corpus.getSourceFile().readlines()
-    targetLines = corpus.getTargetFile().readlines()
+    sourceLines = corpus.getSourceCorpus().readlines()
+    targetLines = corpus.getTargetCorpus().readlines()
 
     trainSourceLines = []
     tuneSourceLines = []
@@ -140,7 +140,7 @@ def extractDuplicates(corpusFile, window=4, nbSplits=1):
     outputPath = corpusFile.getUp()
     
     print "Start search for duplicates (%i splits)"%(nbSplits)
-    sourceLines = corpus.getCorpusFile().readlines()
+    sourceLines = corpus.readlines()
     nbLines = len(sourceLines)
     indices = range(0, nbLines)
     indices.sort(key=lambda x : sourceLines[x])
@@ -150,7 +150,7 @@ def extractDuplicates(corpusFile, window=4, nbSplits=1):
     for i in range(0, nbSplits):
         indicesFiles[i].write(" ".join([str(j) for j in indices[i*step:i*step + step]]))
     
-    args = [(corpus.getCorpusFile(),indicesFile, window) for indicesFile in indicesFiles]
+    args = [(corpus,indicesFile, window) for indicesFile in indicesFiles]
     
     outputs = slurm.SlurmExecutor().run_parallel_function(_printDuplicates, 
                                                           args, stdouts=True)
@@ -172,12 +172,12 @@ def filterOutLines(fullCorpusFile, toRemoveFile):
     fullCorpus = BasicCorpus(fullCorpusFile)
     toRemoveCorpus = BasicCorpus(toRemoveFile)
     
-    inputLines = fullCorpus.getCorpusFile().readlines()
+    inputLines = fullCorpus.readlines()
     
     occurrences = toRemoveCorpus.getOccurrences()
     histories = toRemoveCorpus.getHistories()  
 
-    outputFile = fullCorpus.getCorpusFile().addFlag("filtered") 
+    outputFile = fullCorpus.addFlag("filtered") 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
         skippedLines = []
         for i in range(2, len(inputLines)):

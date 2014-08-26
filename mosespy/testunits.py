@@ -20,7 +20,7 @@ import mosespy.slurm as slurm
 import mosespy.system as system
 import mosespy.analyser as analyser
 from mosespy.system import Path, ShellExecutor
-from mosespy.corpus import AlignedCorpus, CorpusProcessor
+from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
 import mosespy.datadivision as datadivision
@@ -47,8 +47,8 @@ class Pipeline(unittest.TestCase):
         
         """
         processor = CorpusProcessor(self.tmpdir, ShellExecutor())
-        trueFile = processor.processFile(self.inFile)
-        trueLines = trueFile.readlines()
+        trueCorpus = processor.processCorpus(BasicCorpus(self.inFile))
+        trueLines = trueCorpus.readlines()
         self.assertIn("bien occupé .\n", trueLines)
         self.assertIn("comment va Janet ?\n", trueLines)
         self.assertIn("non , j&apos; ai complètement compris .\n", trueLines)
@@ -56,14 +56,14 @@ class Pipeline(unittest.TestCase):
         self.assertFalse(processor.truecaser.isModelTrained("en"))
         self.assertIn(self.inFile.basename().addFlag("true"), os.listdir(self.tmpdir))
         
-        revertFile = processor.revertFile(trueFile)
-        revertLines = revertFile.readlines()
+        revertCorpus = processor.revertCorpus(trueCorpus)
+        revertLines = revertCorpus.readlines()
         self.assertIn("non, j'ai complètement compris.\n", revertLines)
         
-        corpus2 = processor.processCorpus(AlignedCorpus(self.inFile.getStem(), "fr", "en"))
+        corpus2 = processor.processAlignedCorpus(AlignedCorpus(self.inFile.getStem(), "fr", "en"))
         self.assertIsInstance(corpus2, AlignedCorpus)
         self.assertEqual(corpus2.getStem(), self.tmpdir + "/" + self.inFile.basename().getStem().addFlag("clean"))
-        self.assertIn("non , j&apos; ai complètement compris .\n", corpus2.getSourceFile().readlines())
+        self.assertIn("non , j&apos; ai complètement compris .\n", corpus2.getSourceCorpus().readlines())
         self.assertEqual(corpus2.sourceLang, "fr")
         self.assertEqual(corpus2.targetLang, "en")
         self.assertIn(self.inFile.basename().addFlag("clean"), os.listdir(self.tmpdir))
@@ -105,7 +105,7 @@ class Pipeline(unittest.TestCase):
             self.assertEquals(testLine, targetlines[oindices[0]])
             self.assertTrue(any([histories[i]==targetlines[max(0,q-2):q] for q in oindices]))
         
-        newFile = datadivision.filterOutLines(self.outFile, test.getTargetFile())
+        newFile = datadivision.filterOutLines(self.outFile, test.getTargetCorpus())
         newlines = Path(newFile).readlines()
         intersect = set(testlines).intersection(set(newlines))
         self.assertTrue(all([targetlines.count(i) > 1 for i in intersect]))
@@ -199,8 +199,8 @@ class Pipeline(unittest.TestCase):
         """
         train, tune, _, _ = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
-        tuneSourceLines = tune.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
-        tuneTargetLines = tune.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
+        tuneSourceLines = tune.getSourceCorpus().readlines() + train.getSourceCorpus().readlines()[0:10]
+        tuneTargetLines = tune.getTargetCorpus().readlines() + train.getTargetCorpus().readlines()[0:10]        
         Path(tune.getStem() + "2.fr").writelines(tuneSourceLines)
         Path(tune.getStem() + "2.en").writelines(tuneTargetLines)
         install.expDir = self.tmpdir + "/"
@@ -250,8 +250,8 @@ class Pipeline(unittest.TestCase):
         """
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
-        testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
-        testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
+        testSourceLines = test.getSourceCorpus().readlines() + train.getSourceCorpus().readlines()[0:10]
+        testTargetLines = test.getTargetCorpus().readlines() + train.getTargetCorpus().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
         install.expDir = self.tmpdir + "/"
@@ -260,16 +260,16 @@ class Pipeline(unittest.TestCase):
         exp.trainTranslationModel(train.getStem())
         bleu = exp.evaluateBLEU(test.getStem()+"2")[1]
         self.assertTrue(exp.results)
-        self.assertTrue(exp.results.getTranslationFile())
-        print "translated corpus: " + exp.results.getSourceFile()
-        print "translated corpus2: " + exp.results.getTargetFile()
-        self.assertEqual(Path(exp.results.getSourceFile()).readlines()[2], "comment vas-tu ?\n")
-        self.assertEqual(Path(exp.results.getTargetFile()).readlines()[2], "how you been?\n")
-        self.assertEqual(Path(exp.results.getTranslationFile()).readlines()[2], "how vas-tu?\n")
+        self.assertTrue(exp.results.getTranslationCorpus())
+        print "translated corpus: " + exp.results.getSourceCorpus()
+        print "translated corpus2: " + exp.results.getTargetCorpus()
+        self.assertEqual(Path(exp.results.getSourceCorpus()).readlines()[2], "comment vas-tu ?\n")
+        self.assertEqual(Path(exp.results.getTargetCorpus()).readlines()[2], "how you been?\n")
+        self.assertEqual(Path(exp.results.getTranslationCorpus()).readlines()[2], "how vas-tu?\n")
         self.assertAlmostEquals(bleu, 61.39, delta=2)  
-        exp.translateFile(exp.results.getSourceFile(), self.tmpdir + "/translation.en", revertOutput=False)
+        exp.translateFile(exp.results.getSourceCorpus(), self.tmpdir + "/translation.en", revertOutput=False)
         self.assertEqual((self.tmpdir + "/translation.en").readlines()[2], "how vas-tu ? \n")
-        exp.translateFile(exp.results.getSourceFile(), self.tmpdir + "/translation.en", revertOutput=True)
+        exp.translateFile(exp.results.getSourceCorpus(), self.tmpdir + "/translation.en", revertOutput=True)
         self.assertEqual((self.tmpdir + "/translation.en").readlines()[2], "how vas-tu?\n")
     
     def test_parallel(self): 
@@ -278,8 +278,8 @@ class Pipeline(unittest.TestCase):
         """ 
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en",
                                                      10, 0, 10, randomPick=False)
-        testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
-        testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
+        testSourceLines = test.getSourceCorpus().readlines() + train.getSourceCorpus().readlines()[0:10]
+        testTargetLines = test.getTargetCorpus().readlines() + train.getTargetCorpus().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
         install.expDir = self.tmpdir + "/"
@@ -289,10 +289,10 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.tm)
         bleu = exp.evaluateBLEU(test.getStem()+"2")[1]
         self.assertTrue(exp.results)
-        self.assertTrue(exp.results.getTranslationFile())
-        self.assertEqual(exp.results.getSourceFile().readlines()[2], "comment vas-tu ?\n")
-        self.assertEqual(exp.results.getTargetFile().readlines()[2], "how you been?\n")
-        self.assertEqual(exp.results.getTranslationFile().readlines()[2], "how vas-tu?\n")
+        self.assertTrue(exp.results.getTranslationCorpus())
+        self.assertEqual(exp.results.getSourceCorpus().readlines()[2], "comment vas-tu ?\n")
+        self.assertEqual(exp.results.getTargetCorpus().readlines()[2], "how you been?\n")
+        self.assertEqual(exp.results.getTranslationCorpus().readlines()[2], "how vas-tu?\n")
         self.assertAlmostEquals(bleu, 61.39, delta=2)  
     
     
@@ -302,8 +302,8 @@ class Pipeline(unittest.TestCase):
         """
         train, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                     10, 0, 10, randomPick=False)
-        testSourceLines = test.getSourceFile().readlines() + train.getSourceFile().readlines()[0:10]
-        testTargetLines = test.getTargetFile().readlines() + train.getTargetFile().readlines()[0:10]        
+        testSourceLines = test.getSourceCorpus().readlines() + train.getSourceCorpus().readlines()[0:10]
+        testTargetLines = test.getTargetCorpus().readlines() + train.getTargetCorpus().readlines()[0:10]        
         Path(test.getStem() + "2.fr").writelines(testSourceLines)
         Path(test.getStem() + "2.en").writelines(testTargetLines)
         install.expDir = self.tmpdir + "/"
@@ -313,7 +313,7 @@ class Pipeline(unittest.TestCase):
         exp = exp.copy("newexp")
         bleu = exp.evaluateBLEU(test.getStem()+"2")[1]
         self.assertTrue(exp.results)
-        self.assertTrue(exp.results.getTranslationFile())
+        self.assertTrue(exp.results.getTranslationCorpus().exists())
         self.assertAlmostEquals(bleu, 61.39, delta=2)      
         
  

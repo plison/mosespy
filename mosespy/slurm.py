@@ -91,7 +91,7 @@ class SlurmExperiment(Experiment):
         
         """     
         splitDir = self.expPath + "/splits"
-        splitDir.reset()
+        splitDir.resetdir()
         
         splitStems = self.processor.splitData(trainCorpus, self.maxJobs/2, splitDir)
         tmDir = self.expPath + "/translationmodel"
@@ -114,8 +114,8 @@ class SlurmExperiment(Experiment):
         if not r3:
             raise RuntimeError("Construction of translation model FAILED (step 3)")
                  
-        tmDir.reset()
-        (tmDir+"/model").reset()
+        tmDir.resetdir()
+        (tmDir+"/model").resetdir()
         alignFile = tmDir+"/model/aligned."+alignment
         with open(alignFile, 'w') as align:
             for split in range(0, self.maxJobs/2):
