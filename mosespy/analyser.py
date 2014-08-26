@@ -90,13 +90,13 @@ class Condition():
         self.inTranslation = []
         self.wer = (0, 1)
         self.length = (0, 100)
-        
-        if "inSource" in kwargs:
-            self.inSource.append(kwargs["inSource"])
-        if "inTarget" in kwargs:
-            self.inTarget.append(kwargs["inTarget"])
-        if "inTranslation" in kwargs:
-            self.inTranslation.append(kwargs["inTranslation"])
+
+        for key in ['inSource', 'inTarget', 'inTranslation']:
+            if key in kwargs and isinstance(kwargs[key], basestring):
+                getattr(self, key).append(kwargs[key])
+            elif key in kwargs and isinstance(kwargs[key], list):
+                getattr(self, key).extend(kwargs[key])       
+  
         if "wer" in kwargs:
             self.wer = kwargs["wer"]
         if "length" in kwargs:
