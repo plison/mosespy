@@ -53,12 +53,10 @@ class Path(str):
     
     """
     
-    def __init__(self, path):
-        """Creates a new path.
-        
-        """
-        str.__init__(self, path)
- 
+    def __new__(cls, value):
+        obj = str.__new__(cls, value)
+        return obj
+
     def getStem(self):
         """Returns the stem of the file path (i.e. without the extension).
         
