@@ -14,10 +14,9 @@ __version__ = "$Date::                      $"
 
 import re
 import mosespy.system as system
+import mosespy.constants as constants
 from mosespy.system import Path
 
-rootPath = Path(__file__).getUp().getUp()
-moses_root = rootPath + "/moses" 
 
 class BasicCorpus(object):
     """A basic, monolingual corpus, composed of a sequence of lines.
@@ -371,7 +370,7 @@ class CorpusProcessor():
         beyond the maximum length.
         
         """
-        cleanScript = (moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
+        cleanScript = (constants.moses_root + "/scripts/training/clean-corpus-n.perl" + " " + 
                        inputCorpus.getStem() + " " + inputCorpus.sourceLang 
                        + " " + inputCorpus.targetLang + " " 
                        + outputStem + " 1 " + str(maxLength))
@@ -389,7 +388,7 @@ class CorpusProcessor():
         """Returns the BLEU score for the translated corpus.
         
         """
-        bleuScript = (moses_root  + "/scripts/generic/multi-bleu.perl -lc " 
+        bleuScript = (constants.moses_root  + "/scripts/generic/multi-bleu.perl -lc " 
                       + translatedCorpus.getTargetFile())
         translation = translatedCorpus.getTranslationFile()
         bleu_output = self.executor.run_output(bleuScript, stdin=translation)       
@@ -475,7 +474,8 @@ class Tokeniser():
         if not inputFile.exists():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
-        cleanScript = moses_root + "/scripts/tokenizer/normalize-punctuation.perl " + lang
+        cleanScript = (constants.moses_root + "/scripts/tokenizer" 
+                       +"/normalize-punctuation.perl " + lang)
         tmpFile = outputFile + "_tmp"
         result = self.executor.run(cleanScript, inputFile, tmpFile)
         if not result:
@@ -498,7 +498,7 @@ class Tokeniser():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
         print "Start tokenisation of file \"" + inputFile + "\""
-        tokScript = (moses_root + "/scripts/tokenizer/tokenizer.perl" 
+        tokScript = (constants.moses_root + "/scripts/tokenizer/tokenizer.perl" 
                      + " -l " + lang + " -threads " + str(self.nbThreads))
         result = self.executor.run(tokScript, inputFile, outputFile)
         if not result:
@@ -514,7 +514,8 @@ class Tokeniser():
         output.
         
         """
-        tokScript = moses_root + "/scripts/tokenizer/tokenizer.perl" + " -l " + lang
+        tokScript = (constants.moses_root + "/scripts/tokenizer"
+                     + "/tokenizer.perl" + " -l " + lang)
         return self.executor.run_output(tokScript, stdin=inputText)
     
 
@@ -527,7 +528,8 @@ class Tokeniser():
             raise RuntimeError("raw file " + inputFile + " does not exist")
                         
         print "Start detokenisation of file \"" + inputFile + "\""
-        detokScript = moses_root + "/scripts/tokenizer/detokenizer.perl -l " + lang
+        detokScript = (constants.moses_root + "/scripts/tokenizer"
+                       + "/detokenizer.perl -l " + lang)
         result = self.executor.run(detokScript, inputFile, outputFile)
         if not result:
             raise RuntimeError("Detokenisation of %s has failed"%(inputFile))
@@ -539,7 +541,8 @@ class Tokeniser():
         """Detokenises the text (for the provided language) and returns the output.
         
         """
-        tokScript = moses_root + "/scripts/tokenizer/detokenizer.perl" + " -l " + lang
+        tokScript = (constants.moses_root + "/scripts/tokenizer" 
+                     + "/detokenizer.perl" + " -l " + lang)
         return self.executor.run_output(tokScript, stdin=inputText)
   
 
@@ -551,7 +554,8 @@ class Tokeniser():
         if not inputFile.exists():
             raise RuntimeError("File " + inputFile + " does not exist")
                         
-        deescapeScript = moses_root + "/scripts/tokenizer/deescape-special-chars.perl "
+        deescapeScript = (constants.moses_root + "/scripts/tokenizer"
+                          + "/deescape-special-chars.perl ")
         result = self.executor.run(deescapeScript, inputFile, outputFile)
         if not result:
             raise RuntimeError("Deescaping of special characters in %s has failed"%(inputFile))
@@ -561,7 +565,8 @@ class Tokeniser():
         """Deescapes special characters in the text and returns the result.
         
         """             
-        deescapeScript = moses_root + "/scripts/tokenizer/deescape-special-chars.perl "
+        deescapeScript = (constants.moses_root + "/scripts/tokenizer"
+                          + "/deescape-special-chars.perl ")
         return self.executor.run_output(deescapeScript, inputText)
 
 
@@ -589,7 +594,7 @@ class TrueCaser():
         
         modelFile = self.modelStem + "." + inputFile.getLang()
         print "Start building truecasing model based on " + inputFile
-        truecaseModelScript = (moses_root + "/scripts/recaser/train-truecaser.perl" 
+        truecaseModelScript = (constants.moses_root + "/scripts/recaser/train-truecaser.perl" 
                                + " --model " + modelFile + " --corpus " + inputFile)
         result = self.executor.run(truecaseModelScript)
         if not result:
@@ -619,7 +624,8 @@ class TrueCaser():
     
         modelFile = Path(self.modelStem + "." + inputFile.getLang())
         print "Start truecasing of file \"" + inputFile + "\""
-        truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
+        truecaseScript = (constants.moses_root + "/scripts/recaser" 
+                          + "/truecase.perl" + " --model " + modelFile)
         result = self.executor.run(truecaseScript, inputFile, outputFile)
         if not result:
             raise RuntimeError("Truecasing of %s has failed"%(inputFile))
@@ -637,7 +643,8 @@ class TrueCaser():
             raise RuntimeError("model file for " + lang + " does not exist")
 
         modelFile = Path(self.modelStem + "." + lang)
-        truecaseScript = moses_root + "/scripts/recaser/truecase.perl" + " --model " + modelFile
+        truecaseScript = (constants.moses_root + "/scripts/recaser"
+                          + "/truecase.perl" + " --model " + modelFile)
         return self.executor.run_output(truecaseScript, stdin=inputText)
  
  
