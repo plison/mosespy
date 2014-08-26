@@ -147,8 +147,10 @@ def getWER(reference, actual):
     translations.
     
     """
-    refTokens = reference.split()
-    actualTokens = actual.split()
+    refTokens = reference.lower().translate(string.maketrans("",""), 
+                                            string.punctuation).split()
+    actualTokens = actual.lower().translate(string.maketrans("",""), 
+                                            string.punctuation).split()
     if len(refTokens) == 0:
         return len(actualTokens)
     if len(refTokens) < len(actualTokens):
