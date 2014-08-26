@@ -47,7 +47,7 @@ from mosespy.system import Path, ShellExecutor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
-from mosespy.analyser import Condition, OrCondition
+from mosespy.analyser import ErrorAnalyser, Condition, OrCondition
 import mosespy.datadivision as datadivision
 
 slurm.correctSlurmEnv()
@@ -383,7 +383,7 @@ class Pipeline(unittest.TestCase):
     
         sys.stdout = open(self.tmpdir + "/out.txt", 'w')         
         exp.evaluateBLEU(test.getStem())
-        analyser.analyseResults(exp.results, Condition())
+        ErrorAnalyser().analyseResults(exp.results)
         sys.stdout.flush()
         output = Path(self.tmpdir + "/out.txt").read()
         self.assertIn("Previous line (reference):\tI\'m sorry to hear that.\n" 

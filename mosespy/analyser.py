@@ -38,6 +38,36 @@ import string
 from mosespy.corpus import TranslatedCorpus
 
 
+
+class ErrorAnalyser():
+    
+    def __init__(self, *conditions):
+        if len(conditions) > 0:
+            self.conditions = conditions
+        else:
+            self.conditions = [Condition()]
+        
+    def analyseResults(self, results):
+        """Analyse the translation results (encoded as a translated corpus)
+        under the set of conditions for the analyser.
+        
+        """
+        if not isinstance(results, TranslatedCorpus):
+            raise RuntimeError("results must be of type TranslatedCorpus")
+        alignments = results.getAlignments(addHistory=True)
+        for cond in self.conditions:
+            print "Analysis of errors under the condition: %s"%(str(cond))
+            print "----------------------"
+            for align in alignments:
+                if cond.isSatisfiedBy(align):
+                    if align.targethistory:
+                        print "Previous line (reference):\t" + align.targethistory
+                    print "Source line:\t\t\t" + align.source
+                    print "Current line (reference):\t" + align.target
+                    print "Current line (actual):\t\t" + align.translation
+                    print "----------------------"
+      
+
 class Condition():
     """Condition on an alignment pair, made of:
         - substrings that must be found in the source, target and/or 
@@ -150,36 +180,7 @@ class OrCondition():
         """
         return " or ".join([str(subcond) for subcond in self.subconditions])
         
-
-
-def analyseResults(results, *condition):
-    """Analyse the translation results (encoded as a translated corpus)
-    under a set of one or more conditions.
-    
-    """
-    if not isinstance(results, TranslatedCorpus):
-        raise RuntimeError("results must be of type TranslatedCorpus")
-    alignments = results.getAlignments(addHistory=True)
-    for cond in condition:
-        print "COND IS : " + str(cond)
-        analyseResultsUnderCondition(alignments, cond)
-      
-        
-def analyseResultsUnderCondition(alignments, condition):
-    """Analyse the alignment pairs under a particular condition.
-    
-    """
-    print "Analysis of errors under the condition: %s"%(str(condition))
-    print "----------------------"
-    for align in alignments:
-        if condition.isSatisfiedBy(align):
-            if align.targethistory:
-                print "Previous line (reference):\t" + align.targethistory
-            print "Source line:\t\t\t" + align.source
-            print "Current line (reference):\t" + align.target
-            print "Current line (actual):\t\t" + align.translation
-            print "----------------------"
-
+         
 
 def extractNgrams(tokens, size):
     """Extract the n-grams of a particular size in the list of tokens.
@@ -192,29 +193,6 @@ def extractNgrams(tokens, size):
         ngrams.append(" ".join(tokens[i-size+1:i+1]))
     return ngrams
     
-
-def getBLEUScore(reference, actual, ngrams=4):
-    """Returns the BLEU score between the reference and actual translations,
-    with an n-gram of a particular maximum size.
-    
-    """
-    if len(reference) != len(actual):
-        raise RuntimeError("reference and actual translation lines have different lengths")
-    for i in range(0, len(reference)):
-        reftokens = reference[i].split()
-        actualtokens = actual[i].split()
-        bp = min(1, (len(reftokens)+0.0)/len(actualtokens))
-        product = bp
-        for j in range(1, ngrams+1):
-            refNgrams = set(extractNgrams(reftokens, j))
-            if len(refNgrams) == 0:
-                break
-            actNgrams = set(extractNgrams(actualtokens, j))
-            correctNgrams = refNgrams.intersection(actNgrams)
-            precision = (len(correctNgrams)+0.0)/len(refNgrams)
-            product *= precision
-    return product
-
 
 def getWER(reference, actual):
     """Returns the Word Error Rate between the reference and actual
@@ -246,16 +224,28 @@ def getWER(reference, actual):
     return (previous_row[-1]+0.0)/len(refTokens)
   
 
-def _translationTuple(align):
-    source = align["source"].lower().strip()
-    target = align["target"].lower().strip()
-    trans = align["translation"].lower().strip()
-    return (source, target, trans)
-                                                   
-
-def _compare(line1, line2):
-    line1 = line1.lower().translate(string.maketrans("",""), string.punctuation).strip()
-    line2 = line2.lower().translate(string.maketrans("",""), string.punctuation).strip()
-    return line1 == line2
+def getBLEUScore(reference, actual, ngrams=4):
+    """Returns the BLEU score between the reference and actual translations,
+    with an n-gram of a particular maximum size.
     
+    """
+    if len(reference) != len(actual):
+        raise RuntimeError("reference and actual translation lines have different lengths")
+    for i in range(0, len(reference)):
+        reftokens = reference[i].split()
+        actualtokens = actual[i].split()
+        bp = min(1, (len(reftokens)+0.0)/len(actualtokens))
+        product = bp
+        for j in range(1, ngrams+1):
+            refNgrams = set(extractNgrams(reftokens, j))
+            if len(refNgrams) == 0:
+                break
+            actNgrams = set(extractNgrams(actualtokens, j))
+            correctNgrams = refNgrams.intersection(actNgrams)
+            precision = (len(correctNgrams)+0.0)/len(refNgrams)
+            product *= precision
+    return product
+
+
+       
         
