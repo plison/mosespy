@@ -1,4 +1,4 @@
-#summary Short documentation for !MosesPy
+#summary Short documentation for MosesPy
 =!MosesPy=
 
  * Current version: 0.2
