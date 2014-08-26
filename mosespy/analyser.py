@@ -61,11 +61,11 @@ class ErrorAnalyser():
             incr = 1
             for align in alignments:
                 if cond.isSatisfiedBy(align):
-                    print "%i. Source:\t\t%s"%(incr, align.source)
+                    print "%i.\tSource:\t\t%s"%(incr, align.source)
                     if align.targethistory:
-                        print "    [Previous (reference):\t" + align.targethistory + "]"
-                    print "    Target (reference):\t" + align.target
-                    print "    Target (actual):\t" + align.translation
+                        print "\t[Previous (reference):\t" + align.targethistory + "]"
+                    print "\tTarget (reference):\t" + align.target
+                    print "\tTarget (actual):\t" + align.translation
                     print "----------------------"
                     incr += 1
       
