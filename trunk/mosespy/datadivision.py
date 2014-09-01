@@ -56,20 +56,26 @@ def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
                 raise RuntimeError("could not find " + todoc)          
             if not corporaDict.has_key(fromdoc):
                 corporaDict[fromdoc] = []
-            corporaDict[fromdoc].append(todoc) 
-            fromdocunzipped = gzip.open(fromdoc, 'r')
-            fromdoctext = fromdocunzipped.read()  
-            fromdocunzipped.close()     
-            for otherSource in fromdoc.getUp().listdir():
-                if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource 
-                    and math.fabs(fromdoc.getSize() - otherSource.getSize()) < 200 
-                    and corporaDict.has_key(otherSource)):
-                    otherSourcecunzipped = gzip.open(otherSource, 'r')
-                    otherSourceText= otherSourcecunzipped.read()
-                    otherSourcecunzipped.close()
-                    if len(fromdoctext) == len(otherSourceText):
-                        print "YES! %s and %s"%(fromdoc,otherSource)
-                        corporaDict[fromdoc] += corporaDict[otherSource]                 
+            corporaDict[fromdoc].append(todoc)
+            try: 
+                fromdocunzipped = gzip.open(fromdoc, 'r')
+                fromdoctext = fromdocunzipped.read()  
+                fromdocunzipped.close()     
+                for otherSource in fromdoc.getUp().listdir():
+                    if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource 
+                        and math.fabs(fromdoc.getSize() - otherSource.getSize()) < 200 
+                        and corporaDict.has_key(otherSource)):
+                        try :
+                            otherSourcecunzipped = gzip.open(otherSource, 'r')
+                            otherSourceText= otherSourcecunzipped.read()
+                            otherSourcecunzipped.close()
+                            if len(fromdoctext) == len(otherSourceText):
+                                print "YES! %s and %s"%(fromdoc,otherSource)
+                                corporaDict[fromdoc] += corporaDict[otherSource]
+                        except IOError:
+                            print "IOError2 for file " + otherSource
+            except IOError:
+                print "IOError for file " + fromdoc                
                     
     totalLinks = 0.0
     for k in corporaDict:
