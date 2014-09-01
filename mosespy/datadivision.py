@@ -40,14 +40,14 @@ from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
 
-def findAlignedCorpora(xcesFile, basePath="./OpenSubtitles2013/xml/"):
-    print "Parsing file " + str(xcesFile)
+def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
+    print "Parsing file " + Path(xcesFile)
     tree = etree.parse(xcesFile)
     root = tree.getroot()
     corporaDict = {}
     for child in root:
         if child.tag == 'linkGrp':
-            fromdoc = Path(basePath + child.attrib['fromDoc'])
+            fromdoc = Path(xcesFile.getUp() + "/" + basePath + child.attrib['fromDoc'])
             todoc = child.attrib['toDoc']
             if not fromdoc.exists():
                 raise RuntimeError("could not find " + fromdoc)
