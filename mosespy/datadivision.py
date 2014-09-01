@@ -33,25 +33,29 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random
+import sys, math, random, tarfile
 import mosespy.slurm as slurm
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
 
-def findAlignedCorpora(xcesFile):
+def findAlignedCorpora(xcesFile, basePath="./OpenSubtitles2013/xml/"):
     print "Parsing file " + str(xcesFile)
     tree = etree.parse(xcesFile)
     root = tree.getroot()
     corporaDict = {}
     for child in root:
         if child.tag == 'linkGrp':
-            fromdoc = Path(child.attrib['fromDoc'])
+            fromdoc = Path(basePath + child.attrib['fromDoc'])
             todoc = child.attrib['toDoc']
+            if not fromdoc.exists():
+                raise RuntimeError("could not find " + fromdoc)
+            if not todoc.exists():
+                raise RuntimeError("could not find " + todoc)          
             if not corporaDict.has_key(fromdoc):
                 corporaDict[fromdoc] = []
-            corporaDict[fromdoc].append(todoc)
+            corporaDict[fromdoc].append(todoc)     
             for otherSource in fromdoc.getUp().listdir():
                 if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource and 
                     math.fabs(fromdoc.getSize() - otherSource.getSize()) < 100 
