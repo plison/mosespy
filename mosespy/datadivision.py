@@ -37,6 +37,33 @@ import sys, math, random
 import mosespy.slurm as slurm
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
+import xml.etree.cElementTree as etree
+
+
+def findAlignedCorpora(xcesFile):
+    print "Parsing file " + str(xcesFile)
+    tree = etree.parse(xcesFile)
+    root = tree.getroot()
+    corporaDict = {}
+    for child in root:
+        if child.tag == 'linkGrp':
+            fromdoc = Path(child.attrib['fromDoc'])
+            todoc = child.attrib['toDoc']
+            if not corporaDict.has_key(fromdoc):
+                corporaDict[fromdoc] = []
+            corporaDict[fromdoc].append(todoc)
+            for otherSource in fromdoc.getUp().listdir():
+                if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource and 
+                    math.fabs(fromdoc.getSize() - otherSource.getSize()) < 100 
+                    and corporaDict.has_key(otherSource)):
+                    print "YES! %s and %s"%(fromdoc,otherSource)
+                    corporaDict[fromdoc] += corporaDict[otherSource]                 
+                    
+    totalLinks = 0.0
+    for k in corporaDict:
+        totalLinks += len(corporaDict[k])
+    print "Average number of alignments for each source: %f"%(totalLinks/len(corporaDict))
+
 
 
 def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
