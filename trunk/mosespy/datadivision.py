@@ -33,7 +33,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random, tarfile
+import sys, math, random, gzip
 import mosespy.slurm as slurm
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
@@ -57,14 +57,17 @@ def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
             if not corporaDict.has_key(fromdoc):
                 corporaDict[fromdoc] = []
             corporaDict[fromdoc].append(todoc) 
-            print "listdir: " + str(fromdoc.getUp().listdir())
+            with gzip.open(fromdoc, 'r') as fromdocunzipped:
+                fromdoctext = fromdocunzipped.read()       
             for otherSource in fromdoc.getUp().listdir():
-                otherSource = fromdoc.getUp() + "/" + otherSource
-                if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource and 
-                    math.fabs(fromdoc.getSize() - otherSource.getSize()) < 100 
+                if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource 
+                    and math.fabs(fromdoc.getSize() - otherSource.getSize()) < 200 
                     and corporaDict.has_key(otherSource)):
-                    print "YES! %s and %s"%(fromdoc,otherSource)
-                    corporaDict[fromdoc] += corporaDict[otherSource]                 
+                    with gzip.open(otherSource, 'r') as otherSourcecunzipped:
+                        otherSourceText= otherSourcecunzipped.read()
+                    if len(fromdoctext) == len(otherSourceText):
+                        print "YES! %s and %s"%(fromdoc,otherSource)
+                        corporaDict[fromdoc] += corporaDict[otherSource]                 
                     
     totalLinks = 0.0
     for k in corporaDict:
