@@ -57,14 +57,16 @@ def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
             if not corporaDict.has_key(fromdoc):
                 corporaDict[fromdoc] = []
             corporaDict[fromdoc].append(todoc) 
-            with gzip.open(fromdoc, 'r') as fromdocunzipped:
-                fromdoctext = fromdocunzipped.read()       
+            fromdocunzipped = gzip.open(fromdoc, 'r')
+            fromdoctext = fromdocunzipped.read()  
+            fromdocunzipped.close()     
             for otherSource in fromdoc.getUp().listdir():
                 if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource 
                     and math.fabs(fromdoc.getSize() - otherSource.getSize()) < 200 
                     and corporaDict.has_key(otherSource)):
-                    with gzip.open(otherSource, 'r') as otherSourcecunzipped:
-                        otherSourceText= otherSourcecunzipped.read()
+                    otherSourcecunzipped = gzip.open(otherSource, 'r')
+                    otherSourceText= otherSourcecunzipped.read()
+                    otherSourcecunzipped.close()
                     if len(fromdoctext) == len(otherSourceText):
                         print "YES! %s and %s"%(fromdoc,otherSource)
                         corporaDict[fromdoc] += corporaDict[otherSource]                 
