@@ -47,7 +47,7 @@ def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
     corporaDict = {}
     for child in root:
         if child.tag == 'linkGrp':
-            fromdoc = Path(xcesFile.getUp() + "/" + basePath + child.attrib['fromDoc'])
+            fromdoc = Path(Path(xcesFile).getUp() + "/" + basePath + child.attrib['fromDoc'])
             todoc = child.attrib['toDoc']
             if not fromdoc.exists():
                 raise RuntimeError("could not find " + fromdoc)
