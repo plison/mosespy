@@ -45,6 +45,7 @@ def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
     tree = etree.parse(xcesFile)
     root = tree.getroot()
     corporaDict = {}
+    print "finished parsing"
     for child in root:
         if child.tag == 'linkGrp':
             fromdoc = Path(Path(xcesFile).getUp() + "/" + basePath + child.attrib['fromDoc'])
@@ -55,7 +56,8 @@ def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
                 raise RuntimeError("could not find " + todoc)          
             if not corporaDict.has_key(fromdoc):
                 corporaDict[fromdoc] = []
-            corporaDict[fromdoc].append(todoc)     
+            corporaDict[fromdoc].append(todoc) 
+            print "listdir: " + str(fromdoc.getUp().listdir())
             for otherSource in fromdoc.getUp().listdir():
                 if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource and 
                     math.fabs(fromdoc.getSize() - otherSource.getSize()) < 100 
