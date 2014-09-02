@@ -67,8 +67,8 @@ def getAlignments(xmlRoot, basePath):
                     if len(split) != 2:
                         raise RuntimeError("xtargets %s not separated by ;"
                                            %(link.attrib["xtargets"]))
-                    sourceLines = [int(i) for i in split[0].strip().split(" ")]
-                    targetLines = [int(i) for i in split[1].strip().split(" ")]
+                    sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
+                    targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
                     sourceIndices.append(sourceLines)
                     targetIndices.append(targetLines)
             corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
