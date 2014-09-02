@@ -499,7 +499,9 @@ double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& 
          << " , size " << size
          << " , fstar " << fstar
          << " , lambda " << lambda << "\n";
-    exit(1);
+    fstar=(fstar>UPPER_SINGLE_PRECISION_OF_1?UPPER_SINGLE_PRECISION_OF_1:fstar);
+    lambda=(lambda>UPPER_SINGLE_PRECISION_OF_1?UPPER_SINGLE_PRECISION_OF_1:lambda);
+    //exit(1);
   }
   if (backoff) {
 
@@ -1946,7 +1948,7 @@ int mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile 
 
   //update headers
   for (int i=1; i<=maxlev; i++) {
-    sprintf(buff,"ngram %2d=%10d\n",i,num[i]);
+    sprintf(buff,"ngram %2d=%10u\n",i,num[i]);
     out.seekp(pos[i]);
     out << buff;
   }
