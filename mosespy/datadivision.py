@@ -91,8 +91,8 @@ def writeXCESFile(aligns, xcesFile):
                 linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
                 xces.write(linkGrp)
                 for i in range(0, len(alignment[1])):
-                    sourceLines = alignment[1][i]
-                    targetLines = alignment[2][i]
+                    sourceLines = [str(j) for j in alignment[1][i]]
+                    targetLines = [str(j) for j in alignment[2][i]]
                     xtargets = " ".join(sourceLines) + ";" + " ".join(targetLines)
                     line = """<link id="SL%i" xtargets="%s" />\n"""%(i, xtargets)
                     xces.write(line)
