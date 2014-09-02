@@ -128,8 +128,9 @@ def writeXCESFile(aligns, xcesFile):
   
    
 def mergeAlignments(aligns):
-    
+    print "merging alignments"
     sizes = extractSizes(aligns.keys())
+    print "document sizes extracted"
     
     newAligns = {}
     for fromdoc in aligns:  
