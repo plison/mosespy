@@ -42,7 +42,7 @@ import xml.etree.cElementTree as etree
 def findAlignedCorpora(xcesFile):
     xcesFile = Path(xcesFile)
     print "Parsing file " + xcesFile
-    tree = etree.parse(xcesFile)
+    tree = etree.parse(str(xcesFile))
     root = tree.getroot()
     alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
     newAligns = mergeAlignments(alignments)
