@@ -648,7 +648,8 @@ void lmtable::loadtxt_ram(istream& inp,const char* header)
 	cerr << "loadtxt_ram()\n";
 	
 	// READ ARPA Header
-	int Order,n;
+	int Order;
+        unsigned int n;
 	
 	while (inp.getline(line,MAX_LINE)) {
 		if (strlen(line)==MAX_LINE-1) {
@@ -659,7 +660,7 @@ void lmtable::loadtxt_ram(istream& inp,const char* header)
 		
 		bool backslash = (line[0] == '\\');
 		
-		if (sscanf(line, "ngram %d=%d", &Order, &n) == 2) {
+		if (sscanf(line, "ngram %d=%u", &Order, &n) == 2) {
 			maxsize[Order] = n;
 			maxlev=Order; //update Order
 		}

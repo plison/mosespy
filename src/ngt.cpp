@@ -80,7 +80,7 @@ int main(int argc, char **argv)
   bool LMflag=false;        //work with LM table
   bool  saveeach=false;   //save all n-gram orders
   int inplen=0;         //input length for mask generation
-  bool tlm=false;           //test lm table
+  bool tlm=false;       //test lm table
   char* ftlm=NULL;     //file to test LM table
    
   bool memuse=false;
