@@ -39,51 +39,104 @@ from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
-
-def findAlignedCorpora(xcesFile, basePath="OpenSubtitles2013/xml/"):
-    print "Parsing file " + Path(xcesFile)
+def findAlignedCorpora(xcesFile):
+    xcesFile = Path(xcesFile)
+    print "Parsing file " + xcesFile
     tree = etree.parse(xcesFile)
     root = tree.getroot()
+    alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
+    newAligns = mergeAlignments(alignments)
+    writeXCESFile(newAligns, xcesFile.addFlag("2"))
+
+def getAlignments(xmlRoot, basePath):
+    print "Extracting alignments"
     corporaDict = {}
-    print "finished parsing"
-    for child in root:
-        if child.tag == 'linkGrp':
-            fromdoc = Path(Path(xcesFile).getUp() + "/" + basePath + child.attrib['fromDoc'])
-            todoc =  Path(Path(xcesFile).getUp() + "/" + basePath + child.attrib['toDoc'])
+    for linkGrp in xmlRoot:
+        if linkGrp.tag == 'linkGrp':
+            fromdoc = Path(basePath + linkGrp.attrib['fromDoc'])
+            todoc =  Path(basePath + linkGrp.attrib['toDoc'])
             if not fromdoc.exists():
                 raise RuntimeError("could not find " + fromdoc)
             if not todoc.exists():
-                raise RuntimeError("could not find " + todoc)          
-            if not corporaDict.has_key(fromdoc):
-                corporaDict[fromdoc] = []
-            corporaDict[fromdoc].append(todoc)
-            try: 
-                fromdocunzipped = gzip.open(fromdoc, 'r')
-                fromdoctext = fromdocunzipped.read()  
-                fromdocunzipped.close()     
-                for otherSource in fromdoc.getUp().listdir():
-                    otherSource = fromdoc.getUp() + "/" + otherSource
-                    if (otherSource != fromdoc and "1of1" in fromdoc and "1of1" in otherSource 
-                        and math.fabs(fromdoc.getSize() - otherSource.getSize()) < 200 
-                        and corporaDict.has_key(otherSource)):
-                        try :
-                            otherSourcecunzipped = gzip.open(otherSource, 'r')
-                            otherSourceText= otherSourcecunzipped.read()
-                            otherSourcecunzipped.close()
-                            if len(fromdoctext) == len(otherSourceText):
-                                print "YES! %s and %s"%(fromdoc,otherSource)
-                                corporaDict[fromdoc] += corporaDict[otherSource]
-                        except IOError:
-                            print "IOError2 for file " + otherSource
-            except IOError:
-                print "IOError for file " + fromdoc                
-                    
-    totalLinks = 0.0
-    for k in corporaDict:
-        totalLinks += len(corporaDict[k])
-    print "Average number of alignments for each source: %f"%(totalLinks/len(corporaDict))
+                raise RuntimeError("could not find " + todoc)
+            sourceIndices = []
+            targetIndices = []
+            for link in linkGrp:
+                if link.tag == 'link':
+                    split = link.attrib["xtargets"].split(";")
+                    if len(split) != 2:
+                        raise RuntimeError("xtargets %s not separated by ;"
+                                           %(link.attrib["xtargets"]))
+                    sourceLines = [int(i) for i in split[0].strip().split(" ")]
+                    targetLines = [int(i) for i in split[1].strip().split(" ")]
+                    sourceIndices.append(sourceLines)
+                    targetIndices.append(targetLines)
+            corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
+
+    return corporaDict
 
 
+def writeXCESFile(aligns, xcesFile):
+    with open(xcesFile, 'w') as xces:
+        header = """\
+        <?xml version="1.0" encoding="utf-8"?>
+        <!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
+        <cesAlign version="1.0">
+        """ 
+        xces.write(header)
+        
+        for fromdoc in aligns:
+            for alignment in aligns[fromdoc]:
+                todoc = alignment[0] 
+                linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
+                xces.write(linkGrp)
+                for i in range(0, len(alignment[1])):
+                    sourceLines = alignment[1][i]
+                    targetLines = alignment[2][i]
+                    xtargets = " ".join(sourceLines) + ";" + " ".join(targetLines)
+                    line = """<link id="SL%i" xtargets="%s" />\n"""%(i, xtargets)
+                    xces.write(line)
+                xces.write("</linkGrp>\n")
+        
+        xces.write("</cesAlign>\n")
+        
+
+def extractSizes(documents):
+    sizes = {}
+    for d in documents:
+        try: 
+            docunzipped = gzip.open(d, 'r')
+            doctext = docunzipped.read()  
+            docunzipped.close()   
+            sizes[d] = len(doctext)
+        except IOError:
+            print "IOError for file " + str(d)
+    return sizes        
+
+
+def mergeAlignments(aligns):
+    
+    sizes = extractSizes(aligns.keys())
+    
+    newAligns = {}
+    for fromdoc in aligns:  
+        newAligns[fromdoc] = [aligns[fromdoc]]   
+        for otherSource in fromdoc.getUp().listdir():
+            otherSource = fromdoc.getUp() + "/" + otherSource
+            if (otherSource != fromdoc and newAligns.has_key(otherSource)
+                and sizes[fromdoc] == sizes[otherSource]
+                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
+                print "YES! %s and %s"%(fromdoc,otherSource)                          
+                newAligns[fromdoc] += newAligns[otherSource]
+                del newAligns[otherSource]
+    
+    print "Nb. files with alternative translations: %i"%(len(aligns)-len(newAligns))
+    return newAligns
+
+
+
+    
+    
 
 def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
                nbTesting=3000, randomPick=True, duplicatesWindow=4):
