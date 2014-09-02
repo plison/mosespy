@@ -33,11 +33,12 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random, gzip
+import sys, math, random, gzip, operator
 import mosespy.slurm as slurm
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
+
 
 def findAlignedCorpora(xcesFile):
     xcesFile = Path(xcesFile)
@@ -46,7 +47,14 @@ def findAlignedCorpora(xcesFile):
     root = tree.getroot()
     alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
     newAligns = mergeAlignments(alignments)
-    writeXCESFile(newAligns, xcesFile.addFlag("2"))
+    
+    train, tune, dev, test = divideAlignedData(newAligns)
+    print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
+    writeXCESFile(train, xcesFile.addFlag("train"))
+    writeXCESFile(tune, xcesFile.addFlag("tune"))
+    writeXCESFile(dev, xcesFile.addFlag("dev"))
+    writeXCESFile(test, xcesFile.addFlag("test"))
+
 
 def getAlignments(xmlRoot, basePath):
     print "Extracting alignments"
@@ -76,13 +84,31 @@ def getAlignments(xmlRoot, basePath):
     return corporaDict
 
 
+def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
+    if len(aligns) < 20:
+        raise RuntimeError("not enough data to divide")
+    sources = sorted(aligns.keys(), key=lambda x : len(aligns[x]))
+    
+    print "Max number of alternative translations : %i"%(len(aligns[sources[-1]]))
+    
+    extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
+                                    map(None, keys, map(dic.get, keys)), {})
+    
+    trainAligns = extract(sources[:-nbTuning-nbDev-nbTesting], aligns)
+    tuneAligns = extract(sources[-nbTuning-nbDev-nbTesting:-nbDev-nbTesting], aligns)
+    devAligns = extract(sources[-nbDev-nbTesting:-nbTesting], aligns)
+    testAligns = extract(sources[-nbTesting:], aligns)
+    return trainAligns, tuneAligns, devAligns, testAligns
+
+    
+
 def writeXCESFile(aligns, xcesFile):
     with open(xcesFile, 'w') as xces:
         header = """\
-        <?xml version="1.0" encoding="utf-8"?>
-        <!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
-        <cesAlign version="1.0">
-        """ 
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
+<cesAlign version="1.0">
+""" 
         xces.write(header)
         
         for fromdoc in aligns:
@@ -99,21 +125,8 @@ def writeXCESFile(aligns, xcesFile):
                 xces.write("</linkGrp>\n")
         
         xces.write("</cesAlign>\n")
-        
-
-def extractSizes(documents):
-    sizes = {}
-    for d in documents:
-        try: 
-            docunzipped = gzip.open(d, 'r')
-            doctext = docunzipped.read()  
-            docunzipped.close()   
-            sizes[d] = len(doctext)
-        except IOError:
-            print "IOError for file " + str(d)
-    return sizes        
-
-
+  
+   
 def mergeAlignments(aligns):
     
     sizes = extractSizes(aligns.keys())
@@ -134,6 +147,18 @@ def mergeAlignments(aligns):
     return newAligns
 
 
+     
+def extractSizes(documents):
+    sizes = {}
+    for d in documents:
+        try: 
+            docunzipped = gzip.open(d, 'r')
+            doctext = docunzipped.read()  
+            docunzipped.close()   
+            sizes[d] = len(doctext)
+        except IOError:
+            print "IOError for file " + str(d)
+    return sizes        
 
     
     
