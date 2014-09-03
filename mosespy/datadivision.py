@@ -133,7 +133,7 @@ def writeXCESTestFile(aligns, xcesFile):
     
     maxReferences = max([len(aligns[doc]) for doc in aligns])
     for k in range(0, maxReferences):
-        xcesRefFile = xcesFile+str(k)
+        xcesRefFile = xcesFile+(str(k) if maxReferences > 1 else "")
         writeXCESFile(aligns, xcesRefFile, k)
   
    
