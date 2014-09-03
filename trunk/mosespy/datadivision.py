@@ -139,7 +139,6 @@ def mergeAlignments(aligns):
         for otherSource in fromdoc.getUp().listdir():
             otherSource = fromdoc.getUp() + "/" + otherSource
             if (otherSource != fromdoc and newAligns.has_key(otherSource)
-                and (sizes[fromdoc] - sizes[otherSource]) < 5000
                 and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])
                 and extractSamples(samples, fromdoc) == extractSamples(samples, otherSource)):
                 print "YES! %s and %s"%(fromdoc,otherSource)                          
