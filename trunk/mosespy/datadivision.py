@@ -33,7 +33,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random, gzip, operator
+import sys, math, random, gzip
 import mosespy.slurm as slurm
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
@@ -139,9 +139,9 @@ def mergeAlignments(aligns):
         for otherSource in fromdoc.getUp().listdir():
             otherSource = fromdoc.getUp() + "/" + otherSource
             if (otherSource != fromdoc and newAligns.has_key(otherSource)
-                and (sizes[fromdoc] - sizes[otherSource]) < 1000
-                and extractSamples(samples, fromdoc) == extractSamples(samples, otherSource)
-                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
+                and (sizes[fromdoc] - sizes[otherSource]) < 5000
+                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])
+                and extractSamples(samples, fromdoc) == extractSamples(samples, otherSource)):
                 print "YES! %s and %s"%(fromdoc,otherSource)                          
                 newAligns[fromdoc] += newAligns[otherSource]
                 del newAligns[otherSource]
