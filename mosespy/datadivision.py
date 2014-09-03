@@ -129,8 +129,8 @@ def writeXCESFile(aligns, xcesFile):
    
 def mergeAlignments(aligns):
     print "merging alignments"
-   # sizes = extractSizes(aligns.keys())
-    samples = extractSamples(aligns)
+    sizes = extractSizes(aligns.keys())
+    samples = {}
     print "document samples extracted"
     
     newAligns = {}
@@ -139,7 +139,8 @@ def mergeAlignments(aligns):
         for otherSource in fromdoc.getUp().listdir():
             otherSource = fromdoc.getUp() + "/" + otherSource
             if (otherSource != fromdoc and newAligns.has_key(otherSource)
-                and samples[fromdoc] == samples[otherSource]
+                and (sizes[fromdoc] - sizes[otherSource]) < 1000
+                and extractSamples(samples, fromdoc) == extractSamples(samples, otherSource)
                 and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
                 print "YES! %s and %s"%(fromdoc,otherSource)                          
                 newAligns[fromdoc] += newAligns[otherSource]
@@ -149,19 +150,21 @@ def mergeAlignments(aligns):
     return newAligns
 
 
-def extractSamples(aligns):
-    samples = {}
-    for fromdoc in aligns:
-        docunzipped = gzip.open(fromdoc, 'r')
-        root = etree.fromstring(docunzipped.read())
-        print "number of elements in root: %i"%(len(root))
-        first = getSentenceFromXML(root[0])
-        oneThird = getSentenceFromXML(root[len(root)/3])
-        twoThird = getSentenceFromXML(root[2*len(root)/3])
-        last = getSentenceFromXML(root[len(root)-1])
-        docunzipped.close()
-        samples[fromdoc] = (first,oneThird,twoThird,last)
-    return samples
+def extractSamples(samples, fromdoc):
+    if samples.has_key(fromdoc):
+        return samples[fromdoc]
+    
+    docunzipped = gzip.open(fromdoc, 'r')
+    root = etree.fromstring(docunzipped.read())
+    first = getSentenceFromXML(root[0])
+    oneThird = getSentenceFromXML(root[len(root)/3])
+    twoThird = getSentenceFromXML(root[2*len(root)/3])
+    last = getSentenceFromXML(root[len(root)-1])
+    docunzipped.close()
+    result = (first,oneThird,twoThird,last)
+    samples[fromdoc] = result
+    return result
+
 
 def getSentenceFromXML(xmlEntity):
     if xmlEntity.tag == 's':
