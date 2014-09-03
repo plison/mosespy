@@ -52,8 +52,8 @@ def findAlignedCorpora(xcesFile):
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
     writeXCESFile(train, xcesFile.addFlag("train"))
     writeXCESFile(tune, xcesFile.addFlag("tune"))
-    writeXCESFile(dev, xcesFile.addFlag("dev"))
-    writeXCESFile(test, xcesFile.addFlag("test"))
+    writeXCESTestFile(dev, xcesFile.addFlag("dev"))
+    writeXCESTestFile(test, xcesFile.addFlag("test"))
 
 
 def getAlignments(xmlRoot, basePath):
@@ -101,36 +101,45 @@ def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
     return trainAligns, tuneAligns, devAligns, testAligns
 
     
-
-def writeXCESFile(aligns, xcesFile):
-    with open(xcesFile, 'w') as xces:
-        header = """\
+header = """\
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
 <cesAlign version="1.0">
 """ 
-        xces.write(header)
+
+def writeXCESFile(aligns, xcesFile, dupliIndex=0):
+    
+    with open(xcesFile, 'w') as xces:
         
+        xces.write(header)
         for fromdoc in aligns:
-            for alignment in aligns[fromdoc]:
-                todoc = alignment[0] 
-                linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
-                xces.write(linkGrp)
-                for i in range(0, len(alignment[1])):
-                    sourceLines = [str(j) for j in alignment[1][i]]
-                    targetLines = [str(j) for j in alignment[2][i]]
-                    xtargets = " ".join(sourceLines) + ";" + " ".join(targetLines)
-                    line = """<link id="SL%i" xtargets="%s" />\n"""%(i, xtargets)
-                    xces.write(line)
-                xces.write("</linkGrp>\n")
+            dindex = dupliIndex if aligns[fromdoc].has_key(dupliIndex) else 0
+            alignment = aligns[fromdoc][dindex]
+            todoc = alignment[0] 
+            linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
+            xces.write(linkGrp)
+            for i in range(0, len(alignment[1])):
+                sourceLines = [str(j) for j in alignment[1][i]]
+                targetLines = [str(j) for j in alignment[2][i]]
+                xtargets = " ".join(sourceLines) + ";" + " ".join(targetLines)
+                line = """<link id="SL%i" xtargets="%s" />\n"""%(i, xtargets)
+                xces.write(line)
+            xces.write("</linkGrp>\n")
         
         xces.write("</cesAlign>\n")
+        
+
+def writeXCESTestFile(aligns, xcesFile):
+    
+    maxReferences = max([len(aligns[doc]) for doc in aligns])
+    for k in range(0, maxReferences):
+        xcesRefFile = xcesFile+str(k)
+        writeXCESFile(aligns, xcesRefFile, k)
   
    
 def mergeAlignments(aligns):
     print "merging alignments"
     sizes = extractSizes(aligns.keys())
-    samples = {}
     print "document samples extracted"
     
     newAligns = {}
@@ -139,8 +148,8 @@ def mergeAlignments(aligns):
         for otherSource in fromdoc.getUp().listdir():
             otherSource = fromdoc.getUp() + "/" + otherSource
             if (otherSource != fromdoc and newAligns.has_key(otherSource)
-                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])
-                and extractSamples(samples, fromdoc) == extractSamples(samples, otherSource)):
+                and (sizes[fromdoc] - sizes[otherSource]) < 000
+                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
                 print "YES! %s and %s"%(fromdoc,otherSource)                          
                 newAligns[fromdoc] += newAligns[otherSource]
                 del newAligns[otherSource]
