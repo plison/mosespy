@@ -113,7 +113,7 @@ def writeXCESFile(aligns, xcesFile, dupliIndex=0):
         
         xces.write(header)
         for fromdoc in aligns:
-            dindex = dupliIndex if aligns[fromdoc].has_key(dupliIndex) else 0
+            dindex = dupliIndex if dupliIndex < len(aligns[fromdoc]) else 0
             alignment = aligns[fromdoc][dindex]
             todoc = alignment[0] 
             linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
