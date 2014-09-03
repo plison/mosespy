@@ -140,6 +140,7 @@ def writeXCESTestFile(aligns, xcesFile):
 def mergeAlignments(aligns):
     print "merging alignments"
     sizes = extractSizes(aligns.keys())
+    samples = {}
     print "document samples extracted"
     
     newAligns = {}
@@ -148,7 +149,8 @@ def mergeAlignments(aligns):
         for otherSource in fromdoc.getUp().listdir():
             otherSource = fromdoc.getUp() + "/" + otherSource
             if (otherSource != fromdoc and newAligns.has_key(otherSource)
-                and (sizes[fromdoc] - sizes[otherSource]) < 000
+                and (sizes[fromdoc] - sizes[otherSource]) < 2000
+                and extractSamples(samples,fromdoc) == extractSamples(samples, otherSource)
                 and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
                 print "YES! %s and %s"%(fromdoc,otherSource)                          
                 newAligns[fromdoc] += newAligns[otherSource]
