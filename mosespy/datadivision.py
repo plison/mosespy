@@ -168,7 +168,7 @@ def getSentenceFromXML(xmlEntity):
         sentence = []
         for wid in xmlEntity:
             if wid.tag == 'w':
-                sentence.append(wid.value)
+                sentence.append(wid.text)
         return " ".join(sentence)
     
      
