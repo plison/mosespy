@@ -157,9 +157,10 @@ def extractSamples(samples, fromdoc):
     docunzipped = gzip.open(fromdoc, 'r')
     root = etree.fromstring(docunzipped.read())
     first = getSentenceFromXML(root[0])
-    oneThird = getSentenceFromXML(root[len(root)/3])
-    twoThird = getSentenceFromXML(root[2*len(root)/3])
-    last = getSentenceFromXML(root[len(root)-1])
+    size = len(root)
+    oneThird = getSentenceFromXML(root[size/3])
+    twoThird = getSentenceFromXML(root[2*size/3])
+    last = getSentenceFromXML(root[size-1])
     docunzipped.close()
     result = (first,oneThird,twoThird,last)
     samples[fromdoc] = result
@@ -171,8 +172,8 @@ def getSentenceFromXML(xmlEntity):
         sentence = []
         for wid in xmlEntity:
             if wid.tag == 'w':
-                sentence.append(wid.text)
-        return " ".join(sentence)
+                sentence.append(wid.text if isinstance(wid.text, basestring) else "")
+        return " ".join(sentence) 
     
      
 def extractSizes(documents):
