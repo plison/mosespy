@@ -101,6 +101,7 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
     sources = sorted(fullAligns.keys(), key=lambda x : len(x.getUp().listdir()))
     
     aligns = copy.deepcopy(fullAligns)
+    print "number of keys in fullAlign (pre): %i"%(len(fullAligns))
     testAligns = {}
     for _ in range(0, nbTesting):
         selection = sources[-1]
@@ -123,6 +124,8 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
     
     trainAligns = extract(sources[:-nbTuning], aligns)
     tuneAligns = extract(sources[-nbTuning:], aligns)
+    print "number of keys in fullAlign (pos): %i"%(len(fullAligns))
+    print "number of keys in align (pos): %i"%(len(aligns))
 
     return trainAligns, tuneAligns, devAligns, testAligns
 
@@ -140,10 +143,7 @@ def genererateRefData(testdocs, fullAligns, refFormat):
         for otherSource in fromdoc.getUp().listdir():
             corrTargets = []
             xcesotherSource = str(uuid.uuid4())[0:5]
-            try:
-                writeXCESFile({otherSource:fullAligns[fromdoc.getUp()+"/"+otherSource]}, xcesotherSource)
-            except KeyError:
-                print "keys for fullalign: " + str(fullAligns.keys())
+            writeXCESFile({otherSource:fullAligns[fromdoc.getUp()+"/"+otherSource]}, xcesotherSource)
             generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
             with open("src-"+xcesotherSource) as otherSrc:
                 otherSrcLines = otherSrc.readlines()
