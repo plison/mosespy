@@ -177,10 +177,10 @@ def genererateRefData(testdocs, fullAligns, refFormat):
             for fromdoc in testdocs:
                 if i< len(corrTargetsForDoc[fromdoc]):
                     for corrLine in corrTargetsForDoc[fromdoc][i]:
-                        refe.writeline(corrLine)
+                        refe.write(corrLine)
                 else:
                     for corrLine in corrTargetsForDoc[fromdoc][0]:
-                        refe.writeline("\n")
+                        refe.write("\n")
                     
     
     
