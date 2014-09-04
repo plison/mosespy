@@ -101,7 +101,6 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
     sources = sorted(fullAligns.keys(), key=lambda x : len(x.getUp().listdir()))
     
     aligns = copy.deepcopy(fullAligns)
-    print "number of keys in fullAlign (pre): %i"%(len(fullAligns))
     testAligns = {}
     for _ in range(0, nbTesting):
         selection = sources[-1]
@@ -124,8 +123,6 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
     
     trainAligns = extract(sources[:-nbTuning], aligns)
     tuneAligns = extract(sources[-nbTuning:], aligns)
-    print "number of keys in fullAlign (pos): %i"%(len(fullAligns))
-    print "number of keys in align (pos): %i"%(len(aligns))
 
     return trainAligns, tuneAligns, devAligns, testAligns
 
@@ -141,31 +138,33 @@ def genererateRefData(testdocs, fullAligns, refFormat):
             fromdocSrcLines = fromdocSrc.readlines()
         corrTargetsForDoc[fromdoc] = []
         for otherSource in fromdoc.getUp().listdir():
-            corrTargets = []
-            xcesotherSource = str(uuid.uuid4())[0:5]
-            writeXCESFile({otherSource:fullAligns[fromdoc.getUp()+"/"+otherSource]}, xcesotherSource)
-            generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
-            with open("src-"+xcesotherSource) as otherSrc:
-                otherSrcLines = otherSrc.readlines()
-            with open("trg-"+xcesotherSource) as otherTrg:
-                otherTrgLines = otherTrg.readlines()
-                          
-            for i in range(0, len(fromdocSrcLines)):
-                srcLine = fromdocSrcLines[i]
-                foundTarget = "\n"
-                for k in range(i-5, i+5):
-                    otherLine = otherSrcLines[k]
-                    if srcLine == otherLine:
-                        foundTarget = otherTrgLines[k]
-                corrTargets.append(foundTarget)
-                           
-            Path(xcesotherSource).remove()
-            Path("src-"+xcesotherSource).remove()
-            Path("trg-"+xcesotherSource).remove() 
-            
-            if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
-                corrTargetsForDoc[fromdoc].append(corrTargets) 
-                print "Adding reference!"        
+            otherSourcePath = fromdoc.getUp()+"/"+otherSource
+            if fullAligns.has_key(otherSourcePath):
+                corrTargets = []
+                xcesotherSource = str(uuid.uuid4())[0:5]
+                writeXCESFile({otherSourcePath:fullAligns[otherSourcePath]}, xcesotherSource)
+                generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
+                with open("src-"+xcesotherSource) as otherSrc:
+                    otherSrcLines = otherSrc.readlines()
+                with open("trg-"+xcesotherSource) as otherTrg:
+                    otherTrgLines = otherTrg.readlines()
+                              
+                for i in range(0, len(fromdocSrcLines)):
+                    srcLine = fromdocSrcLines[i]
+                    foundTarget = "\n"
+                    for k in range(i-5, i+5):
+                        otherLine = otherSrcLines[k]
+                        if srcLine == otherLine:
+                            foundTarget = otherTrgLines[k]
+                    corrTargets.append(foundTarget)
+                               
+                Path(xcesotherSource).remove()
+                Path("src-"+xcesotherSource).remove()
+                Path("trg-"+xcesotherSource).remove() 
+                
+                if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
+                    corrTargetsForDoc[fromdoc].append(corrTargets) 
+                    print "Adding reference!"        
    
         Path(xcesfromdoc).remove()
         Path("src-"+xcesfromdoc).remove()
