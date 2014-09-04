@@ -140,7 +140,7 @@ def genererateRefData(testdocs, fullAligns, refFormat):
         for otherSource in fromdoc.getUp().listdir():
             corrTargets = []
             xcesotherSource = str(uuid.uuid4())[0:5]
-            writeXCESFile({otherSource:fullAligns[otherSource]}, xcesotherSource)
+            writeXCESFile({otherSource:fullAligns[fromdoc.getUp()+"/"+otherSource]}, xcesotherSource)
             generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
             with open("src-"+xcesotherSource) as otherSrc:
                 otherSrcLines = otherSrc.readlines()
