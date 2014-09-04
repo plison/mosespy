@@ -164,7 +164,9 @@ def genererateRefData(testdocs, fullAligns, refFormat):
                 
                 if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
                     corrTargetsForDoc[fromdoc].append(corrTargets) 
-                    print "Adding reference!"        
+                    print "Adding reference!" 
+                else:
+                    print "found an alternative, but it didnt work"       
    
         Path(xcesfromdoc).remove()
         Path("src-"+xcesfromdoc).remove()
