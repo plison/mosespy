@@ -46,14 +46,13 @@ def findAlignedCorpora(xcesFile):
     tree = etree.parse(str(xcesFile))
     root = tree.getroot()
     alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
-    newAligns = mergeAlignments(alignments)
     
-    train, tune, dev, test = divideAlignedData(newAligns)
+    train, tune, dev, test = divideAlignedData(alignments)
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
-    writeXCESFile(train, xcesFile.addFlag("train"))
-    writeXCESFile(tune, xcesFile.addFlag("tune"))
-    writeXCESTestFile(dev, xcesFile.addFlag("dev"))
-    writeXCESTestFile(test, xcesFile.addFlag("test"))
+    writeXCESFile(train, xcesFile.replace(".xml", ".train.xml"))
+    writeXCESFile(tune, xcesFile.replace(".xml", ".tune.xml"))
+    writeXCESFile(dev, xcesFile.replace(".xml", ".dev.xml"))
+    writeXCESFile(test, xcesFile.replace(".xml", ".test.xml"))
 
 
 def getAlignments(xmlRoot, basePath):
@@ -87,20 +86,34 @@ def getAlignments(xmlRoot, basePath):
 def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
     if len(aligns) < 20:
         raise RuntimeError("not enough data to divide")
-    sources = sorted(aligns.keys(), key=lambda x : len(aligns[x]))
+    sources = sorted(aligns.keys(), key=lambda x : len(x.getUp().listdir()))
     
-    print "Max number of alternative translations : %i"%(len(aligns[sources[-1]]))
+    testAligns = {}
+    for _ in range(0, nbTesting):
+        selection = sources[-1]
+        testAligns[selection] = aligns[selection]
+        for a in aligns.keys():
+            if selection.getUp() in a:
+                del aligns[a]
+                del sources[sources.index[a]]
+    devAligns = {}
+    for _ in range(0, nbDev):
+        selection = sources[-1]
+        devAligns[selection] = aligns[selection]
+        for a in aligns.keys():
+            if selection.getUp() in a:
+                del aligns[a]
+                del sources[sources.index[a]]
     
     extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                                     map(None, keys, map(dic.get, keys)), {})
     
-    trainAligns = extract(sources[:-nbTuning-nbDev-nbTesting], aligns)
-    tuneAligns = extract(sources[-nbTuning-nbDev-nbTesting:-nbDev-nbTesting], aligns)
-    devAligns = extract(sources[-nbDev-nbTesting:-nbTesting], aligns)
-    testAligns = extract(sources[-nbTesting:], aligns)
+    trainAligns = extract(sources[:-nbTuning], aligns)
+    tuneAligns = extract(sources[-nbTuning:], aligns)
+
     return trainAligns, tuneAligns, devAligns, testAligns
 
-    
+
 header = """\
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
@@ -113,8 +126,7 @@ def writeXCESFile(aligns, xcesFile, dupliIndex=0):
         
         xces.write(header)
         for fromdoc in aligns:
-            dindex = dupliIndex if dupliIndex < len(aligns[fromdoc]) else 0
-            alignment = aligns[fromdoc][dindex]
+            alignment = aligns[fromdoc]
             todoc = alignment[0] 
             linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
             xces.write(linkGrp)
@@ -128,14 +140,6 @@ def writeXCESFile(aligns, xcesFile, dupliIndex=0):
         
         xces.write("</cesAlign>\n")
         
-
-def writeXCESTestFile(aligns, xcesFile):
-    
-    maxReferences = max([len(aligns[doc]) for doc in aligns])
-    for k in range(0, maxReferences):
-        xcesRefFile = xcesFile+(str(k) if maxReferences > 1 else "")
-        writeXCESFile(aligns, xcesRefFile, k)
-  
    
 def mergeAlignments(aligns):
     print "merging alignments"
