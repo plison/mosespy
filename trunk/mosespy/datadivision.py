@@ -185,7 +185,7 @@ def genererateRefData(testdocs, fullAligns, refFormat):
     
     
 def generateMosesFiles(xcesFile, sourceFile, targetFile):
-    script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(sourceFile, targetFile, xcesFile)
+    script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(targetFile, sourceFile, xcesFile)
     system.run(script)
 
 header = """\
