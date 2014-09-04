@@ -153,7 +153,7 @@ def genererateRefData(testdocs, fullAligns, refFormat):
                     srcLine = fromdocSrcLines[i]
                     foundTarget = "\n"
                     for k in range(i-5, i+5):
-                        otherLine = otherSrcLines[k]
+                        otherLine = otherSrcLines[k] if k < len(otherSrcLines) else None
                         if srcLine == otherLine:
                             foundTarget = otherTrgLines[k]
                     corrTargets.append(foundTarget)
