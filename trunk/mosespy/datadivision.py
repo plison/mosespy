@@ -33,7 +33,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random, gzip, re, copy
+import sys, math, random, gzip, re, copy, uuid
 import mosespy.slurm as slurm
 import mosespy.system as system
 from mosespy.corpus import AlignedCorpus, BasicCorpus
@@ -132,16 +132,18 @@ def genererateRefData(testdocs, fullAligns, refFormat):
     corrTargetsForDoc = {}
     for fromdoc in testdocs:
         fromdocAlign = fullAligns[fromdoc]
-        writeXCESFile(fromdocAlign, "xces-"+fromdoc)
-        generateMosesFiles("xces-"+fromdoc, "src-"+fromdoc, "trg-"+fromdoc)
+        xcesfromdoc = str(uuid.uuid4())[0:5]
+        writeXCESFile(fromdocAlign, xcesfromdoc)
+        generateMosesFiles(xcesfromdoc, "src-"+xcesfromdoc, "trg-"+xcesfromdoc)
         with open("src-"+fromdoc) as fromdocSrc:
             fromdocSrcLines = fromdocSrc.readlines()
         corrTargetsForDoc[fromdoc] = []
         for otherSource in fromdoc.getUp().listdir():
             corrTargets = []
             otherSourceAlign = fullAligns[otherSource]
-            writeXCESFile(otherSourceAlign, "xces-"+otherSource)
-            generateMosesFiles("xces-"+otherSource, "src-"+otherSource, "trg-"+otherSource)
+            xcesotherSource = str(uuid.uuid4())[0:5]
+            writeXCESFile(otherSourceAlign, xcesotherSource)
+            generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
             with open("src-"+otherSource) as otherSrc:
                 otherSrcLines = otherSrc.readlines()
             with open("trg-"+otherSource) as otherTrg:
@@ -156,17 +158,17 @@ def genererateRefData(testdocs, fullAligns, refFormat):
                         foundTarget = otherTrgLines[k]
                 corrTargets.append(foundTarget)
                            
-            Path("xces-"+otherSource).remove()
-            Path("src-"+otherSource).remove()
-            Path("trg-"+otherSource).remove() 
+            Path(xcesotherSource).remove()
+            Path("src-"+xcesotherSource).remove()
+            Path("trg-"+xcesotherSource).remove() 
             
             if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
                 corrTargetsForDoc[fromdoc].append(corrTargets) 
                 print "Adding reference!"        
    
-        Path("xces-"+fromdoc).remove()
-        Path("src-"+fromdoc).remove()
-        Path("trg-"+fromdoc).remove()
+        Path(xcesfromdoc).remove()
+        Path("src-"+xcesfromdoc).remove()
+        Path("trg-"+xcesfromdoc).remove()
     
     nbReferences = min(len(corrTargetsForDoc[fromdoc]) for fromdoc in testdocs)
     print "min number of referernces: %i"%(nbReferences)
