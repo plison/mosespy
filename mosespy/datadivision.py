@@ -131,18 +131,16 @@ def genererateRefData(testdocs, fullAligns, refFormat):
     
     corrTargetsForDoc = {}
     for fromdoc in testdocs:
-        fromdocAlign = fullAligns[fromdoc]
         xcesfromdoc = str(uuid.uuid4())[0:5]
-        writeXCESFile(fromdocAlign, xcesfromdoc)
+        writeXCESFile([fullAligns[fromdoc]], xcesfromdoc)
         generateMosesFiles(xcesfromdoc, "src-"+xcesfromdoc, "trg-"+xcesfromdoc)
         with open("src-"+fromdoc) as fromdocSrc:
             fromdocSrcLines = fromdocSrc.readlines()
         corrTargetsForDoc[fromdoc] = []
         for otherSource in fromdoc.getUp().listdir():
             corrTargets = []
-            otherSourceAlign = fullAligns[otherSource]
             xcesotherSource = str(uuid.uuid4())[0:5]
-            writeXCESFile(otherSourceAlign, xcesotherSource)
+            writeXCESFile([fullAligns[otherSource]], xcesotherSource)
             generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
             with open("src-"+otherSource) as otherSrc:
                 otherSrcLines = otherSrc.readlines()
