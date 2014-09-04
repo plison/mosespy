@@ -95,7 +95,7 @@ def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
         for a in aligns.keys():
             if selection.getUp() in a:
                 del aligns[a]
-                del sources[sources.index[a]]
+                del sources[sources.index(a)]
     devAligns = {}
     for _ in range(0, nbDev):
         selection = sources[-1]
@@ -103,7 +103,7 @@ def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
         for a in aligns.keys():
             if selection.getUp() in a:
                 del aligns[a]
-                del sources[sources.index[a]]
+                del sources[sources.index(a)]
     
     extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                                     map(None, keys, map(dic.get, keys)), {})
