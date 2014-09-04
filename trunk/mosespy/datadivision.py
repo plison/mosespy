@@ -47,7 +47,7 @@ def findAlignedCorpora(xcesFile):
     tree = etree.parse(str(xcesFile))
     root = tree.getroot()
     alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
-    
+    alignments2 = copy.deepcopy(alignments)
     train, tune, dev, test = divideAlignedData(alignments)
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
     trainXCESFile = xcesFile.replace(".xml", ".train.xml")
@@ -62,7 +62,7 @@ def findAlignedCorpora(xcesFile):
     s = re.search("(.*)\-(.*)\..*", xcesFile)
     sourceLang, targetLang = s.group(1), s.group(2)
     
-    genererateRefData(test.keys(), alignments, "ref%i."+targetLang)
+    genererateRefData(test.keys(), alignments2, "ref%i."+targetLang)
     
     
 
@@ -100,7 +100,6 @@ def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
         raise RuntimeError("not enough data to divide")
     sources = sorted(aligns.keys(), key=lambda x : len(x.getUp().listdir()))
     
-    aligns = copy.deepcopy(aligns)
     testAligns = {}
     for _ in range(0, nbTesting):
         selection = sources[-1]
