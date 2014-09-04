@@ -33,8 +33,9 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random, gzip
+import sys, math, random, gzip, re, copy
 import mosespy.slurm as slurm
+import mosespy.system as system
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
@@ -49,10 +50,21 @@ def findAlignedCorpora(xcesFile):
     
     train, tune, dev, test = divideAlignedData(alignments)
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
-    writeXCESFile(train, xcesFile.replace(".xml", ".train.xml"))
-    writeXCESFile(tune, xcesFile.replace(".xml", ".tune.xml"))
-    writeXCESFile(dev, xcesFile.replace(".xml", ".dev.xml"))
-    writeXCESFile(test, xcesFile.replace(".xml", ".test.xml"))
+    trainXCESFile = xcesFile.replace(".xml", ".train.xml")
+    writeXCESFile(train, trainXCESFile)
+    tuneXCESFile = xcesFile.replace(".xml", ".tune.xml")
+    writeXCESFile(tune, tuneXCESFile)
+    devXCESFile = xcesFile.replace(".xml", ".dev.xml")
+    writeXCESFile(dev, devXCESFile)
+    testXCESFile = xcesFile.replace(".xml", ".test.xml")
+    writeXCESFile(test, testXCESFile)
+
+    s = re.search("(.*)\-(.*)\..*", xcesFile)
+    sourceLang, targetLang = s.group(1), s.group(2)
+    
+    genererateRefData(test.keys(), alignments, "ref%i."+targetLang)
+    
+    
 
 
 def getAlignments(xmlRoot, basePath):
@@ -88,6 +100,7 @@ def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
         raise RuntimeError("not enough data to divide")
     sources = sorted(aligns.keys(), key=lambda x : len(x.getUp().listdir()))
     
+    aligns = copy.deepcopy(aligns)
     testAligns = {}
     for _ in range(0, nbTesting):
         selection = sources[-1]
@@ -114,13 +127,68 @@ def divideAlignedData(aligns, nbTuning=2, nbDev=4, nbTesting=4):
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
+def genererateRefData(testdocs, fullAligns, refFormat):
+    
+    corrTargetsForDoc = {}
+    for fromdoc in testdocs:
+        fromdocAlign = fullAligns[fromdoc]
+        writeXCESFile(fromdocAlign, "xces-"+fromdoc)
+        generateMosesFiles("xces-"+fromdoc, "src-"+fromdoc, "trg-"+fromdoc)
+        with open("src-"+fromdoc) as fromdocSrc:
+            fromdocSrcLines = fromdocSrc.readlines()
+        corrTargetsForDoc[fromdoc] = []
+        for otherSource in fromdoc.getUp().listdir():
+            corrTargets = []
+            otherSourceAlign = fullAligns[otherSource]
+            writeXCESFile(otherSourceAlign, "xces-"+otherSource)
+            generateMosesFiles("xces-"+otherSource, "src-"+otherSource, "trg-"+otherSource)
+            with open("src-"+otherSource) as otherSrc:
+                otherSrcLines = otherSrc.readlines()
+            with open("trg-"+otherSource) as otherTrg:
+                otherTrgLines = otherTrg.readlines()
+                          
+            for i in range(0, len(fromdocSrcLines)):
+                srcLine = fromdocSrcLines[i]
+                foundTarget = "\n"
+                for k in range(i-5, i+5):
+                    otherLine = otherSrcLines[k]
+                    if srcLine == otherLine:
+                        foundTarget = otherTrgLines[k]
+                corrTargets.append(foundTarget)
+                           
+            Path("xces-"+otherSource).remove()
+            Path("src-"+otherSource).remove()
+            Path("trg-"+otherSource).remove() 
+            
+            if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
+                corrTargetsForDoc[fromdoc].append(corrTargets) 
+                print "Adding reference!"        
+   
+        Path("xces-"+fromdoc).remove()
+        Path("src-"+fromdoc).remove()
+        Path("trg-"+fromdoc).remove()
+    
+    nbReferences = min(len(corrTargetsForDoc[fromdoc]) for fromdoc in testdocs)
+    print "min number of referernces: %i"%(nbReferences)
+    for i in range(0, nbReferences):
+        with open(refFormat%i, 'r') as refe:
+            for fromdoc in testdocs:
+                for corrLine in corrTargetsForDoc[fromdoc][i]:
+                    refe.writeline(corrLine)
+                    
+    
+    
+def generateMosesFiles(xcesFile, sourceFile, targetFile):
+    script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(sourceFile, targetFile, xcesFile)
+    system.run(script)
+
 header = """\
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
 <cesAlign version="1.0">
 """ 
 
-def writeXCESFile(aligns, xcesFile, dupliIndex=0):
+def writeXCESFile(aligns, xcesFile):
     
     with open(xcesFile, 'w') as xces:
         
