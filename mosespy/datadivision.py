@@ -164,21 +164,23 @@ def genererateRefData(testdocs, fullAligns, refFormat):
                 
                 if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
                     corrTargetsForDoc[fromdoc].append(corrTargets) 
-                    print "Adding reference!" 
-                else:
-                    print "found an alternative, but it didnt work"       
+                    print "Adding reference!"      
    
         Path(xcesfromdoc).remove()
         Path("src-"+xcesfromdoc).remove()
         Path("trg-"+xcesfromdoc).remove()
     
-    nbReferences = min(len(corrTargetsForDoc[fromdoc]) for fromdoc in testdocs)
-    print "min number of referernces: %i"%(nbReferences)
+    nbReferences = max(len(corrTargetsForDoc[fromdoc]) for fromdoc in testdocs)
+    print "max number of referernces: %i"%(nbReferences)
     for i in range(0, nbReferences):
-        with open(refFormat%i, 'r') as refe:
+        with open(refFormat%i, 'w') as refe:
             for fromdoc in testdocs:
-                for corrLine in corrTargetsForDoc[fromdoc][i]:
-                    refe.writeline(corrLine)
+                if i< len(corrTargetsForDoc[fromdoc]):
+                    for corrLine in corrTargetsForDoc[fromdoc][i]:
+                        refe.writeline(corrLine)
+                else:
+                    for corrLine in corrTargetsForDoc[fromdoc][0]:
+                        refe.writeline("\n")
                     
     
     
