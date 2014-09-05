@@ -39,252 +39,6 @@ import mosespy.system as system
 from mosespy.corpus import AlignedCorpus, BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
-
-
-def findAlignedCorpora(xcesFile):
-    xcesFile = Path(xcesFile)
-    print "Parsing file " + xcesFile
-    tree = etree.parse(str(xcesFile))
-    root = tree.getroot()
-    alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
-    
-    train, tune, dev, test = divideAlignedData(alignments)
-    print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
-    trainXCESFile = xcesFile.replace(".xml", ".train.xml")
-    writeXCESFile(train, trainXCESFile)
-    tuneXCESFile = xcesFile.replace(".xml", ".tune.xml")
-    writeXCESFile(tune, tuneXCESFile)
-    devXCESFile = xcesFile.replace(".xml", ".dev.xml")
-    writeXCESFile(dev, devXCESFile)
-    testXCESFile = xcesFile.replace(".xml", ".test.xml")
-    writeXCESFile(test, testXCESFile)
-
-    s = re.search("(.*)\-(.*)\..*", xcesFile)
-    sourceLang, targetLang = s.group(1), s.group(2)
-    
-    genererateRefData(test.keys(), alignments, "ref%i."+targetLang)
-    
-    
-
-
-def getAlignments(xmlRoot, basePath):
-    print "Extracting alignments"
-    corporaDict = {}
-    for linkGrp in xmlRoot:
-        if linkGrp.tag == 'linkGrp':
-            fromdoc = Path(basePath + linkGrp.attrib['fromDoc'])
-            todoc =  Path(basePath + linkGrp.attrib['toDoc'])
-            if not fromdoc.exists():
-                raise RuntimeError("could not find " + fromdoc)
-            if not todoc.exists():
-                raise RuntimeError("could not find " + todoc)
-            sourceIndices = []
-            targetIndices = []
-            for link in linkGrp:
-                if link.tag == 'link':
-                    split = link.attrib["xtargets"].split(";")
-                    if len(split) != 2:
-                        raise RuntimeError("xtargets %s not separated by ;"
-                                           %(link.attrib["xtargets"]))
-                    sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
-                    targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
-                    sourceIndices.append(sourceLines)
-                    targetIndices.append(targetLines)
-            corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
-
-    return corporaDict
-
-
-def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
-    if len(fullAligns) < 20:
-        raise RuntimeError("not enough data to divide")
-    sources = sorted(fullAligns.keys(), key=lambda x : len(x.getUp().listdir()))
-    
-    aligns = copy.deepcopy(fullAligns)
-    testAligns = {}
-    for _ in range(0, nbTesting):
-        selection = sources[-1]
-        testAligns[selection] = aligns[selection]
-        for a in aligns.keys():
-            if selection.getUp() in a:
-                del aligns[a]
-                del sources[sources.index(a)]
-    devAligns = {}
-    for _ in range(0, nbDev):
-        selection = sources[-1]
-        devAligns[selection] = aligns[selection]
-        for a in aligns.keys():
-            if selection.getUp() in a:
-                del aligns[a]
-                del sources[sources.index(a)]
-    
-    extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
-                                    map(None, keys, map(dic.get, keys)), {})
-    
-    trainAligns = extract(sources[:-nbTuning], aligns)
-    tuneAligns = extract(sources[-nbTuning:], aligns)
-
-    return trainAligns, tuneAligns, devAligns, testAligns
-
-
-def genererateRefData(testdocs, fullAligns, refFormat):
-    
-    corrTargetsForDoc = {}
-    for fromdoc in testdocs:
-        xcesfromdoc = str(uuid.uuid4())[0:5]
-        writeXCESFile({fromdoc:fullAligns[fromdoc]}, xcesfromdoc)
-        generateMosesFiles(xcesfromdoc, "src-"+xcesfromdoc, "trg-"+xcesfromdoc)
-        with open("src-"+xcesfromdoc) as fromdocSrc:
-            fromdocSrcLines = fromdocSrc.readlines()
-        corrTargetsForDoc[fromdoc] = []
-        for otherSource in fromdoc.getUp().listdir():
-            otherSourcePath = fromdoc.getUp()+"/"+otherSource
-            if fullAligns.has_key(otherSourcePath):
-                corrTargets = []
-                xcesotherSource = str(uuid.uuid4())[0:5]
-                writeXCESFile({otherSourcePath:fullAligns[otherSourcePath]}, xcesotherSource)
-                generateMosesFiles(xcesotherSource, "src-"+xcesotherSource, "trg-"+xcesotherSource)
-                with open("src-"+xcesotherSource) as otherSrc:
-                    otherSrcLines = otherSrc.readlines()
-                with open("trg-"+xcesotherSource) as otherTrg:
-                    otherTrgLines = otherTrg.readlines()
-                              
-                for i in range(0, len(fromdocSrcLines)):
-                    srcLine = fromdocSrcLines[i]
-                    foundTarget = None
-                    for k in range(i-5, i+5):
-                        otherLine = otherSrcLines[k] if k < len(otherSrcLines) else None
-                        if srcLine == otherLine:
-                            foundTarget = otherTrgLines[k]
-                    corrTargets.append(foundTarget)
-                               
-                Path(xcesotherSource).remove()
-                Path("src-"+xcesotherSource).remove()
-                Path("trg-"+xcesotherSource).remove() 
-                
-                if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
-                    corrTargetsForDoc[fromdoc].append(corrTargets) 
-                    print "Adding reference!"      
-   
-        Path(xcesfromdoc).remove()
-        Path("src-"+xcesfromdoc).remove()
-        Path("trg-"+xcesfromdoc).remove()
-    
-    alternativesPerLine = []
-    for fromdoc in testdocs:
-        for i in range(0, len(corrTargetsForDoc[fromdoc][0])):
-            alternativesForLine = set()
-            for corrTargets in corrTargetsForDoc[fromdoc]:
-                corrTarget = corrTargets[i]
-                if corrTarget:
-                    alternativesForLine.add(corrTarget)
-            alternativesPerLine.append(list(alternativesForLine))
-                             
-    
-    nbReferences = max([len(line) for line in alternativesPerLine])
-    print "max number of referernces: %i"%(nbReferences)
-    for i in range(0, nbReferences):
-        with open(refFormat%i, 'w') as refe:
-            for line in alternativesPerLine:
-                if i < len(line):
-                    refe.write(line[i])
-                else:
-                    refe.write("\n")
-                     
-    
-def generateMosesFiles(xcesFile, sourceFile, targetFile):
-    script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(targetFile, sourceFile, xcesFile)
-    system.run(script)
-
-header = """\
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
-<cesAlign version="1.0">
-""" 
-
-def writeXCESFile(aligns, xcesFile):
-    
-    with open(xcesFile, 'w') as xces:
-        
-        xces.write(header)
-        for fromdoc in aligns:
-            alignment = aligns[fromdoc]
-            todoc = alignment[0] 
-            linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
-            xces.write(linkGrp)
-            for i in range(0, len(alignment[1])):
-                sourceLines = [str(j) for j in alignment[1][i]]
-                targetLines = [str(j) for j in alignment[2][i]]
-                xtargets = " ".join(sourceLines) + ";" + " ".join(targetLines)
-                line = """<link id="SL%i" xtargets="%s" />\n"""%(i, xtargets)
-                xces.write(line)
-            xces.write("</linkGrp>\n")
-        
-        xces.write("</cesAlign>\n")
-        
-   
-def mergeAlignments(aligns):
-    print "merging alignments"
-    sizes = extractSizes(aligns.keys())
-    samples = {}
-    print "document samples extracted"
-    
-    newAligns = {}
-    for fromdoc in aligns:  
-        newAligns[fromdoc] = [aligns[fromdoc]]   
-        for otherSource in fromdoc.getUp().listdir():
-            otherSource = fromdoc.getUp() + "/" + otherSource
-            if (otherSource != fromdoc and newAligns.has_key(otherSource)
-                and (sizes[fromdoc] - sizes[otherSource]) < 2000
-                and extractSamples(samples,fromdoc) == extractSamples(samples, otherSource)
-                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
-                print "YES! %s and %s"%(fromdoc,otherSource)                          
-                newAligns[fromdoc] += newAligns[otherSource]
-                del newAligns[otherSource]
-    
-    print "Nb. files with alternative translations: %i"%(len(aligns)-len(newAligns))
-    return newAligns
-
-
-def extractSamples(samples, fromdoc):
-    if samples.has_key(fromdoc):
-        return samples[fromdoc]
-    
-    docunzipped = gzip.open(fromdoc, 'r')
-    root = etree.fromstring(docunzipped.read())
-    first = getSentenceFromXML(root[0])
-    size = len(root)
-    oneThird = getSentenceFromXML(root[size/3])
-    twoThird = getSentenceFromXML(root[2*size/3])
-    last = getSentenceFromXML(root[size-1])
-    docunzipped.close()
-    result = (first,oneThird,twoThird,last)
-    samples[fromdoc] = result
-    return result
-
-
-def getSentenceFromXML(xmlEntity):
-    if xmlEntity.tag == 's':
-        sentence = []
-        for wid in xmlEntity:
-            if wid.tag == 'w':
-                sentence.append(wid.text if isinstance(wid.text, basestring) else "")
-        return " ".join(sentence) 
-    
-     
-def extractSizes(documents):
-    sizes = {}
-    for d in documents:
-        try: 
-            docunzipped = gzip.open(d, 'r')
-            doctext = docunzipped.read()  
-            docunzipped.close()   
-            sizes[d] = len(doctext)
-        except IOError:
-            print "IOError for file " + str(d)
-    return sizes        
-
-    
     
 
 def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
@@ -514,5 +268,259 @@ def _drawRandom(nbToDraw, maxValue, exclusion=None):
         if not exclusion or choice not in exclusion:
             numbers.add(choice)
     
-    return numbers   
+    return numbers 
+
+
+
+
+def divideXCESCorpus(xcesFile):
+    xcesFile = Path(xcesFile)
+    print "Parsing file " + xcesFile
+    tree = etree.parse(str(xcesFile))
+    root = tree.getroot()
+    alignments = getAlignments(root, xcesFile.getUp() + "/OpenSubtitles2013/xml/")
+    
+    train, tune, dev, test = divideAlignedData(alignments)
+    print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
+    
+ #   generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
+ #   generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
+ #   generateMosesRefFiles(dev, alignments, xcesFile.replace(".xml", ".dev"))
+    generateMosesRefFiles(test, alignments, xcesFile.replace(".xml", ".test"))
+                    
+    
+    
+
+
+def getAlignments(xmlRoot, basePath):
+    print "Extracting alignments"
+    corporaDict = {}
+    for linkGrp in xmlRoot:
+        if linkGrp.tag == 'linkGrp':
+            fromdoc = Path(basePath + linkGrp.attrib['fromDoc'])
+            todoc =  Path(basePath + linkGrp.attrib['toDoc'])
+            if not fromdoc.exists():
+                raise RuntimeError("could not find " + fromdoc)
+            if not todoc.exists():
+                raise RuntimeError("could not find " + todoc)
+            sourceIndices = []
+            targetIndices = []
+            for link in linkGrp:
+                if link.tag == 'link':
+                    split = link.attrib["xtargets"].split(";")
+                    if len(split) != 2:
+                        raise RuntimeError("xtargets %s not separated by ;"
+                                           %(link.attrib["xtargets"]))
+                    sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
+                    targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
+                    sourceIndices.append(sourceLines)
+                    targetIndices.append(targetLines)
+            corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
+
+    return corporaDict
+
+
+def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
+    if len(fullAligns) < 20:
+        raise RuntimeError("not enough data to divide")
+    sources = sorted(fullAligns.keys(), key=lambda x : len(x.getUp().listdir()))
+    
+    aligns = copy.deepcopy(fullAligns)
+    testAligns = {}
+    for _ in range(0, nbTesting):
+        selection = sources[-1]
+        testAligns[selection] = aligns[selection]
+        for a in aligns.keys():
+            if selection.getUp() in a:
+                del aligns[a]
+                del sources[sources.index(a)]
+    devAligns = {}
+    for _ in range(0, nbDev):
+        selection = sources[-1]
+        devAligns[selection] = aligns[selection]
+        for a in aligns.keys():
+            if selection.getUp() in a:
+                del aligns[a]
+                del sources[sources.index(a)]
+    
+    extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
+                                    map(None, keys, map(dic.get, keys)), {})
+    
+    trainAligns = extract(sources[:-nbTuning], aligns)
+    tuneAligns = extract(sources[-nbTuning:], aligns)
+
+    return trainAligns, tuneAligns, devAligns, testAligns
+
+
+def generateMosesRefFiles(testAligns, fullAligns, dataStem):
+    
+    _, trgFullFile = generateMosesFiles(testAligns, dataStem)
+    trgFullFile.remove()
+    
+    corrTargetsForDoc = {}
+    for fromdoc in testAligns:
+        xcesfromdoc = str(uuid.uuid4())[0:5]
+        srcFile, trgFile = generateMosesFiles({fromdoc:fullAligns[fromdoc]}, xcesfromdoc)
+        with open(srcFile) as fromdocSrc:
+            fromdocSrcLines = fromdocSrc.readlines()
+        corrTargetsForDoc[fromdoc] = []
+        for otherSource in fromdoc.getUp().listdir():
+            otherSourcePath = fromdoc.getUp()+"/"+otherSource
+            if fullAligns.has_key(otherSourcePath):
+                corrTargets = []
+                xcesotherSource = str(uuid.uuid4())[0:5]
+                srcFile2, trgFile2 = generateMosesFiles({otherSourcePath:fullAligns
+                                                         [otherSourcePath]}, xcesotherSource)
+                with open(srcFile2) as otherSrc:
+                    otherSrcLines = otherSrc.readlines()
+                with open(trgFile2) as otherTrg:
+                    otherTrgLines = otherTrg.readlines()
+                              
+                for i in range(0, len(fromdocSrcLines)):
+                    srcLine = fromdocSrcLines[i]
+                    foundTarget = None
+                    for k in range(i-5, i+5):
+                        otherLine = otherSrcLines[k] if k < len(otherSrcLines) else None
+                        if srcLine == otherLine:
+                            foundTarget = otherTrgLines[k]
+                    corrTargets.append(foundTarget)
+                               
+                Path(xcesotherSource).remove()
+                Path(srcFile2).remove()
+                Path(trgFile2).remove() 
+                
+                if len([target for target in corrTargets if target!=""]) > 2*len(fromdocSrcLines)/3:
+                    corrTargetsForDoc[fromdoc].append(corrTargets) 
+                    print "Adding reference!"      
+   
+        Path(xcesfromdoc).remove()
+        Path(srcFile).remove()
+        Path(trgFile).remove()
+    
+    alternativesPerLine = []
+    for fromdoc in testAligns:
+        for i in range(0, len(corrTargetsForDoc[fromdoc][0])):
+            alternativesForLine = set()
+            for corrTargets in corrTargetsForDoc[fromdoc]:
+                corrTarget = corrTargets[i]
+                if corrTarget:
+                    alternativesForLine.add(corrTarget)
+            alternativesPerLine.append(list(alternativesForLine))
+                             
+    
+    nbReferences = max([len(line) for line in alternativesPerLine])
+    print "max number of referernces: %i"%(nbReferences)
+    for i in range(0, nbReferences):
+        with open(trgFullFile+i) as refe:
+            for line in alternativesPerLine:
+                if i < len(line):
+                    refe.write(line[i])
+                else:
+                    refe.write("\n")
+                     
+    
+def generateMosesFiles(alignments, dataStem):
+    xcesFile = Path(dataStem + ".xml")
+    writeXCESFile(alignments, xcesFile)
+    
+    s = re.search(r"(.*)\-(.*)\..*", dataStem)
+    sourceLang, targetLang = s.group(1), s.group(2) 
+    sourceFile = Path(dataStem + "." + sourceLang)
+    targetFile = Path(dataStem + "." + targetLang)
+    
+    script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(targetFile, sourceFile, xcesFile)
+    system.run(script)
+    xcesFile.remove()
+    return sourceFile, targetFile
+    
+
+header = """\
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE cesAlign PUBLIC "-//CES//DTD XML cesAlign//EN" "">
+<cesAlign version="1.0">
+""" 
+
+def writeXCESFile(aligns, xcesFile):
+    
+    with open(xcesFile, 'w') as xces:
+        
+        xces.write(header)
+        for fromdoc in aligns:
+            alignment = aligns[fromdoc]
+            todoc = alignment[0] 
+            linkGrp = """<linkGrp targType="s" fromDoc="%s" toDoc="%s">\n"""%(fromdoc, todoc)
+            xces.write(linkGrp)
+            for i in range(0, len(alignment[1])):
+                sourceLines = [str(j) for j in alignment[1][i]]
+                targetLines = [str(j) for j in alignment[2][i]]
+                xtargets = " ".join(sourceLines) + ";" + " ".join(targetLines)
+                line = """<link id="SL%i" xtargets="%s" />\n"""%(i, xtargets)
+                xces.write(line)
+            xces.write("</linkGrp>\n")
+        
+        xces.write("</cesAlign>\n")
+        
+   
+def mergeAlignments(aligns):
+    print "merging alignments"
+    sizes = extractSizes(aligns.keys())
+    samples = {}
+    print "document samples extracted"
+    
+    newAligns = {}
+    for fromdoc in aligns:  
+        newAligns[fromdoc] = [aligns[fromdoc]]   
+        for otherSource in fromdoc.getUp().listdir():
+            otherSource = fromdoc.getUp() + "/" + otherSource
+            if (otherSource != fromdoc and newAligns.has_key(otherSource)
+                and (sizes[fromdoc] - sizes[otherSource]) < 2000
+                and extractSamples(samples,fromdoc) == extractSamples(samples, otherSource)
+                and len(aligns[fromdoc][1]) == len(aligns[otherSource][1])):
+                print "YES! %s and %s"%(fromdoc,otherSource)                          
+                newAligns[fromdoc] += newAligns[otherSource]
+                del newAligns[otherSource]
+    
+    print "Nb. files with alternative translations: %i"%(len(aligns)-len(newAligns))
+    return newAligns
+
+
+def extractSamples(samples, fromdoc):
+    if samples.has_key(fromdoc):
+        return samples[fromdoc]
+    
+    docunzipped = gzip.open(fromdoc, 'r')
+    root = etree.fromstring(docunzipped.read())
+    first = getSentenceFromXML(root[0])
+    size = len(root)
+    oneThird = getSentenceFromXML(root[size/3])
+    twoThird = getSentenceFromXML(root[2*size/3])
+    last = getSentenceFromXML(root[size-1])
+    docunzipped.close()
+    result = (first,oneThird,twoThird,last)
+    samples[fromdoc] = result
+    return result
+
+
+def getSentenceFromXML(xmlEntity):
+    if xmlEntity.tag == 's':
+        sentence = []
+        for wid in xmlEntity:
+            if wid.tag == 'w':
+                sentence.append(wid.text if isinstance(wid.text, basestring) else "")
+        return " ".join(sentence) 
+    
+     
+def extractSizes(documents):
+    sizes = {}
+    for d in documents:
+        try: 
+            docunzipped = gzip.open(d, 'r')
+            doctext = docunzipped.read()  
+            docunzipped.close()   
+            sizes[d] = len(doctext)
+        except IOError:
+            print "IOError for file " + str(d)
+    return sizes        
+
+      
 
