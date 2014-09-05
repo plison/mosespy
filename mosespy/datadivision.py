@@ -422,7 +422,7 @@ def generateMosesFiles(alignments, dataStem):
     xcesFile = Path(dataStem + ".xml")
     writeXCESFile(alignments, xcesFile)
     
-    s = re.search(r"(.*)\-(.*)\..*", xcesFile.basename())
+    s = re.search(r"(.*)\-(.*?)\.", xcesFile.basename())
     if s:
         sourceLang, targetLang = s.group(1), s.group(2)
     else:
