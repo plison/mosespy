@@ -410,7 +410,7 @@ def generateMosesRefFiles(testAligns, fullAligns, dataStem):
     nbReferences = max([len(line) for line in alternativesPerLine])
     print "max number of referernces: %i"%(nbReferences)
     for i in range(0, nbReferences):
-        with open(trgFullFile+str(i)) as refe:
+        with open(trgFullFile+str(i), 'w') as refe:
             for line in alternativesPerLine:
                 if i < len(line):
                     refe.write(line[i])
