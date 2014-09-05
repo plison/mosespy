@@ -283,12 +283,11 @@ def divideXCESCorpus(xcesFile):
     train, tune, dev, test = divideAlignedData(alignments)
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
     
- #   generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
- #   generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
     generateMosesRefFiles(dev, alignments, xcesFile.replace(".xml", ".dev"))
     generateMosesRefFiles(test, alignments, xcesFile.replace(".xml", ".test"))
+    generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
+    generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
                     
-    
     
 
 
@@ -424,7 +423,10 @@ def generateMosesFiles(alignments, dataStem):
     writeXCESFile(alignments, xcesFile)
     
     s = re.search(r"(.*)\-(.*)\..*", dataStem)
-    sourceLang, targetLang = s.group(1), s.group(2) 
+    if s:
+        sourceLang, targetLang = s.group(1), s.group(2)
+    else:
+        sourceLang, targetLang = "src", "trg"
     sourceFile = Path(dataStem + "." + sourceLang)
     targetFile = Path(dataStem + "." + targetLang)
     
