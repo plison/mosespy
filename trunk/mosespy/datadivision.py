@@ -287,6 +287,7 @@ def divideXCESCorpus(xcesFile):
     generateMosesRefFiles(test, alignments, xcesFile.replace(".xml", ".test"))
     generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
     generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
+    print "Finished generating Moses files"
                     
     
 
