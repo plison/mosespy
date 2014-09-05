@@ -445,6 +445,7 @@ header = """\
 
 def writeXCESFile(aligns, xcesFile):
     
+    print "Writing to file %s"%(xcesFile)
     with open(xcesFile, 'w') as xces:
         
         xces.write(header)
