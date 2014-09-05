@@ -151,7 +151,7 @@ def genererateRefData(testdocs, fullAligns, refFormat):
                               
                 for i in range(0, len(fromdocSrcLines)):
                     srcLine = fromdocSrcLines[i]
-                    foundTarget = "\n"
+                    foundTarget = None
                     for k in range(i-5, i+5):
                         otherLine = otherSrcLines[k] if k < len(otherSrcLines) else None
                         if srcLine == otherLine:
@@ -170,19 +170,27 @@ def genererateRefData(testdocs, fullAligns, refFormat):
         Path("src-"+xcesfromdoc).remove()
         Path("trg-"+xcesfromdoc).remove()
     
-    nbReferences = max(len(corrTargetsForDoc[fromdoc]) for fromdoc in testdocs)
+    alternativesPerLine = []
+    for fromdoc in testdocs:
+        for i in range(0, len(corrTargetsForDoc[fromdoc][0])):
+            alternativesForLine = set()
+            for corrTargets in corrTargetsForDoc[fromdoc]:
+                corrTarget = corrTargets[i]
+                if corrTarget:
+                    alternativesForLine.add(corrTarget)
+            alternativesPerLine.append(list(alternativesForLine))
+                             
+    
+    nbReferences = max([len(line) for line in alternativesPerLine])
     print "max number of referernces: %i"%(nbReferences)
     for i in range(0, nbReferences):
         with open(refFormat%i, 'w') as refe:
-            for fromdoc in testdocs:
-                if i< len(corrTargetsForDoc[fromdoc]):
-                    for corrLine in corrTargetsForDoc[fromdoc][i]:
-                        refe.write(corrLine)
+            for line in alternativesPerLine:
+                if i < len(line):
+                    refe.write(line[i])
                 else:
-                    for corrLine in corrTargetsForDoc[fromdoc][0]:
-                        refe.write("\n")
-                    
-    
+                    refe.write("\n")
+                     
     
 def generateMosesFiles(xcesFile, sourceFile, targetFile):
     script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(targetFile, sourceFile, xcesFile)
