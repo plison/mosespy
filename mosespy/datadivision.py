@@ -35,9 +35,8 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 import sys, math, random, gzip, re, copy, uuid
 import mosespy.slurm as slurm
-import mosespy.system as system
 from mosespy.corpus import AlignedCorpus, BasicCorpus
-from mosespy.system import Path
+from mosespy.system import Path, ShellExecutor
 import xml.etree.cElementTree as etree
     
 
@@ -432,7 +431,7 @@ def generateMosesFiles(alignments, dataStem):
     targetFile = Path(dataStem + "." + targetLang)
     
     script = "./uplug/tools/opus2moses.pl -f %s -e %s %s"%(targetFile, sourceFile, xcesFile)
-    system.run(script)
+    ShellExecutor(quiet=False).run(script)
     xcesFile.remove()
     return sourceFile, targetFile
     
