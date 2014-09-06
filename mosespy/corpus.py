@@ -358,13 +358,13 @@ class CorpusProcessor():
         
         # STEP 1: tokenisation
         normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
-        self.tokeniser.normaliseFile(rawCorpus, normFile)
+  #      self.tokeniser.normaliseFile(rawCorpus, normFile)
         tokFile = normFile.changeFlag("tok")
-        self.tokeniser.tokeniseFile(normFile, tokFile)
+  #      self.tokeniser.tokeniseFile(normFile, tokFile)
         
         # STEP 2: train truecaser if not already existing
         if not self.truecaser.isModelTrained(rawCorpus.getLang()):
-            self.truecaser.trainModel(tokFile)
+            self.truecaser.trainModel(rawCorpus)
             
         # STEP 3: truecasing   
         trueFile = tokFile.changeFlag("true")
@@ -544,16 +544,10 @@ class Tokeniser():
                         
         cleanScript = (install.moses_root + "/scripts/tokenizer" 
                        +"/normalize-punctuation.perl " + lang)
-        tmpFile = outputFile + "_tmp"
-        result = self.executor.run(cleanScript, inputFile, tmpFile)
+        result = self.executor.run(cleanScript, inputFile, outputFile)
         if not result:
             raise RuntimeError("Normalisation of %s has failed"%(inputFile))
-        
-        outlines = []
-        for line in Path(tmpFile).readlines():
-            outlines.append(line[0].upper() + line[1:])
-        outputFile.writelines(outlines)
-        tmpFile.remove()
+
         
        
     def tokeniseFile(self, inputFile, outputFile):
