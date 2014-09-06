@@ -289,7 +289,7 @@ def divideXCESCorpus(xcesFile):
     srcDevFile, trgDevFile = generateMosesFiles(extractDict(alignments, dev.keys()), 
                                                 xcesFile.replace(".xml", ".dev"))
     srcTestFile, trgTestFile = generateMosesFiles(extractDict(alignments, test.keys()), 
-                                                xcesFile.replace(".xml", ".dev"))                                      
+                                                xcesFile.replace(".xml", ".test"))                                      
     
     generateMosesRefFiles(alignments, dev.keys(), trgDevFile)
     generateMosesRefFiles(alignments, test.keys(), trgTestFile)    
@@ -341,7 +341,7 @@ def getAlignments(xmlRoot, basePath):
     return corporaDict
 
 
-def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
+def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
     if len(fullAligns) < 20:
         raise RuntimeError("not enough data to divide")
     sources = sorted(fullAligns.keys(), 
