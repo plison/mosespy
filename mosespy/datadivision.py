@@ -287,14 +287,19 @@ def divideXCESCorpus(xcesFile):
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
     
     inverseAlignments = {}
+    inverseDev, inverseTest = [], []
     for a in alignments:
         align = alignments[a]
         inverseAlignments[align[0]] = (a, align[2], align[1])
+        if a in dev:
+            inverseDev.append(align[0])
+        if a in test:
+            inverseDev.append(align[0])
         
-    generateMosesRefFiles(dev, alignments, xcesFile.replace(".xml", ".dev"))
-    generateMosesRefFiles(test, alignments, xcesFile.replace(".xml", ".test"))
-    generateMosesRefFiles(dev, inverseAlignments, xcesFile.replace(".xml", ".dev"))
-    generateMosesRefFiles(test, inverseAlignments, xcesFile.replace(".xml", ".test"))
+    generateMosesRefFiles(dev.keys(), alignments, xcesFile.replace(".xml", ".dev"))
+    generateMosesRefFiles(test.keys(), alignments, xcesFile.replace(".xml", ".test"))
+    generateMosesRefFiles(inverseDev, inverseAlignments, xcesFile.replace(".xml", ".dev"))
+    generateMosesRefFiles(inverseTest, inverseAlignments, xcesFile.replace(".xml", ".test"))
     generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
     generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
     print "Finished generating Moses files"
