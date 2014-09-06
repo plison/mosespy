@@ -368,7 +368,7 @@ class CorpusProcessor():
             
         # STEP 3: truecasing   
         trueFile = tokFile.changeFlag("true")
-        self.truecaser.truecaseFile(tokFile, trueFile) 
+        self.truecaser.truecaseFile(rawCorpus, trueFile) 
         
         normFile.remove()
         tokFile.remove()
