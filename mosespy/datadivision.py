@@ -285,21 +285,27 @@ def divideXCESCorpus(xcesFile):
     
     train, tune, dev, test = divideAlignedData(alignments)
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
+     
+    srcDevFile, trgDevFile = generateMosesFiles(extractDict(alignments, dev.keys()), 
+                                                xcesFile.replace(".xml", ".dev"))
+    srcTestFile, trgTestFile = generateMosesFiles(extractDict(alignments, test.keys()), 
+                                                xcesFile.replace(".xml", ".dev"))                                      
     
+    generateMosesRefFiles(alignments, dev.keys(), trgDevFile)
+    generateMosesRefFiles(alignments, test.keys(), trgTestFile)    
+
     inverseAlignments = {}
-    inverseDev, inverseTest = [], []
+    invDev, invTest = [], []
     for a in alignments:
         align = alignments[a]
         inverseAlignments[align[0]] = (a, align[2], align[1])
         if a in dev:
-            inverseDev.append(align[0])
+            invDev.append(align[0])
         if a in test:
-            inverseDev.append(align[0])
-        
-    generateMosesRefFiles(dev.keys(), alignments, xcesFile.replace(".xml", ".dev"))
-    generateMosesRefFiles(test.keys(), alignments, xcesFile.replace(".xml", ".test"))
-    generateMosesRefFiles(inverseDev, inverseAlignments, xcesFile.replace(".xml", ".dev"))
-    generateMosesRefFiles(inverseTest, inverseAlignments, xcesFile.replace(".xml", ".test"))
+            invTest.append(align[0])                       
+    generateMosesRefFiles(inverseAlignments, invDev, srcDevFile)
+    generateMosesRefFiles(inverseAlignments,invTest, srcTestFile)
+    
     generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
     generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
     print "Finished generating Moses files"
@@ -359,20 +365,23 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
                 del aligns[a]
                 del sources[sources.index(a)]
     
-    extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
-                                    map(None, keys, map(dic.get, keys)), {})
-    
-    trainAligns = extract(sources[:-nbTuning], aligns)
-    tuneAligns = extract(sources[-nbTuning:], aligns)
+   
+    trainAligns = extractDict(sources[:-nbTuning], aligns)
+    tuneAligns = extractDict(sources[-nbTuning:], aligns)
 
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
-def generateMosesRefFiles(testAligns, fullAligns, dataStem):
-    
-    _, trgFullFile = generateMosesFiles(testAligns, dataStem)
-    trgFullFile.remove()
-    
+
+def extractDict(dico, listKeys):
+    extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
+                                    map(None, keys, map(dic.get, keys)), {})
+    return extract(listKeys, dico)
+
+
+
+def getCorrelatedTargets(fullAligns, testAligns):
+                   
     corrTargetsForDoc = {}
     for fromdoc in testAligns:
         xcesfromdoc = str(uuid.uuid4())[0:5]
@@ -412,9 +421,16 @@ def generateMosesRefFiles(testAligns, fullAligns, dataStem):
         Path(xcesfromdoc).remove()
         Path(srcFile).remove()
         Path(trgFile).remove()
+        
+    return corrTargetsForDoc
+ 
+ 
+def generateMosesRefFiles(fullAligns, testKeys, referenceStem):
+    
+    corrTargetsForDoc = getCorrelatedTargets(fullAligns, testKeys)    
     
     alternativesPerLine = []
-    for fromdoc in testAligns:
+    for fromdoc in testKeys:
         for i in range(0, len(corrTargetsForDoc[fromdoc][0])):
             alternativesForLine = set()
             for corrTargets in corrTargetsForDoc[fromdoc]:
@@ -427,13 +443,13 @@ def generateMosesRefFiles(testAligns, fullAligns, dataStem):
     nbReferences = max([len(line) for line in alternativesPerLine])
     print "max number of referernces: %i"%(nbReferences)
     for i in range(0, nbReferences):
-        with open(trgFullFile+str(i), 'w') as refe:
+        with open(referenceStem+str(i), 'w') as refe:
             for line in alternativesPerLine:
                 if i < len(line):
                     refe.write(line[i])
                 else:
-                    refe.write("\n")
-                     
+                    refe.write("\n") 
+                       
     
 def generateMosesFiles(alignments, dataStem):
     xcesFile = Path(dataStem + ".xml")
