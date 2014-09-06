@@ -482,14 +482,14 @@ def run(script, stdin=None, stdout=None):
     """Runs the script through the shell executor.
     
     """
-    return ShellExecutor(True).run(script, stdin, stdout)
+    return ShellExecutor(quiet=True).run(script, stdin, stdout)
   
 def run_output(script, stdin=None):
     """Runs the script through the shell executor and returns
     the result.
     
     """
-    return ShellExecutor(True).run_output(script, stdin)
+    return ShellExecutor(quiet=True).run_output(script, stdin)
 
    
 def existsExecutable(command):

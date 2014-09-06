@@ -51,9 +51,6 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
     seeks to avoid selecting sentences that can also be found in other 
     parts of the dataset.
     
-    In addition, indices files are also generated to allow for 'backtracking'
-    the selected sentences in the original corpus.
-    
     Args:
         alignedStem (str): stem for the aligned data
         sourceLang (str): source language code
@@ -81,7 +78,7 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
     
     if randomPick:
         nbLines = corpus.countNbLines()
-        toExclude = extractDuplicates(corpus.getSourceCorpus(), duplicatesWindow)
+        toExclude = set()
         
         tuningIndices =_drawRandom(nbTuning, nbLines, exclusion=toExclude)
         toExclude = toExclude.union(tuningIndices)
@@ -138,59 +135,21 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
     tuneStem = outputPath + "/" + (corpus.stem + ".tune").basename()
     (tuneStem + "." + corpus.sourceLang).writelines(tuneSourceLines) 
     (tuneStem + "." + corpus.targetLang).writelines(tuneTargetLines)
-    (tuneStem + ".indices").writelines([corpus.stem+"\n"] + 
-                                       [str(i)+"\n" for i in sorted(list(tuningIndices))])
     tuneCorpus = AlignedCorpus(tuneStem, corpus.sourceLang, corpus.targetLang)
 
     devStem = outputPath + "/" + (corpus.stem + ".dev").basename()
     (devStem + "." + corpus.sourceLang).writelines(devSourceLines) 
     (devStem + "." + corpus.targetLang).writelines(devTargetLines)
-    (devStem + ".indices").writelines([corpus.stem+"\n"] + 
-                                       [str(i)+"\n" for i in sorted(list(developIndices))])
     devCorpus = AlignedCorpus(devStem, corpus.sourceLang, corpus.targetLang)
 
     testStem = outputPath + "/" + (corpus.stem + ".test").basename()
     (testStem + "." + corpus.sourceLang).writelines(testSourceLines) 
     (testStem + "." + corpus.targetLang).writelines(testTargetLines)
-    (testStem + ".indices").writelines([corpus.stem+"\n"] + 
-                                       [str(i)+"\n" for i in sorted(list(testingIndices))])
     testCorpus = AlignedCorpus(testStem, corpus.sourceLang, corpus.targetLang)
 
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
     
-def extractDuplicates(corpusFile, window=4, nbSplits=1):
-    """Extract the set of line numbers in the corpus that contain duplicate 
-    sentences (i.e. that contain the same source and target sentences for
-    both the current line and its local history).
-    
-    """
-    corpus = BasicCorpus(corpusFile)
-    outputPath = corpusFile.getUp()
-    
-    print "Start search for duplicates (%i splits)"%(nbSplits)
-    sourceLines = corpus.readlines()
-    nbLines = len(sourceLines)
-    indices = range(0, nbLines)
-    indices.sort(key=lambda x : sourceLines[x])
-    
-    step = len(indices)/nbSplits    
-    indicesFiles = [Path(outputPath + "/ind"+str(i)) for i in range(0, nbSplits)]
-    for i in range(0, nbSplits):
-        indicesFiles[i].write(" ".join([str(j) for j in indices[i*step:i*step + step]]))
-    
-    args = [(corpus,indicesFile, window) for indicesFile in indicesFiles]
-    
-    outputs = slurm.SlurmExecutor().run_parallel_function(_printDuplicates, 
-                                                          args, stdouts=True)
-    duplicates = set()
-    for output in outputs:
-        duplicates = duplicates.union([int(d) for d in output.split()])
-    print ("Duplicates found: " + str(len(duplicates)) 
-           + " (" + str(len(duplicates)*100.0/nbLines) + " % of total)") 
-
-    return duplicates
-
 
 def filterOutLines(fullCorpusFile, toRemoveFile):
     """Filters out sentences from the corpus represented by toRemoveFile
@@ -225,36 +184,6 @@ def filterOutLines(fullCorpusFile, toRemoveFile):
 
 
 
-def  _printDuplicates(sourceFile, indicesFile, window):
-    """Process the indices in indicesFile in the source file, and 
-    prints the duplicates in the standard output.  
-    
-    """
-    sys.stderr.write("Starting local extraction of source duplicates...\n") 
-    indicesFile = Path(indicesFile)
-    indices = [int(val) for val in indicesFile.read().split()] 
-    sourceLines = Path(sourceFile).readlines()
-    duplicates = set() 
-    for i in range(0, len(indices)):
-        curIndex = indices[i]
-        curWindow = sourceLines[curIndex:curIndex+window]
-        for j in range(i+1, len(indices)-window):
-            nextIndex = indices[j]
-            nextWindow = sourceLines[nextIndex:nextIndex+window]
-            if curWindow[0] != nextWindow[0]:
-                break
-            elif curWindow == nextWindow:
-                duplicates.add(curIndex)
-                duplicates.add(nextIndex)
-                break
-        if len(indices) > 100 and not (i % (len(indices)/100)):
-            sys.stderr.write("Extraction of duplicates: " + 
-                             str(math.ceil(i*10000/len(indices)) / 100) + " %\n")
-    
-    indicesFile.remove()
-    print " ".join([str(d) for d in duplicates])
-
-   
 
 def _drawRandom(nbToDraw, maxValue, exclusion=None):
     """Draws random numbers from 0 to maxValue.
