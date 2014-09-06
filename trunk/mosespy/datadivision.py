@@ -366,18 +366,16 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
                 del sources[sources.index(a)]
     
    
-    trainAligns = extractDict(sources[:-nbTuning], aligns)
-    tuneAligns = extractDict(sources[-nbTuning:], aligns)
+    trainAligns = extractDict(aligns, sources[:-nbTuning])
+    tuneAligns = extractDict(aligns,sources[-nbTuning:])
 
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
 
-def extractDict(dico, listKeys):
-    extract = lambda keys, dic: reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
-                                    map(None, keys, map(dic.get, keys)), {})
-    return extract(listKeys, dico)
-
+def extractDict(dico, dkeys):
+    return reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
+                  map(None, dkeys, map(dico.get, dkeys)), {})
 
 
 def getCorrelatedTargets(fullAligns, testAligns):
