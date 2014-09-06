@@ -27,6 +27,10 @@
 """Module for dividing aligned data into several parts, respectively 
 corresponding to the training, tuning, development and testing set.
 
+NB: many functions in this modules are directly tailored (i.e. hacked)
+ for the processing of specific data sets, notably the OpenSubtitles
+ corpus from the OPUS database.
+
 """
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
@@ -282,8 +286,15 @@ def divideXCESCorpus(xcesFile):
     train, tune, dev, test = divideAlignedData(alignments)
     print "train:%i, tune:%i, dev:%i, test:%i"%(len(train),len(tune),len(dev), len(test))
     
+    inverseAlignments = {}
+    for a in alignments:
+        align = alignments[a]
+        inverseAlignments[align[0]] = (a, align[2], align[1])
+        
     generateMosesRefFiles(dev, alignments, xcesFile.replace(".xml", ".dev"))
     generateMosesRefFiles(test, alignments, xcesFile.replace(".xml", ".test"))
+    generateMosesRefFiles(dev, inverseAlignments, xcesFile.replace(".xml", ".dev"))
+    generateMosesRefFiles(test, inverseAlignments, xcesFile.replace(".xml", ".test"))
     generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
     generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
     print "Finished generating Moses files"
@@ -322,7 +333,8 @@ def getAlignments(xmlRoot, basePath):
 def divideAlignedData(fullAligns, nbTuning=2, nbDev=4, nbTesting=4):
     if len(fullAligns) < 20:
         raise RuntimeError("not enough data to divide")
-    sources = sorted(fullAligns.keys(), key=lambda x : len(x.getUp().listdir()))
+    sources = sorted(fullAligns.keys(), 
+                     key=lambda x : len(fullAligns[x][0].getUp().listdir()))
     
     aligns = copy.deepcopy(fullAligns)
     testAligns = {}
