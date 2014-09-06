@@ -50,25 +50,12 @@ class BasicCorpus(Path):
     def __init__(self, corpusFile):
         """Creates a corpus object based on the corpus file. If isNew is set to 
         True, a new empty file is created.
-        
-        If an associated 'indices' file can also be found in the same directory 
-        as the corpus file, the corpus is assumed to be derived from a bigger
-        corpus (see method divideData in the datadivision module).
                
        """ 
         Path.__init__(corpusFile)
             
         if not self.exists():
             raise IOError(self + " does not exist")    
-
-        self.originCorpus = None
-        self.originIndices = None
-        
-        indicesFile = (self.getStem() + ".indices")
-        if indicesFile.exists():
-            indLines = indicesFile.readlines()
-            self.originCorpus = BasicCorpus(indLines[0].strip() + "." + self.getLang())
-            self.originIndices = [int(i.strip()) for i in indLines[1:]]
   
              
     def printlines(self):
@@ -113,16 +100,11 @@ class BasicCorpus(Path):
         
         histories = {}
         corpusLines = self.readlines()
-        if self.originCorpus:
-            originLines = self.originCorpus.readlines()
-        else:
-            originLines = corpusLines
             
-        originLines = [originLine.strip("\n") for originLine in originLines]
+        originLines = [originLine.strip("\n") for originLine in corpusLines]
         
         for i in range(0, len(corpusLines)):
-            origindex = self.originIndices[i] if self.originIndices else i
-            histories[i] = originLines[max(0,origindex-historyWindow):max(0,origindex)]
+            histories[i] = originLines[max(0,i-historyWindow):max(0,i)]
  
         return histories
 
@@ -372,9 +354,7 @@ class CorpusProcessor():
         
         normFile.remove()
         tokFile.remove()
-        
-        if (rawCorpus.getStem() + ".indices").exists():
-            (rawCorpus.getStem() + ".indices").copy((trueFile.getStem() + ".indices"))
+      
         return BasicCorpus(trueFile)  
     
     
@@ -418,8 +398,7 @@ class CorpusProcessor():
         self.tokeniser.deescapeFile(untokFile, finalFile)
     
         untokFile.remove()
-        if (processedCorpus.getStem() + ".indices").exists():
-            (processedCorpus.getStem() + ".indices").copy(finalFile.getStem() + ".indices")
+     
         return BasicCorpus(finalFile)
     
     

@@ -42,12 +42,11 @@ import shutil
 import mosespy.install as install
 import mosespy.slurm as slurm
 import mosespy.system as system
-import mosespy.analyser as analyser
 from mosespy.system import Path, ShellExecutor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
-from mosespy.analyser import ErrorAnalyser, Condition, OrCondition
+from mosespy.analyser import ErrorAnalyser, Condition
 import mosespy.datadivision as datadivision
 
 slurm.correctSlurmEnv()
@@ -460,9 +459,6 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(cond.isSatisfiedBy(pair))
         cond = Condition(inTranslation="hein", wer=(0.4, 0.8), length=(5, 10))
         self.assertFalse(cond.isSatisfiedBy(pair))
-        cond2 = Condition(inTranslation="hein", wer=(0.2, 0.8), length=(4, 10))
-        self.assertTrue(OrCondition(cond, cond2).isSatisfiedBy(pair))
-        self.assertFalse(OrCondition(cond, cond).isSatisfiedBy(pair))
         
 
     def tearDown(self):

@@ -154,35 +154,6 @@ class Condition():
         return " and ".join(subconds) if subconds else "True"
     
     
-
-class OrCondition():
-    """Representation of a disjunctive condition, i.e. the  condition
-    will be true if at least one subcondition is true.
-    
-    """
-    def __init__(self, *subconditions):
-        """Creates a new condition made of the disjunctive combination
-        of the subconditions.
-        
-        """
-        self.subconditions = subconditions
-        
-    def isSatisfiedBy(self, pair):
-        """Returns true if at least one subcondition is satisfied by the
-        alignment pair, and false otherwise.
-        
-        """
-        for subcondition in self.subconditions:
-            if subcondition.isSatisfiedBy(pair):
-                return True
-        return False
-    
-    def __str__(self):
-        """Returns a string representation of the condition.
-        
-        """
-        return " or ".join([str(subcond) for subcond in self.subconditions])
-        
          
 
 def extractNgrams(tokens, size):
