@@ -112,8 +112,8 @@ class BasicCorpus(Path):
 
 class AlignedPair():
     """Representation of a pair of aligned (source,target) sentences, 
-    along with some optional information such as actual translations
-    and history of preceding sentences.
+    along with some optional information such as the history of preceding 
+    sentences.
     
     """
     def __init__(self, source, target):
@@ -122,7 +122,6 @@ class AlignedPair():
         """
         self.source = source
         self.target = target
-        self.translation = None
         self.targethistory = None
         
     def addTargetHistory(self, history):
@@ -130,13 +129,7 @@ class AlignedPair():
         
         """
         self.targethistory = history
-        
-    def addTranslation(self, translation):
-        """Adds the translation for the source sentence actually produced
-        by the translation system.
-        
-        """
-        self.translation = translation
+
         
 
 class AlignedCorpus(object):
@@ -212,7 +205,7 @@ class AlignedCorpus(object):
             alignments.append(pair)
             
         if addHistory:
-            targetCorpus = BasicCorpus(self.getTargetCorpus())
+            targetCorpus = self.getTargetCorpus()
             histories = targetCorpus.getHistories()
             for i in range(0, len(alignments)):
                 pair = alignments[i]
@@ -223,59 +216,131 @@ class AlignedCorpus(object):
 
 
 
-class TranslatedCorpus(AlignedCorpus):
-    """Representation of an aligned corpus that also includes
-    actual translations in addition to the source and target references.
+class AlignedReference(AlignedPair):
     
-    """
+    def __init__(self, source, targets):
+        if not hasattr(targets, "__iter__"):
+            targets = (targets,)
+        AlignedPair.__init__(self, source, targets)
+        self.translation = None
     
-    def __init__(self, corpus, translationFile):
-        """Creates a new translated corpus based on an aligned corpus
-        and a file of actual translations.
+    
+    def addTranslation(self, translation):
+        self.translation = translation
+
+
+
+class ReferenceCorpus(object):
+    
+    def __init__(self, stem, sourceLang, targetLang):
+        self.stem = Path(stem)
+        self.sourceLang = sourceLang
+        self.sourceCorpus = BasicCorpus(self.stem + "." + sourceLang)
+        self.targetLang = targetLang
+        
+        self.refCorpora = []
+        for inDir in stem.getUp().listdir():
+            if re.search(r"%s\.%s(\d)+"%(stem,targetLang), inDir):
+                refCorpus = BasicCorpus(inDir)
+                self.refCorpora.append(refCorpus)                         
+                if self.sourceCorpus.countNbLines() != refCorpus.countNbLines():
+                    raise RuntimeError("Nb. of lines for source and reference are different")  
+        if not self.refCorpora:
+            self.refCorpora.append(BasicCorpus(stem+"."+targetLang))
+        
+        self.translation = None
+
+
+    def getStem(self):
+        """Returns the stem for the aligned corpus.
         
         """
-        if not isinstance(corpus, AlignedCorpus):
-            raise RuntimeError("corpus must be an AlignedCorpus object")
-        AlignedCorpus.__init__(self, corpus.getStem(), corpus.sourceLang, corpus.targetLang)
-        
-        self.translationCorpus = BasicCorpus(translationFile)
-
-        if self.translationCorpus.getLang() != self.targetLang:
+        return self.stem
+    
+    
+    def addTranslation(self, translationFile):
+        self.translation = BasicCorpus(translationFile)
+        if self.translation.getLang() != self.targetLang:
             raise IOError("language for reference and actual translations differ")
-        elif self.translationCorpus.countNbLines() != self.countNbLines():
+        elif self.translation.countNbLines() != self.countNbLines():
             raise IOError("Nb. of lines in reference and translation are different")
+           
+    
+    def getSourceCorpus(self):
+        """Returns a BasicCorpus object based on the source data.
         
-          
-          
+        """
+        return self.sourceCorpus
+
+    def getReferenceCorpora(self):
+        """Returns a list of reference translations.
+        
+        """
+        return self.refCorpora
+ 
+      
     def getTranslationCorpus(self):
         """Returns the corpus of actual translations.
         
         """
-        return self.translationCorpus
+        return self.translation
     
+       
     
+    def countNbLines(self):
+        """Returns the number of lines in the corpus.
+        
+        """
+        return self.sourceCorpus.countNbLines()
+             
+
     
     def remove(self):
         """Deletes the files containing the corpus.
         
         """
-        AlignedCorpus.remove(self)
-        self.translationCorpus.remove()
-            
-   
+        self.sourceCorpus.remove()
+        for refCorpus in self.refCorpora:
+            refCorpus.remove()
+        
+    
     def getAlignments(self, addHistory=False): 
-        """Returns the list of alignments for the corpus, including for 
-        each line both the source, target, and translation sentences.
+        """Returns a list of alignment objects (of length corresponding
+        to the number of lines in the corpus), where each alignment
+        entry encodes the source sentence, the reference sentences,
+        the actual translations (if provided), and  (if addHistory is 
+        set to true), the history of the target sentence.
         
         """
-        alignments = AlignedCorpus.getAlignments(self, addHistory)
+        sourceLines = self.getSourceCorpus().readlines()
         
-        translationLines = self.translationCorpus.readlines()
-        for i in range(0, len(alignments)):
-            pair = alignments[i]
-            pair.addTranslation(translationLines[i].strip())
-                
-        return alignments
+        targetLines = []
+        for refCorpus in self.refCorpora:
+            targetLines.append(refCorpus.readlines())    
+            
+        alignments = []
+        for i in range(0, len(sourceLines)):
+            targets = [targetLine[i].strip() for targetLine in targetLines]
+            pair = AlignedReference(sourceLines[i].strip(), targets)
+            alignments.append(pair)
+            
+        if addHistory:
+            targetCorpus = self.refCorpora[0]
+            histories = targetCorpus.getHistories()
+            for i in range(0, len(alignments)):
+                pair = alignments[i]
+                if histories.has_key(i) and len(histories[i]) > 0:
+                    pair.addTargetHistory(histories[i][-1])
+                    
+        if self.translation:       
+            translationLines = self.translation.readlines()
+            for i in range(0, len(alignments)):
+                pair = alignments[i]
+                pair.addTranslation(translationLines[i].strip())
+                 
+        return alignments     
+
+
 
  
 class CorpusProcessor():
@@ -311,14 +376,25 @@ class CorpusProcessor():
                 words. If maxLength==False, no maximum length is set.
         
         """
-        if not isinstance(corpus, AlignedCorpus):
+        
+        if isinstance(corpus,AlignedCorpus):
+            trueSource = self.processCorpus(corpus.getSourceCorpus())
+            trueTarget = self.processCorpus(corpus.getTargetCorpus())
+     
+            trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
+        
+        elif isinstance(corpus,ReferenceCorpus):
+            trueSource = self.processCorpus(corpus.getSourceCorpus())
+            processedRefs = []
+            for refCorpus in corpus.getReferenceCorpora():
+                processedRefs.append(self.processCorpus(refCorpus))
+     
+            trueCorpus = ReferenceCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
+                 
+        else:
             raise RuntimeError("aligned data must be of type AlignedCorpus")
    
-        trueSource = self.processCorpus(corpus.getSourceCorpus())
-        trueTarget = self.processCorpus(corpus.getTargetCorpus())
-     
-        trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
-        
+       
         if maxLength:
             cleanStem = trueSource.getStem().changeFlag("clean")
             cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
@@ -329,7 +405,7 @@ class CorpusProcessor():
             return trueCorpus
 
 
-    def processCorpus(self, rawCorpus):
+    def processCorpus(self, rawCorpus, tokenise=False):
         """Process a basic corpus by normalising, tokenising and
         truecasing it.  Intermediary files are deleted, and the final
         truecased file is returned.
@@ -339,21 +415,25 @@ class CorpusProcessor():
             rawCorpus = BasicCorpus(rawCorpus)
         
         # STEP 1: tokenisation
-        normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
-  #      self.tokeniser.normaliseFile(rawCorpus, normFile)
-        tokFile = normFile.changeFlag("tok")
-  #      self.tokeniser.tokeniseFile(normFile, tokFile)
+        if tokenise:
+            normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
+            self.tokeniser.normaliseFile(rawCorpus, normFile)
+            tokFile = normFile.changeFlag("tok")
+            self.tokeniser.tokeniseFile(normFile, tokFile)
+            normFile.remove()
+        else:
+            tokFile = rawCorpus
         
         # STEP 2: train truecaser if not already existing
         if not self.truecaser.isModelTrained(rawCorpus.getLang()):
-            self.truecaser.trainModel(rawCorpus)
+            self.truecaser.trainModel(tokFile)
             
         # STEP 3: truecasing   
         trueFile = tokFile.changeFlag("true")
-        self.truecaser.truecaseFile(rawCorpus, trueFile) 
+        self.truecaser.truecaseFile(tokFile, trueFile) 
         
-        normFile.remove()
-        tokFile.remove()
+        if tokenise:
+            tokFile.remove()
       
         return BasicCorpus(trueFile)  
     
@@ -367,20 +447,21 @@ class CorpusProcessor():
         return trueText
  
  
-    def revertTranslatedCorpus(self, corpus):
+    def revertReferenceCorpus(self, corpus):
         """Reverts the corpus content by 'detokenising' it and deescaping
         special characters.
         
         """
-        if not isinstance(corpus, TranslatedCorpus):
+        if not isinstance(corpus, ReferenceCorpus):
             raise RuntimeError("aligned data must be of type TranslatedCorpus")
         
         revertedSource = self.revertCorpus(corpus.getSourceCorpus())
-        self.revertCorpus(corpus.getTargetCorpus())
-        translation = self.revertCorpus(corpus.getTranslationCorpus())
-        aCorpus = AlignedCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang)
-        newCorpus = TranslatedCorpus(aCorpus, translation)
-        return newCorpus
+        for refCorpus in corpus.getReferenceCorpora():
+            self.revertCorpus(refCorpus)
+        aCorpus = ReferenceCorpus(revertedSource.getStem(), corpus.sourceLang, corpus.targetLang)
+        if corpus.translation:
+            aCorpus.addTranslation(self.revertCorpus(corpus.getTranslationCorpus()))
+        return aCorpus
  
  
     def revertCorpus(self, processedCorpus):
@@ -428,7 +509,12 @@ class CorpusProcessor():
         outputTarget = outputStem+"."+inputCorpus.targetLang
         print ("New cleaned files: " + outputSource.getDescription() 
                + " and " + outputTarget.getDescription())
-        return AlignedCorpus(outputStem, inputCorpus.sourceLang, inputCorpus.targetLang)
+        
+        if isinstance(inputCorpus, AlignedCorpus):
+            return AlignedCorpus(outputStem, inputCorpus.sourceLang, inputCorpus.targetLang)
+        elif isinstance(inputCorpus, ReferenceCorpus):
+            return ReferenceCorpus(outputStem, inputCorpus.sourceLang, inputCorpus.targetLang)
+        raise RuntimeError("input corpus is ill-formed")
   
         
     def getBleuScore(self, translatedCorpus):
@@ -436,7 +522,7 @@ class CorpusProcessor():
         
         """
         bleuScript = (install.moses_root  + "/scripts/generic/multi-bleu.perl -lc " 
-                      + translatedCorpus.getTargetCorpus())
+                      + translatedCorpus.getStem()+"."+ translatedCorpus.targetLang)
         translation = translatedCorpus.getTranslationCorpus()
         bleu_output = self.executor.run_output(bleuScript, stdin=translation)       
         s = re.search(r"=\s(([0-9,\.])+)\,", bleu_output)

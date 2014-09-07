@@ -43,7 +43,7 @@ import mosespy.install as install
 import mosespy.slurm as slurm
 import mosespy.system as system
 from mosespy.system import Path, ShellExecutor
-from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair
+from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair, AlignedReference
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
 from mosespy.analyser import ErrorAnalyser, Condition
@@ -102,17 +102,9 @@ class Pipeline(unittest.TestCase):
         """
         _, _, _, test = datadivision.divideData(self.inFile.getStem(), "fr", "en", 
                                                 10, 0, 10)
-        self.assertTrue(os.path.exists(test.getStem()+".indices"))
         testlines = (test.getStem()+".en").readlines()
-        indlines = (test.getStem()+".indices").readlines()
-        self.assertEquals(indlines[0].strip(), self.inFile.getStem())
         targetlines = self.outFile.readlines()
-        for i in range(0, len(testlines)):
-            testLine = testlines[i]
-            originIndex = int(indlines[i+1].strip())
-            correspondingLine = targetlines[originIndex]
-            self.assertEquals(testLine, correspondingLine)
-        
+       
         occurrences = test.getTargetCorpus().getOccurrences()
         histories = test.getTargetCorpus().getHistories()
         self.assertGreater(len(occurrences), 8)
@@ -125,10 +117,7 @@ class Pipeline(unittest.TestCase):
             occ = occurrences[testLine]
             self.assertGreaterEqual(len(occ), 1)
             self.assertIn(i, occ)
-            oindices = [k for k, x in enumerate(targetlines) if x == testLine]
-            self.assertEquals(testLine, targetlines[oindices[0]])
-            self.assertTrue(any([histories[i]==targetlines[max(0,q-2):q] for q in oindices]))
-        
+            
         newFile = datadivision.filterOutLines(self.outFile, test.getTargetCorpus())
         newlines = Path(newFile).readlines()
         intersect = set(testlines).intersection(set(newlines))
@@ -139,8 +128,7 @@ class Pipeline(unittest.TestCase):
         for i in range(0, len(testlines)):
             align = alignments[i]
             self.assertEqual(align.target,testlines[i].strip())
-            oindices = [k for k, x in enumerate(targetlines) if x == testlines[i]]
-            self.assertTrue(any([not q or align.targethistory==targetlines[q-1] for q in oindices]))
+
         
     
     def test_split(self):
@@ -286,9 +274,9 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.results)
         self.assertTrue(exp.results.getTranslationCorpus())
         print "translated corpus: " + exp.results.getSourceCorpus()
-        print "translated corpus2: " + exp.results.getTargetCorpus()
+        print "translated corpus2: " + exp.results.getReferenceCorpora()[0]
         self.assertEqual(Path(exp.results.getSourceCorpus()).readlines()[2], "comment vas-tu ?\n")
-        self.assertEqual(Path(exp.results.getTargetCorpus()).readlines()[2], "how you been?\n")
+        self.assertEqual(Path(exp.results.getReferenceCorpora()[0]).readlines()[2], "how you been?\n")
         self.assertEqual(Path(exp.results.getTranslationCorpus()).readlines()[2], "how vas-tu?\n")
         self.assertAlmostEquals(bleu, 61.39, delta=2)  
         exp.translateFile(exp.results.getSourceCorpus(), self.tmpdir + "/translation.en", revertOutput=False)
@@ -315,7 +303,7 @@ class Pipeline(unittest.TestCase):
         self.assertTrue(exp.results)
         self.assertTrue(exp.results.getTranslationCorpus())
         self.assertEqual(exp.results.getSourceCorpus().readlines()[2], "comment vas-tu ?\n")
-        self.assertEqual(exp.results.getTargetCorpus().readlines()[2], "how you been?\n")
+        self.assertEqual(exp.results.getReferenceCorpora()[0].readlines()[2], "how you been?\n")
         self.assertEqual(exp.results.getTranslationCorpus().readlines()[2], "how vas-tu?\n")
         self.assertAlmostEquals(bleu, 61.39, delta=2)  
     
@@ -385,19 +373,11 @@ class Pipeline(unittest.TestCase):
         ErrorAnalyser().analyseResults(exp.results)
         sys.stdout.flush()
         output = Path(self.tmpdir + "/out.txt").read()
-        self.assertIn("Previous line (reference):\tI\'m sorry to hear that.\n" 
-                      + "Source line:\t\t\tAh, n\'en parlons plus.\n" 
-                      + "Current line (reference):\tAah, screw her.\n"
-                      + "Current line (actual):\t\tAh, would heat parlons plus.", output)
+        self.assertIn("Previous line:\t\tI\'m sorry to hear that.\n" 
+                      + "2.\tTarget (actual):\tAh, would heat parlons plus.\n"
+                      + "\tTarget (reference):\tAah, screw her. (WER=100%)\n"
+                      + "\tSource:\t\t\tAh, n\'en parlons plus.", output)
         
-    
-    def test_duplicates(self):
-        """Tests the extraction of duplicates.
-        
-        """
-        dupls = datadivision.extractDuplicates(self.duplicatesFile)
-        self.assertEqual(len(dupls), 8)
-        self.assertIn(691, dupls)
         
         
     def test_mosesparallel(self):
@@ -449,7 +429,7 @@ class Pipeline(unittest.TestCase):
         """
         cond = Condition(inSource="toch", wer=(0.4, 0.8))
         self.assertEqual(str(cond), "'toch' in source and WER in [0.40,0.80]")
-        pair = AlignedPair("dat is toch waar", "mais c' est vrai")
+        pair = AlignedReference("dat is toch waar", "mais c' est vrai")
         self.assertTrue(cond.isSatisfiedBy(pair))
         self.assertFalse(cond.isSatisfiedBy(AlignedPair("en wat denk je daarom ?", 
                                                         "tu en penses quoi ?")))
