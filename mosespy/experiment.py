@@ -63,7 +63,7 @@ import json,  re
 import mosespy.system as system
 import mosespy.install as install
 from mosespy.system import Path
-from mosespy.corpus import BasicCorpus, AlignedCorpus, TranslatedCorpus, CorpusProcessor
+from mosespy.corpus import BasicCorpus, AlignedCorpus, ReferenceCorpus, CorpusProcessor
 
 
 
@@ -390,24 +390,24 @@ class Experiment(object):
         
         """
  
-        testCorpus = AlignedCorpus(testStem, self.sourceLang, self.targetLang)
+        testCorpus = ReferenceCorpus(testStem, self.sourceLang, self.targetLang)
         print ("Evaluating BLEU scores with test data: " + testStem)
         
         if preprocess:
             testCorpus = self.processor.processAlignedCorpus(testCorpus, False)
                     
-        
-        transFile = testCorpus.getTargetCorpus().basename().addFlag("translated", reverseOrder=True)  
+        transFile = (testCorpus.getReferenceCorpora()[0].basename().
+                     addFlag("translated", reverseOrder=True)) 
         transPath = self.expPath + "/" + transFile
         
         self.translateFile(testCorpus.getSourceCorpus(), transPath, False, True, False)    
-        results = TranslatedCorpus(testCorpus, transPath)        
-        self.results = self.processor.revertTranslatedCorpus(results)
+        testCorpus.addTranslation(transPath)      
+        self.results = self.processor.revertReferenceCorpus(testCorpus)
         self._recordState()
         
-        bleu, bleu_output = self.processor.getBleuScore(results)
+        bleu, bleu_output = self.processor.getBleuScore(testCorpus)
         print bleu_output
-        return results, bleu
+        return testCorpus, bleu
     
 
 
@@ -724,9 +724,8 @@ class Experiment(object):
             if settings.has_key("ini"):
                 self.iniFile = Path(settings["ini"])
             if settings.has_key("results"):
-                initCorpus = AlignedCorpus(settings["results"]["stem"], self.sourceLang, self.targetLang)
-                self.results = TranslatedCorpus(initCorpus, settings["results"]["translation"])
-            
+                self.results = ReferenceCorpus(settings["results"]["stem"], self.sourceLang, self.targetLang)
+                self.results.addTranslation(settings["results"]["translation"])            
            
     
 class MosesConfig():

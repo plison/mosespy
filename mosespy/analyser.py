@@ -35,7 +35,7 @@ __version__ = "$Date::                      $"
 
 
 import string
-from mosespy.corpus import TranslatedCorpus
+from mosespy.corpus import ReferenceCorpus
 
 
 
@@ -52,8 +52,8 @@ class ErrorAnalyser():
         under the set of conditions for the analyser.
         
         """
-        if not isinstance(results, TranslatedCorpus):
-            raise RuntimeError("results must be of type TranslatedCorpus")
+        if not isinstance(results, ReferenceCorpus):
+            raise RuntimeError("results must be of type ReferenceCorpus")
         alignments = results.getAlignments(addHistory=True)
         for cond in self.conditions:
             print "Analysis of errors under the condition: %s"%(str(cond))
@@ -64,8 +64,9 @@ class ErrorAnalyser():
                     if align.targethistory:
                         print "\tPrevious line:\t\t" + align.targethistory
                     print "%i.\tTarget (actual):\t%s"%(incr, align.translation)
-                    WER = getWER(align.target, align.translation)
-                    print "\tTarget (reference):\t" + align.target + " (WER=%i%%)"%(WER*100)
+                    WER = min([getWER(t, align.translation) for t in align.target])
+                    for t in align.target:
+                        print "\tTarget (reference):\t" + t + " (WER=%i%%)"%(WER*100)
                     print "\tSource:\t\t\t%s"%(align.source)
                     print "----------------------"
                     incr += 1
@@ -115,21 +116,18 @@ class Condition():
             if inS not in pair.source:
                 return False
         for inT in self.inTarget:
-            if inT not in pair.target:
+            if not any([inT in t for t in pair.target]):
                 return False
         for inT in self.inTranslation:
             if pair.translation and inT not in pair.translation:
                 return False
-            
-        targetSplits = pair.target.split()
-        if (len(targetSplits) < self.length[0] or 
-            len(targetSplits) > self.length[1]):
+        
+        if not any([self.length[0] <= len(t.split()) <= self.length[1] for t in pair.target]):
             return False
         
-        if pair.translation:
-            WER = getWER(pair.target, pair.translation)
-            if (WER < self.wer[0] or WER > self.wer[1]):
-                return False
+        if pair.translation and not any([self.wer[0] <= getWER(t, pair.translation) 
+                                         <= self.wer[1] for t in pair.target]):
+            return False
         
         return True
     
