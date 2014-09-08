@@ -151,19 +151,27 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
     
     
 
-def filterOutLines(fullCorpusFile, toRemoveFile):
-    """Filters out sentences from the corpus represented by toRemoveFile
+def filterOutLines(fullCorpusFile, *toRemoveFiles):
+    """Filters out sentences from the corpus represented by toRemoveFiles
     from the corpus in fullCorpusFile.  This method is used to prune 
     language model data from development and test sentences.
     
     """
     fullCorpus = BasicCorpus(fullCorpusFile)
-    toRemoveCorpus = BasicCorpus(toRemoveFile)
     
-    inputLines = fullCorpus.readlines()
+    occurrences = {}
+    for toRemoveFile in toRemoveFiles:
+        toRemoveCorpus= BasicCorpus(toRemoveFile)
+        localOccurrences = toRemoveCorpus.getOccurrences()
+        for o in localOccurrences:
+            if occurrences.has_key(o):
+                occurrences[o] = occurrences[o].union(localOccurrences[o])
+            else:
+                occurrences[o] = localOccurrences[o]
     
-    occurrences = toRemoveCorpus.getOccurrences()
     histories = toRemoveCorpus.getHistories()  
+
+    inputLines = fullCorpus.readlines()
 
     outputFile = fullCorpus.addFlag("filtered") 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
@@ -298,6 +306,7 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
     trainAligns = extractDict(aligns, sources[:-nbTuning])
     tuneAligns = extractDict(aligns,sources[-nbTuning:])
     print "Tune keys: " + str(tuneAligns.keys())
+    print "tune values: " + str([tuneAligns[al][0] for al in tuneAligns])
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
