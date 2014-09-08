@@ -276,7 +276,7 @@ def getAlignments(xmlRoot, basePath):
                         nb11Aligns += 1
                     sourceIndices.append(sourceLines)
                     targetIndices.append(targetLines)
-            if nb11Aligns < len(sourceLines)/2:
+            if nb11Aligns < 2*len(sourceLines)/3:
                 print "Skipping alignment %s -> %s"%(fromdoc, todoc)
                 continue
             corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
