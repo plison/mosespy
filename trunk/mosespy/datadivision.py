@@ -160,30 +160,27 @@ def filterOutLines(fullCorpusFile, *toRemoveFiles):
     fullCorpus = BasicCorpus(fullCorpusFile)
     
     occurrences = {}
+    histories = {}
     for toRemoveFile in toRemoveFiles:
         toRemoveCorpus= BasicCorpus(toRemoveFile)
-        localOccurrences = toRemoveCorpus.getOccurrences()
-        for o in localOccurrences:
-            if occurrences.has_key(o):
-                occurrences[o] = occurrences[o].union(localOccurrences[o])
-            else:
-                occurrences[o] = localOccurrences[o]
-    
-    histories = toRemoveCorpus.getHistories()  
+        occurrences[toRemoveFile] = toRemoveCorpus.getOccurrences()
+        histories[toRemoveFile] = toRemoveCorpus.getHistories()
 
-    inputLines = fullCorpus.readlines()
 
     outputFile = fullCorpus.addFlag("filtered") 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
+        inputLines = fullCorpus.readlines()
         skippedLines = []
         for i in range(2, len(inputLines)):
             l = inputLines[i].strip()
             toSkip = False
-            if l in occurrences:
-                for index in occurrences[l]:
-                    if histories[index] == [iline.strip("\n") for iline in inputLines[i-2:i]]:
-                        skippedLines.append(l)
-                        toSkip = True
+            for f in occurrences:
+                if l in occurrences[f]:
+                    for index in occurrences[f][l]:
+                        if histories[f][index] == [iline.strip("\n") for 
+                                                   iline in inputLines[i-2:i]]:
+                            skippedLines.append(l)
+                            toSkip = True
             if not toSkip:
                 newLmFileD.write(l+"\n")                                
 
