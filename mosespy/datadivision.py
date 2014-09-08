@@ -297,7 +297,7 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
    
     trainAligns = extractDict(aligns, sources[:-nbTuning])
     tuneAligns = extractDict(aligns,sources[-nbTuning:])
-
+    print "Tune keys: " + str(tuneAligns.keys())
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
