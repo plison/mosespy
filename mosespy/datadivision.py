@@ -273,7 +273,7 @@ def getAlignments(xmlRoot, basePath):
                         nb11Aligns += 1
                     sourceIndices.append(sourceLines)
                     targetIndices.append(targetLines)
-            if nb11Aligns < (len(sourceIndices)/2):
+            if nb11Aligns < (2*len(sourceIndices)/5):
                 print "Skipping alignment %s -> %s"%(fromdoc, todoc)
                 print "(Percentage of 1:1 alignments: %i %%"%((100*nb11Aligns)/len(sourceIndices))
                 continue
