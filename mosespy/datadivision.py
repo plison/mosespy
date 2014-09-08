@@ -256,9 +256,6 @@ def getAlignments(xmlRoot, basePath):
     for linkGrp in xmlRoot:
         if linkGrp.tag == 'linkGrp':
             fromdoc = Path(basePath + linkGrp.attrib['fromDoc'])
-            if "1999/7533" in fromdoc:
-                print "Skipping directory 1999/7533..."
-                continue
             todoc =  Path(basePath + linkGrp.attrib['toDoc'])
             if not fromdoc.exists():
                 raise RuntimeError("could not find " + fromdoc)
@@ -266,6 +263,7 @@ def getAlignments(xmlRoot, basePath):
                 raise RuntimeError("could not find " + todoc)
             sourceIndices = []
             targetIndices = []
+            nb11Aligns = 0
             for link in linkGrp:
                 if link.tag == 'link':
                     split = link.attrib["xtargets"].split(";")
@@ -274,8 +272,13 @@ def getAlignments(xmlRoot, basePath):
                                            %(link.attrib["xtargets"]))
                     sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
                     targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
+                    if len(sourceLines) == 1 and len(targetLines)==1:
+                        nb11Aligns += 1
                     sourceIndices.append(sourceLines)
                     targetIndices.append(targetLines)
+            if nb11Aligns < len(sourceLines)/2:
+                print "Skipping alignment %s -> %s"%(fromdoc, todoc)
+                continue
             corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
 
     return corporaDict
