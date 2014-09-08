@@ -52,7 +52,7 @@ nodeMemory=60000
 nodeCpus = 16
 
 # Walltime for each command
-nodeTime = "5:00:00"
+nodeTime = "10:00:00"
 
 class SlurmExperiment(Experiment):
     """Extension of the Experiment class (in module experiment) to run processes 
