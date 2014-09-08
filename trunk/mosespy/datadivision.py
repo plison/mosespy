@@ -282,7 +282,7 @@ def getAlignments(xmlRoot, basePath):
     return corporaDict
 
 
-def divideAlignedData(fullAligns, nbTuning=4, nbDev=8, nbTesting=8):
+def divideAlignedData(fullAligns, nbTuning=2, nbDev=6, nbTesting=6):
     if len(fullAligns) < 20:
         raise RuntimeError("not enough data to divide")
     sources = sorted(fullAligns.keys(), 
