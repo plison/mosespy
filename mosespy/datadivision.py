@@ -275,7 +275,7 @@ def getAlignments(xmlRoot, basePath):
                     targetIndices.append(targetLines)
             if nb11Aligns < (2*len(sourceIndices)/5):
                 print "Skipping alignment %s -> %s"%(fromdoc, todoc)
-                print "(Percentage of 1:1 alignments: %i %%"%((100*nb11Aligns)/len(sourceIndices))
+                print "(Percentage of 1:1 alignments: %i %%)"%((100*nb11Aligns)/len(sourceIndices))
                 continue
             corporaDict[fromdoc] = (todoc, sourceIndices, targetIndices)
 
