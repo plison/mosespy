@@ -256,6 +256,9 @@ def getAlignments(xmlRoot, basePath):
     for linkGrp in xmlRoot:
         if linkGrp.tag == 'linkGrp':
             fromdoc = Path(basePath + linkGrp.attrib['fromDoc'])
+            if "1999/7533" in fromdoc:
+                print "Skipping directory 1999/7533..."
+                continue
             todoc =  Path(basePath + linkGrp.attrib['toDoc'])
             if not fromdoc.exists():
                 raise RuntimeError("could not find " + fromdoc)
