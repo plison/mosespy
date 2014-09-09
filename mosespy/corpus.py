@@ -239,7 +239,7 @@ class ReferenceCorpus(object):
         self.targetLang = targetLang
         
         self.refCorpora = []
-        for inDir in stem.getUp().listdir():
+        for inDir in self.stem.getUp().listdir():
             if re.search(r"%s\.%s(\d)+"%(stem,targetLang), inDir):
                 refCorpus = BasicCorpus(inDir)
                 self.refCorpora.append(refCorpus)                         
