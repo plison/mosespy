@@ -421,8 +421,7 @@ class CorpusProcessor():
         
         # STEP 1: tokenisation
         isTokenised = rawCorpus.isTokenised()
-        if isTokenised:
-            
+        if not isTokenised:
             normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
             self.tokeniser.normaliseFile(rawCorpus, normFile)
             tokFile = normFile.changeFlag("tok")
@@ -439,7 +438,7 @@ class CorpusProcessor():
         trueFile = tokFile.changeFlag("true")
         self.truecaser.truecaseFile(tokFile, trueFile) 
         
-        if isTokenised:
+        if not isTokenised:
             tokFile.remove()
       
         return BasicCorpus(trueFile)
