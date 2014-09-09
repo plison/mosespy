@@ -236,7 +236,9 @@ def divideXCESCorpus(xcesFile):
         if a in dev:
             invDev.append(align[0])
         if a in test:
-            invTest.append(align[0])                       
+            invTest.append(align[0])
+    for inde in invDev:
+        print "Trying to generate reference for " + str(inde) + ", to doc is " + str(inverseAlignments[inde][0])                     
     generateMosesRefFiles(inverseAlignments, invDev, srcDevFile)
     generateMosesRefFiles(inverseAlignments,invTest, srcTestFile)
     
