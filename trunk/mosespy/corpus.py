@@ -67,6 +67,11 @@ class BasicCorpus(Path):
                 print l
         else:
             raise RuntimeError(self + " not an existing file")
+        
+    
+    def isTokenised(self):
+        nbTokCommas = system.run_output("head -100 %s | grep ' , ' | wc -l "%(str(self)))
+        return (nbTokCommas > 5)
     
          
     def getOccurrences(self):
@@ -405,7 +410,7 @@ class CorpusProcessor():
             return trueCorpus
 
 
-    def processCorpus(self, rawCorpus, tokenise=False):
+    def processCorpus(self, rawCorpus):
         """Process a basic corpus by normalising, tokenising and
         truecasing it.  Intermediary files are deleted, and the final
         truecased file is returned.
@@ -415,7 +420,9 @@ class CorpusProcessor():
             rawCorpus = BasicCorpus(rawCorpus)
         
         # STEP 1: tokenisation
-        if tokenise:
+        isTokenised = rawCorpus.isTokenised()
+        if isTokenised:
+            
             normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
             self.tokeniser.normaliseFile(rawCorpus, normFile)
             tokFile = normFile.changeFlag("tok")
@@ -432,10 +439,10 @@ class CorpusProcessor():
         trueFile = tokFile.changeFlag("true")
         self.truecaser.truecaseFile(tokFile, trueFile) 
         
-        if tokenise:
+        if isTokenised:
             tokFile.remove()
       
-        return BasicCorpus(trueFile)  
+        return BasicCorpus(trueFile)
     
     
     def processText(self, text, lang):
