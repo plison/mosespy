@@ -229,18 +229,11 @@ def divideXCESCorpus(xcesFile):
     generateMosesRefFiles(alignments, test.keys(), trgTestFile)    
 
     inverseAlignments = {}
-    invDev, invTest = [], []
     for a in alignments:
         align = alignments[a]
-        inverseAlignments[align[0]] = (a, align[2], align[1])
-        if a in dev:
-            invDev.append(align[0])
-        if a in test:
-            invTest.append(align[0])
-    for inde in invDev:
-        print "Trying to generate reference for " + str(inde) + ", to doc is " + str(inverseAlignments[inde][0])                     
-    generateMosesRefFiles(inverseAlignments, invDev, srcDevFile)
-    generateMosesRefFiles(inverseAlignments,invTest, srcTestFile)
+        inverseAlignments[align[0]] = (a, align[2], align[1])           
+    generateMosesRefFiles(inverseAlignments, [dev[a][0] for a in dev], srcDevFile)
+    generateMosesRefFiles(inverseAlignments,[test[a][0] for a in test], srcTestFile)
     
     generateMosesFiles(train, xcesFile.replace(".xml", ".train"))
     generateMosesFiles(tune, xcesFile.replace(".xml", ".tune"))
@@ -311,8 +304,6 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
    
     trainAligns = extractDict(aligns, sources[:-nbTuning])
     tuneAligns = extractDict(aligns,sources[-nbTuning:])
-    print "Tune keys: " + str(tuneAligns.keys())
-    print "tune values: " + str([tuneAligns[al][0] for al in tuneAligns])
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
@@ -322,10 +313,10 @@ def extractDict(dico, dkeys):
                   map(None, dkeys, map(dico.get, dkeys)), {})
 
 
-def getCorrelatedTargets(fullAligns, testAligns):
+def getCorrelatedTargets(fullAligns, keys):
                    
     corrTargetsForDoc = {}
-    for fromdoc in testAligns:
+    for fromdoc in keys:
         xcesfromdoc = str(uuid.uuid4())[0:5]
         srcFile, trgFile = generateMosesFiles({fromdoc:fullAligns[fromdoc]}, xcesfromdoc)
         with open(srcFile) as fromdocSrc:
