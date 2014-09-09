@@ -70,7 +70,7 @@ class BasicCorpus(Path):
         
     
     def isTokenised(self):
-        nbTokCommas = system.run_output("head -100 %s | grep ' , ' | wc -l "%(str(self)))
+        nbTokCommas = int(system.run_output("head -100 %s | grep ' , ' | wc -l "%(str(self))))
         return (nbTokCommas > 5)
     
          
