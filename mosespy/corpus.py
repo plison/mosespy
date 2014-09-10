@@ -435,7 +435,7 @@ class CorpusProcessor():
             self.truecaser.trainModel(tokFile)
             
         # STEP 3: truecasing   
-        trueFile = tokFile.changeFlag("true")
+        trueFile = self.workPath + "/" + tokFile.basename().changeFlag("true")
         self.truecaser.truecaseFile(tokFile, trueFile) 
         
         if not isTokenised:
