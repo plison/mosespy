@@ -35,8 +35,8 @@ __version__ = "$Date::                      $"
 
 
 import string
+import mosespy.urwid as urwid
 from mosespy.corpus import ReferenceCorpus
-
 
 
 class ErrorAnalyser():
@@ -153,7 +153,38 @@ class Condition():
         return " and ".join(subconds) if subconds else "True"
     
     
-         
+ 
+
+class AlignmentList(urwid.MainLoop):
+
+    def __init__(self, aligns):
+        self.aligns = aligns
+        self.focus = None
+        urwid.MainLoop.__init__(self, self.getBox())
+        
+    def selection(self, button, choice):
+        self.widget = self.getBox(choice)
+   
+        
+    def getBox(self, focus=None):
+        elList = []
+        for i in range(0, len(self.aligns)):
+            a = self.aligns[i]
+            but = urwid.Button("%i. Source:       %s"%((i+1), a["source"]))
+            urwid.connect_signal(but, 'click', self.selection, i)
+            elList.append(but)
+            tab = " " * (len(str(i))+2)
+            if focus == i and self.focus != focus and a.has_key("targethistory"):
+                elList.append(urwid.Text(tab + "  Previous:     "+ a["targethistory"]))
+            elList.append(urwid.Text(tab + "  Reference:    "+ a["reference"]))
+            elList.append(urwid.Text(tab + "  Translation:  " + a["translation"]))
+            elList.append(urwid.Divider())
+        walker = urwid.SimpleFocusListWalker(elList)
+        if focus:
+            walker.set_focus(focus*4)
+        self.focus = focus if focus != self.focus else None
+        return urwid.ListBox(walker)
+        
 
 def extractNgrams(tokens, size):
     """Extract the n-grams of a particular size in the list of tokens.
