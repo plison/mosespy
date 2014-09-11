@@ -245,7 +245,9 @@ class ReferenceCorpus(object):
         
         self.refCorpora = []
         for inDir in self.stem.getUp().listdir():
+            print "inDir: " + inDir
             if re.search(r"%s\.%s(\d)+"%(stem,targetLang), inDir):
+                print "YES"
                 refCorpus = BasicCorpus(inDir)
                 self.refCorpora.append(refCorpus)                         
                 if self.sourceCorpus.countNbLines() != refCorpus.countNbLines():
@@ -457,7 +459,7 @@ class CorpusProcessor():
         
         """
         if not isinstance(corpus, ReferenceCorpus):
-            raise RuntimeError("aligned data must be of type TranslatedCorpus")
+            raise RuntimeError("aligned data must be of type ReferenceCorpus")
         
         revertedSource = self.revertCorpus(corpus.getSourceCorpus())
         for refCorpus in corpus.getReferenceCorpora():
