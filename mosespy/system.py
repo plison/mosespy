@@ -59,7 +59,7 @@ class Path(str):
         
         """
         lang = self.getLang()
-        return Path(self[:-len(lang)-1]) if lang else self
+        return Path(self[:self.rfind("."+lang)]) if lang else self
         
     def removeFlags(self):
         """Remove all flags in the path and returns the modified path.
@@ -122,7 +122,7 @@ class Path(str):
             curProp = self.getFlags()
             newPath = stem.removeFlags() + "." + newFlag + "." + curProp
         if self.getLang():
-            newPath += "." + self.getLang()
+            newPath += self.replace(stem, "")
         return newPath
          
     def getAbsolute(self):
