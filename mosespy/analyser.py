@@ -158,7 +158,7 @@ class AnalysisUI(urwid.MainLoop):
         focusInList = 0
         for i in range(0, len(self.aligns)):
             a = self.aligns[i]
-            if self.condition.isSatisfied(a):
+            if self.condition.isSatisfiedBy(a):
                 but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
                 urwid.connect_signal(but, 'click', self.selection, i)
                 elList.append(but)
