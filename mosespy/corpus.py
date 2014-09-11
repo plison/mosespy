@@ -384,16 +384,13 @@ class CorpusProcessor():
         
         if isinstance(corpus,AlignedCorpus):
             trueSource = self.processCorpus(corpus.getSourceCorpus())
-            trueTarget = self.processCorpus(corpus.getTargetCorpus())
-     
+            self.processCorpus(corpus.getTargetCorpus())
             trueCorpus = AlignedCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
         
         elif isinstance(corpus,ReferenceCorpus):
             trueSource = self.processCorpus(corpus.getSourceCorpus())
-            processedRefs = []
             for refCorpus in corpus.getReferenceCorpora():
-                processedRefs.append(self.processCorpus(refCorpus))
-     
+                self.processCorpus(refCorpus)    
             trueCorpus = ReferenceCorpus(trueSource.getStem(), corpus.sourceLang, corpus.targetLang)
                  
         else:
@@ -403,8 +400,7 @@ class CorpusProcessor():
         if maxLength:
             cleanStem = trueSource.getStem().changeFlag("clean")
             cleanCorpus = self.cutCorpus(trueCorpus, cleanStem, maxLength)
-            trueSource.remove()
-            trueTarget.remove()
+            trueCorpus.remove()
             return cleanCorpus
         else:
             return trueCorpus
@@ -420,22 +416,24 @@ class CorpusProcessor():
             rawCorpus = BasicCorpus(rawCorpus)
         
         # STEP 1: tokenisation
-        isTokenised = rawCorpus.isTokenised()
+        isTokenised = rawCorpus.isTokenised
         if not isTokenised:
             normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
             self.tokeniser.normaliseFile(rawCorpus, normFile)
             tokFile = normFile.changeFlag("tok")
             self.tokeniser.tokeniseFile(normFile, tokFile)
             normFile.remove()
+            trueFile = tokFile.changeFlag("true")
         else:
             tokFile = rawCorpus
+            trueFile = self.workPath + "/" + rawCorpus.basename().addFlag("true")
+            
         
         # STEP 2: train truecaser if not already existing
         if not self.truecaser.isModelTrained(rawCorpus.getLang()):
             self.truecaser.trainModel(tokFile)
             
-        # STEP 3: truecasing   
-        trueFile = self.workPath + "/" + tokFile.basename().changeFlag("true")
+        # STEP 3: truecasing      
         self.truecaser.truecaseFile(tokFile, trueFile) 
         
         if not isTokenised:
