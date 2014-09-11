@@ -289,7 +289,7 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
         selection = sources[-1]
         testAligns[selection] = aligns[selection]
         for a in aligns.keys():
-            if selection.getUp() in a:
+            if selection == a:
                 del aligns[a]
                 del sources[sources.index(a)]
     devAligns = {}
@@ -297,7 +297,7 @@ def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
         selection = sources[-1]
         devAligns[selection] = aligns[selection]
         for a in aligns.keys():
-            if selection.getUp() in a:
+            if selection == a:
                 del aligns[a]
                 del sources[sources.index(a)]
     
