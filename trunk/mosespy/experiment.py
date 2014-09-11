@@ -389,7 +389,7 @@ class Experiment(object):
         TODO: allow for other metrics than BLEU
         
         """
- 
+        print "Test stem here: " + testStem
         testCorpus = ReferenceCorpus(testStem, self.sourceLang, self.targetLang)
         print ("Evaluating BLEU scores with test data: " + testStem 
                + " (References: %s)"%(testCorpus.getReferenceCorpora()))
