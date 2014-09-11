@@ -166,7 +166,7 @@ class AnalysisUI(urwid.MainLoop):
                 if focus == i:
                     if self.focus != focus and a.targethistory:
                         elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
-                        focusInList = len(elList)-1
+                    focusInList = len(elList)-2
                 for t in a.target:
                     if t.strip():
                         elList.append(urwid.Text(tab + "  Reference:    "+ t))
