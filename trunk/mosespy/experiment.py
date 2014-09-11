@@ -99,11 +99,10 @@ class Experiment(object):
                 
         self.expPath = Path(install.expDir+expName).getAbsolute()
         self.lm = None
-        self.ngram_order = None
+        self.continuous_lm = None
         self.tm = None
         self.iniFile = None
         self.results = None
-        self.continuous = False
         
         jsonFile = self.expPath+"/settings.json"
         if jsonFile.exists():
@@ -127,7 +126,7 @@ class Experiment(object):
         self.decoder = install.decoder
                    
     
-    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, continuous=False):
+    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
         """Trains the language model used for the experiment.  The method starts
         by inserting start and end characters <s> and </s> to the lines of the
         training files, then estimates the model parameters, builds the model, and
@@ -141,7 +140,7 @@ class Experiment(object):
             continuous (bool): whether to use a continuous language model.
     
         If the operation is successful, the binarised language model is set to the
-        instance variable self.lm, and the N-gram order to self.ngram_order.
+        instance self.lm as a tuple (file path, n-gram order).
         
         """     
            
@@ -151,46 +150,15 @@ class Experiment(object):
             train = self.processor.processCorpus(train)
         
         sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
-        if continuous:
-            with open(sbFile, 'w') as sbContent:
-                lines = train.readlines()
-                for i in range(0, len(lines)):
-                    line = lines[i].replace("\n", "")
-                    sbContent.write(line + " <t> " if i < len(lines)-1 else line)
-        else:
-            self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", train, sbFile)
+        self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", train, sbFile)
         
-        lmFile = self.expPath + "/langmodel.lm." + train.getLang()
-        system.setEnv("IRSTLM", install.irstlm_root)
-        lmScript = ((install.irstlm_root + "/bin/build-lm.sh" + " -i %s" +
-                    " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
-                    )%(sbFile, lmFile, ngram_order, self.expPath.basename())) 
-        self.executor.run(lmScript)
-                           
-        arpaFile = self.expPath + "/langmodel.arpa." + train.getLang()
-        arpaScript = (install.irstlm_root + "/bin/compile-lm "
-                      + "--text=yes %s %s"%(lmFile+".gz", arpaFile))
-        self.executor.run(arpaScript)  
-
-        blmFile = self.expPath + "/langmodel.blm." + train.getLang()
-        blmScript = (install.moses_root + "/bin/build_binary -w after " 
-                     + (" -s " if continuous else "")
-                     + " -i " + arpaFile + " " + blmFile)
-        self.executor.run(blmScript)
-        print "New binarised language model: " + blmFile.getDescription() 
+        blmFile = self.expPath + "/langmodel.blm." + self.targetLang
+        self._estimateLanguageModel(sbFile, ngram_order, blmFile)
         
         sbFile.remove()
-        (lmFile + ".gz").remove()
-        arpaFile.remove()
-
-        if blmFile.getSize() == 0:
-            raise RuntimeError("Error: generated language model is empty")
-
-        self.lm = blmFile
-        self.ngram_order = ngram_order
-        self.continuous = continuous
+        self.lm = (blmFile, ngram_order)
         self._recordState()
-    
+  
      
     def trainTranslationModel(self, trainStem, alignment=install.defaultAlignment, 
                               reordering=install.defaultReordering, 
@@ -458,8 +426,34 @@ class Experiment(object):
         self.tm = binaDir
         self._recordState()
         print "Finished binarising the translation model in directory " + binaDir.getDescription()
+      
 
+    def trainContinuousLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
 
+           
+        print "Building language model based on " + trainFile
+        train = BasicCorpus(trainFile)
+        if preprocess:
+            train = self.processor.processCorpus(train)
+        
+        sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
+        with open(sbFile, 'w') as sbContent:
+            lines = train.readlines()
+            for i in range(0, len(lines)):
+                line = lines[i].replace("\n", "")
+                sbContent.write(line + " <t> " if i < len(lines)-1 else line)
+
+        
+        blmFile = self.expPath + "/langmodel.continuous.blm." + self.targetLang
+        self._estimateLanguageModel(sbFile, ngram_order, blmFile, True)
+        
+        sbFile.remove()
+
+        self.continuous_lm = (blmFile, ngram_order)
+        self._recordState()
+             
+     
+     
     def queryLanguageModel(self, text):
         """Queries the language model with a given sentence.  The method returns the
         log-prob, perplexity, number of tokens and out-of-vocabulary tokens for the
@@ -478,7 +472,7 @@ class Experiment(object):
         """
         if not self.lm:
             raise RuntimeError("Language model is not yet trained")
-        queryScript = (install.moses_root + "/bin/query "+ self.lm)
+        queryScript = (install.moses_root + "/bin/query "+ self.lm[0])
         output = self.executor.run_output(queryScript, text+"\n")
         regex = (r".*" + re.escape("Total:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+" 
                  + re.escape("Perplexity including OOVs:") + r"\s+([-+]?[0-9]*\.?[0-9]*).+"  
@@ -533,9 +527,9 @@ class Experiment(object):
         """
         newexp = Experiment(nexExpName, self.sourceLang, self.targetLang)
         newexp.lm = self.lm
+        newexp.continuous_lm = self.continuous_lm
         newexp.tm = self.tm
         newexp.nbThreads = self.nbThreads
-        newexp.ngram_order = self.ngram_order
         newexp.iniFile = self.iniFile
         newexp.sourceLang = self.sourceLang
         newexp.targetLang = self.targetLang
@@ -543,6 +537,34 @@ class Experiment(object):
         newexp.processor = self.processor
         return newexp
  
+    
+    def _estimateLanguageModel(self, corpusFile, ngram_order, outputFile, continuous=False):
+        
+        lmFile = outputFile.changeFlag("rawlm")
+        system.setEnv("IRSTLM", install.irstlm_root)
+        lmScript = ((install.irstlm_root + "/bin/build-lm.sh" + " -i %s" +
+                    " -p -s improved-kneser-ney -o %s -n %i -t ./tmp-%s"
+                    )%(corpusFile, lmFile, ngram_order, self.expPath.basename())) 
+        self.executor.run(lmScript)
+                           
+        arpaFile = lmFile.changeFlag("arpa")
+        arpaScript = (install.irstlm_root + "/bin/compile-lm "
+                      + "--text=yes %s %s"%(lmFile+".gz", arpaFile))
+        self.executor.run(arpaScript)  
+
+        blmScript = (install.moses_root + "/bin/build_binary -w after " 
+                     + (" -s " if continuous else "")
+                     + " -i " + arpaFile + " " + outputFile)
+        self.executor.run(blmScript)
+        print "New binarised language model: " + outputFile.getDescription() 
+        
+        (lmFile + ".gz").remove()
+        arpaFile.remove()
+
+        if outputFile.getSize() == 0:
+            raise RuntimeError("Error: generated language model is empty")
+        
+
    
     def _prunePhraseTable(self, probThreshold=0.0001):
         """Prune the phrase table with the provided probability threshold.
@@ -619,8 +641,8 @@ class Experiment(object):
                     + " -f " + self.sourceLang + " -e " + self.targetLang 
                     + " -alignment " + alignment + " " 
                     + " -reordering " + reordering + " "
-                    + " -lm 0:" +str(self.ngram_order)
-                    +":"+self.lm+":8"       # 8 because binarised with KenLM
+                    + " -lm 0:" +str(self.lm[1])
+                    +":"+self.lm[0]+":8"       # 8 because binarised with KenLM
                     + " -external-bin-dir " + install.mgizapp_root + "/bin" 
                     + " -cores %i -mgiza -mgiza-cpus %i -parallel "
                     + " --first-step %i --last-step %i "
@@ -700,11 +722,9 @@ class Experiment(object):
         """
         settings = {"path":self.expPath, "source":self.sourceLang, "target":self.targetLang}
         if self.lm:
-            settings["lm"] = self.lm
-        if self.ngram_order:
-            settings["ngram_order"] = self.ngram_order
-        if self.continuous:
-            settings["continuous_lm"] = True
+            settings["lm"] = {"lm":self.lm[0], "ngram_order":self.lm[1]}
+        if self.continuous_lm:
+            settings["continuous_lm"] = {"lm":self.lm[0], "ngram_order":self.lm[1]}
         if self.tm:
             settings["tm"] = self.tm
         if self.iniFile:
@@ -728,12 +748,12 @@ class Experiment(object):
                 self.sourceLang = settings["source"]
             if settings.has_key("target"):
                 self.targetLang = settings["target"]
-            if settings.has_key("continuous_lm"):
-                self.continuous = settings["continuous_lm"]
             if settings.has_key("lm"):
-                self.lm = Path(settings["lm"])
-            if settings.has_key("ngram_order"):
-                self.ngram_order = int(settings["ngram_order"])
+                lm = settings["lm"]
+                self.lm = (Path(lm["lm"]), int(lm["ngram_order"]))
+            if settings.has_key("continuous_lm"):
+                lm = settings["continuous_lm"]
+                self.lm = (Path(lm["lm"]), int(lm["ngram_order"]))
             if settings.has_key("tm"):
                 self.tm = Path(settings["tm"])
             if settings.has_key("ini"):

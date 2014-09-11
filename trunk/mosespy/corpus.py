@@ -417,7 +417,7 @@ class CorpusProcessor():
             rawCorpus = BasicCorpus(rawCorpus)
         
         # STEP 1: tokenisation
-        isTokenised = rawCorpus.isTokenised
+        isTokenised = rawCorpus.isTokenised()
         if not isTokenised:
             normFile = self.workPath + "/" + rawCorpus.basename().addFlag("norm")
             self.tokeniser.normaliseFile(rawCorpus, normFile)

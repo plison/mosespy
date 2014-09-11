@@ -94,8 +94,8 @@ class SlurmExperiment(Experiment):
         newexp = SlurmExperiment(nexExpName, self.sourceLang, 
                                  self.targetLang, self.executor.account, self.maxJobs)
         newexp.lm = self.lm
+        newexp.continuous_lm = self.continuous_lm
         newexp.tm = self.tm
-        newexp.ngram_order = self.ngram_order
         newexp.iniFile = self.iniFile
         newexp.sourceLang = self.sourceLang
         newexp.targetLang = self.targetLang

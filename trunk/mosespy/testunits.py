@@ -341,7 +341,7 @@ class Pipeline(unittest.TestCase):
         exp.trainTranslationModel(train.getStem())
         config = MosesConfig(exp.iniFile)  
         self.assertSetEqual(config.getPaths(), 
-                            set([exp.lm,
+                            set([exp.lm[0],
                                  exp.tm+"/phrase-table.reduced.gz",
                                  exp.tm+"/reordering-table.wbe-msd-bidirectional-fe.gz"]))  
         
@@ -349,7 +349,7 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(exp2.sourceLang, "fr")   
         self.assertEqual(exp2.targetLang, "en")   
         self.assertEqual(exp2.lm, exp.lm)  
-        self.assertEqual(exp2.ngram_order, exp.ngram_order)  
+        self.assertEqual(exp2.lm[1], exp.lm[1])  
         self.assertEqual(exp2.tm, exp.tm)
         self.assertEqual(exp2.tm, exp.expPath+"/translationmodel/model") 
         self.assertEqual(exp2.iniFile, exp.expPath+"/translationmodel/model/moses.ini") 
