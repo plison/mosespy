@@ -35,7 +35,7 @@ __version__ = "$Date::                      $"
 
 
 import string
-import mosespy.urwid as urwid
+import urwid
 from mosespy.corpus import ReferenceCorpus
 
 
@@ -55,22 +55,7 @@ class ErrorAnalyser():
         if not isinstance(results, ReferenceCorpus):
             raise RuntimeError("results must be of type ReferenceCorpus")
         alignments = results.getAlignments(addHistory=True)
-        for cond in self.conditions:
-            print "Analysis of errors under the condition: %s"%(str(cond))
-            print "----------------------"
-            incr = 1
-            for align in alignments:
-                if cond.isSatisfiedBy(align):
-                    if align.targethistory:
-                        print "\tPrevious line:\t\t" + align.targethistory
-                    print "%i.\tTarget (actual):\t%s"%(incr, align.translation)
-                    WER = min([getWER(t, align.translation) for t in align.target])
-                    for t in align.target:
-                        if t.strip():
-                            print "\tTarget (reference):\t" + t + " (WER=%i%%)"%(WER*100)
-                    print "\tSource:\t\t\t%s"%(align.source)
-                    print "----------------------"
-                    incr += 1
+        AnalysisUI(alignments, self.conditions[0]).run()
       
 
 class Condition():
@@ -155,10 +140,11 @@ class Condition():
     
  
 
-class AlignmentList(urwid.MainLoop):
+class AnalysisUI(urwid.MainLoop):
 
-    def __init__(self, aligns):
+    def __init__(self, condition, aligns):
         self.aligns = aligns
+        self.condition = condition
         self.focus = None
         urwid.MainLoop.__init__(self, self.getBox())
         
@@ -167,21 +153,30 @@ class AlignmentList(urwid.MainLoop):
    
         
     def getBox(self, focus=None):
-        elList = []
+        title = "==> Analysis of errors under the condition: %s"%(self.condition)
+        elList = [urwid.Text(title), urwid.Divider]
+        focusInList = 0
         for i in range(0, len(self.aligns)):
             a = self.aligns[i]
-            but = urwid.Button("%i. Source:       %s"%((i+1), a["source"]))
-            urwid.connect_signal(but, 'click', self.selection, i)
-            elList.append(but)
-            tab = " " * (len(str(i))+2)
-            if focus == i and self.focus != focus and a.has_key("targethistory"):
-                elList.append(urwid.Text(tab + "  Previous:     "+ a["targethistory"]))
-            elList.append(urwid.Text(tab + "  Reference:    "+ a["reference"]))
-            elList.append(urwid.Text(tab + "  Translation:  " + a["translation"]))
-            elList.append(urwid.Divider())
+            if self.condition.isSatisfied(a):
+                but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
+                urwid.connect_signal(but, 'click', self.selection, i)
+                elList.append(but)
+                tab = " " * (len(str(i))+2)
+                if focus == i:
+                    if self.focus != focus and a.targethistory:
+                        elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
+                        focusInList = len(elList)-1
+                for t in a.target:
+                    if t.strip():
+                        elList.append(urwid.Text(tab + "  Reference:    "+ t))
+                WER = min([getWER(t, a.translation) for t in a.target])
+                elList.append(urwid.Text(tab + "  Translation:  " + a.translation
+                                          + " (WER=%i%%)"%(WER*100)))
+                elList.append(urwid.Divider())
         walker = urwid.SimpleFocusListWalker(elList)
         if focus:
-            walker.set_focus(focus*4)
+            walker.set_focus(focusInList)
         self.focus = focus if focus != self.focus else None
         return urwid.ListBox(walker)
         
