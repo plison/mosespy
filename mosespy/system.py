@@ -356,7 +356,7 @@ class ShellExecutor(object):
         elif isinstance(stdin, basestring):
             stdin_popen = subprocess.PIPE
             callInput = stdin
-            cmd_str += "<<< \"" + stdin if len(stdin)< 50 else (stdin[0:50]+"...")+"\""
+            cmd_str += "<<< \"" + (stdin if len(stdin)< 50 else (stdin[0:50]+"...")).strip() +"\""
         
         if os.path.exists(os.path.dirname(str(stdout))):
             stdout_popen = open(stdout, 'w')
