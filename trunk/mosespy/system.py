@@ -106,8 +106,7 @@ class Path(str):
         stem = self.getStem()
         stem = stem.removeFlags()
         newPath = stem + "." + newFlag
-        if self.getLang():
-            newPath += "." + self.getLang()
+        newPath += self.replace(stem, "")
         return newPath
     
     def addFlag(self, newFlag, reverseOrder=False):
@@ -121,8 +120,7 @@ class Path(str):
         else:
             curProp = self.getFlags()
             newPath = stem.removeFlags() + "." + newFlag + "." + curProp
-        if self.getLang():
-            newPath += self.replace(stem, "")
+        newPath += self.replace(stem, "")
         return newPath
          
     def getAbsolute(self):
