@@ -35,7 +35,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import os, shutil, subprocess, time, Queue, threading, copy
+import os, shutil, subprocess, time, Queue, threading, copy, re
 from datetime import datetime
 from xml.dom import minidom
 
@@ -77,6 +77,7 @@ class Path(str):
         """
         if  "." in self:
             langcode = self.split(".")[len(self.split("."))-1]
+            langcode = re.sub(r"\d+", "", langcode)
             return langcode if langcode in languages else None
         else:
             return None        
