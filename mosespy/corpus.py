@@ -245,7 +245,7 @@ class ReferenceCorpus(object):
         
         self.refCorpora = []
         for inDir in self.stem.getUp().listdir():
-            print "Checking if we have a match with %i (re is %s)"%(inDir, r"%s\.%s(\d)+"%(stem,targetLang))
+            print "Checking if we have a match with %s (re is %s)"%(inDir, r"%s\.%s(\d)+"%(stem,targetLang))
             print "Answer: " + str(re.search(r"%s\.%s(\d)+"%(stem,targetLang), inDir))
             if re.search(r"%s\.%s(\d)+"%(stem,targetLang), inDir):
                 refCorpus = BasicCorpus(inDir)
