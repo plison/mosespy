@@ -245,9 +245,8 @@ class ReferenceCorpus(object):
         
         self.refCorpora = []
         for inDir in self.stem.getUp().listdir():
-            print "inDir: " + inDir
+            print "Checking if we have a match with %i (re is %s)"%(inDir, r"%s\.%s(\d)+"%(stem,targetLang))
             if re.search(r"%s\.%s(\d)+"%(stem,targetLang), inDir):
-                print "YES"
                 refCorpus = BasicCorpus(inDir)
                 self.refCorpora.append(refCorpus)                         
                 if self.sourceCorpus.countNbLines() != refCorpus.countNbLines():
