@@ -66,7 +66,8 @@ class ErrorAnalyser():
                     print "%i.\tTarget (actual):\t%s"%(incr, align.translation)
                     WER = min([getWER(t, align.translation) for t in align.target])
                     for t in align.target:
-                        print "\tTarget (reference):\t" + t + " (WER=%i%%)"%(WER*100)
+                        if t.strip():
+                            print "\tTarget (reference):\t" + t + " (WER=%i%%)"%(WER*100)
                     print "\tSource:\t\t\t%s"%(align.source)
                     print "----------------------"
                     incr += 1
