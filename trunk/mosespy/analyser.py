@@ -126,8 +126,8 @@ class Condition():
         if not any([self.length[0] <= len(t.split()) <= self.length[1] for t in pair.target]):
             return False
         
-        if pair.translation and not any([self.wer[0] <= getWER(t, pair.translation) 
-                                         <= self.wer[1] for t in pair.target]):
+        if pair.translation and not any([self.wer[0] <= getWER(t, pair.translation) <= 
+                                         self.wer[1] for t in pair.target if t.strip()]):
             return False
         
         return True
