@@ -126,7 +126,7 @@ class Experiment(object):
         self.decoder = install.decoder
                    
     
-    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
+    def trainLanguageModel(self, trainFile, preprocess= True, continuous=False, ngram_order=3):
         """Trains the language model used for the experiment.  The method starts
         by inserting start and end characters <s> and </s> to the lines of the
         training files, then estimates the model parameters, builds the model, and
@@ -136,6 +136,7 @@ class Experiment(object):
             trainFile (str): path to the file containing the training data.      
             preprocess (bool): whether to tokenise and truecase the training data
                 before estimating the model parameters
+            continuous (bool): whether to train the LM without boundary marks for sentences.
             ngram_order: order of the N-gram
     
         If the operation is successful, the binarised language model is set to the
@@ -149,7 +150,14 @@ class Experiment(object):
             train = self.processor.processCorpus(train)
         
         sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
-        self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", train, sbFile)
+        if continuous:
+            with open(sbFile, 'w') as sbContent:
+                lines = train.readlines()
+                for i in range(0, len(lines)):
+                    line = lines[i].replace("\n", "")
+                    sbContent.write(line + " <t> " if i < len(lines)-1 else line)
+        else:
+            self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", train, sbFile)
         
         lmFile = self.expPath + "/langmodel.lm." + train.getLang()
         system.setEnv("IRSTLM", install.irstlm_root)
@@ -397,9 +405,8 @@ class Experiment(object):
         if preprocess:
             testCorpus = self.processor.processAlignedCorpus(testCorpus, False)
                     
-        transFile = (testCorpus.getReferenceCorpora()[0].basename().
-                     addFlag("translated", reverseOrder=True)) 
-        transPath = self.expPath + "/" + transFile
+        transPath = (self.expPath + "/" + testCorpus.getStem().basename().
+                     addFlag("translated", reverseOrder=True) + "." + self.targetLang)
         
         self.translateFile(testCorpus.getSourceCorpus(), transPath, False, True, False)    
         testCorpus.addTranslation(transPath)      
