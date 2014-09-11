@@ -154,7 +154,7 @@ class AnalysisUI(urwid.MainLoop):
         
     def getBox(self, focus=None):
         title = "==> Analysis of errors under the condition: %s"%(self.condition)
-        elList = [urwid.Text(title), urwid.Divider]
+        elList = [urwid.Text(title), urwid.Divider()]
         focusInList = 0
         for i in range(0, len(self.aligns)):
             a = self.aligns[i]
