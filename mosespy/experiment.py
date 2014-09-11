@@ -85,7 +85,7 @@ class Experiment(object):
     
     """
     
-    def __init__(self, expName, sourceLang=None, targetLang=None, nbThreads=2):
+    def __init__(self, expName, sourceLang=None, targetLang=None, nbThreads=2, continuous=False):
         """Start a new experiment with the given name.  If an experiment of 
         same name already exists, its state is reloaded (based on the JSON
         file that records the experiment state). 
@@ -94,6 +94,7 @@ class Experiment(object):
             sourceLang (str): language code for the source language
             targetLang (str): language code for the target language
             nbThreads (int): number of parallel threads to use
+            continuous (bool): whether to use a continuous language model.
         
         """
                 
@@ -103,6 +104,7 @@ class Experiment(object):
         self.tm = None
         self.iniFile = None
         self.results = None
+        self.continuous = continuous
         
         jsonFile = self.expPath+"/settings.json"
         if jsonFile.exists():
@@ -126,7 +128,7 @@ class Experiment(object):
         self.decoder = install.decoder
                    
     
-    def trainLanguageModel(self, trainFile, preprocess= True, continuous=False, ngram_order=3):
+    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
         """Trains the language model used for the experiment.  The method starts
         by inserting start and end characters <s> and </s> to the lines of the
         training files, then estimates the model parameters, builds the model, and
@@ -136,7 +138,6 @@ class Experiment(object):
             trainFile (str): path to the file containing the training data.      
             preprocess (bool): whether to tokenise and truecase the training data
                 before estimating the model parameters
-            continuous (bool): whether to train the LM without boundary marks for sentences.
             ngram_order: order of the N-gram
     
         If the operation is successful, the binarised language model is set to the
@@ -150,7 +151,7 @@ class Experiment(object):
             train = self.processor.processCorpus(train)
         
         sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
-        if continuous:
+        if self.continuous:
             with open(sbFile, 'w') as sbContent:
                 lines = train.readlines()
                 for i in range(0, len(lines)):
@@ -173,6 +174,7 @@ class Experiment(object):
 
         blmFile = self.expPath + "/langmodel.blm." + train.getLang()
         blmScript = (install.moses_root + "/bin/build_binary -w after " 
+                     + (" -s " if self.continuous else "")
                      + " -i " + arpaFile + " " + blmFile)
         self.executor.run(blmScript)
         print "New binarised language model: " + blmFile.getDescription() 
