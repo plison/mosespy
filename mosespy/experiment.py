@@ -103,6 +103,7 @@ class Experiment(object):
         self.tm = None
         self.iniFile = None
         self.results = None
+        self.continuous = False
         
         jsonFile = self.expPath+"/settings.json"
         if jsonFile.exists():
