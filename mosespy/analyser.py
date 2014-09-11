@@ -55,7 +55,7 @@ class ErrorAnalyser():
         if not isinstance(results, ReferenceCorpus):
             raise RuntimeError("results must be of type ReferenceCorpus")
         alignments = results.getAlignments(addHistory=True)
-        AnalysisUI(alignments, self.conditions[0]).run()
+        AnalysisUI(self.conditions[0], alignments).run()
       
 
 class Condition():
