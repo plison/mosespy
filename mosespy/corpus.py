@@ -243,6 +243,7 @@ class ReferenceCorpus(object):
         self.sourceCorpus = BasicCorpus(self.stem + "." + sourceLang)
         self.targetLang = targetLang
         
+        print "STEM: " + self.stem
         self.refCorpora = []
         for inDir in self.stem.getUp().listdir():
             inDir = self.stem.getUp() + "/" + inDir
