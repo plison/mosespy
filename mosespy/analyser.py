@@ -143,8 +143,11 @@ class Condition():
 class AnalysisUI(urwid.MainLoop):
 
     def __init__(self, condition, aligns):
-        self.aligns = aligns
         self.condition = condition
+        self.aligns = []
+        for a in aligns:
+            if condition.isSatisfiedBy(a):
+                self.aligns.append(a)
         self.focus = None
         urwid.MainLoop.__init__(self, self.getBox())
         
@@ -158,22 +161,21 @@ class AnalysisUI(urwid.MainLoop):
         focusInList = 0
         for i in range(0, len(self.aligns)):
             a = self.aligns[i]
-            if self.condition.isSatisfiedBy(a):
-                but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
-                urwid.connect_signal(but, 'click', self.selection, i)
-                elList.append(but)
-                tab = " " * (len(str(i))+2)
-                if focus == i:
-                    if self.focus != focus and a.targethistory:
-                        elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
-                    focusInList = len(elList)-2
-                for t in a.target:
-                    if t.strip():
-                        elList.append(urwid.Text(tab + "  Reference:    "+ t))
-                WER = min([getWER(t, a.translation) for t in a.target])
-                elList.append(urwid.Text(tab + "  Translation:  " + a.translation
-                                          + " (WER=%i%%)"%(WER*100)))
-                elList.append(urwid.Divider())
+            but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
+            urwid.connect_signal(but, 'click', self.selection, i)
+            elList.append(but)
+            tab = " " * (len(str(i))+2)
+            if focus == i:
+                if self.focus != focus and a.targethistory:
+                    elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
+                focusInList = len(elList)-2
+            for t in a.target:
+                if t.strip():
+                    elList.append(urwid.Text(tab + "  Reference:    "+ t))
+            WER = min([getWER(t, a.translation) for t in a.target])
+            elList.append(urwid.Text(tab + "  Translation:  " + a.translation
+                                      + " (WER=%i%%)"%(WER*100)))
+            elList.append(urwid.Divider())
         walker = urwid.SimpleFocusListWalker(elList)
         if focus:
             walker.set_focus(focusInList)
