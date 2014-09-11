@@ -280,30 +280,26 @@ def getAlignments(xmlRoot, basePath):
 def divideAlignedData(fullAligns, nbTuning=2, nbDev=5, nbTesting=5):
     if len(fullAligns) < 20:
         raise RuntimeError("not enough data to divide")
+    print "Sorting data by number of duplicates"
     sources = sorted(fullAligns.keys(), 
                      key=lambda x : len(fullAligns[x][0].getUp().listdir()))
-    
+    print "Copying data"
     aligns = copy.deepcopy(fullAligns)
+    print "Dividing data"
     testAligns = {}
-    for _ in range(0, nbTesting):
-        selection = sources[-1]
-        testAligns[selection] = aligns[selection]
-        for a in aligns.keys():
-            if selection == a:
-                del aligns[a]
-                del sources[sources.index(a)]
     devAligns = {}
-    for _ in range(0, nbDev):
+    for i in range(0, nbTesting + nbDev):
         selection = sources[-1]
-        devAligns[selection] = aligns[selection]
+        (testAligns if i < nbTesting else devAligns)[selection] = aligns[selection]      
         for a in aligns.keys():
-            if selection == a:
+            if selection.getUp() in a:
                 del aligns[a]
                 del sources[sources.index(a)]
     
-   
+    print "Extracting divisions"
     trainAligns = extractDict(aligns, sources[:-nbTuning])
     tuneAligns = extractDict(aligns,sources[-nbTuning:])
+    print "Finished extraction"
     return trainAligns, tuneAligns, devAligns, testAligns
 
 
