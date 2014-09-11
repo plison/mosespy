@@ -392,7 +392,7 @@ class Experiment(object):
  
         testCorpus = ReferenceCorpus(testStem, self.sourceLang, self.targetLang)
         print ("Evaluating BLEU scores with test data: " + testStem 
-               + " (Number of references: %i)"%(len(testCorpus.getReferenceCorpora())))
+               + " (References: %s)"%(testCorpus.getReferenceCorpora()))
         
         if preprocess:
             testCorpus = self.processor.processAlignedCorpus(testCorpus, False)
