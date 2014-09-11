@@ -29,7 +29,7 @@ Features:
 """
 
 
-import mosespy.urwid
+import mosespy.urwid as urwid
 from mosespy.urwid.wimp import SelectableIcon
 
 
