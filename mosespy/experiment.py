@@ -210,6 +210,9 @@ class Experiment(object):
         self.iniFile = self.tm +"/moses.ini"
         if pruning:
             self._prunePhraseTable()
+        if self.continuous_lm:
+            features = {"factor":0, "path": self.continuous_lm[0], "order":self.continuous_lm[1]}
+            MosesConfig(self.iniFile).addFeatureFunction("KENLM", "LM1", features)
         self._recordState()
         
  
@@ -429,7 +432,6 @@ class Experiment(object):
       
 
     def trainContinuousLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
-
            
         print "Building language model based on " + trainFile
         train = BasicCorpus(trainFile)
@@ -753,7 +755,7 @@ class Experiment(object):
                 self.lm = (Path(lm["lm"]), int(lm["ngram_order"]))
             if settings.has_key("continuous_lm"):
                 lm = settings["continuous_lm"]
-                self.lm = (Path(lm["lm"]), int(lm["ngram_order"]))
+                self.continuous_lm = (Path(lm["lm"]), int(lm["ngram_order"]))
             if settings.has_key("tm"):
                 self.tm = Path(settings["tm"])
             if settings.has_key("ini"):
@@ -844,7 +846,15 @@ class MosesConfig():
                 newList.append(l)
             parts["feature"] = newList
         self._updateFile(parts)
-        
+    
+    def addFeatureFunction(self, featType, featName, features, *weights):
+        newFunction = "%s name=%s "%(featType, featName)
+        for feat in features:
+            newFunction += "%s=%s"%(feat, str(features[feat]))
+        parts = self._getParts()
+        parts["feature"] = parts["feature"] + "\n" + newFunction
+        parts["weight"] = parts["weight"] + "\nname= " + " ".join(weights)
+        self._updateFile(parts)
     
     def removePart(self, partname):
         """Removes a section in the configuration file.
