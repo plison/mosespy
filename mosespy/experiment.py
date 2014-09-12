@@ -211,7 +211,8 @@ class Experiment(object):
         if pruning:
             self._prunePhraseTable()
         if self.continuous_lm:
-            features = {"factor":0, "path": self.continuous_lm[0], "order":self.continuous_lm[1]}
+            features = {"factor":0, "path": self.continuous_lm[0], 
+                        "order":self.continuous_lm[1], "lazyken":0}
             MosesConfig(self.iniFile).addFeatureFunction("KENLM", "LM1", features, 0.5)
         self._recordState()
         
@@ -853,7 +854,7 @@ class MosesConfig():
             newFunction += " %s=%s "%(feat, str(features[feat]))
         parts = self._getParts()
         parts["feature"].append(newFunction)
-        parts["weight"].append(featName + "= " + " ".join(weights))
+        parts["weight"].append(featName + "= " + " ".join([str(w) for w in weights]))
         self._updateFile(parts)
     
     def removePart(self, partname):
