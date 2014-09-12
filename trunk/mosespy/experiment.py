@@ -855,7 +855,7 @@ class MosesConfig():
             newList = []
             for l in parts["feature"]:
                 if "KENLM" in l:
-                    l = re.sub(re.escape("path=") + r"((\S)+).+", 
+                    l = re.sub(re.escape("path=") + r"((\S)+)", 
                                "path=" + languageModel[0], l)
                     l = re.sub(re.escape("order=") + r"((\d)+)", 
                                "order=" + str(languageModel[1]), l)
