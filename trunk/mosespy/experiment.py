@@ -211,9 +211,7 @@ class Experiment(object):
         if pruning:
             self._prunePhraseTable()
         if self.continuous_lm:
-            features = {"factor":0, "path": self.continuous_lm[0], 
-                        "order":self.continuous_lm[1], "lazyken":0}
-            MosesConfig(self.iniFile).addFeatureFunction("KENLM", "LM1", features, 0.5)
+            MosesConfig(self.iniFile).replaceLanguageModel(self.continuous_lm)
         self._recordState()
         
  
