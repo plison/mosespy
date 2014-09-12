@@ -847,6 +847,19 @@ class MosesConfig():
                 newList.append(l)
             parts["feature"] = newList
         self._updateFile(parts)
+        
+    
+    def replaceLanguageModel(self, languageModel):
+        parts = self._getParts() 
+        if parts.has_key("feature"):
+            newList = []
+            for l in parts["feature"]:
+                if "KENLM" in l:
+                    l = re.sub(re.escape("path=") + r"((\S)+).+", languageModel[0], l)
+                    l = re.sub(re.escape("order=") + r"((\d)+).+", languageModel[1], l)
+                newList.append(l)
+            parts["feature"] = newList
+        self._updateFile(parts)
     
     def addFeatureFunction(self, featType, featName, features, *weights):
         newFunction = "%s name=%s "%(featType, featName)
