@@ -852,8 +852,8 @@ class MosesConfig():
         for feat in features:
             newFunction += "%s=%s"%(feat, str(features[feat]))
         parts = self._getParts()
-        parts["feature"] = parts["feature"] + "\n" + newFunction
-        parts["weight"] = parts["weight"] + "\nname= " + " ".join(weights)
+        parts["feature"].append(newFunction)
+        parts["weight"].append("name= " + " ".join(weights))
         self._updateFile(parts)
     
     def removePart(self, partname):
