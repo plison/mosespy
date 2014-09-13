@@ -290,7 +290,8 @@ foreach ($n=2;$n<=$size;$n++) {
 	  printf GR "%f %s %s\n",-10000,$reduced_h,$dict[$c];
 	}
       } else {			# print unpruned n-1 gram
-	printf(GR "%f %s %s\n",log($prob)/$log10,$reduced_h,$dict[$c]);
+        my $logp=log($prob)/$log10;
+	printf(GR "%f %s %s\n",($logp>0?0:$logp),$reduced_h,$dict[$c]);
       }
     }
 		
@@ -301,14 +302,18 @@ foreach ($n=2;$n<=$size;$n++) {
     if ($hpr==-10000) {
       #skip this history
     } elsif ($kneser_ney && $beta>0) {
-      printf NHGR "%s %f\n",$h,log($boprob+($beta * $diff/$totcnt))/$log10;
+      my $logp=log($boprob+($beta * $diff/$totcnt))/$log10;
+      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
     } elsif ($improved_kneser_ney) {
       my $lambda=($beta[1] * $diff1 + $beta[2] * $diff2 + $beta[3] * $diff3)/$totcnt; 	  
-      printf NHGR "%s %f\n",$h,log($boprob+$lambda)/$log10;
+      my $logp=log($boprob+$lambda)/$log10;
+      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
     } elsif ($good_turing && $singlediff>0) {
-      printf NHGR "%s %f\n",$h,log($boprob+($singlediff/($totcnt+$singlediff)))/$log10;
+      my $logp=log($boprob+($singlediff/($totcnt+$singlediff)))/$log10;
+      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
     } else {
-      printf NHGR "%s %f\n",$h,log($boprob+($diff/($totcnt+$diff)))/$log10;
+      my $logp=log($boprob+($diff/($totcnt+$diff)))/$log10;
+      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
     }     
 		
     #reset smoothing statistics
