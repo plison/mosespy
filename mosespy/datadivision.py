@@ -45,7 +45,7 @@ import xml.etree.cElementTree as etree
     
 
 def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
-               nbTesting=3000, randomPick=True, duplicatesWindow=4):
+               nbTesting=3000, randomPick=True):
     """Divides the aligned data into distinct parts. Since datasets (such 
     as subtitles corpora) often contain duplicates sentences, the method 
     seeks to avoid selecting sentences that can also be found in other 
@@ -61,8 +61,6 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
         randomPick (bool): whether to pick tuning, development and testing
             sentences randomly (if True), or at the end of the data set 
             (if False).
-        duplicatesWindow (int): number of sentences to take into account
-            when searching for duplicates in the data set.
     
     Returns:
         Four aligned corpora corresponding to the training, tuning,
