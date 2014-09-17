@@ -81,6 +81,7 @@ class AlignedSubtitles(object):
         nbTranslations = 1
         for a in self.aligns:
             for p in self.aligns[a]:
+                print p
                 if isinstance(p[1], set) and len(p[1]) > nbTranslations:
                     nbTranslations = len(p[1])
         print "number of alternative translations: " + str(nbTranslations)
