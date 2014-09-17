@@ -178,7 +178,7 @@ class AlignedSubtitles(object):
                 trgLine = pair[1][0] if isinstance(pair[1], list) else pair[1]
                 trgFile.write(trgLine.encode("UTF-8"))
                 for i in range(0, len(altFiles)):
-                    altLine = pair[1][i] if i < len(pair[i]) else ""
+                    altLine = pair[1][i] if i < len(pair[1]) else ""
                     altFiles[i].write(altLine.encode("UTF-8"))
         
         srcFile.close()
