@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys
+import  math, sys, gzip
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -225,8 +225,8 @@ class XCESCorpus(AlignedSubtitles):
                 if not todoc.exists():
                     raise RuntimeError("could not find " + todoc)
                 
-                fromLines = fromdoc.readlines()
-                toLines = todoc.readlines()
+                fromLines = gzip.open(fromdoc, 'r').readlines()
+                toLines = gzip.open(todoc, 'r').readlines()
                 print "Processing alignment %s - %s (nb. lines: %i/%i)"%(fromdoc, todoc, len(fromLines), len(toLines))
                 alignmentList = []
                 for link in linkGrp:
