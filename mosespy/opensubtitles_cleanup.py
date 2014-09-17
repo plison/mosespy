@@ -59,7 +59,7 @@ class AlignedSubtitles(object):
     
     
     def addAlternatives(self):
-        
+        print "Adding alternatives for " + str(self.aligns)
         correlatedAligns = {}
         for fromdoc in self.aligns:
             print "Search correlated sources for " + fromdoc
@@ -267,7 +267,7 @@ def getLines(gzipDoc):
             for w in s:
                 if w.tag == "w" and w.text:
                     wordList.append(w.text.strip())
-                elif w.tag == w:
+                elif w.tag == "w":
                     print "empty word for " + str(gzipDoc)
             lines.append(" ".join(wordList))
     return lines
