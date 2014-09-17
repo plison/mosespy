@@ -250,17 +250,17 @@ class XCESCorpus(AlignedSubtitles):
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print "Usage: opensubtitles_cleanup.py [path to XCESFile]"
-        exit
         
-    xcesFile = sys.argv[1]
-    corpus = XCESCorpus(xcesFile)
-    train, tune, dev, test = corpus.divideData()
-    
-    stem = xcesFile.replace(".xml", "")
-    
-    train.generateMosesFiles(stem + ".train")
-    tune.generateMosesFiles(stem + ".tune")
-    dev.generateMosesFiles(stem + ".dev")
-    test.generateMosesFiles(stem + ".test")
+    else:  
+        xcesFile = sys.argv[1]
+        corpus = XCESCorpus(xcesFile)
+        train, tune, dev, test = corpus.divideData()
+        
+        stem = xcesFile.replace(".xml", "")
+        
+        train.generateMosesFiles(stem + ".train")
+        tune.generateMosesFiles(stem + ".tune")
+        dev.generateMosesFiles(stem + ".dev")
+        test.generateMosesFiles(stem + ".test")
 
 
