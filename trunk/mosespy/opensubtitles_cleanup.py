@@ -230,14 +230,12 @@ class XCESCorpus(AlignedSubtitles):
                 fromLines = gzip.open(fromdoc, 'r').readlines()
                 toLines = gzip.open(todoc, 'r').readlines()
                 alignmentList = []
-                nbSkips = 0
                 for link in linkGrp:
                     if link.tag == 'link':
                         split = link.attrib["xtargets"].split(";")
                         sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
                         targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
                         if len(sourceLines) == 0 or len(targetLines)==0:
-                            nbSkips += 1
                             continue       
                         sourceLine = " ".join([fromLines[s].strip() for s in sourceLines])
                         targetLine = " ".join([toLines[s].strip() for s in targetLines])
@@ -246,7 +244,6 @@ class XCESCorpus(AlignedSubtitles):
                 if len(alignmentList) < len(linkGrp)/2:
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
                 else:
-                    print "Alignment list: %i vs length of group: %i"%(len(alignmentList), len(linkGrp))
                     corporaDict[fromdoc] = alignmentList
         
         dump = json.dumps(corporaDict)
