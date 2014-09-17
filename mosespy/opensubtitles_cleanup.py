@@ -268,6 +268,7 @@ def getLines(gzipDoc):
                 if w.tag == "w":
                     wordList.append(w.text.strip())
             lines.append(" ".join(wordList))
+    print str(lines)
     return lines
     
    
