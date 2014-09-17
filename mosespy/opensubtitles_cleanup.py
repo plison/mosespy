@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip
+import  math, sys, gzip, json
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -207,7 +207,10 @@ class XCESCorpus(AlignedSubtitles):
         
                   
     def getAlignments(self):
-                
+        
+        if Path(self.xcesFile+".json").exists():
+            return json.loads((self.xcesFile+".json").read())
+        
         print "Extracting alignments"
         basePaths = [self.xcesFile.getUp() + "/OpenSubtitles2013/xml/", 
                      self.xcesFile.getUp() + "/OpenSubtitles2013/"]
@@ -227,7 +230,6 @@ class XCESCorpus(AlignedSubtitles):
                 
                 fromLines = gzip.open(fromdoc, 'r').readlines()
                 toLines = gzip.open(todoc, 'r').readlines()
-                print "Processing alignment %s - %s (nb. lines: %i/%i)"%(fromdoc, todoc, len(fromLines), len(toLines))
                 alignmentList = []
                 for link in linkGrp:
                     if link.tag == 'link':
@@ -236,18 +238,18 @@ class XCESCorpus(AlignedSubtitles):
                         targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
                         if len(sourceLines) == 0 or len(targetLines)==0:
                             continue       
-                        try:      
-                            sourceLine = " ".join([fromLines[s].strip() for s in sourceLines])
-                            targetLine = " ".join([toLines[s].strip() for s in targetLines])
-                            alignmentList.append((sourceLine, targetLine))
-                        except IndexError:
-                            print "source lines is %s and target lines %s"%(str(sourceLines), str(targetLines))
-                            
+                        sourceLine = " ".join([fromLines[s].strip() for s in sourceLines])
+                        targetLine = " ".join([toLines[s].strip() for s in targetLines])
+                        alignmentList.append((sourceLine, targetLine))
+                              
                 if len(alignmentList) < len(linkGrp)/2:
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
                 else:
                     corporaDict[fromdoc] = alignmentList
-                    
+        
+        dump = json.dumps(corporaDict)
+        Path(self.xcesFile + ".json").write(dump)
+            
         return corporaDict
     
    
