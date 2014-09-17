@@ -265,8 +265,10 @@ def getLines(gzipDoc):
         if s.tag == "s":
             wordList = []
             for w in s:
-                if w.tag == "w":
+                if w.tag == "w" and w.text:
                     wordList.append(w.text.strip())
+                elif w.tag == w:
+                    print "empty word for " + str(gzipDoc)
             lines.append(" ".join(wordList))
     return lines
     
