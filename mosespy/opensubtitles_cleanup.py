@@ -149,17 +149,17 @@ class AlignedSubtitles(object):
         training = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
         testDirs = training.selectDirectories(nbTestFiles)
-        test = self.extractBestAlignments(testDirs, True)
+        test = training.extractBestAlignments(testDirs, True)
         
         training.removeDirs(testDirs)
      
         devdirs = training.selectDirectories(nbDevFiles)
-        dev = self.extractBestAlignments(devdirs, True)
+        dev = training.extractBestAlignments(devdirs, True)
 
         training.removeDirs(devdirs)
 
         tuneDirs = training.selectDirectories(nbTuningFiles)
-        tune = self.extractBestAlignments(tuneDirs, False)
+        tune = training.extractBestAlignments(tuneDirs, False)
 
         training.removeDirs(tuneDirs)
         
@@ -232,8 +232,8 @@ class XCESCorpus(AlignedSubtitles):
                 if not todoc.exists():
                     raise RuntimeError("could not find " + todoc)
                 
-                fromLines = gzip.open(fromdoc, 'r').readlines()
-                toLines = gzip.open(todoc, 'r').readlines()
+                fromLines = getLines(fromdoc)
+                toLines = getLines(todoc)
                 alignmentList = []
                 for link in linkGrp:
                     if link.tag == 'link':
@@ -255,6 +255,20 @@ class XCESCorpus(AlignedSubtitles):
         Path(self.xcesFile + ".json").write(dump)
             
         return corporaDict
+
+
+def getLines(gzipDoc):
+    text = gzip.open(gzipDoc, 'r').read()
+    root = etree.fromstring(text)
+    lines = []
+    for s in root:
+        if s.tag == "s":
+            wordList = []
+            for w in s:
+                if w.tag == "w":
+                    wordList.append(w.text.strip())
+            lines.append(" ".join(wordList))
+    return lines
     
    
 if __name__ == '__main__':
