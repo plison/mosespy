@@ -83,7 +83,7 @@ class AlignedSubtitles(object):
         nbTranslations = 1
         for a in self.aligns:
             for p in self.aligns[a]:
-                if isinstance(p[1], set) and len(p[1]) > nbTranslations:
+                if isinstance(p[1], list) and len(p[1]) > nbTranslations:
                     nbTranslations = len(p[1])
         print "number of alternative translations: " + str(nbTranslations)
         return nbTranslations
@@ -175,7 +175,7 @@ class AlignedSubtitles(object):
         for document in self.aligns:
             for pair in self.aligns[document]:
                 srcFile.write(pair[0].encode("UTF-8"))
-                trgLine = pair[1][0] if isinstance(pair[1], set) else pair[1]
+                trgLine = pair[1][0] if isinstance(pair[1], list) else pair[1]
                 trgFile.write(trgLine.encode("UTF-8"))
                 for i in range(0, len(altFiles)):
                     altLine = pair[1][i] if i < len(pair[i]) else ""
