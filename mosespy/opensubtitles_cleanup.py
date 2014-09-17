@@ -226,7 +226,8 @@ class XCESCorpus(AlignedSubtitles):
                     raise RuntimeError("could not find " + todoc)
                 
                 fromLines = fromdoc.readlines()
-                toLines = todoc.readlines() 
+                toLines = todoc.readlines()
+                print "Processing alignment %s - %s (nb. lines: %i/%i)"%(fromdoc, todoc, len(fromLines), len(toLines))
                 alignmentList = []
                 for link in linkGrp:
                     if link.tag == 'link':
@@ -234,11 +235,14 @@ class XCESCorpus(AlignedSubtitles):
                         sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
                         targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
                         if len(sourceLines) == 0 or len(targetLines)==0:
-                            continue             
-                        sourceLine = " ".join([fromLines[s].strip() for s in sourceLines])
-                        targetLine = " ".join([toLines[s].strip() for s in targetLines])
-                        alignmentList.append((sourceLine, targetLine))
-                        
+                            continue       
+                        try:      
+                            sourceLine = " ".join([fromLines[s].strip() for s in sourceLines])
+                            targetLine = " ".join([toLines[s].strip() for s in targetLines])
+                            alignmentList.append((sourceLine, targetLine))
+                        except IndexError:
+                            print "source lines is %s and target lines %s"%(str(sourceLines), str(targetLines))
+                            
                 if len(alignmentList) < len(linkGrp)/2:
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
                 else:
