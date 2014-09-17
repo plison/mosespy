@@ -103,8 +103,11 @@ class AlignedSubtitles(object):
         
         
     def removeDirs(self, dirsToRemove):
-        self.aligns = {x:self.aligns[x] for x in self.aligns 
-                       if x.getUp() not in dirsToRemove}
+        newAligns = {}
+        for a in self.aligns:
+            if a.getUp() not in dirsToRemove:
+                newAligns[a] = self.aligns[a]
+        self.aligns = newAligns
          
 
     def getInverse(self):
