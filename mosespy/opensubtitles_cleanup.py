@@ -233,7 +233,6 @@ class XCESCorpus(AlignedSubtitles):
                     raise RuntimeError("could not find " + todoc)
                 
                 fromLines = getLines(fromdoc)
-                print "Fromdoc: %s giving lines %s"%(fromdoc, str(fromLines))
                 toLines = getLines(todoc)
                 alignmentList = []
                 for link in linkGrp:
@@ -243,8 +242,8 @@ class XCESCorpus(AlignedSubtitles):
                         targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
                         if len(sourceLines) == 0 or len(targetLines)==0:
                             continue       
-                        sourceLine = " ".join([fromLines[s].strip() for s in sourceLines])
-                        targetLine = " ".join([toLines[s].strip() for s in targetLines])
+                        sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
+                        targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
                         alignmentList.append((sourceLine, targetLine))
                               
                 if len(alignmentList) < len(linkGrp)/2:
