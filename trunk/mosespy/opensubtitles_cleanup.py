@@ -73,8 +73,10 @@ class AlignedSubtitles(object):
                         if otherPair and initPair[0] == otherPair[0]:
                             correlatedAligns[fromdoc][i][1].add(otherPair[1])
                             break                         
-            
+        
         self.aligns = correlatedAligns
+        for d in self.aligns:
+            self.aligns[d] = [(s,list(t)) for (s,t) in self.aligns[d]]
         
     
     def getNbAlternativeTranslations(self):
@@ -173,10 +175,11 @@ class AlignedSubtitles(object):
         for document in self.aligns:
             for pair in self.aligns[document]:
                 srcFile.write(pair[0].encode("UTF-8"))
-                trgLine = list(pair[1])[0] if isinstance(pair[1], set) else pair[1]
+                trgLine = pair[1][0] if isinstance(pair[1], set) else pair[1]
                 trgFile.write(trgLine.encode("UTF-8"))
                 for i in range(0, len(altFiles)):
-                    altFiles[i].write(list(pair[1])[i].encode("UTF-8"))
+                    altLine = pair[1][i] if i < len(pair[i]) else ""
+                    altFiles[i].write(altLine.encode("UTF-8"))
         
         srcFile.close()
         trgFile.close()
