@@ -59,22 +59,18 @@ class AlignedSubtitles(object):
     
     
     def addAlternatives(self):
-        print "Adding alternatives for " + str(self.aligns)
         correlatedAligns = {}
         for fromdoc in self.aligns:
             print "Search correlated sources for " + fromdoc
             initAligns = self.aligns[fromdoc]
             correlatedAligns[fromdoc] = [set() for _ in range(0, len(self.aligns[fromdoc]))]
-            for otherfromDoc in [x for x in self.aligns.keys()]:
-                                     
+            for otherfromDoc in self.aligns:                              
                 otherAligns = self.aligns[otherfromDoc]
-    
                 for i in range(0, len(initAligns)):
                     initPair = initAligns[i]  
                     for k in range(i-int(10*math.log(i+1)), i+int(10*math.log(i+1))):
-                        otherPair = otherAligns[k] if k < len(otherAligns) else None
-                        
-                        if initPair[0] == otherPair[0]:
+                        otherPair = otherAligns[k] if k < len(otherAligns) else None  
+                        if otherPair and initPair[0] == otherPair[0]:
                             correlatedAligns[fromdoc][i].add(otherPair[1])
                             break                         
             
