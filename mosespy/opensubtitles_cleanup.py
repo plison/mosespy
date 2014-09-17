@@ -71,7 +71,7 @@ class AlignedSubtitles(object):
     
                 for i in range(0, len(initAligns)):
                     initPair = initAligns[i]  
-                    for k in range(i-int(10*math.log(i)), i+int(10*math.log(i))):
+                    for k in range(i-int(10*math.log(i+1)), i+int(10*math.log(i+1))):
                         otherPair = otherAligns[k] if k < len(otherAligns) else None
                         
                         if initPair[0] == otherPair[0]:
