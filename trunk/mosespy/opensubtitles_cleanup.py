@@ -87,6 +87,7 @@ class AlignedSubtitles(object):
             for p in self.aligns[a]:
                 if isinstance(p[1], set) and len(p[1]) > nbTranslations:
                     nbTranslations = len(p[1])
+        print "number of alternative translations: " + str(nbTranslations)
         return nbTranslations
        
         
@@ -208,7 +209,11 @@ class XCESCorpus(AlignedSubtitles):
     def getAlignments(self):
         
         if Path(self.xcesFile+".json").exists():
-            return json.loads((self.xcesFile+".json").read())
+            dump = json.loads((self.xcesFile+".json").read())
+            newAligns = {}
+            for a in dump:
+                newAligns[Path(a)] = dump[a]
+            return newAligns
         
         print "Extracting alignments"
         basePaths = [self.xcesFile.getUp() + "/OpenSubtitles2013/xml/", 
