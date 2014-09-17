@@ -233,6 +233,7 @@ class XCESCorpus(AlignedSubtitles):
                     raise RuntimeError("could not find " + todoc)
                 
                 fromLines = getLines(fromdoc)
+                print "Fromdoc: %s giving lines %s"%(fromdoc, str(fromLines))
                 toLines = getLines(todoc)
                 alignmentList = []
                 for link in linkGrp:
@@ -268,7 +269,6 @@ def getLines(gzipDoc):
                 if w.tag == "w":
                     wordList.append(w.text.strip())
             lines.append(" ".join(wordList))
-    print str(lines)
     return lines
     
    
