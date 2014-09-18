@@ -111,8 +111,9 @@ class AlignedSubtitles(object):
 
     def getInverse(self):
         invertedDict = {}
+        flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.aligns:
-            invertedDict[a] = [(t,s) for (s,t) in self.aligns[a]]
+            invertedDict[a] = [(flatten(t),s) for (s,t) in self.aligns[a]]
         return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
@@ -293,5 +294,8 @@ if __name__ == '__main__':
         tune.generateMosesFiles(stem + ".tune")
         dev.generateMosesFiles(stem + ".dev")
         test.generateMosesFiles(stem + ".test")
+        
+        dev.getInverse().generateMosesFiles(stem + ".dev")
+        test.getInverse().generateMosesFiles(stem + ".test")
 
 
