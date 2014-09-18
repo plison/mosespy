@@ -87,13 +87,7 @@ class AlignedSubtitles(object):
                     nbTranslations = len(p[1])
         return nbTranslations
        
-        
-    def getBestAlignment(self):
-        self.addAlternatives()
-        sortedKeys = sorted(self.aligns, key=lambda x: 
-                            max([len(y) for y in self.aligns[x]]))
-        return self.extractSubset([sortedKeys[-1]]) 
-    
+
     
     def addSubtitles(self, alignedSubtitles):
         self.aligns.update(alignedSubtitles.aligns)   
@@ -138,13 +132,17 @@ class AlignedSubtitles(object):
 
 
     
-    def extractBestAlignments(self, directories):
+    def extractBestAlignments(self, directories, addAlternatives=False):
         
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
-            bestAlignment = alignsInDir.getBestAlignment()
+            if addAlternatives:
+                alignsInDir.addAlternatives()
+            alignedDocs= alignsInDir.aligns.keys()
+            alignedDocs.sort(key=lambda x: max([len(y) for y in alignsInDir.aligns[x]]))
+            bestAlignment = alignsInDir.extractSubset([alignedDocs[-1]])
             alignedData.addSubtitles(bestAlignment)
 
         return alignedData   
@@ -192,17 +190,17 @@ class AlignedSubtitles(object):
         trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
         testDirs = trainingData.selectDirectories(nbTestFiles)
-        testData = trainingData.extractBestAlignments(testDirs)
+        testData = trainingData.extractBestAlignments(testDirs, True)
         
         trainingData.removeDirs(testDirs)
      
         devdirs = trainingData.selectDirectories(nbDevFiles)
-        devData = trainingData.extractBestAlignments(devdirs)
+        devData = trainingData.extractBestAlignments(devdirs, True)
 
         trainingData.removeDirs(devdirs)
 
         tuneDirs = trainingData.selectDirectories(nbTuningFiles)
-        tuneData = trainingData.extractBestAlignments(tuneDirs)
+        tuneData = trainingData.extractBestAlignments(tuneDirs, False)
 
         trainingData.removeDirs(tuneDirs)
         
