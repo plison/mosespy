@@ -205,7 +205,7 @@ def normalise(line):
         line = line.strip()
         line = re.sub(r"\s+", " ", line)
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
-        line = re.sub(r"\<s|unk|\/s|\s*and\s*|)\>", "", line)
+        line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
         line = re.sub(r"\[\s*and\s*\]", "", line)
         line = re.sub(r"\|", "_", line)
         return (line + "\n").encode("UTF-8")
