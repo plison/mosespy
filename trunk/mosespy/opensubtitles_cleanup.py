@@ -77,7 +77,7 @@ class AlignedSubtitles(object):
         self.aligns = correlatedAligns
         for d in self.aligns:
             self.aligns[d] = [(s,list(t)) for (s,t) in self.aligns[d]]
-        
+        return self        
     
     def getNbAlternativeTranslations(self):
         nbTranslations = 1
@@ -313,10 +313,10 @@ if __name__ == '__main__':
         dev.generateMosesFiles(stem + ".dev")
         test.generateMosesFiles(stem + ".test")
         
-        devInv = dev.getInverse().getBestAlignment()
+        devInv = dev.getInverse().addAlternatives()
         devInv.generateMosesFiles(stem + ".dev2")
         
-        testInv = test.getInverse().getBestAlignment()
+        testInv = test.getInverse().addAlternatives()
         testInv.generateMosesFiles(stem + ".test2")
 
 
