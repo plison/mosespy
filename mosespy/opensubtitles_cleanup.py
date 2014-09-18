@@ -268,7 +268,6 @@ class XCESCorpus(AlignedSubtitles):
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
                     print "alignment list: %i vs %i"%(len(alignmentList), len(linkGrp)/2)
                 else:
-                    print "Adding document " + fromdoc
                     corporaDict[fromdoc] = alignmentList
         
         dump = json.dumps(corporaDict)
