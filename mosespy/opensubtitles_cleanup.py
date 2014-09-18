@@ -238,9 +238,9 @@ class XCESCorpus(AlignedSubtitles):
             return newAligns
         
         print "Extracting alignments"
-
         corporaDict = {}
-        for linkGrp in self.xmlRoot:
+        for l in range(0, len(self.xmlRoot)):
+            linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
                 fromdoc = self.expandPath(linkGrp.attrib['fromDoc'])
                 todoc =  self.expandPath(linkGrp.attrib['toDoc'])
@@ -265,6 +265,8 @@ class XCESCorpus(AlignedSubtitles):
                     print "alignment list: %i vs %i"%(len(alignmentList), len(linkGrp)/2)
                 else:
                     corporaDict[fromdoc] = alignmentList
+            if not (l % len(self.xmlRoot)/100):
+                print "... %s %% of alignments extracted"%((l*100/len(self.xmlRoot)))
         
         dump = json.dumps(corporaDict)
         Path(self.xcesFile + ".json").write(dump)
@@ -338,6 +340,21 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         baseStem = Path(xcesFile.replace(".xml", ""))
             
-        corpus.generateMosesFiles(baseStem)
+        train, tune, dev, test = corpus.divideData()
+        
+        for inDir in baseStem.getUp().listdir():
+            if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
+                inDir.remove()
+        
+        train.generateMosesFiles(baseStem + ".train")
+        tune.generateMosesFiles(baseStem + ".tune")
+        dev.generateMosesFiles(baseStem + ".dev")
+        test.generateMosesFiles(baseStem)
+        
+        devInv = dev.getInverse().addAlternatives()
+        devInv.generateMosesFiles(baseStem + ".dev")
+        
+        testInv = test.getInverse().addAlternatives()
+        testInv.generateMosesFiles(baseStem + ".test")
 
 
