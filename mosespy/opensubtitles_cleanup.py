@@ -63,7 +63,7 @@ class AlignedSubtitles(object):
         for fromdoc in self.aligns:
             print "Search correlated sources for " + fromdoc
             initAligns = self.aligns[fromdoc]
-            correlatedAligns[fromdoc] = [(s,set([t])) for (s,t) in initAligns if t]
+            correlatedAligns[fromdoc] = [(s,set([t] if t else [])) for (s,t) in initAligns]
             for otherfromDoc in [x for x in self.aligns if x!=fromdoc]:                              
                 otherAligns = self.aligns[otherfromDoc]
                 for i in range(0, len(initAligns)):
