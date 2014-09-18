@@ -280,8 +280,8 @@ def getLines(gzipDoc):
             for w in s:
                 if w.tag == "w" and w.text:
                     wordList.append(w.text.strip())
-            if not " ".join(wordList):
-                print "UH? " + gzipDoc
+            if not wordList:
+                print etree.dump(s)
             lines.append(" ".join(wordList))
     return lines
     
