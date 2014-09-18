@@ -130,13 +130,12 @@ class AlignedSubtitles(object):
  
   
     
-    def extractBestAlignments(self, directories, inverse=False):
+    def extractBestAlignments(self, directories):
            
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
-            alignsInDir = alignsInDir.getInverse() if inverse else alignsInDir
             bestAlignment = alignsInDir.getBestAlignment()
             alignedData.addSubtitles(bestAlignment)
 
@@ -148,17 +147,17 @@ class AlignedSubtitles(object):
         training = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
         testDirs = training.selectDirectories(nbTestFiles)
-        test = training.extractBestAlignments(testDirs, True)
+        test = training.extractBestAlignments(testDirs)
         
         training.removeDirs(testDirs)
      
         devdirs = training.selectDirectories(nbDevFiles)
-        dev = training.extractBestAlignments(devdirs, True)
+        dev = training.extractBestAlignments(devdirs)
 
         training.removeDirs(devdirs)
 
         tuneDirs = training.selectDirectories(nbTuningFiles)
-        tune = training.extractBestAlignments(tuneDirs, False)
+        tune = training.extractBestAlignments(tuneDirs)
 
         training.removeDirs(tuneDirs)
         
@@ -210,6 +209,7 @@ class XCESCorpus(AlignedSubtitles):
              
         AlignedSubtitles.__init__(self, self.getAlignments(), sourceLang, targetLang)
         print "Finished parsing file " + xcesFile
+        print "Source lang: %s, target lang: %s"%(sourceLang, targetLang)
         
                   
     def getAlignments(self):
