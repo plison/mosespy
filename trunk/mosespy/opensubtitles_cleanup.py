@@ -280,6 +280,10 @@ def getLines(gzipDoc):
             for w in s:
                 if w.tag == 'w' and w.text != None:
                     wordList.append(w.text.strip())
+                else:
+                    for ww in w:
+                        if ww.tag == 'w' and ww.text != None:
+                            wordList.append(ww.text.strip())
             if not wordList:
                 print etree.dump(s)
             lines.append(" ".join(wordList))
