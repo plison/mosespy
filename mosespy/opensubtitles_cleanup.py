@@ -295,7 +295,7 @@ if __name__ == '__main__':
         dev.generateMosesFiles(stem + ".dev")
         test.generateMosesFiles(stem + ".test")
         
-        dev.getInverse().generateMosesFiles(stem + ".dev")
-        test.getInverse().generateMosesFiles(stem + ".test")
+   #     dev.getInverse().generateMosesFiles(stem + ".dev")
+   #     test.getInverse().generateMosesFiles(stem + ".test")
 
 
