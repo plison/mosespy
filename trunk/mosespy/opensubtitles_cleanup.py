@@ -114,6 +114,9 @@ class AlignedSubtitles(object):
         flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.aligns:
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.aligns[a]]
+        print "Number of docs: %i vs. %i"%(len(self.aligns.keys()), len(invertedDict.keys()))
+        print "Number of alignments1 " + str([len(self.aligns[a]) for a in self.aligns])
+        print "Number of alignments2 " + str([len(invertedDict[a]) for a in invertedDict])
         return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
