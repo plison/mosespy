@@ -295,7 +295,10 @@ if __name__ == '__main__':
         dev.generateMosesFiles(stem + ".dev")
         test.generateMosesFiles(stem + ".test")
         
-   #     dev.getInverse().generateMosesFiles(stem + ".dev")
-   #     test.getInverse().generateMosesFiles(stem + ".test")
+        devInv = dev.getInverse().getBestAlignment()
+        devInv.generateMosesFiles(stem + ".dev")
+        
+        testInv = test.getInverse().getBestAlignment()
+        testInv.generateMosesFiles(stem + ".test")
 
 
