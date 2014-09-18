@@ -223,8 +223,7 @@ class XCESCorpus(AlignedSubtitles):
                 targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
                 break
              
-        AlignedSubtitles.__init__(self, self.getAlignments(), self.xcesFile.getUp(), 
-                                  sourceLang, targetLang)
+        AlignedSubtitles.__init__(self, self.getAlignments(), sourceLang, targetLang)
         print "Finished parsing file " + xcesFile
         print "Source lang: %s, target lang: %s"%(sourceLang, targetLang)
         
