@@ -282,14 +282,13 @@ def getLines(gzipDoc):
             lines.append(line)
     return lines
 
-def getLine(chunk):
+def getLine(xmlChunk):
     wordList = []
-    for w in chunk:
+    for w in xmlChunk:
         if w.tag == 'w' and w.text != None:
             wordList.append(w.text.strip())
         else:
-            for ww in w:
-                wordList.append(getLine(ww.text))                    
+            wordList.append(getLine(w))                    
     return " ".join(wordList)
     
    
