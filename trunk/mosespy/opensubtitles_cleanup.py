@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, json, re
+import  math, sys, gzip, json, re, codecs
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -165,11 +165,11 @@ class AlignedSubtitles(object):
     def generateMosesFiles(self, stem):
         nbTranslations = self.getNbAlternativeTranslations()
         
-        srcFile = open(stem+"." + self.sourceLang, 'w', "utf-8")
-        trgFile = open(stem + "." + self.targetLang, 'w', "utf-8")
+        srcFile = codecs.open(stem+"." + self.sourceLang, 'w', "utf-8")
+        trgFile = codecs.open(stem + "." + self.targetLang, 'w', "utf-8")
         altFiles = []
         if nbTranslations > 1:      
-            altFiles = [open((trgFile.name + str(i)), 'w', "utf-8") 
+            altFiles = [codecs.open((trgFile.name + str(i)), 'w', "utf-8") 
                         for i in range(0, nbTranslations)]
         
         # Sorted by year, then number
