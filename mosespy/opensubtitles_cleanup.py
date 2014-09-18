@@ -252,7 +252,8 @@ class XCESCorpus(AlignedSubtitles):
                             continue       
                         sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
                         targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
-                        alignmentList.append((sourceLine, targetLine))
+                        if sourceLine and targetLine:
+                            alignmentList.append((sourceLine, targetLine))
                               
                 if len(alignmentList) < len(linkGrp)/2:
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
