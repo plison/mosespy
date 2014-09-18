@@ -85,7 +85,6 @@ class AlignedSubtitles(object):
             for p in self.aligns[a]:
                 if isinstance(p[1], list) and len(p[1]) > nbTranslations:
                     nbTranslations = len(p[1])
-        print "number of alternative translations: " + str(nbTranslations)
         return nbTranslations
        
         
@@ -141,7 +140,6 @@ class AlignedSubtitles(object):
     
     def extractBestAlignments(self, directories):
         
-        print "Directories to extract: " + str(directories)
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
         for testDir in directories:
@@ -155,6 +153,8 @@ class AlignedSubtitles(object):
     
     def generateMosesFiles(self, stem):
         nbTranslations = self.getNbAlternativeTranslations()
+        print ("Generating bitexts %s.%s -> %s.%s (number of translations: %i)"
+               %(stem, self.sourceLang, stem, self.targetLang, nbTranslations))
         
         srcFile = codecs.open(stem+"." + self.sourceLang, 'w', "utf-8")
         trgFile = codecs.open(stem + "." + self.targetLang, 'w', "utf-8")
@@ -338,6 +338,7 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         baseStem = Path(xcesFile.replace(".xml", ""))
             
+        corpus.generateMosesFiles(baseStem)
         train, tune, dev, test = corpus.divideData()
         
         for inDir in baseStem.getUp().listdir():
