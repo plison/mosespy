@@ -347,7 +347,7 @@ if __name__ == '__main__':
         train.generateMosesFiles(baseStem + ".train")
         tune.generateMosesFiles(baseStem + ".tune")
         dev.generateMosesFiles(baseStem + ".dev")
-        test.generateMosesFiles(baseStem)
+        test.generateMosesFiles(baseStem+ ".test")
         
         devInv = dev.getInverse().addAlternatives()
         devInv.generateMosesFiles(baseStem + ".dev")
