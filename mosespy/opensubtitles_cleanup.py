@@ -339,21 +339,5 @@ if __name__ == '__main__':
         baseStem = Path(xcesFile.replace(".xml", ""))
             
         corpus.generateMosesFiles(baseStem)
-        train, tune, dev, test = corpus.divideData()
-        
-        for inDir in baseStem.getUp().listdir():
-            if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
-                inDir.remove()
-        
-        train.generateMosesFiles(baseStem + ".train")
-        tune.generateMosesFiles(baseStem + ".tune")
-        dev.generateMosesFiles(baseStem + ".dev")
-        test.generateMosesFiles(baseStem)
-        
-        devInv = dev.getInverse().addAlternatives()
-        devInv.generateMosesFiles(baseStem + ".dev")
-        
-        testInv = test.getInverse().addAlternatives()
-        testInv.generateMosesFiles(baseStem + ".test")
 
 
