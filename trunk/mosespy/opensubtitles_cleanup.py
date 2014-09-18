@@ -281,7 +281,7 @@ def getLines(gzipDoc):
                 if w.tag == "w" and w.text:
                     wordList.append(w.text.strip())
             if not " ".join(wordList):
-                print "UH?"
+                print "UH? " + gzipDoc
             lines.append(" ".join(wordList))
     return lines
     
