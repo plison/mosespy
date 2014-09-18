@@ -276,18 +276,21 @@ def getLines(gzipDoc):
     lines = []
     for s in root:
         if s.tag == 's':
-            wordList = []
-            for w in s:
-                if w.tag == 'w' and w.text != None:
-                    wordList.append(w.text.strip())
-                else:
-                    for ww in w:
-                        if ww.tag == 'w' and ww.text != None:
-                            wordList.append(ww.text.strip())
-            if not wordList:
+            line = getLine(s)
+            if not line:
                 print etree.dump(s)
-            lines.append(" ".join(wordList))
+            lines.append(line)
     return lines
+
+def getLine(chunk):
+    wordList = []
+    for w in chunk:
+        if w.tag == 'w' and w.text != None:
+            wordList.append(w.text.strip())
+        else:
+            for ww in w:
+                wordList.append(getLine(ww.text))                    
+    return " ".join(wordList)
     
    
 if __name__ == '__main__':
