@@ -173,7 +173,8 @@ class AlignedSubtitles(object):
         if nbTranslations > 1:      
             altFiles = [open((trgFile.name + str(i)), 'w') for i in range(0, nbTranslations)]
         
-        for document in self.aligns:
+        alignKeys = sorted(list(self.aligns.keys()))
+        for document in alignKeys:
             for pair in self.aligns[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(normalise(pair[0]))
