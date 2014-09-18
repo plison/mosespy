@@ -156,7 +156,7 @@ class AlignedSubtitles(object):
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
-            print "align keys for " + str(testDir) + ": " + str(alignsInDir.keys())
+            print "align keys for " + str(testDir) + ": " + str(alignsInDir.aligns.keys())
             bestAlignment = alignsInDir.getBestAlignment()
             alignedData.addSubtitles(bestAlignment)
 
