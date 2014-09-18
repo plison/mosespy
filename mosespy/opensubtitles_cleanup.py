@@ -311,8 +311,7 @@ def normalise(line):
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
         line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
         line = re.sub(r"\[\s*and\s*\]", "", line)
-        line = line.translate({ord(u"\u201c"):ord(u"\""), ord(u"\u201d"):ord(u"\""),
-                               ord(u"\u201e"):ord(u"\""), ord(u"\u201f"):ord(u"\"")})
+        line = line.translate({u"\u201c":'"', u"\u201d":'"', u"\u201e":'"', u"\u201f":'"', u"\u2013":'-'})
         line = re.sub(r"\|", "_", line)
         return (line + "\n")
                 
