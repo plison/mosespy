@@ -183,7 +183,8 @@ class AlignedSubtitles(object):
             altFiles = [open((trgFile.name + str(i)), 'w') for i in range(0, nbTranslations)]
         
         # Sorted by year, then number
-        alignKeys = sorted(list(self.aligns.keys()), key=lambda x: int(x.split("/")[1])*100000 + int(x.split("/")[2]))
+        alignKeys = sorted(list(self.aligns.keys()), key=lambda x: 
+                           int(x.split("/")[1])*100000 + int(x.split("/")[2]))
         for document in alignKeys:
             for pair in self.aligns[document]:
                 if pair[0] and pair[1]:
@@ -241,24 +242,15 @@ class XCESCorpus(AlignedSubtitles):
             return newAligns
         
         print "Extracting alignments"
-        basePaths = [self.xcesFile.getUp() + "/OpenSubtitles2013/xml/", 
-                     self.xcesFile.getUp() + "/OpenSubtitles2013/"]
-        
+
         corporaDict = {}
         for linkGrp in self.xmlRoot:
             if linkGrp.tag == 'linkGrp':
-                for basePath in basePaths:
-                    fromdoc = Path(basePath + linkGrp.attrib['fromDoc'])
-                    todoc =  Path(basePath + linkGrp.attrib['toDoc'])
-                    if fromdoc.exists() and todoc.exists():
-                        break
-                if not fromdoc.exists():
-                    raise RuntimeError("could not find " + fromdoc)
-                if not todoc.exists():
-                    raise RuntimeError("could not find " + todoc)
+                fromdoc = linkGrp.attrib['fromDoc']
+                todoc =  linkGrp.attrib['toDoc']
                 
-                fromLines = getLines(fromdoc)
-                toLines = getLines(todoc)
+                fromLines = self.getLines(fromdoc)
+                toLines = self.getLines(todoc)
                 alignmentList = []
                 for link in linkGrp:
                     if link.tag == 'link':
@@ -283,18 +275,26 @@ class XCESCorpus(AlignedSubtitles):
             
         return corporaDict
 
-
-def getLines(gzipDoc):
-    text = gzip.open(gzipDoc, 'r').read()
-    root = etree.fromstring(text)
-    lines = []
-    for s in root:
-        if s.tag == 's':
-            line = getLine(s)
-            if not line:
-                print etree.dump(s)
-            lines.append(line)
-    return lines
+    
+    def getLines(self, gzipDoc):
+                    
+        for basePath in ["/OpenSubtitles2013/xml/","/OpenSubtitles2013/"]:
+            gzipDoc = Path(self.xcesFile.getUp() + basePath + gzipDoc)
+            if gzipDoc.exists():
+                break
+        if not gzipDoc.exists():
+            raise RuntimeError("could not find " + gzipDoc)
+                    
+        text = gzip.open(gzipDoc, 'r').read()
+        root = etree.fromstring(text)
+        lines = []
+        for s in root:
+            if s.tag == 's':
+                line = getLine(s)
+                if not line:
+                    print etree.dump(s)
+                lines.append(line)
+        return lines
 
 def getLine(xmlChunk):
     wordList = []
