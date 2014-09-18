@@ -265,7 +265,7 @@ class XCESCorpus(AlignedSubtitles):
                     print "alignment list: %i vs %i"%(len(alignmentList), len(linkGrp)/2)
                 else:
                     corporaDict[fromdoc] = alignmentList
-            if not (l % len(self.xmlRoot)/100):
+            if not (l % len(self.xmlRoot)/1000):
                 print "... %s %% of alignments extracted"%((l*100/len(self.xmlRoot)))
         
         dump = json.dumps(corporaDict)
