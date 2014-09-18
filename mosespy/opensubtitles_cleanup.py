@@ -174,17 +174,23 @@ class AlignedSubtitles(object):
         
         for document in self.aligns:
             for pair in self.aligns[document]:
-                srcFile.write(pair[0].encode("UTF-8"))
-                trgLine = pair[1][0] if isinstance(pair[1], list) else pair[1]
-                trgFile.write(trgLine.encode("UTF-8"))
+                srcFile.write(normalise(pair[0]))
+                trgFile.write(normalise(pair[1]))
                 for i in range(0, len(altFiles)):
                     altLine = pair[1][i] if i < len(pair[1]) else ""
-                    altFiles[i].write(altLine.encode("UTF-8"))
+                    altFiles[i].write(normalise(altLine))
         
         srcFile.close()
         trgFile.close()
         for altFile in altFiles:
             altFile.close()
+            
+    
+def normalise(line):
+    if isinstance(line, list):
+        return normalise(line[0])
+    else:
+        return (line.strip() + "\n").encode("UTF-8")
                 
               
 
