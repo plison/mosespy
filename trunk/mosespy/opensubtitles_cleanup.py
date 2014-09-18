@@ -169,8 +169,9 @@ class AlignedSubtitles(object):
         
         srcFile = open(stem+"." + self.sourceLang, 'w')
         trgFile = open(stem + "." + self.targetLang, 'w')
-        altFiles = ([open((trgFile.name + str(i)), 'w') for i in range(0, nbTranslations)]
-                    if nbTranslations > 1 else [])
+        altFiles = []
+        if nbTranslations > 1:      
+            altFiles = [open((trgFile.name + str(i)), 'w') for i in range(0, nbTranslations)]
         
         for document in self.aligns:
             for pair in self.aligns[document]:
@@ -287,7 +288,7 @@ if __name__ == '__main__':
         xcesFile = sys.argv[1]
         corpus = XCESCorpus(xcesFile)
         train, tune, dev, test = corpus.divideData()
-        
+        print "Development files: " + str(dev.aligns.keys())
         stem = xcesFile.replace(".xml", "")
         
         train.generateMosesFiles(stem + ".train")
