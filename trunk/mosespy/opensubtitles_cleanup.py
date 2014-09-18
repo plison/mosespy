@@ -167,7 +167,7 @@ class AlignedSubtitles(object):
         
         prefix = os.path.commonprefix(self.aligns.keys())
         alignKeys = [x.replace(prefix, "") for x in list(self.aligns.keys())]
-        alignKeys.sort(key=lambda x : int(x.split("/")[0])*100000 + int(x.split("/")[1]))              
+        alignKeys.sort(key=lambda x : opushash(x))              
                            
         for document in alignKeys:
             document = prefix + document
@@ -183,6 +183,7 @@ class AlignedSubtitles(object):
         trgFile.close()
         for altFile in altFiles:
             altFile.close()
+
             
 
      
@@ -299,7 +300,16 @@ def getLine(xmlChunk):
         else:
             wordList.append(getLine(w))                    
     return " ".join(wordList)
-    
+
+
+def opushash(path):
+    year = int(path.split("/")[0])
+    number = path.split("/")[1]
+    result = year*1000000000
+    for i in range(0, min(6,len(number))):
+        result += ord(number[i])*(100000/math.pow(10,i))
+    return result
+        
         
     
 def normalise(line):
