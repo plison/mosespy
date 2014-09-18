@@ -255,8 +255,8 @@ class XCESCorpus(AlignedSubtitles):
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
                         else:
-                            print "srcline " + sourceLine
-                            print "trgline " + targetLine
+                            print "srcline " + sourceLine + " srclines " + str(sourceLines)
+                            print "trgline " + targetLine+ " trglines " + str(targetLines)
                               
                 if len(alignmentList) < len(linkGrp)/2:
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
