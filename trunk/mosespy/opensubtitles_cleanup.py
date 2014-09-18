@@ -63,7 +63,7 @@ class AlignedSubtitles(object):
         for fromdoc in self.aligns:
             print "Search correlated sources for " + fromdoc
             initAligns = self.aligns[fromdoc]
-            correlatedAligns[fromdoc] = [(s,set([t])) for (s,t) in initAligns]
+            correlatedAligns[fromdoc] = [(s,set([t])) for (s,t) in initAligns if t]
             for otherfromDoc in [x for x in self.aligns if x!=fromdoc]:                              
                 otherAligns = self.aligns[otherfromDoc]
                 for i in range(0, len(initAligns)):
@@ -175,11 +175,12 @@ class AlignedSubtitles(object):
         
         for document in self.aligns:
             for pair in self.aligns[document]:
-                srcFile.write(normalise(pair[0]))
-                trgFile.write(normalise(pair[1]))
-                for i in range(0, len(altFiles)):
-                    altLine = pair[1][i] if i < len(pair[1]) else ""
-                    altFiles[i].write(normalise(altLine))
+                if pair[0] and pair[1]:
+                    srcFile.write(normalise(pair[0]))
+                    trgFile.write(normalise(pair[1]))
+                    for i in range(0, len(altFiles)):
+                        altLine = pair[1][i] if i < len(pair[1]) else ""
+                        altFiles[i].write(normalise(altLine))
         
         srcFile.close()
         trgFile.close()
