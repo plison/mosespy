@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, json, re, codecs
+import  math, sys, gzip, json, re, codecs, os
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -45,9 +45,8 @@ import xml.etree.cElementTree as etree
 
 class AlignedSubtitles(object):
     
-    def __init__(self, corporaDict, baseDir, sourceLang, targetLang):
+    def __init__(self, corporaDict, sourceLang, targetLang):
         self.aligns = corporaDict
-        self.baseDir = baseDir
         self.sourceLang = sourceLang
         self.targetLang = targetLang
           
@@ -56,7 +55,7 @@ class AlignedSubtitles(object):
         subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                   map(None, subsetkeys, map(self.aligns.get, subsetkeys)), {})
         
-        return AlignedSubtitles(subdico, self.baseDir, self.sourceLang, self.targetLang)
+        return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
     
     def addAlternatives(self):
@@ -120,23 +119,14 @@ class AlignedSubtitles(object):
         if len(self.aligns) < 20:
             raise RuntimeError("not enough data to divide")
         print "Sorting data by number of duplicates"
-        sources = sorted(self.aligns.keys(), key=lambda x : len(self.expandPath(x).getUp().listdir()))
+        sources = sorted(self.aligns.keys(), key=lambda x : len(x.getUp().listdir()))
         testDirs = set()
         while len(testDirs) < nbDirs:
             sourceFile = sources.pop()
             testDirs.add(sourceFile.getUp())
         return list(testDirs)
 
-   
-    def expandPath(self, doc):               
-        for basePath in ["/OpenSubtitles2013/xml/","/OpenSubtitles2013/"]:
-            docPath = Path(self.baseDir + basePath + doc)
-            if docPath.exists():
-                break
-        if not docPath.exists():
-            raise RuntimeError("could not find " + docPath)
-        return docPath
-    
+  
     def getInverse(self):
         invertedDict = {}
         flatten = lambda x : x[0] if isinstance(x,list) else x
@@ -145,14 +135,14 @@ class AlignedSubtitles(object):
         print "Number of docs: %i vs. %i"%(len(self.aligns.keys()), len(invertedDict.keys()))
         print "Number of alignments1 " + str([len(self.aligns[a]) for a in self.aligns])
         print "Number of alignments2 " + str([len(invertedDict[a]) for a in invertedDict])
-        return AlignedSubtitles(invertedDict, self.baseDir, self.targetLang, self.sourceLang)
+        return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
     
     def extractBestAlignments(self, directories):
         
         print "Directories to extract: " + str(directories)
-        alignedData = AlignedSubtitles({}, self.baseDir, self.sourceLang, self.targetLang)
+        alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
@@ -175,9 +165,13 @@ class AlignedSubtitles(object):
                         for i in range(0, nbTranslations)]
         
         # Sorted by year, then number
-        alignKeys = sorted(list(self.aligns.keys()), key=lambda x: 
-                           int(x.split("/")[1])*100000 + int(x.split("/")[2]))
+        
+        prefix = os.path.commonprefix(self.aligns.keys())
+        alignKeys = [x.replace(prefix, "") for x in list(self.aligns.keys())]
+        alignKeys.sort(key=lambda x : int(x.split("/")[0])*100000 + int(x.split("/")[1]))              
+                           
         for document in alignKeys:
+            document = prefix + document
             for pair in self.aligns[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(normalise(pair[0]))
@@ -195,8 +189,7 @@ class AlignedSubtitles(object):
      
     def divideData(self, nbTuningFiles=3, nbDevFiles=5, nbTestFiles=5):
         
-        trainingData = AlignedSubtitles(self.aligns, self.baseDir, 
-                                        self.sourceLang, self.targetLang)
+        trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
         testDirs = trainingData.selectDirectories(nbTestFiles)
         testData = trainingData.extractBestAlignments(testDirs)
@@ -250,8 +243,8 @@ class XCESCorpus(AlignedSubtitles):
         corporaDict = {}
         for linkGrp in self.xmlRoot:
             if linkGrp.tag == 'linkGrp':
-                fromdoc = linkGrp.attrib['fromDoc']
-                todoc =  linkGrp.attrib['toDoc']
+                fromdoc = self.expandPath(linkGrp.attrib['fromDoc'])
+                todoc =  self.expandPath(linkGrp.attrib['toDoc'])
                 
                 fromLines = self.getLines(fromdoc)
                 toLines = self.getLines(todoc)
@@ -279,11 +272,19 @@ class XCESCorpus(AlignedSubtitles):
             
         return corporaDict
 
-    
+ 
+    def expandPath(self, doc):               
+        for basePath in ["/OpenSubtitles2013/xml/","/OpenSubtitles2013/"]:
+            docPath = Path(self.xcesFile.getUp() + basePath + doc)
+            if docPath.exists():
+                break
+        if not docPath.exists():
+            raise RuntimeError("could not find " + docPath)
+        return docPath
+        
     def getLines(self, gzipDoc):
         
-        gzipPath = self.expandPath(gzipDoc)                          
-        text = gzip.open(gzipPath, 'r').read()
+        text = gzip.open(gzipDoc, 'r').read()
         root = etree.fromstring(text)
         lines = []
         for s in root:
