@@ -45,8 +45,9 @@ import xml.etree.cElementTree as etree
 
 class AlignedSubtitles(object):
     
-    def __init__(self, corporaDict, sourceLang, targetLang):
+    def __init__(self, corporaDict, baseDir, sourceLang, targetLang):
         self.aligns = corporaDict
+        self.baseDir = baseDir
         self.sourceLang = sourceLang
         self.targetLang = targetLang
           
@@ -55,7 +56,7 @@ class AlignedSubtitles(object):
         subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                   map(None, subsetkeys, map(self.aligns.get, subsetkeys)), {})
         
-        return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
+        return AlignedSubtitles(subdico, self.baseDir, self.sourceLang, self.targetLang)
     
     
     def addAlternatives(self):
@@ -115,6 +116,27 @@ class AlignedSubtitles(object):
         return list(dirs)
          
 
+    def selectDirectories(self, nbDirs=5):
+        if len(self.aligns) < 20:
+            raise RuntimeError("not enough data to divide")
+        print "Sorting data by number of duplicates"
+        sources = sorted(self.aligns.keys(), key=lambda x : len(self.expandPath(x).getUp().listdir()))
+        testDirs = set()
+        while len(testDirs) < nbDirs:
+            sourceFile = sources.pop()
+            testDirs.add(sourceFile.getUp())
+        return list(testDirs)
+
+   
+    def expandPath(self, doc):               
+        for basePath in ["/OpenSubtitles2013/xml/","/OpenSubtitles2013/"]:
+            docPath = Path(self.baseDir + basePath + doc)
+            if docPath.exists():
+                break
+        if not docPath.exists():
+            raise RuntimeError("could not find " + docPath)
+        return docPath
+    
     def getInverse(self):
         invertedDict = {}
         flatten = lambda x : x[0] if isinstance(x,list) else x
@@ -123,25 +145,13 @@ class AlignedSubtitles(object):
         print "Number of docs: %i vs. %i"%(len(self.aligns.keys()), len(invertedDict.keys()))
         print "Number of alignments1 " + str([len(self.aligns[a]) for a in self.aligns])
         print "Number of alignments2 " + str([len(invertedDict[a]) for a in invertedDict])
-        return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
+        return AlignedSubtitles(invertedDict, self.baseDir, self.targetLang, self.sourceLang)
 
 
-    def selectDirectories(self, nbDirs=5):
-        if len(self.aligns) < 20:
-            raise RuntimeError("not enough data to divide")
-        print "Sorting data by number of duplicates"
-        sources = sorted(self.aligns.keys(), key=lambda x : len(x.getUp().listdir()))
-        testDirs = set()
-        while len(testDirs) < nbDirs:
-            sourceFile = sources.pop()
-            testDirs.add(sourceFile.getUp())
-        return list(testDirs)
- 
-  
     
     def extractBestAlignments(self, directories):
            
-        alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
+        alignedData = AlignedSubtitles({}, self.baseDir, self.sourceLang, self.targetLang)
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
@@ -150,28 +160,7 @@ class AlignedSubtitles(object):
 
         return alignedData   
     
-    
-    def divideData(self, nbTuningFiles=3, nbDevFiles=5, nbTestFiles=5):
-        
-        trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
-        
-        testDirs = trainingData.selectDirectories(nbTestFiles)
-        testData = trainingData.extractBestAlignments(testDirs)
-        
-        trainingData.removeDirs(testDirs)
-     
-        devdirs = trainingData.selectDirectories(nbDevFiles)
-        devData = trainingData.extractBestAlignments(devdirs)
 
-        trainingData.removeDirs(devdirs)
-
-        tuneDirs = trainingData.selectDirectories(nbTuningFiles)
-        tuneData = trainingData.extractBestAlignments(tuneDirs)
-
-        trainingData.removeDirs(tuneDirs)
-        
-        return trainingData, tuneData, devData, testData
-    
     
     def generateMosesFiles(self, stem):
         nbTranslations = self.getNbAlternativeTranslations()
@@ -199,20 +188,31 @@ class AlignedSubtitles(object):
         for altFile in altFiles:
             altFile.close()
             
-    
-def normalise(line):
-    if isinstance(line, list):
-        return normalise(line[0])
-    else:
-        line = line.strip()
-        line = re.sub(r"\s+", " ", line)
-        line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
-        line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
-        line = re.sub(r"\[\s*and\s*\]", "", line)
-        line = re.sub(r"\|", "_", line)
-        return (line + "\n").encode("UTF-8")
-                
-              
+
+     
+    def divideData(self, nbTuningFiles=3, nbDevFiles=5, nbTestFiles=5):
+        
+        trainingData = AlignedSubtitles(self.aligns, self.baseDir, 
+                                        self.sourceLang, self.targetLang)
+        
+        testDirs = trainingData.selectDirectories(nbTestFiles)
+        testData = trainingData.extractBestAlignments(testDirs)
+        
+        trainingData.removeDirs(testDirs)
+     
+        devdirs = trainingData.selectDirectories(nbDevFiles)
+        devData = trainingData.extractBestAlignments(devdirs)
+
+        trainingData.removeDirs(devdirs)
+
+        tuneDirs = trainingData.selectDirectories(nbTuningFiles)
+        tuneData = trainingData.extractBestAlignments(tuneDirs)
+
+        trainingData.removeDirs(tuneDirs)
+        
+        return trainingData, tuneData, devData, testData
+        
+       
 
 class XCESCorpus(AlignedSubtitles):
     
@@ -227,7 +227,8 @@ class XCESCorpus(AlignedSubtitles):
                 targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
                 break
              
-        AlignedSubtitles.__init__(self, self.getAlignments(), sourceLang, targetLang)
+        AlignedSubtitles.__init__(self, self.getAlignments(), self.xcesFile.getUp(), 
+                                  sourceLang, targetLang)
         print "Finished parsing file " + xcesFile
         print "Source lang: %s, target lang: %s"%(sourceLang, targetLang)
         
@@ -277,22 +278,14 @@ class XCESCorpus(AlignedSubtitles):
 
     
     def getLines(self, gzipDoc):
-                    
-        for basePath in ["/OpenSubtitles2013/xml/","/OpenSubtitles2013/"]:
-            gzipPath = Path(self.xcesFile.getUp() + basePath + gzipDoc)
-            if gzipPath.exists():
-                break
-        if not gzipPath.exists():
-            raise RuntimeError("could not find " + gzipPath)
-                    
+        
+        gzipPath = self.expandPath(gzipDoc)                          
         text = gzip.open(gzipPath, 'r').read()
         root = etree.fromstring(text)
         lines = []
         for s in root:
             if s.tag == 's':
                 line = getLine(s)
-                if not line:
-                    print etree.dump(s)
                 lines.append(line)
         return lines
 
@@ -305,7 +298,22 @@ def getLine(xmlChunk):
             wordList.append(getLine(w))                    
     return " ".join(wordList)
     
-   
+        
+    
+def normalise(line):
+    if isinstance(line, list):
+        return normalise(line[0])
+    else:
+        line = line.strip()
+        line = re.sub(r"\s+", " ", line)
+        line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
+        line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
+        line = re.sub(r"\[\s*and\s*\]", "", line)
+        line = re.sub(r"\|", "_", line)
+        return (line + "\n").encode("ISO-8859-15")
+                
+           
+              
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print "Usage: opensubtitles_cleanup.py [path to XCESFile]"
