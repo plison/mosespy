@@ -299,7 +299,11 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         train, tune, dev, test = corpus.divideData()
         print "Development files: " + str(dev.aligns.keys())
-        stem = xcesFile.replace(".xml", "")
+        stem = Path(xcesFile.replace(".xml", ""))
+                
+        for inDir in stem.getUp().listdir():
+            if any([(stem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
+                inDir.remove()
         
         train.generateMosesFiles(stem + ".train")
         tune.generateMosesFiles(stem + ".tune")
@@ -307,9 +311,9 @@ if __name__ == '__main__':
         test.generateMosesFiles(stem + ".test")
         
         devInv = dev.getInverse().getBestAlignment()
-        devInv.generateMosesFiles(stem + ".dev")
+        devInv.generateMosesFiles(stem + ".dev2")
         
         testInv = test.getInverse().getBestAlignment()
-        testInv.generateMosesFiles(stem + ".test")
+        testInv.generateMosesFiles(stem + ".test2")
 
 
