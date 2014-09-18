@@ -165,11 +165,12 @@ class AlignedSubtitles(object):
     def generateMosesFiles(self, stem):
         nbTranslations = self.getNbAlternativeTranslations()
         
-        srcFile = open(stem+"." + self.sourceLang, 'w')
-        trgFile = open(stem + "." + self.targetLang, 'w')
+        srcFile = open(stem+"." + self.sourceLang, 'w', "utf-8")
+        trgFile = open(stem + "." + self.targetLang, 'w', "utf-8")
         altFiles = []
         if nbTranslations > 1:      
-            altFiles = [open((trgFile.name + str(i)), 'w') for i in range(0, nbTranslations)]
+            altFiles = [open((trgFile.name + str(i)), 'w', "utf-8") 
+                        for i in range(0, nbTranslations)]
         
         # Sorted by year, then number
         alignKeys = sorted(list(self.aligns.keys()), key=lambda x: 
@@ -313,7 +314,7 @@ def normalise(line):
                                ord(u"\u201e"):ord(u"\""), ord(u"\u201f"):ord(u"\""),
                                ord(u"\u2013"):ord(u"-")})
         line = re.sub(r"\|", "_", line)
-        return (line + "\n").encode("ISO-8859-15")
+        return (line + "\n")
                 
            
               
