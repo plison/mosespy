@@ -125,9 +125,6 @@ class AlignedSubtitles(object):
         flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.aligns:
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.aligns[a]]
-        print "Number of docs: %i vs. %i"%(len(self.aligns.keys()), len(invertedDict.keys()))
-        print "Number of alignments1 " + str([len(self.aligns[a]) for a in self.aligns])
-        print "Number of alignments2 " + str([len(invertedDict[a]) for a in invertedDict])
         return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
@@ -189,19 +186,19 @@ class AlignedSubtitles(object):
         
         trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
+        print "Extracting test data"
         testDirs = trainingData.selectDirectories(nbTestFiles)
-        testData = trainingData.extractBestAlignments(testDirs, True)
-        
+        testData = trainingData.extractBestAlignments(testDirs, True)        
         trainingData.removeDirs(testDirs)
      
+        print "Extracting development data"
         devdirs = trainingData.selectDirectories(nbDevFiles)
         devData = trainingData.extractBestAlignments(devdirs, True)
-
         trainingData.removeDirs(devdirs)
 
+        print "Extracting tuning data"
         tuneDirs = trainingData.selectDirectories(nbTuningFiles)
         tuneData = trainingData.extractBestAlignments(tuneDirs, False)
-
         trainingData.removeDirs(tuneDirs)
         
         return trainingData, tuneData, devData, testData
@@ -258,7 +255,7 @@ class XCESCorpus(AlignedSubtitles):
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
                               
-                if len(alignmentList) < len(linkGrp)/2:
+                if len(alignmentList) < (3*len(linkGrp)/4):
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
                     print "alignment list: %i vs %i"%(len(alignmentList), len(linkGrp)/2)
                 else:
