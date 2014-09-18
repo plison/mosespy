@@ -275,10 +275,10 @@ def getLines(gzipDoc):
     root = etree.fromstring(text)
     lines = []
     for s in root:
-        if s.tag == "s":
+        if s.tag == 's':
             wordList = []
             for w in s:
-                if w.tag == "w" and w.text:
+                if w.tag == 'w' and w.text != None:
                     wordList.append(w.text.strip())
             if not wordList:
                 print etree.dump(s)
