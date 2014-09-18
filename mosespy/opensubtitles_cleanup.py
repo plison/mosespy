@@ -150,11 +150,13 @@ class AlignedSubtitles(object):
 
     
     def extractBestAlignments(self, directories):
-           
+        
+        print "Directories to extract: " + str(directories)
         alignedData = AlignedSubtitles({}, self.baseDir, self.sourceLang, self.targetLang)
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
+            print "align keys for " + str(testDir) + ": " + str(alignsInDir.keys())
             bestAlignment = alignsInDir.getBestAlignment()
             alignedData.addSubtitles(bestAlignment)
 
@@ -326,9 +328,7 @@ if __name__ == '__main__':
         xcesFile = sys.argv[1]
         corpus = XCESCorpus(xcesFile)
         baseStem = Path(xcesFile.replace(".xml", ""))
-   
-        corpus.generateMosesFiles(baseStem)
-         
+            
         train, tune, dev, test = corpus.divideData()
         
         for inDir in baseStem.getUp().listdir():
