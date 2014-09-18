@@ -146,7 +146,6 @@ class AlignedSubtitles(object):
         
         for testDir in directories:
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
-            print "align keys for " + str(testDir) + ": " + str(alignsInDir.aligns.keys())
             bestAlignment = alignsInDir.getBestAlignment()
             alignedData.addSubtitles(bestAlignment)
 
@@ -312,9 +311,9 @@ def normalise(line):
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
         line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
         line = re.sub(r"\[\s*and\s*\]", "", line)
-        line = line.translate({ord(u"\u201c"):ord(u"\""), ord(u"\u201d"):ord(u"\""),
-                               ord(u"\u201e"):ord(u"\""), ord(u"\u201f"):ord(u"\""),
-                               ord(u"\u2013"):ord(u"-")})
+        line = line.translate({ord(u"\u201c"):ord("\""), ord(u"\u201d"):ord("\""),
+                               ord(u"\u201e"):ord("\""), ord(u"\u201f"):ord("\""),
+                               ord(u"\u2013"):ord("-")})
         line = re.sub(r"\|", "_", line)
         return (line + "\n")
                 
