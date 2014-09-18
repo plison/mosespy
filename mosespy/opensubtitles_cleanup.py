@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, json
+import  math, sys, gzip, json, re
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -89,7 +89,6 @@ class AlignedSubtitles(object):
         return nbTranslations
        
         
-        
     def getBestAlignment(self):
         self.addAlternatives()
         sortedKeys = sorted(self.aligns, key=lambda x: 
@@ -107,6 +106,13 @@ class AlignedSubtitles(object):
             if a.getUp() not in dirsToRemove:
                 newAligns[a] = self.aligns[a]
         self.aligns = newAligns
+        
+        
+    def getDirs(self):
+        dirs = set()
+        for a in self.aligns:
+            dirs.add(a.getUp())
+        return list(dirs)
          
 
     def getInverse(self):
@@ -147,24 +153,24 @@ class AlignedSubtitles(object):
     
     def divideData(self, nbTuningFiles=3, nbDevFiles=5, nbTestFiles=5):
         
-        training = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
+        trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
-        testDirs = training.selectDirectories(nbTestFiles)
-        test = training.extractBestAlignments(testDirs)
+        testDirs = trainingData.selectDirectories(nbTestFiles)
+        testData = trainingData.extractBestAlignments(testDirs)
         
-        training.removeDirs(testDirs)
+        trainingData.removeDirs(testDirs)
      
-        devdirs = training.selectDirectories(nbDevFiles)
-        dev = training.extractBestAlignments(devdirs)
+        devdirs = trainingData.selectDirectories(nbDevFiles)
+        devData = trainingData.extractBestAlignments(devdirs)
 
-        training.removeDirs(devdirs)
+        trainingData.removeDirs(devdirs)
 
-        tuneDirs = training.selectDirectories(nbTuningFiles)
-        tune = training.extractBestAlignments(tuneDirs)
+        tuneDirs = trainingData.selectDirectories(nbTuningFiles)
+        tuneData = trainingData.extractBestAlignments(tuneDirs)
 
-        training.removeDirs(tuneDirs)
+        trainingData.removeDirs(tuneDirs)
         
-        return training, tune, dev, test
+        return trainingData, tuneData, devData, testData
     
     
     def generateMosesFiles(self, stem):
@@ -196,7 +202,13 @@ def normalise(line):
     if isinstance(line, list):
         return normalise(line[0])
     else:
-        return (line.strip() + "\n").encode("UTF-8")
+        line = line.strip()
+        line = re.sub(r"\s+", " ", line)
+        line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
+        line = re.sub(r"\<s|unk|\/s|\s*and\s*|)\>", "", line)
+        line = re.sub(r"\[\s*and\s*\]", "", line)
+        line = re.sub(r"\|", "_", line)
+        return (line + "\n").encode("UTF-8")
                 
               
 
@@ -300,23 +312,25 @@ if __name__ == '__main__':
     else:  
         xcesFile = sys.argv[1]
         corpus = XCESCorpus(xcesFile)
+        baseStem = Path(xcesFile.replace(".xml", ""))
+   
+        corpus.generateMosesFiles(baseStem)
+         
         train, tune, dev, test = corpus.divideData()
-        print "Development files: " + str(dev.aligns.keys())
-        stem = Path(xcesFile.replace(".xml", ""))
-                
-        for inDir in stem.getUp().listdir():
-            if any([(stem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
+        
+        for inDir in baseStem.getUp().listdir():
+            if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
                 inDir.remove()
         
-        train.generateMosesFiles(stem + ".train")
-        tune.generateMosesFiles(stem + ".tune")
-        dev.generateMosesFiles(stem + ".dev")
-        test.generateMosesFiles(stem + ".test")
+        train.generateMosesFiles(baseStem + ".train")
+        tune.generateMosesFiles(baseStem + ".tune")
+        dev.generateMosesFiles(baseStem + ".dev")
+        test.generateMosesFiles(baseStem)
         
         devInv = dev.getInverse().addAlternatives()
-        devInv.generateMosesFiles(stem + ".dev2")
+        devInv.generateMosesFiles(baseStem + ".dev")
         
         testInv = test.getInverse().addAlternatives()
-        testInv.generateMosesFiles(stem + ".test2")
+        testInv.generateMosesFiles(baseStem + ".test")
 
 
