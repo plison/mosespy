@@ -45,8 +45,8 @@ import xml.etree.cElementTree as etree
 
 class AlignedSubtitles(object):
     
-    def __init__(self, corporaDict, sourceLang, targetLang):
-        self.aligns = corporaDict
+    def __init__(self, bitext, sourceLang, targetLang):
+        self.aligns = bitext
         self.sourceLang = sourceLang
         self.targetLang = targetLang
           
@@ -234,7 +234,7 @@ class XCESCorpus(AlignedSubtitles):
             return newAligns
         
         print "Extracting alignments"
-        corporaDict = {}
+        bitext = {}
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
@@ -258,19 +258,18 @@ class XCESCorpus(AlignedSubtitles):
                             alignmentList.append((sourceLine, targetLine))
                 
                 if len(alignmentList) > (len(linkGrp)/2):
-                    corporaDict[fromdoc] = alignmentList
+                    bitext[fromdoc] = alignmentList
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i): %i stored and %i discarded."
-                       %(l, (l*100/len(self.xmlRoot)), len(self.xmlRoot), len(corporaDict), 
-                       len(self.xmlRoot)-len(corporaDict)))
+                       %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot), len(bitext), (l+1)-len(bitext)))
           
-        print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(corporaDict))
+        print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(bitext))
                                                       *100/len(self.xmlRoot))
-        dump = json.dumps(corporaDict)
+        dump = json.dumps(bitext)
         Path(self.xcesFile + ".json").write(dump)
             
-        return corporaDict
+        return bitext
 
  
     def expandPath(self, doc):               
