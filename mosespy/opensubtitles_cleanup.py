@@ -255,15 +255,15 @@ class XCESCorpus(AlignedSubtitles):
                         targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
-                print "Portion: %i vs %i"%(len(alignmentList), len(linkGrp))
-                if len(alignmentList) < (len(linkGrp)/2):
-                    print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
-                    print "alignment list: %i vs %i"%(len(alignmentList), len(linkGrp)/2)
+                
+                if len(alignmentList) < (3*len(linkGrp)/4):
+                    print "Skipping badly aligned file %s -> %s"%(fromdoc, todoc)
                 else:
                     corporaDict[fromdoc] = alignmentList
-            if not (l % (len(self.xmlRoot)/min(100, len(self.xmlRoot)))):
+            if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print "... %s %% of alignments extracted"%((l*100/len(self.xmlRoot)))
         
+        print "Percentage of discarded pairs: %i %%"%(len(corporaDict)*100/len(self.xmlRoot))
         dump = json.dumps(corporaDict)
         Path(self.xcesFile + ".json").write(dump)
             
