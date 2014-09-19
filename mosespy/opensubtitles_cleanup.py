@@ -114,6 +114,7 @@ class AlignedSubtitles(object):
         print "Sorting data by number of duplicates"
         relatedEntries = lambda x : [y for y in self.aligns.keys() if x.getUp() in y]
         sources = sorted(self.aligns.keys(), key=lambda x : len(relatedEntries(x)))
+        print "Finished sorting"
         testDirs = set()
         while len(testDirs) < nbDirs:
             sourceFile = sources.pop()
