@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, json, re, codecs, os
+import  math, sys, gzip, json, re, codecs, os, collections
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -106,17 +106,17 @@ class AlignedSubtitles(object):
         for a in self.aligns:
             dirs.add(a.getUp())
         return list(dirs)
-         
+  
 
     def selectDirectories(self, nbDirs=5):
         if len(self.aligns) < 20:
             raise RuntimeError("not enough data to divide")
         print "Sorting data by number of duplicates"
-        relatedEntries = {}
+        relatedEntries = collections.defaultdict(int)
         for a in self.aligns.keys():
-            relatedEntries[a] = len([y for y in self.aligns.keys() if a.getUp() in y]) 
+            relatedEntries[a.getUp()] += 1
         print "finished step 1"
-        sources = sorted(self.aligns.keys(), key=lambda x : relatedEntries[x])
+        sources = sorted(self.aligns.keys(), key=lambda x : relatedEntries[x.getUp()])
         print "finished step 2"
         testDirs = set()
         while len(testDirs) < nbDirs:
