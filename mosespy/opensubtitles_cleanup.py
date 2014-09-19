@@ -257,7 +257,7 @@ class XCESCorpus(AlignedSubtitles):
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
                 
-                if len(alignmentList) > (len(linkGrp)/2):
+                if len(alignmentList) > (2*len(linkGrp)/3):
                     bitext[fromdoc] = alignmentList
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
