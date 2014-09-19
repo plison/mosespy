@@ -107,24 +107,6 @@ class AlignedSubtitles(object):
             dirs.add(a.getUp())
         return list(dirs)
   
-
-    def selectDirectories(self, nbDirs=5):
-        if len(self.aligns) < 20:
-            raise RuntimeError("not enough data to divide")
-        print "Sorting data by number of duplicates"
-        relatedEntries = collections.defaultdict(int)
-        for a in self.aligns.keys():
-            relatedEntries[a.getUp()] += 1
-        print "finished step 1"
-        sources = sorted(self.aligns.keys(), key=lambda x : relatedEntries[x.getUp()])
-        print "finished step 2"
-        testDirs = set()
-        while len(testDirs) < nbDirs:
-            sourceFile = sources.pop()
-            testDirs.add(sourceFile.getUp())
-        print "finished step 3"
-        return list(testDirs)
-
   
     def getInverse(self):
         invertedDict = {}
@@ -139,8 +121,17 @@ class AlignedSubtitles(object):
         
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
-        testDirs = self.selectDirectories(nbDirs)        
-        for testDir in testDirs:
+        if len(self.aligns) < 20:
+            raise RuntimeError("not enough data to divide")
+        
+        print "Sorting data by number of duplicates"
+        nbEntries = collections.defaultdict(int)
+        for a in self.aligns.keys():
+            nbEntries[a.getUp()] += 1
+        directories = sorted(nbEntries.keys(), key=lambda x : nbEntries[x])
+        
+        while len(alignedData) < nbDirs:
+            testDir = directories.pop()
             print "Extracting best alignments for " + testDir
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
             if addAlternatives:
@@ -150,7 +141,7 @@ class AlignedSubtitles(object):
             bestAlignment = alignsInDir.extractSubset([alignedDocs[-1]])
             alignedData.addSubtitles(bestAlignment)
 
-        self.removeDirs(testDirs)
+            self.removeDirs([testDir])
 
         return alignedData   
     
