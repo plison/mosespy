@@ -115,11 +115,14 @@ class AlignedSubtitles(object):
         relatedEntries = {}
         for a in self.aligns.keys():
             relatedEntries[a] = len([y for y in self.aligns.keys() if a.getUp() in y]) 
+        print "finished step 1"
         sources = sorted(self.aligns.keys(), key=lambda x : relatedEntries[x])
+        print "finished step 2"
         testDirs = set()
         while len(testDirs) < nbDirs:
             sourceFile = sources.pop()
             testDirs.add(sourceFile.getUp())
+        print "finished step 3"
         return list(testDirs)
 
   
@@ -132,11 +135,12 @@ class AlignedSubtitles(object):
 
 
     
-    def extractBestAlignments(self, directories, addAlternatives=False):
+    def extractData(self, nbDirs, addAlternatives=False):
         
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
-        for testDir in directories:
+        testDirs = self.selectDirectories(nbDirs)        
+        for testDir in testDirs:
             print "Extracting best alignments for " + testDir
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
             if addAlternatives:
@@ -145,6 +149,8 @@ class AlignedSubtitles(object):
             alignedDocs.sort(key=lambda x: max([len(y) for y in alignsInDir.aligns[x]]))
             bestAlignment = alignsInDir.extractSubset([alignedDocs[-1]])
             alignedData.addSubtitles(bestAlignment)
+
+        self.removeDirs(testDirs)
 
         return alignedData   
     
@@ -191,19 +197,13 @@ class AlignedSubtitles(object):
         trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
         
         print "Extracting test data"
-        testDirs = trainingData.selectDirectories(nbTestFiles)
-        testData = trainingData.extractBestAlignments(testDirs, True)        
-        trainingData.removeDirs(testDirs)
+        testData = trainingData.extractData(nbTestFiles, True)        
      
         print "Extracting development data"
-        devdirs = trainingData.selectDirectories(nbDevFiles)
-        devData = trainingData.extractBestAlignments(devdirs, True)
-        trainingData.removeDirs(devdirs)
+        devData = trainingData.extractData(nbDevFiles, True)        
 
         print "Extracting tuning data"
-        tuneDirs = trainingData.selectDirectories(nbTuningFiles)
-        tuneData = trainingData.extractBestAlignments(tuneDirs, False)
-        trainingData.removeDirs(tuneDirs)
+        tuneData = trainingData.extractData(nbTuningFiles, False)        
         
         return trainingData, tuneData, devData, testData
         
