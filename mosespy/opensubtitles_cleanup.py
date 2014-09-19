@@ -130,7 +130,7 @@ class AlignedSubtitles(object):
             nbEntries[a.getUp()] += 1
         directories = sorted(nbEntries.keys(), key=lambda x : nbEntries[x])
         
-        while len(alignedData) < nbDirs:
+        while len(alignedData.aligns) < nbDirs:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
             alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
