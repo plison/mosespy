@@ -112,7 +112,8 @@ class AlignedSubtitles(object):
         if len(self.aligns) < 20:
             raise RuntimeError("not enough data to divide")
         print "Sorting data by number of duplicates"
-        sources = sorted(self.aligns.keys(), key=lambda x : len(x.getUp().listdir()))
+        relatedEntries = lambda x : [y for y in self.aligns.keys() if x.getUp() in y]
+        sources = sorted(self.aligns.keys(), key=lambda x : len(relatedEntries(x)))
         testDirs = set()
         while len(testDirs) < nbDirs:
             sourceFile = sources.pop()
@@ -256,13 +257,14 @@ class XCESCorpus(AlignedSubtitles):
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
                 
-                if len(alignmentList) < (3*len(linkGrp)/4):
-                    print "Skipping badly aligned file %s -> %s"%(fromdoc.basename(), todoc.basename())
-                else:
+                if len(alignmentList) > (len(linkGrp)/2):
                     corporaDict[fromdoc] = alignmentList
+                    
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
-                print "... %s %% of alignments extracted"%((l*100/len(self.xmlRoot)))
-        
+                print ("%i aligned files already processed (%i %% of %i): %i stored and %i discarded."
+                       %(l, (l*100/len(self.xmlRoot)), len(self.xmlRoot), len(corporaDict), 
+                       len(self.xmlRoot)-len(corporaDict)))
+          
         print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(corporaDict))
                                                       *100/len(self.xmlRoot))
         dump = json.dumps(corporaDict)
