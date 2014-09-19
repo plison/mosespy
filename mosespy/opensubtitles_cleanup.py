@@ -248,14 +248,15 @@ class XCESCorpus(AlignedSubtitles):
                         split = link.attrib["xtargets"].split(";")
                         sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
                         targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
-                        if len(sourceLines) == 0 or len(targetLines)==0:
+                        if (len(sourceLines) == 0 or len(targetLines)==0 
+                            or len(sourceLines) >2 or len(targetLines) > 2):
                             continue       
                         sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
                         targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
-                              
-                if len(alignmentList) < (2*len(linkGrp)/3):
+                print "Portion: %i vs %i"%(len(alignmentList), len(linkGrp))
+                if len(alignmentList) < (len(linkGrp)/2):
                     print "Skipping bad alignment files %s -> %s"%(fromdoc, todoc)
                     print "alignment list: %i vs %i"%(len(alignmentList), len(linkGrp)/2)
                 else:
