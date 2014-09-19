@@ -218,9 +218,9 @@ class XCESCorpus(AlignedSubtitles):
                 targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
                 break
              
+        print "Source lang: %s, target lang: %s"%(sourceLang, targetLang)
         AlignedSubtitles.__init__(self, self.getAlignments(), sourceLang, targetLang)
         print "Finished parsing file " + xcesFile
-        print "Source lang: %s, target lang: %s"%(sourceLang, targetLang)
         
                   
     def getAlignments(self):
@@ -263,7 +263,8 @@ class XCESCorpus(AlignedSubtitles):
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print "... %s %% of alignments extracted"%((l*100/len(self.xmlRoot)))
         
-        print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(corporaDict))*100/len(self.xmlRoot))
+        print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(corporaDict))
+                                                      *100/len(self.xmlRoot))
         dump = json.dumps(corporaDict)
         Path(self.xcesFile + ".json").write(dump)
             
