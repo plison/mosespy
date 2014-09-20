@@ -38,6 +38,7 @@ __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 import  math, sys, gzip, json, re, codecs, os, collections
+from mosespy.corpus import BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -321,6 +322,46 @@ def normalise(line):
         line = re.sub(r"\|", "_", line)
         return (line + "\n")
                 
+                
+ 
+
+def filterOutLines(fullCorpusFile, *toRemoveFiles):
+    """Filters out sentences from the corpus represented by toRemoveFiles
+    from the corpus in fullCorpusFile.  This method is used to prune 
+    language model data from development and test sentences.
+    
+    """
+    fullCorpus = BasicCorpus(fullCorpusFile)
+    
+    occurrences = {}
+    histories = {}
+    for toRemoveFile in toRemoveFiles:
+        toRemoveCorpus= BasicCorpus(toRemoveFile)
+        occurrences[toRemoveFile] = toRemoveCorpus.getOccurrences()
+        histories[toRemoveFile] = toRemoveCorpus.getHistories()
+
+
+    outputFile = fullCorpus.addFlag("filtered") 
+    with open(outputFile, 'w', 1000000) as newLmFileD:                 
+        inputLines = fullCorpus.readlines()
+        skippedLines = []
+        for i in range(2, len(inputLines)):
+            l = inputLines[i].strip()
+            toSkip = False
+            for f in occurrences:
+                if l in occurrences[f]:
+                    for index in occurrences[f][l]:
+                        if histories[f][index] == [iline.strip("\n") for 
+                                                   iline in inputLines[i-2:i]]:
+                            skippedLines.append(l)
+                            toSkip = True
+            if not toSkip:
+                newLmFileD.write(l+"\n")                                
+
+    print "Number of skipped lines: " + str(len(skippedLines))
+    return outputFile
+
+
            
               
 if __name__ == '__main__':
