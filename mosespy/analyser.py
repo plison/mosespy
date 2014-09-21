@@ -149,7 +149,7 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        urwid.MainLoop.__init__(self, self.getListBox())
+        urwid.MainLoop.__init__(self, urwid.Columns([self.getListBox()]))
         
     def selection(self, _, choice):
         self.widget = self.getListBox(choice)
