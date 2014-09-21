@@ -149,17 +149,14 @@ class ErrorBox(urwid.ListBox):
         elList = []
         for i in range(0, len(aligns)):
             a = aligns[i]
-            but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
+            tab = " " * (len(str(i))+2)
+            WER = min([getWER(t, a.translation) for t in a.target])
+            fullText= ("%i. Source:       %s"%((i+1), a.source) + "\n" 
+                       + [(tab+"  Reference:    "+ t + "\n") for t in a.target if t.strip()]
+                       + tab + "  Translation:  " + a.translation + " (WER=%i%%)\n"%(WER*100))
+            but = urwid.Button(fullText)
             urwid.connect_signal(but, 'click', self.selection, i)
             elList.append(but)
-            tab = " " * (len(str(i))+2)
-            for t in a.target:
-                if t.strip():
-                    elList.append(urwid.Text(tab + "  Reference:    "+ t))
-            WER = min([getWER(t, a.translation) for t in a.target])
-            elList.append(urwid.Text(tab + "  Translation:  " + a.translation
-                                      + " (WER=%i%%)"%(WER*100)))
-            elList.append(urwid.Divider())
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
         self.aligns = aligns
@@ -179,91 +176,16 @@ class ErrorBox(urwid.ListBox):
             self.body.set_focus(indexList)
             self.lineInFocus = indexList
     
-
-    def _keypress_down(self, size):
-        (maxcol, maxrow) = size
-
-        middle, top, bottom = self.calculate_visible(
-            (maxcol,maxrow), True)
-        if middle is None: return True
-
-        focus_row_offset,focus_widget,focus_pos,focus_rows,cursor=middle
-        trim_bottom, fill_below = bottom
-
-        row_offset = focus_row_offset + focus_rows
-        rows = focus_rows
-
-        # look for selectable widget below
-        pos = focus_pos
-        widget = None
-        for widget, pos, rows in fill_below:
-            if rows and widget.selectable():
-                # this one will do
-                self.change_focus((maxcol,maxrow), pos,
-                    row_offset, 'above')
-                return
-            row_offset += rows
-
-        # at this point we must scroll
-        row_offset -= 1
-        self._invalidate()
-
-        while row_offset < maxrow:
-            # need to scroll in another candidate widget
-            widget, pos = self.body.get_next(pos)
-            if widget is None:
-                # cannot scroll any further
-                return True # keypress not handled
-            rows = widget.rows((maxcol,))
-            if rows and widget.selectable():
-                # this one will do
-                self.body.insert(0, urwid.Text("HERE %s"%(str(widget))))
-                self.change_focus((maxcol,maxrow), pos,
-                    row_offset, 'above')
-                return
-            row_offset += rows
-
-        if not focus_widget.selectable() or focus_row_offset+focus_rows-1 <= 0:
-            # just take bottom one if current is not selectable
-            # or if focus has moved out of view
-            if widget is None:
-                self.shift_focus((maxcol,maxrow),
-                    row_offset-rows)
-                return
-            # FIXME: catch this bug in testcase
-            #self.change_focus((maxcol,maxrow), pos,
-            #    row_offset+rows, 'above')
-            self.change_focus((maxcol,maxrow), pos,
-                row_offset-rows, 'above')
-            return
-        self.body.insert(0, urwid.Text("CURS %s"%(str(cursor))))
-
-        # check if cursor will stop scroll from taking effect
-        if cursor is not None:
-            x,y = cursor
-            if y+focus_row_offset-1 < 0:
-                # cursor position is a problem,
-                # choose another focus
-                if widget is None:
-                    # try harder to get next widget
-                    widget, pos = self.body.get_next(pos)
-                    if widget is None:
-                        return # can't do anything
-                else:
-                    row_offset -= rows
-
-                if row_offset >= maxrow:
-                    # must scroll further than 1 line
-                    row_offset = maxrow-1
-
-                self.change_focus((maxcol,maxrow),pos,
-                    row_offset, 'above', )
-                return
-
-        # if all else fails, keep the current focus.
-        self.shift_focus((maxcol,maxrow), focus_row_offset-1)
-
-   
+    def keypress(self, size, key):
+        if key== 'up' or key=='down':
+            urwid.ListBox.keypress(self, size, key)
+            urwid.ListBox.keypress(self, size, key)
+            urwid.ListBox.keypress(self, size, key)
+            urwid.ListBox.keypress(self, size, key)
+        else:
+            urwid.ListBox.keypress(self, size, key)
+            
+            
 
    
 
