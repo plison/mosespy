@@ -56,7 +56,7 @@ class ErrorAnalyser():
             raise RuntimeError("results must be of type ReferenceCorpus")
         alignments = results.getAlignments(addHistory=True)
         for a in alignments:
-            print a.source + " --> " + a.targethistory
+            print a.source + " --> " + str(a.targethistory)
         #AnalysisUI(self.conditions[0], alignments).run()
       
 
