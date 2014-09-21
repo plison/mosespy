@@ -149,7 +149,7 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        urwid.MainLoop.__init__(self, urwid.Columns([urwid.Frame(urwid.Text("CONDITION HERE")), 
+        urwid.MainLoop.__init__(self, urwid.Columns([urwid.ListBox([urwid.Text("CONDITION HERE")]), 
                                                      self.getListBox()]))
         
     def selection(self, _, choice):
