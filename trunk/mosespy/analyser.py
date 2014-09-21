@@ -48,7 +48,7 @@ def startAnalysis(results, initCondition=None):
         initCondition=Condition()
     if not isinstance(results, ReferenceCorpus):
         raise RuntimeError("results must be of type ReferenceCorpus")
-    AnalysisUI(initCondition, results).run()
+    AnalysisUI(initCondition, results)
   
 
 class Condition():
@@ -153,17 +153,17 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
         elList.append(urwid.Divider())
         
-        lengthCols = [(20,urwid.Text("Sentence length: \n(nb. of words)")),
+        lengthCols = [(16,urwid.Text("Sentence length: \n(nb. of words)")),
                       (10, ConditionEdit(" from ", condition.length[0])), 
                       (10, ConditionEdit(" to ", condition.length[1]))]
         elList.append(urwid.Columns(lengthCols))
-        werCols = [(20,urwid.Text("Word Error Rate: \n(0<=WER<=1)")),
+        werCols = [(16,urwid.Text("Word Error Rate: \n(0<=WER<=1)")),
                    (10, ConditionEdit(" from ", condition.wer[0])), 
                    (10, ConditionEdit(" to ", condition.wer[1]))]
         elList.append(urwid.Columns(werCols))   
         elList.append(ConditionEdit("Source substring: ", condition.inSource))
         elList.append(ConditionEdit("Target substring: ", condition.inTarget))
-        elList.append(ConditionEdit("Translation substring: ", condition.inTranslation))
+        elList.append(ConditionEdit("Trans. substring: ", condition.inTranslation))
         
         elList.append(urwid.Divider())
         elList.append(ConditionButton("Search errors", topUI, condition))
@@ -229,11 +229,12 @@ class ErrorBox(urwid.ListBox):
 
    
 
-class AnalysisUI(urwid.MainLoop):
+class AnalysisUI():
 
     def __init__(self, condition, results):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
+        self.loop = urwid.MainLoop(urwid.ListBox([])).run()
         self.updateErrorBox(condition)
           
     
@@ -243,8 +244,9 @@ class AnalysisUI(urwid.MainLoop):
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
         top = urwid.Columns([(40, ConditionBox(newCondition, self)), 
-                             (80,ErrorBox(errors))], 2, 1)        
-        urwid.MainLoop.__init__(self, top)
+                             (80,ErrorBox(errors))], 2, 1)  
+        self.loop.widget = top      
+        
         
                 
 
