@@ -130,21 +130,12 @@ class Condition():
             
         return " and ".join(subconds) if subconds else "True"
     
-
-
-class ConditionEdit(urwid.Edit):
-    
-    def __init__(self, pretext, condField):
-        self.condField = condField
-        defaultVal = "" if isinstance(condField, list) else str(condField)
-        urwid.Edit.__init__(self, pretext, defaultVal)
-        
+ 
         
 class ConditionButton(urwid.Button):
     
-    def __init__(self, text, topUI, condition):
-        self.topUI = topUI
-        self.condition = condition
+    def __init__(self, text, condBox):
+        self.condBox = condBox
         urwid.Button.__init__(self, text)
  
 class ConditionBox(urwid.ListBox):
@@ -153,45 +144,43 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
         elList.append(urwid.Divider())
-        
-        lengthCols = [(16,urwid.Text("Sentence length: \n(nb. of words)")),
-                      (10, ConditionEdit(" from ", condition.length[0])), 
-                      (10, ConditionEdit(" to ", condition.length[1]))]
+    
+        lengthCols = [(16,urwid.Text("Sentence length: ")),
+                      (10, urwid.IntEdit(" from ")), 
+                      (10, urwid.IntEdit(" to "))]
         elList.append(urwid.Columns(lengthCols))
-        werCols = [(16,urwid.Text("Word Error Rate: \n(0<=WER<=1)")),
-                   (10, ConditionEdit(" from ", condition.wer[0])), 
-                   (10, ConditionEdit(" to ", condition.wer[1]))]
+        werCols = [(16,urwid.Text("Word Error Rate: ")),
+                   (10, urwid.Edit(" from ")), 
+                   (10, urwid.Edit(" to "))]
         elList.append(urwid.Columns(werCols))   
-        elList.append(ConditionEdit("Source substring: ", condition.inSource))
-        elList.append(ConditionEdit("Target substring: ", condition.inTarget))
-        elList.append(ConditionEdit("Trans. substring: ", condition.inTranslation))
+        elList.append(urwid.Edit("Source substring: "))
+        elList.append(urwid.Edit("Target substring: "))
+        elList.append(urwid.Edit("Trans. substring: "))
         
         elList.append(urwid.Divider())
-        elList.append(ConditionButton("Search errors", topUI, condition))
+        elList.append(ConditionButton("Search errors", self))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(lengthCols[1][1], 'change', change)
-        urwid.connect_signal(lengthCols[2][1], 'change', change)
-        urwid.connect_signal(werCols[1][1], 'change', change)
-        urwid.connect_signal(werCols[2][1], 'change', change)
-        urwid.connect_signal(elList[4], 'change', change)
-        urwid.connect_signal(elList[5], 'change', change)
-        urwid.connect_signal(elList[6], 'change', change)
+        def update(button):
+            button.condBox.updateCondition()
         urwid.connect_signal(elList[8], 'click', update)
         
+        self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
         
-
-def change(widget, newtest):
-    if isinstance(widget.condField, list):
-        widget.condField = [newtest]
-    else:
-        widget.condField =newtest
-        
-
-def update(button):
-    button.topUI.updateErrorBox(button.condition)
     
+    def updateCondition(self):
+        cond = Condition()
+        cond.length[0] = self.body[2][1][1]
+        cond.length[1] = self.body[2][2][1]
+        cond.wer[0] = float(self.body[3][1][1])
+        cond.wer[1] = float(self.body[3][2][1])
+        cond.inSource = [self.body[4]]
+        cond.inTarget = [self.body[5]]
+        cond.inTranslation = [self.body[6]]
+        self.topUI.updateErrorBox(cond)
+        
+        
         
            
 
