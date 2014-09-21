@@ -140,9 +140,19 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Text("Analysis of errors under the following criteria:"))
         elList.append(urwid.Divider())
         lengthCols = [urwid.Text("Sentence length\n(number of words)")]
-        lengthCols.append(urwid.Edit(" between "))
-        lengthCols.append(urwid.Edit(" and "))
+        lengthCols.append(urwid.Edit(" from "))
+        lengthCols.append(urwid.Edit(" to "))
         elList.append(urwid.Columns(lengthCols))
+        werCols = [urwid.Text("Word from Rate\n(between 0 and 1)")]
+        werCols.append(urwid.Edit(" from "))
+        werCols.append(urwid.Edit(" to "))
+        elList.append(urwid.Columns(werCols))
+        sourceCols = [urwid.Text("Source substring\n")]
+        sourceCols.append(urwid.Edit())
+        elList.append(urwid.Columns(sourceCols))
+        targetCols = [urwid.Text("Target substring\n")]
+        targetCols.append(urwid.Edit())
+        elList.append(urwid.Columns(targetCols))
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
         
@@ -190,7 +200,7 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        columns = [(30, ConditionBox(condition)), (100,ErrorBox(aligns))]
+        columns = [(40, ConditionBox(condition)), (80,ErrorBox(aligns))]
         top = urwid.Columns(columns, 2, 1)
         urwid.MainLoop.__init__(self, top)
         
