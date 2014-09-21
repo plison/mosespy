@@ -181,6 +181,7 @@ class ErrorBox(urwid.ListBox):
     
 
     def _keypress_down(self, size):
+        self.body.insert(0, urwid.Text("HERE %i"%(size)))
         (maxcol, maxrow) = size
 
         middle, top, bottom = self.calculate_visible(
