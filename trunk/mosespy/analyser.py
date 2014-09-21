@@ -178,7 +178,6 @@ class ConditionBox(urwid.ListBox):
         cond.inSource = [self.body[4].edit_text]
         cond.inTarget = [self.body[5].edit_text]
         cond.inTranslation = [self.body[6].edit_text]
-        raise RuntimeError("NEW COND: " + str(cond))
         self.topUI.updateErrorBox(cond)
         
         
@@ -228,7 +227,7 @@ class AnalysisUI():
         top = urwid.Columns([(40, ConditionBox(condition, self)), 
                              (80,ErrorBox([]))], 2, 1)  
         self.mainLoop = urwid.MainLoop(top)
-        self.updateErrorBox(condition)
+    #    self.updateErrorBox(condition)
         self.mainLoop.run()
           
     
