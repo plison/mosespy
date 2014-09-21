@@ -207,7 +207,6 @@ class ErrorBox(urwid.ListBox):
         # at this point we must scroll
         row_offset -= 1
         self._invalidate()
-        self.body.insert(0, urwid.Text("HERE %s"%(str(row_offset))))
 
         while row_offset < maxrow:
             self.body.insert(0, urwid.Text("HERE %i"%(row_offset)))
