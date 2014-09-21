@@ -330,9 +330,11 @@ class ReferenceCorpus(object):
             pair = AlignedReference(sourceLines[i].strip(), targets)
             alignments.append(pair)
             
+        print "add history " + str(addHistory)
         if addHistory:
             targetCorpus = self.refCorpora[0]
             histories = targetCorpus.getHistories()
+            print "histories: " + str(histories)
             for i in range(0, len(alignments)):
                 pair = alignments[i]
                 if histories.has_key(i) and len(histories[i]) > 0:
