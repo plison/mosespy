@@ -161,7 +161,7 @@ class ErrorBox(urwid.ListBox):
                                       + " (WER=%i%%)"%(WER*100)))
             elList.append(urwid.Divider())
         walker = urwid.SimpleFocusListWalker(elList)
-        urwid.ListBox.__init__(walker)
+        urwid.ListBox.__init__(self, walker)
         self.aligns = aligns
     
     
