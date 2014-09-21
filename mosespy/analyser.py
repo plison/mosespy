@@ -130,7 +130,13 @@ class Condition():
             
         return " and ".join(subconds) if subconds else "True"
     
+
+
+class ConditionEdit(urwid.Edit):
     
+    def __init__(self, pretext, condField):
+        self.condField = condField
+        urwid.Edit.__init__(self, pretext)
  
 class ConditionBox(urwid.ListBox):
     
@@ -140,38 +146,40 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Divider())
         
         lengthCols = [(20,urwid.Text("Sentence length: \n(nb. of words)")),
-                      (10, urwid.IntEdit(" from ")), (10, urwid.IntEdit(" to "))]
+                      (10, ConditionEdit(" from ", condition.length[0])), 
+                      (10, ConditionEdit(" to ", condition.length[1]))]
         elList.append(urwid.Columns(lengthCols))
         werCols = [(20,urwid.Text("Word Error Rate: \n(0<=WER<=1)")),
-                   (10, urwid.Edit(" from ")), (10, urwid.Edit(" to "))]
+                   (10, ConditionEdit(" from ", condition.wer[0])), 
+                   (10, ConditionEdit(" to ", condition.wer[1]))]
         elList.append(urwid.Columns(werCols))   
-        elList.append(urwid.Edit("Source substring: "))
-        elList.append(urwid.Edit("Target substring: "))
-        elList.append(urwid.Edit("Translation substring: "))
+        elList.append(ConditionEdit("Source substring: ", condition.inSource))
+        elList.append(ConditionEdit("Target substring: ", condition.inTarget))
+        elList.append(ConditionEdit("Translation substring: ", condition.inTranslation))
         
+        elList.append(urwid.Divider())
+        elList.append(urwid.Button("Search errors"))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(lengthCols[1][1], 'change', change, self, 'length[0]')
-        urwid.connect_signal(lengthCols[2][1], 'change', change, self, 'length[1]')
-        urwid.connect_signal(werCols[1][1], 'change', change, self, 'wer[0]')
-        urwid.connect_signal(werCols[2][1], 'change', change, self, 'wer[1]')
-        urwid.connect_signal(elList[4], 'change', change, self, 'inSource')
-        urwid.connect_signal(elList[5], 'change', change, self, 'inTarget')
-        urwid.connect_signal(elList[6], 'change', change, self, 'inTranslation')
+        urwid.connect_signal(lengthCols[1][1], 'change', change)
+        urwid.connect_signal(lengthCols[2][1], 'change', change)
+        urwid.connect_signal(werCols[1][1], 'change', change)
+        urwid.connect_signal(werCols[2][1], 'change', change)
+        urwid.connect_signal(elList[4], 'change', change)
+        urwid.connect_signal(elList[5], 'change', change)
+        urwid.connect_signal(elList[6], 'change', change)
+        urwid.connect_signal(elList[8], 'click', topUI.updateBox, topUI, condition)
         
-        self.condition = condition
-        self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
         
 
-def change(widget, self, condField):
-    condField = getattr(self.condition, condField)
-    if isinstance(condField, list):
-        condField = [widget.editText]
+def change(widget):
+    if isinstance(widget.condField, list):
+        widget.condField = [widget.editText]
     else:
-        condField = widget.editText
-    self.topUI.updateErrorBox(self.condition)
-    
+        widget.condField = widget.editText
+        
+           
 
 class ErrorBox(urwid.ListBox):
     
