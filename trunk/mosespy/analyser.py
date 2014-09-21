@@ -155,9 +155,9 @@ class ConditionBox(urwid.ListBox):
         urwid.connect_signal(lengthCols[2][1], 'change', self.change, 'length[1]')
         urwid.connect_signal(werCols[1][1], 'change', self.change, 'wer[0]')
         urwid.connect_signal(werCols[2][1], 'change', self.change, 'wer[1]')
-        urwid.connect_signal(elList[2], 'change', self.change, 'inSource')
-        urwid.connect_signal(elList[3], 'change', self.change, 'inTarget')
-        urwid.connect_signal(elList[4], 'change', self.change, 'inTranslation')
+        urwid.connect_signal(elList[4], 'change', self.change, 'inSource')
+        urwid.connect_signal(elList[5], 'change', self.change, 'inTarget')
+        urwid.connect_signal(elList[6], 'change', self.change, 'inTranslation')
         
         self.condition = condition
         self.topUI = topUI
