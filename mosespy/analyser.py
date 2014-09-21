@@ -180,7 +180,7 @@ class ErrorBox(urwid.ListBox):
             self.lineInFocus = indexList
     
     def keypress(self, size, key):
-        self.body.insert(0, urwid.Text(str(key) + " - " + str(size)))
+        self.body.insert(1, urwid.Text(str(key) + " - " + str(size)))
         
 
    
