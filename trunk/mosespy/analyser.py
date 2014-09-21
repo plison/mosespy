@@ -141,8 +141,42 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Text(str(condition)))
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
-
         
+
+class ErrorBox(urwid.ListBox):
+    
+    def __init__(self, aligns):
+        elList = []
+        for i in range(0, len(aligns)):
+            a = aligns[i]
+            but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
+            urwid.connect_signal(but, 'click', self.selection, i)
+            elList.append(but)
+            tab = " " * (len(str(i))+2)
+            for t in a.target:
+                if t.strip():
+                    elList.append(urwid.Text(tab + "  Reference:    "+ t))
+            WER = min([getWER(t, a.translation) for t in a.target])
+            elList.append(urwid.Text(tab + "  Translation:  " + a.translation
+                                      + " (WER=%i%%)"%(WER*100)))
+            elList.append(urwid.Divider())
+        walker = urwid.SimpleFocusListWalker(elList)
+        urwid.ListBox.__init__(walker)
+        self.aligns = aligns
+    
+    
+    def selection(self, _, choice):
+        tab = " " * (len(str(choice))+2)
+        align = self.aligns[choice]
+        indexList = choice*3
+        if self.body.get_focus() != choice and align.targethistory:
+            previousText = urwid.Text(tab + "  Previous:     "+ align.targethistory)         
+            self.body.contents.insert(indexList, previousText)
+            self.body.set_focus(indexList)
+        self.body.set_focus(indexList)
+        
+
+   
 
 class AnalysisUI(urwid.MainLoop):
 
@@ -152,40 +186,11 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        columns = [(30, ConditionBox(condition)), (100,self.getListBox())]
+        columns = [(30, ConditionBox(condition)), (100,ErrorBox(aligns))]
         top = urwid.Columns(columns, 2, 1)
         urwid.MainLoop.__init__(self, top)
         
-    def selection(self, _, choice):
-        self.widget = self.getListBox(choice)
-   
-        
-    def getListBox(self, focus=None):
-        elList = []
-        focusInList = 0
-        for i in range(0, len(self.aligns)):
-            a = self.aligns[i]
-            but = urwid.Button("%i. Source:       %s"%((i+1), a.source))
-            urwid.connect_signal(but, 'click', self.selection, i)
-            elList.append(but)
-            tab = " " * (len(str(i))+2)
-            if focus == i:
-                if self.focus != focus and a.targethistory:
-                    elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
-                focusInList = len(elList)-2
-            for t in a.target:
-                if t.strip():
-                    elList.append(urwid.Text(tab + "  Reference:    "+ t))
-            WER = min([getWER(t, a.translation) for t in a.target])
-            elList.append(urwid.Text(tab + "  Translation:  " + a.translation
-                                      + " (WER=%i%%)"%(WER*100)))
-            elList.append(urwid.Divider())
-        walker = urwid.SimpleFocusListWalker(elList)
-        if focus:
-            walker.set_focus(focusInList)
-        self.focus = focus if focus != self.focus else None
-        return urwid.ListBox(walker)
-        
+                
 
 def extractNgrams(tokens, size):
     """Extract the n-grams of a particular size in the list of tokens.
