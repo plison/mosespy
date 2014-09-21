@@ -139,13 +139,13 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
         elList.append(urwid.Divider())
-        lengthCols = [urwid.Text("Sentence length:\n(number of words)")]
-        lengthCols.append(urwid.IntEdit(" from "))
-        lengthCols.append(urwid.IntEdit(" to "))
+        lengthCols = [(20,urwid.Text("Sentence length:\n(number of words)"))]
+        lengthCols.append((10,urwid.IntEdit(" from ")))
+        lengthCols.append((10,urwid.IntEdit(" to ")))
         elList.append(urwid.Columns(lengthCols))
-        werCols = [urwid.Text("Word Error Rate:\n(between 0 and 1)")]
-        werCols.append(urwid.Edit(" from "))
-        werCols.append(urwid.Edit(" to "))
+        werCols = [(20,urwid.Text("Word Error Rate:\n(between 0 and 1)"))]
+        werCols.append((19,urwid.Edit(" from ")))
+        werCols.append((10,urwid.Edit(" to ")))
         elList.append(urwid.Columns(werCols))
         sourceCols = [urwid.Text("Source substring:")]
         sourceCols.append(urwid.Edit())
