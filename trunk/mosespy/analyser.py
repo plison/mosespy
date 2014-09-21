@@ -149,13 +149,13 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        urwid.MainLoop.__init__(self, self.getBox())
+        urwid.MainLoop.__init__(self, self.getListBox())
         
     def selection(self, button, choice):
-        self.widget = self.getBox(choice)
+        self.widget = self.getListBox(choice)
    
         
-    def getBox(self, focus=None):
+    def getListBox(self, focus=None):
         title = "==> Analysis of errors under the condition: %s"%(self.condition)
         elList = [urwid.Text(title), urwid.Divider()]
         focusInList = 0
@@ -166,8 +166,8 @@ class AnalysisUI(urwid.MainLoop):
             elList.append(but)
             tab = " " * (len(str(i))+2)
             if focus == i:
-                if self.focus != focus and a.targethistory:
-                    elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
+                if self.focus != focus:
+                    elList.append(urwid.Text(tab + "  Previous:     "))
                 focusInList = len(elList)-2
             for t in a.target:
                 if t.strip():
