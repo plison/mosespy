@@ -151,27 +151,27 @@ class ConditionBox(urwid.ListBox):
         
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(lengthCols[1][1], 'change', self.change, 'length[0]')
-        urwid.connect_signal(lengthCols[2][1], 'change', self.change, 'length[1]')
-        urwid.connect_signal(werCols[1][1], 'change', self.change, 'wer[0]')
-        urwid.connect_signal(werCols[2][1], 'change', self.change, 'wer[1]')
-        urwid.connect_signal(elList[4], 'change', self.change, 'inSource')
-        urwid.connect_signal(elList[5], 'change', self.change, 'inTarget')
-        urwid.connect_signal(elList[6], 'change', self.change, 'inTranslation')
+        urwid.connect_signal(lengthCols[1][1], 'change', change, self, 'length[0]')
+        urwid.connect_signal(lengthCols[2][1], 'change', change, self, 'length[1]')
+        urwid.connect_signal(werCols[1][1], 'change', change, self, 'wer[0]')
+        urwid.connect_signal(werCols[2][1], 'change', change, self, 'wer[1]')
+        urwid.connect_signal(elList[4], 'change', change, self, 'inSource')
+        urwid.connect_signal(elList[5], 'change', change, self, 'inTarget')
+        urwid.connect_signal(elList[6], 'change', change, self, 'inTranslation')
         
         self.condition = condition
         self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
         
+
+def change(widget, self, condField):
+    condField = getattr(self.condition, condField)
+    if isinstance(condField, list):
+        condField = [widget.editText]
+    else:
+        condField = widget.editText
+    self.topUI.updateErrorBox(self.condition)
     
-    def change(self, widget, condField):
-        condField = getattr(self.condition, condField)
-        if isinstance(condField, list):
-            condField = [widget.editText]
-        else:
-            condField = widget.editText
-        self.topUI.updateErrorBox(self.condition)
-        
 
 class ErrorBox(urwid.ListBox):
     
