@@ -55,9 +55,7 @@ class ErrorAnalyser():
         if not isinstance(results, ReferenceCorpus):
             raise RuntimeError("results must be of type ReferenceCorpus")
         alignments = results.getAlignments(addHistory=True)
-        for a in alignments:
-            print a.source + " --> " + str(a.targethistory)
-        #AnalysisUI(self.conditions[0], alignments).run()
+        AnalysisUI(self.conditions[0], alignments).run()
       
 
 class Condition():
@@ -151,9 +149,9 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        urwid.MainLoop.__init__(self, self.getListBox())
+        urwid.MainLoop.__init__(self, urwid.Pile([urwid.Text("BLA"), self.getListBox()]))
         
-    def selection(self, button, choice):
+    def selection(self, _, choice):
         self.widget = self.getListBox(choice)
    
         
