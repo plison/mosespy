@@ -168,7 +168,7 @@ class ConditionBox(urwid.ListBox):
         urwid.connect_signal(elList[4], 'change', change)
         urwid.connect_signal(elList[5], 'change', change)
         urwid.connect_signal(elList[6], 'change', change)
-        urwid.connect_signal(elList[8], 'click', topUI.updateBox, topUI, condition)
+        urwid.connect_signal(elList[8], 'click', topUI.updateErrorBox, topUI, condition)
         
         urwid.ListBox.__init__(self, walker)
         
