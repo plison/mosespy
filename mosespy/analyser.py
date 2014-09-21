@@ -136,7 +136,8 @@ class ConditionEdit(urwid.Edit):
     
     def __init__(self, pretext, condField):
         self.condField = condField
-        urwid.Edit.__init__(self, pretext)
+        defaultVal = "" if isinstance(condField, list) else condField
+        urwid.Edit.__init__(self, pretext, defaultVal)
         
         
 class ConditionButton(urwid.Button):
