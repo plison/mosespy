@@ -225,7 +225,7 @@ class AnalysisUI(urwid.MainLoop):
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
-        self.top[1][1] = ErrorBox(errors)
+        self.top[1] = (80,ErrorBox(errors))
         
         
                 
