@@ -171,7 +171,7 @@ class ErrorBox(urwid.ListBox):
         align = self.aligns[choice]
         indexList = choice*4
         if self.lineInFocus == indexList:
-            self.body.remove(indexList)
+            del self.body.remove[indexList]
         elif align.targethistory:
             previousText = urwid.Text(tab + "  Previous:     "+ align.targethistory)         
             self.body.insert(indexList + 2, previousText)
