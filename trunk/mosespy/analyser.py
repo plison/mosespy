@@ -171,13 +171,13 @@ class ConditionBox(urwid.ListBox):
     
     def updateCondition(self):
         cond = Condition()
-        cond.length[0] = self.body[2][1]
-        cond.length[1] = self.body[2][2]
-        cond.wer[0] = float(self.body[3][1])
-        cond.wer[1] = float(self.body[3][2])
-        cond.inSource = [self.body[4]]
-        cond.inTarget = [self.body[5]]
-        cond.inTranslation = [self.body[6]]
+        cond.length[0] = int(self.body[2][1].edit_text)
+        cond.length[1] = int(self.body[2][2].edit_text)
+        cond.wer[0] = float(self.body[3][1].edit_text)
+        cond.wer[1] = float(self.body[3][2].edit_text)
+        cond.inSource = [self.body[4].edit_text]
+        cond.inTarget = [self.body[5].edit_text]
+        cond.inTranslation = [self.body[6].edit_text]
         self.topUI.updateErrorBox(cond)
         
         
