@@ -234,12 +234,11 @@ class AnalysisUI():
     def __init__(self, condition, results):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
-        self.errorBox = ErrorBox([])
         top = urwid.Columns([(40, ConditionBox(condition, self)), 
-                             (80,self.errorBox)], 2, 1)  
+                             (80,ErrorBox([]))], 2, 1)  
         self.mainLoop = urwid.MainLoop(top)
-        self.mainLoop.run()
         self.updateErrorBox(condition)
+        self.mainLoop.run()
           
     
     def updateErrorBox(self, newCondition):
@@ -247,9 +246,9 @@ class AnalysisUI():
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
-        self.mainLoop.widget = urwid.Columns([(40, ConditionBox(newCondition, self)), 
-                             (80, ErrorBox(errors))], 2, 1)  
-        
+        cols = urwid.Columns([(40, ConditionBox(newCondition, self)), 
+                              (80, ErrorBox(errors))], 2, 1) 
+        self.mainLoop.widget = cols 
         
                 
 
