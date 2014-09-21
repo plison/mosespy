@@ -209,6 +209,7 @@ class ErrorBox(urwid.ListBox):
         self._invalidate()
 
         while row_offset < maxrow:
+            self.body.insert(0, urwid.Text("HERE %s"%(str(row_offset))))
             # need to scroll in another candidate widget
             widget, pos = self.body.get_next(pos)
             if widget is None:
@@ -216,8 +217,6 @@ class ErrorBox(urwid.ListBox):
                 return True # keypress not handled
             rows = widget.rows((maxcol,))
             if rows and widget.selectable():
-                self.body.insert(0, urwid.Text("HERE %s"%(str(pos))))
-
                 # this one will do
                 self.change_focus((maxcol,maxrow), pos,
                     row_offset, 'above')
