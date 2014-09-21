@@ -146,12 +146,12 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Divider())
     
         lengthCols = [(16,urwid.Text("Sentence length: ")),
-                      (10, urwid.IntEdit(" from ", condition.length[0])), 
-                      (10, urwid.IntEdit(" to ",condition.length[1]))]
+                      (10, urwid.IntEdit(" from ", str(condition.length[0]))), 
+                      (10, urwid.IntEdit(" to ",str(condition.length[1])))]
         elList.append(urwid.Columns(lengthCols))
         werCols = [(16,urwid.Text("Word Error Rate: ")),
-                   (10, urwid.Edit(" from ",condition.wer[0])), 
-                   (10, urwid.Edit(" to ",condition.wer[1]))]
+                   (10, urwid.Edit(" from ",str(condition.wer[0]))), 
+                   (10, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
         elList.append(urwid.Edit("Source substring: "))
         elList.append(urwid.Edit("Target substring: "))
