@@ -134,7 +134,7 @@ class Condition():
  
 class ConditionBox(urwid.ListBox):
     
-    def __init__(self, condition, topUI):
+    def __init__(self, condition):
         elList = []
         elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
         elList.append(urwid.Divider())
@@ -160,7 +160,6 @@ class ConditionBox(urwid.ListBox):
         urwid.connect_signal(elList[4][1], 'change', self.change, 'inTranslation')
         
         self.condition = condition
-        self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
         
     
@@ -170,7 +169,6 @@ class ConditionBox(urwid.ListBox):
             condField = [widget.editText]
         else:
             condField = widget.editText
-        self.topUI.updateErrorBox(self.condition)
         
 
 class ErrorBox(urwid.ListBox):
@@ -221,8 +219,8 @@ class AnalysisUI(urwid.MainLoop):
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
-        top = urwid.Columns([ 
-                             (80,ErrorBox(errors))], 1)        
+        top = urwid.Columns([(40, ConditionBox(newCondition)), 
+                             (80,ErrorBox(errors))], 2, 1)        
         urwid.MainLoop.__init__(self, top)
         
                 
