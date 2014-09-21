@@ -149,10 +149,11 @@ class ErrorBox(urwid.ListBox):
         elList = []
         for i in range(0, len(aligns)):
             a = aligns[i]
+            tab = " " * (len(str(i))+2)
             WER = min([getWER(t, a.translation) for t in a.target])
-            fullText= ("%i.    Source:       %s"%((i+1), a.source) + "\n" 
-                       + "\n".join([("  Reference:    "+ t) for t in a.target if t.strip()])
-                       + "\n"+ "  Translation:  " + a.translation + " (WER=%i%%)\n"%(WER*100))
+            fullText= ("%i. Source:       %s"%((i+1), a.source) + "\n" 
+                       + "\n".join([(tab+"Reference:    "+ t) for t in a.target if t.strip()])
+                       + "\n" + tab + "Translation:  " + a.translation + " (WER=%i%%)\n"%(WER*100))
             but = urwid.Button(fullText)
             urwid.connect_signal(but, 'click', self.selection, i)
             elList.append(but)
