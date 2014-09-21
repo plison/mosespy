@@ -181,7 +181,6 @@ class ErrorBox(urwid.ListBox):
     
 
     def _keypress_down(self, size):
-        self.body.insert(0, urwid.Text("HERE %i"%(size)))
         (maxcol, maxrow) = size
 
         middle, top, bottom = self.calculate_visible(
@@ -194,6 +193,7 @@ class ErrorBox(urwid.ListBox):
         row_offset = focus_row_offset + focus_rows
         rows = focus_rows
 
+        self.body.insert(0, urwid.Text("HERE %s"%(str(row_offset))))
         # look for selectable widget below
         pos = focus_pos
         widget = None
