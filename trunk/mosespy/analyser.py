@@ -55,7 +55,9 @@ class ErrorAnalyser():
         if not isinstance(results, ReferenceCorpus):
             raise RuntimeError("results must be of type ReferenceCorpus")
         alignments = results.getAlignments(addHistory=True)
-        AnalysisUI(self.conditions[0], alignments).run()
+        for a in alignments:
+            print a.source, a.targethistory
+        #AnalysisUI(self.conditions[0], alignments).run()
       
 
 class Condition():
@@ -167,7 +169,7 @@ class AnalysisUI(urwid.MainLoop):
             tab = " " * (len(str(i))+2)
             if focus == i:
                 if self.focus != focus:
-                    elList.append(urwid.Text(tab + "  Previous:     "))
+                    elList.append(urwid.Text(tab + "  Previous:     "+ a.targethistory))
                 focusInList = len(elList)-2
             for t in a.target:
                 if t.strip():
