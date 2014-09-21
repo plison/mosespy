@@ -221,8 +221,8 @@ class AnalysisUI(urwid.MainLoop):
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
-        top = urwid.Columns([(40, ConditionBox(newCondition, self)), 
-                             (80,ErrorBox(errors))], 2, 1)        
+        top = urwid.Columns([ 
+                             (80,ErrorBox(errors))], 1)        
         urwid.MainLoop.__init__(self, top)
         
                 
