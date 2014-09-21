@@ -137,20 +137,20 @@ class ConditionBox(urwid.ListBox):
     
     def __init__(self, condition):
         elList = []
-        elList.append(urwid.Text("Analysis of errors under the following criteria:"))
+        elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
         elList.append(urwid.Divider())
-        lengthCols = [urwid.Text("Sentence length\n(number of words)")]
-        lengthCols.append(urwid.Edit(" from "))
-        lengthCols.append(urwid.Edit(" to "))
+        lengthCols = [urwid.Text("Sentence length:\n(number of words)")]
+        lengthCols.append(urwid.IntEdit(" from "))
+        lengthCols.append(urwid.IntEdit(" to "))
         elList.append(urwid.Columns(lengthCols))
-        werCols = [urwid.Text("Word from Rate\n(between 0 and 1)")]
+        werCols = [urwid.Text("Word Error Rate:\n(between 0 and 1)")]
         werCols.append(urwid.Edit(" from "))
         werCols.append(urwid.Edit(" to "))
         elList.append(urwid.Columns(werCols))
-        sourceCols = [urwid.Text("Source substring\n")]
+        sourceCols = [urwid.Text("Source substring:")]
         sourceCols.append(urwid.Edit())
         elList.append(urwid.Columns(sourceCols))
-        targetCols = [urwid.Text("Target substring\n")]
+        targetCols = [urwid.Text("Target substring:")]
         targetCols.append(urwid.Edit())
         elList.append(urwid.Columns(targetCols))
         walker = urwid.SimpleFocusListWalker(elList)
