@@ -137,6 +137,14 @@ class ConditionEdit(urwid.Edit):
     def __init__(self, pretext, condField):
         self.condField = condField
         urwid.Edit.__init__(self, pretext)
+        
+        
+class ConditionButton(urwid.Button):
+    
+    def __init__(self, text, topUI, condition):
+        self.topUI = topUI
+        self.condition = condition
+        urwid.Button.__init__(self, text)
  
 class ConditionBox(urwid.ListBox):
     
@@ -158,7 +166,7 @@ class ConditionBox(urwid.ListBox):
         elList.append(ConditionEdit("Translation substring: ", condition.inTranslation))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Button("Search errors"))
+        elList.append(ConditionButton("Search errors", topUI, condition))
         walker = urwid.SimpleFocusListWalker(elList)
 
         urwid.connect_signal(lengthCols[1][1], 'change', change)
@@ -168,7 +176,7 @@ class ConditionBox(urwid.ListBox):
         urwid.connect_signal(elList[4], 'change', change)
         urwid.connect_signal(elList[5], 'change', change)
         urwid.connect_signal(elList[6], 'change', change)
-        urwid.connect_signal(elList[8], 'click', topUI.updateErrorBox, topUI, condition)
+        urwid.connect_signal(elList[8], 'click', update)
         
         urwid.ListBox.__init__(self, walker)
         
@@ -178,6 +186,11 @@ def change(widget):
         widget.condField = [widget.editText]
     else:
         widget.condField = widget.editText
+        
+
+def update(button):
+    button.topUI.updateErrorBox(button.condition)
+    
         
            
 
