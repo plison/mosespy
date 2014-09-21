@@ -39,24 +39,18 @@ import urwid
 from mosespy.corpus import ReferenceCorpus
 
 
-class ErrorAnalyser():
+def startAnalysis(results, initCondition=None):
+    """Analyse the translation results (encoded as a translated corpus)
+    under a particular set of conditions.
     
-    def __init__(self, *conditions):
-        if len(conditions) > 0:
-            self.conditions = conditions
-        else:
-            self.conditions = [Condition()]
-        
-    def analyseResults(self, results):
-        """Analyse the translation results (encoded as a translated corpus)
-        under the set of conditions for the analyser.
-        
-        """
-        if not isinstance(results, ReferenceCorpus):
-            raise RuntimeError("results must be of type ReferenceCorpus")
-        alignments = results.getAlignments(addHistory=True)
-        AnalysisUI(self.conditions[0], alignments).run()
-      
+    """
+    if not initCondition:
+        initCondition=Condition()
+    if not isinstance(results, ReferenceCorpus):
+        raise RuntimeError("results must be of type ReferenceCorpus")
+    alignments = results.getAlignments(addHistory=True)
+    AnalysisUI(initCondition, alignments).run()
+  
 
 class Condition():
     """Condition on an alignment pair, made of:
@@ -139,17 +133,28 @@ class Condition():
     
     
  
+class ConditionBox(urwid.ListBox):
+    
+    def __init__(self, condition):
+        elList = []
+        elList.append(urwid.Text("Analysis of errors under the following criteria:"))
+        elList.append(urwid.Text(str(condition)))
+        urwid.ListBox.__init__(elList)
+           
+    
+    def pack(self, size, focus=False):
+        return (100, 10)
+        
 
 class AnalysisUI(urwid.MainLoop):
 
     def __init__(self, condition, aligns):
-        self.condition = condition
         self.aligns = []
         for a in aligns:
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        urwid.MainLoop.__init__(self, urwid.Columns([urwid.ListBox([urwid.Text("CONDITION HERE")]), 
+        urwid.MainLoop.__init__(self, urwid.Columns([ConditionBox(condition), 
                                                      self.getListBox()]))
         
     def selection(self, _, choice):
@@ -157,8 +162,7 @@ class AnalysisUI(urwid.MainLoop):
    
         
     def getListBox(self, focus=None):
-        title = "==> Analysis of errors under the condition: %s"%(self.condition)
-        elList = [urwid.Text(title), urwid.Divider()]
+        elList = []
         focusInList = 0
         for i in range(0, len(self.aligns)):
             a = self.aligns[i]
