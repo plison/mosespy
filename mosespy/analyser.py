@@ -178,6 +178,7 @@ class ConditionBox(urwid.ListBox):
         cond.inSource = [self.body[4].edit_text]
         cond.inTarget = [self.body[5].edit_text]
         cond.inTranslation = [self.body[6].edit_text]
+        raise RuntimeError("NEW COND: " + str(cond))
         self.topUI.updateErrorBox(cond)
         
         
@@ -233,7 +234,6 @@ class AnalysisUI():
     
     def updateErrorBox(self, newCondition):
         errors = []
-        raise RuntimeError("NEW COND: " + str(newCondition))
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
