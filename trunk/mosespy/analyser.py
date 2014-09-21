@@ -151,13 +151,13 @@ class ConditionBox(urwid.ListBox):
         
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(lengthCols[1][1], 'click', self.change, 'length[0]')
-        urwid.connect_signal(lengthCols[2][1], 'click', self.change, 'length[1]')
-        urwid.connect_signal(werCols[1][1], 'click', self.change, 'wer[0]')
-        urwid.connect_signal(werCols[2][1], 'click', self.change, 'wer[1]')
-        urwid.connect_signal(elList[2][1], 'click', self.change, 'inSource')
-        urwid.connect_signal(elList[3][1], 'click', self.change, 'inTarget')
-        urwid.connect_signal(elList[4][1], 'click', self.change, 'inTranslation')
+        urwid.connect_signal(lengthCols[1][1], 'change', self.change, 'length[0]')
+        urwid.connect_signal(lengthCols[2][1], 'change', self.change, 'length[1]')
+        urwid.connect_signal(werCols[1][1], 'change', self.change, 'wer[0]')
+        urwid.connect_signal(werCols[2][1], 'change', self.change, 'wer[1]')
+        urwid.connect_signal(elList[2][1], 'change', self.change, 'inSource')
+        urwid.connect_signal(elList[3][1], 'change', self.change, 'inTarget')
+        urwid.connect_signal(elList[4][1], 'change', self.change, 'inTranslation')
         
         self.condition = condition
         self.topUI = topUI
