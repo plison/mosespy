@@ -152,7 +152,7 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        columns = [(5, ConditionBox(condition)), (20,self.getListBox())]
+        columns = [(20, ConditionBox(condition)), (80,self.getListBox())]
         top = urwid.Columns(columns, focus_column=1)
         urwid.MainLoop.__init__(self, top)
         
