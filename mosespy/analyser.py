@@ -138,7 +138,7 @@ class ConditionBox(urwid.ListBox):
     def __init__(self, condition):
         elList = []
         elList.append(urwid.Text("Analysis of errors under the following criteria:"))
-        elList.append(urwid.Text(str(condition)))
+        elList.append(urwid.Columns([urwid.Text("Sentence length\n(in words)"), urwid.Edit()]))
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
         
