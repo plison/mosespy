@@ -168,7 +168,7 @@ class ErrorBox(urwid.ListBox):
     def selection(self, _, choice):
         tab = " " * (len(str(choice))+2)
         align = self.aligns[choice]
-        indexList = choice*3
+        indexList = choice*4
         if self.body.get_focus() != indexList and align.targethistory:
             previousText = urwid.Text(tab + "  Previous:     "+ align.targethistory)         
             self.body.insert(indexList + 2, previousText)
