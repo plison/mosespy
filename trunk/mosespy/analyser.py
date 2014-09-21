@@ -233,6 +233,7 @@ class AnalysisUI():
     
     def updateErrorBox(self, newCondition):
         errors = []
+        print "NEW COND: " + str(newCondition)
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
