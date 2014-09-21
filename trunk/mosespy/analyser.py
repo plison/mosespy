@@ -147,45 +147,34 @@ class ErrorBox(urwid.ListBox):
     
     def __init__(self, aligns):
         elList = []
+        self.aligns = aligns
         for i in range(0, len(aligns)):
-            a = aligns[i]
-            tab = " " * (len(str(i))+2)
-            WER = min([getWER(t, a.translation) for t in a.target])
-            fullText= ("%i. Source:       %s"%((i+1), a.source) + "\n" 
-                       + "\n".join([(tab+"Reference:    "+ t) for t in a.target if t.strip()])
-                       + "\n" + tab + "Translation:  " + a.translation + " (WER=%i%%)\n"%(WER*100))
-            but = urwid.Button(fullText)
-            urwid.connect_signal(but, 'click', self.selection, i)
-            elList.append(but)
+            widget = self.getAlignWidget(i)
+            elList.append(widget)
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
-        self.aligns = aligns
         self.lineInFocus = 0
+        
+    
+    def getAlignWidget(self, number, addHistory=False):
+        tab = " " * (len(str(number+1))+2)
+        pair = self.aligns[number]
+        refsText = [(tab+"Reference:    "+ t) for t in pair.target if t.strip()]
+        text= ("%i. Source:       %s"%((number+1), pair.source) + "\n" 
+               + "\n".join(refsText) + "\n")
+        if addHistory:
+            text += tab + "Previous:     " + pair.targethistory + "\n"    
+        WER = min([getWER(t, pair.translation) for t in pair.target])
+        text += tab + "Translation:  " + pair.translation + " (WER=%i%%)\n"%(WER*100)
+        widget = urwid.Button(text)
+        urwid.connect_signal(widget, 'click', self.selection, number)
+        return widget
     
     
     def selection(self, _, choice):
-        tab = " " * (len(str(choice))+2)
-        align = self.aligns[choice]
-        indexList = choice*4
-        if self.lineInFocus == indexList:
-            del self.body[indexList + 2]
-            self.lineInFocus = 0
-        elif align.targethistory:
-            previousText = urwid.Text(tab + "  Previous:     "+ align.targethistory)         
-            self.body.insert(indexList + 2, previousText)
-            self.body.set_focus(indexList)
-            self.lineInFocus = indexList
-    
-    def keypress(self, size, key):
-        if key== 'up' or key=='down':
-            urwid.ListBox.keypress(self, size, key)
-            urwid.ListBox.keypress(self, size, key)
-            urwid.ListBox.keypress(self, size, key)
-            urwid.ListBox.keypress(self, size, key)
-        else:
-            urwid.ListBox.keypress(self, size, key)
-            
-            
+        addHistory = self.lineInFocus!=choice
+        self.body[choice] = self.getAlignWidget(choice, addHistory)
+        self.lineInFocus = choice if addHistory else 0
 
    
 
