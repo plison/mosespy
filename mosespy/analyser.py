@@ -48,8 +48,7 @@ def startAnalysis(results, initCondition=None):
         initCondition=Condition()
     if not isinstance(results, ReferenceCorpus):
         raise RuntimeError("results must be of type ReferenceCorpus")
-    alignments = results.getAlignments(addHistory=True)
-    AnalysisUI(initCondition, alignments).run()
+    AnalysisUI(initCondition, results).run()
   
 
 class Condition():
@@ -135,26 +134,43 @@ class Condition():
  
 class ConditionBox(urwid.ListBox):
     
-    def __init__(self, condition):
+    def __init__(self, condition, topUI):
         elList = []
         elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
         elList.append(urwid.Divider())
-        lengthCols = [(20,urwid.Text("Sentence length:\n(number of words)"))]
-        lengthCols.append((10,urwid.IntEdit(" from ")))
-        lengthCols.append((10,urwid.IntEdit(" to ")))
+        
+        lengthCols = [(20,urwid.Text("Sentence length: \n(nb. of words)")),
+                      (10, urwid.IntEdit(" from ")), (10, urwid.IntEdit(" to "))]
         elList.append(urwid.Columns(lengthCols))
-        werCols = [(20,urwid.Text("Word Error Rate:\n(between 0 and 1)"))]
-        werCols.append((19,urwid.Edit(" from ")))
-        werCols.append((10,urwid.Edit(" to ")))
-        elList.append(urwid.Columns(werCols))
-        sourceCols = [urwid.Text("Source substring:")]
-        sourceCols.append(urwid.Edit())
-        elList.append(urwid.Columns(sourceCols))
-        targetCols = [urwid.Text("Target substring:")]
-        targetCols.append(urwid.Edit())
-        elList.append(urwid.Columns(targetCols))
+        werCols = [(20,urwid.Text("Word Error Rate: \n(0<=WER<=1)")),
+                   (10, urwid.Edit(" from ")), (10, urwid.Edit(" to "))]
+        elList.append(urwid.Columns(werCols))   
+        elList.append((40, urwid.Edit("Source substring: ")))
+        elList.append((40, urwid.Edit("Target substring: ")))
+        elList.append((40, urwid.Edit("Translation substring: ")))
+        
         walker = urwid.SimpleFocusListWalker(elList)
+
+        urwid.connect_signal(lengthCols[1][1], 'click', self.change, 'length[0]')
+        urwid.connect_signal(lengthCols[2][1], 'click', self.change, 'length[1]')
+        urwid.connect_signal(werCols[1][1], 'click', self.change, 'wer[0]')
+        urwid.connect_signal(werCols[2][1], 'click', self.change, 'wer[1]')
+        urwid.connect_signal(elList[2][1], 'click', self.change, 'inSource')
+        urwid.connect_signal(elList[3][1], 'click', self.change, 'inTarget')
+        urwid.connect_signal(elList[4][1], 'click', self.change, 'inTranslation')
+        
+        self.condition = condition
+        self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
+        
+    
+    def change(self, widget, condField):
+        condField = getattr(self.condition, condField)
+        if isinstance(condField, list):
+            condField = [widget.editText]
+        else:
+            condField = widget.editText
+        self.topUI.updateErrorBox(self.condition)
         
 
 class ErrorBox(urwid.ListBox):
@@ -194,15 +210,23 @@ class ErrorBox(urwid.ListBox):
 
 class AnalysisUI(urwid.MainLoop):
 
-    def __init__(self, condition, aligns):
-        self.aligns = []
-        for a in aligns:
-            if condition.isSatisfiedBy(a):
-                self.aligns.append(a)
+    def __init__(self, condition, results):
+        self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
-        columns = [(40, ConditionBox(condition)), (80,ErrorBox(aligns))]
-        top = urwid.Columns(columns, 2, 1)
-        urwid.MainLoop.__init__(self, top)
+        self.top = urwid.Columns([(40, ConditionBox(condition, self)), 
+                                  (80,ErrorBox([]))], 2, 1)
+        urwid.MainLoop.__init__(self, self.top)
+        self.updateErrorBox(condition)
+        
+    
+    
+    def updateErrorBox(self, newCondition):
+        errors = []
+        for a in self.aligns:
+            if newCondition.isSatisfiedBy(a):
+                errors.append(a)
+        self.top[1][1] = ErrorBox(errors)
+        
         
                 
 
