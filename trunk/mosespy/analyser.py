@@ -209,7 +209,6 @@ class ErrorBox(urwid.ListBox):
         self._invalidate()
 
         while row_offset < maxrow:
-            self.body.insert(0, urwid.Text("HERE %s"%(str(row_offset))))
             # need to scroll in another candidate widget
             widget, pos = self.body.get_next(pos)
             if widget is None:
@@ -226,6 +225,7 @@ class ErrorBox(urwid.ListBox):
         if not focus_widget.selectable() or focus_row_offset+focus_rows-1 <= 0:
             # just take bottom one if current is not selectable
             # or if focus has moved out of view
+            self.body.insert(0, urwid.Text("HERE %s"%(str(widget))))
             if widget is None:
                 self.shift_focus((maxcol,maxrow),
                     row_offset-rows)
