@@ -181,11 +181,11 @@ class ConditionBox(urwid.ListBox):
         urwid.ListBox.__init__(self, walker)
         
 
-def change(widget):
+def change(widget, newtest):
     if isinstance(widget.condField, list):
-        widget.condField = [widget.editText]
+        widget.condField = [newtest]
     else:
-        widget.condField = widget.editText
+        widget.condField =newtest
         
 
 def update(button):
