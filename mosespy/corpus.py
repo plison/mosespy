@@ -330,7 +330,7 @@ class ReferenceCorpus(object):
             alignments.append(pair)
             
         if addHistory:
-            targetCorpus = max(self.refCorpora, key=lambda x : x.countNbLines())
+            targetCorpus = max(self.refCorpora, key=lambda x : x.getSize())
             histories = targetCorpus.getHistories()
             for i in range(0, len(alignments)):
                 pair = alignments[i]
