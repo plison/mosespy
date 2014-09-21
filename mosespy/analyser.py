@@ -152,8 +152,8 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        columns = [(20, ConditionBox(condition)), (80,self.getListBox())]
-        top = urwid.Columns(columns, focus_column=1)
+        columns = [(30, ConditionBox(condition)), (100,self.getListBox())]
+        top = urwid.Columns(columns, 2, 1)
         urwid.MainLoop.__init__(self, top)
         
     def selection(self, _, choice):
