@@ -181,12 +181,8 @@ class ErrorBox(urwid.ListBox):
     
     def keypress(self, size, key):
         if key== 'up' or key=='down':
-            urwid.ListBox.keypress(self, size, key)
-            urwid.ListBox.keypress(self, size, key)
-            urwid.ListBox.keypress(self, size, key)
-            urwid.ListBox.keypress(self, size, key)
-        else:
-            urwid.ListBox.keypress(self, size, key)
+            self.body.insert(0, urwid.Text(str(self.calculate_visible(0))))
+        urwid.ListBox.keypress(self, size, key)
             
             
 
