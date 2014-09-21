@@ -170,7 +170,7 @@ class ErrorBox(urwid.ListBox):
         align = self.aligns[choice]
         indexList = choice*4
         if self.body.get_focus() != indexList and align.targethistory:
-            previousText = urwid.Text(tab + "  Previous:     "+ align.targethistory)         
+            previousText = urwid.Text(tab + "  Previous:     "+ str(self.body.get_focus()) + "vs " + str(indexList))        
             self.body.insert(indexList + 2, previousText)
             self.body.set_focus(indexList)
         self.body.set_focus(indexList)
