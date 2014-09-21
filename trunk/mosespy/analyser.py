@@ -139,7 +139,7 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Text("Analysis of errors under the following criteria:"))
         elList.append(urwid.Text(str(condition)))
-        urwid.ListBox.__init__(elList)
+        urwid.ListBox.__init__(self, elList)
            
     
     def pack(self, size, focus=False):
