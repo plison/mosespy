@@ -139,11 +139,9 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Text("Analysis of errors under the following criteria:"))
         elList.append(urwid.Text(str(condition)))
-        urwid.ListBox.__init__(self, elList)
-           
-    
-    def pack(self, size, focus=False):
-        return (100, 10)
+        walker = urwid.SimpleFocusListWalker(elList)
+        urwid.ListBox.__init__(self, walker)
+
         
 
 class AnalysisUI(urwid.MainLoop):
@@ -154,8 +152,9 @@ class AnalysisUI(urwid.MainLoop):
             if condition.isSatisfiedBy(a):
                 self.aligns.append(a)
         self.focus = None
-        urwid.MainLoop.__init__(self, urwid.Columns([ConditionBox(condition), 
-                                                     self.getListBox()]))
+        columns = [(50, ConditionBox(condition)), (200,self.getListBox())]
+        columns = urwid.Columns(columns, focus_column=1)
+        urwid.MainLoop.__init__(self, )
         
     def selection(self, _, choice):
         self.widget = self.getListBox(choice)
