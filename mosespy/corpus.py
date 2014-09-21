@@ -105,8 +105,6 @@ class BasicCorpus(Path):
         
         histories = {}
         corpusLines = self.readlines()
-        print "PATH IS " + str(self)
-        print "line: " + corpusLines[0]
         originLines = [originLine.strip("\n") for originLine in corpusLines]
         
         for i in range(0, len(corpusLines)):
@@ -332,7 +330,7 @@ class ReferenceCorpus(object):
             alignments.append(pair)
             
         if addHistory:
-            targetCorpus = self.refCorpora[0]
+            targetCorpus = max(self.refCorpora, key=lambda x : x.countNbLines())
             histories = targetCorpus.getHistories()
             for i in range(0, len(alignments)):
                 pair = alignments[i]
