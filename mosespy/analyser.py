@@ -163,18 +163,18 @@ class ErrorBox(urwid.ListBox):
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
         self.aligns = aligns
+        self.focus = 0
     
     
     def selection(self, _, choice):
         tab = " " * (len(str(choice))+2)
         align = self.aligns[choice]
         indexList = choice*4
-        curFocus = self.body.index(self.body.get_focus())
-        if curFocus != indexList and align.targethistory:
+        if self.focus != indexList and align.targethistory:
             previousText = urwid.Text(tab + "  Previous:     "+ align.targethistory)         
             self.body.insert(indexList + 2, previousText)
             self.body.set_focus(indexList)
-        self.body.set_focus(indexList)
+        self.focus = indexList
         
 
    
