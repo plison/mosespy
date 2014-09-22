@@ -212,7 +212,7 @@ class ErrorBox(urwid.ListBox):
         if addHistory:
             text += tab + "Previous:     " + pair.previous.target + "\n"    
         refsText = [(tab+"Reference:    "+ t) for t in pair.target if t.strip()]
-        text += tab +  + "\n".join(refsText) + "\n"
+        text += tab  + "\n".join(refsText) + "\n"
         if addHistory:
             text += tab + "Previous:     " + pair.previous.translation + "\n" 
         WER = min([getWER(t, pair.translation) for t in pair.target])
