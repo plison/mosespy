@@ -91,15 +91,12 @@ class Condition():
         of the condition, and false otherwise.
         
         """
-        for inS in self.inSource:
-            if inS not in pair.source:
-                return False
-        for inT in self.inTarget:
-            if not any([inT in t for t in pair.target]):
-                return False
-        for inT in self.inTranslation:
-            if pair.translation and inT not in pair.translation:
-                return False
+        if self.inSource and not any([inS in pair.source for inS in self.inSource]):
+            return False
+        if self.inTarget and not any([inT in trg for inT in self.inTarget for trg in pair.target]):
+            return False
+        if self.inTranslation and not any([inT in pair.translation for inT in self.inTranslation]):
+            return False
         
         if not (self.length[0] <= len(pair.translation.split())<= self.length[1]):
             return False
@@ -150,9 +147,9 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.IntEdit(('cyan', "                   to "),
                                     str(condition.length[1])))
         elList.append(urwid.Edit(('cyan', " Word Error Rate:  from "),
-                                    str(condition.wer[0])))
+                                    "%.2f"%(condition.wer[0])))
         elList.append(urwid.Edit(('cyan', "                   to "),
-                                   str(condition.wer[1])))
+                                    "%.2f"%(condition.wer[1])))
         elList.append(urwid.Edit(('cyan', " Source substring(s):\n"), 
                                  ";".join(condition.inSource)))
         elList.append(urwid.Edit(('cyan', " Target substring(s):\n"),
@@ -166,7 +163,7 @@ class ConditionBox(urwid.ListBox):
                             lambda x : x.condBox.updateCondition())
        
         elList.append(urwid.Divider())
-        elList.append(urwid.Text(('cyan'," Number of sentences: %i/%i"
+        elList.append(urwid.Text(('cyan'," Number of sentences:\n %i/%i"
                                   %(len(topUI.errors), len(topUI.aligns)))))
         walker = urwid.SimpleFocusListWalker(elList)
 
@@ -185,7 +182,7 @@ class ConditionBox(urwid.ListBox):
         cond.inTarget = [t for t in self.body[6].edit_text.split(";") if t.strip()]
         cond.inTranslation = [t for t in self.body[7].edit_text.split(";") if t.strip()]
         self.topUI.updateErrors(cond)
-        self.body[11] = urwid.Text(" Number of sentences: %i/%i"
+        self.body[11] = urwid.Text(" Number of sentences:\n %i/%i"
                                    %(len(self.topUI.errors), len(self.topUI.aligns)))
         
         
