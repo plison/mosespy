@@ -145,19 +145,19 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Divider())
     
-        elList.append(urwid.IntEdit(('cyan', "Sentence length:  from "),
+        elList.append(urwid.IntEdit(('cyan', " Sentence length:  from "),
                                     str(condition.length[0])))
-        elList.append(urwid.IntEdit(('cyan', "                  to "),
+        elList.append(urwid.IntEdit(('cyan', "                   to "),
                                     str(condition.length[1])))
-        elList.append(urwid.Edit(('cyan', "Word Error Rate:  from "),
+        elList.append(urwid.Edit(('cyan', " Word Error Rate:  from "),
                                     str(condition.wer[0])))
-        elList.append(urwid.Edit(('cyan', "                  to "),
+        elList.append(urwid.Edit(('cyan', "                   to "),
                                    str(condition.wer[1])))
-        elList.append(urwid.Edit(('cyan', "Source substring:\n"), 
+        elList.append(urwid.Edit(('cyan', " Source substring(s):\n"), 
                                  ";".join(condition.inSource)))
-        elList.append(urwid.Edit(('cyan', "Target substring:\n"),
+        elList.append(urwid.Edit(('cyan', " Target substring(s):\n"),
                                  ";".join(condition.inTarget)))
-        elList.append(urwid.Edit(('cyan', "Translation substring:\n"),
+        elList.append(urwid.Edit(('cyan', " Translation substring(s):\n"),
                                  ";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
@@ -166,7 +166,8 @@ class ConditionBox(urwid.ListBox):
                             lambda x : x.condBox.updateCondition())
        
         elList.append(urwid.Divider())
-        elList.append(urwid.Text("Number of sentences: %i/%i"%(len(topUI.errors), len(topUI.aligns))))
+        elList.append(urwid.Text(('cyan'," Number of sentences: %i/%i"
+                                  %(len(topUI.errors), len(topUI.aligns)))))
         walker = urwid.SimpleFocusListWalker(elList)
 
         
@@ -184,7 +185,8 @@ class ConditionBox(urwid.ListBox):
         cond.inTarget = [t for t in self.body[6].edit_text.split(";") if t.strip()]
         cond.inTranslation = [t for t in self.body[7].edit_text.split(";") if t.strip()]
         self.topUI.updateErrors(cond)
-        self.body[11] = urwid.Text("Number of errors: %i/%i"%(len(self.topUI.errors), len(self.topUI.aligns)))
+        self.body[11] = urwid.Text(" Number of sentences: %i/%i"
+                                   %(len(self.topUI.errors), len(self.topUI.aligns)))
         
         
         
@@ -243,8 +245,8 @@ class AnalysisUI(urwid.MainLoop):
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 self.errors.append(a)
-        cols = urwid.Columns([(40, urwid.LineBox(ConditionBox(newCondition, self), "Analysis criteria")), 
-                              (80, ErrorBox(self.errors))], 2, 1) 
+        cols = urwid.Columns([(30, urwid.LineBox(ConditionBox(newCondition, self), "Analysis criteria")), 
+                              (100, ErrorBox(self.errors))], 2, 1) 
         self.widget = cols         
           
         
