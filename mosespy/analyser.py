@@ -230,8 +230,8 @@ class AnalysisUI(urwid.MainLoop):
         self.focus = None
         self.errors = []
         urwid.MainLoop.__init__(self, urwid.Text("Processing..."))
-        self.run()
         self.updateErrors(condition)
+        self.run()
         
     
     def updateErrors(self, newCondition):
