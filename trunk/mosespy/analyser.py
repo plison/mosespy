@@ -158,7 +158,7 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Edit("Target substring: ",
                                  ";".join(condition.inTarget)))
         elList.append(urwid.Edit("Translation substring: ",
-                                 ('cyan', ";".join(condition.inTranslation))))
+                                 ('cyan', "a")))
         
         elList.append(urwid.Divider())
         elList.append(urwid.Columns([(17,ConditionButton("Start search", self))]))
