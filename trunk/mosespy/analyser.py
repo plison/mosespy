@@ -227,7 +227,7 @@ class AnalysisUI():
         top = urwid.Columns([(40, ConditionBox(condition, self)), 
                              (80,ErrorBox([]))], 2, 1)  
         self.mainLoop = urwid.MainLoop(top)
-    #    self.updateErrorBox(condition)
+        self.updateErrorBox(condition)
         self.mainLoop.run()
           
     
@@ -236,6 +236,8 @@ class AnalysisUI():
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
+        if str(newCondition) == "'' in source and '' in target and sentence length in [0,1]":
+            raise RuntimeError("number of errors: %i"%(len(errors)))
         cols = urwid.Columns([(40, ConditionBox(newCondition, self)), 
                               (80, ErrorBox(errors))], 2, 1) 
         self.mainLoop.widget = cols 
