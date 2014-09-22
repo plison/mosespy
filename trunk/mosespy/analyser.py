@@ -145,20 +145,20 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Divider())
     
-        elList.append(urwid.IntEdit("Sentence length:  from ",
+        elList.append(urwid.IntEdit(('cyan', "Sentence length:  from "),
                                     str(condition.length[0])))
-        elList.append(urwid.IntEdit("                  to ",
+        elList.append(urwid.IntEdit(('cyan', "                  to "),
                                     str(condition.length[1])))
-        elList.append(urwid.Edit("Word Error Rate:  from ",
+        elList.append(urwid.Edit(('cyan', "Word Error Rate:  from "),
                                     str(condition.wer[0])))
-        elList.append(urwid.Edit("                  to ",
+        elList.append(urwid.Edit(('cyan', "                  to "),
                                    str(condition.wer[1])))
-        elList.append(urwid.Edit("Source substring:\n", 
+        elList.append(urwid.Edit(('cyan', "Source substring:\n"), 
                                  ";".join(condition.inSource)))
-        elList.append(urwid.Edit("Target substring: ",
+        elList.append(urwid.Edit(('cyan', "Target substring:\n"),
                                  ";".join(condition.inTarget)))
-        elList.append(urwid.Edit("Translation substring: ",
-                                 ('cyan', "a")))
+        elList.append(urwid.Edit(('cyan', "Translation substring:\n"),
+                                 ";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
         elList.append(urwid.Columns([(17,ConditionButton("Start search", self))]))
