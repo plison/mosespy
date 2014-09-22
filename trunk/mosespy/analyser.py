@@ -207,15 +207,15 @@ class ErrorBox(urwid.ListBox):
         pair = self.aligns[number]
         text = "%i. "%(number+1)
         if addHistory:
-            text += "Previous:     " + pair.previous.source + "\n" + tab        
+            text += "              " + pair.previous.source + "\n" + tab        
         text += "Source:       " + pair.source + "\n" 
         if addHistory:
             prevtarget = max(pair.previous.target, key=lambda x : len(x))
-            text += tab + "Previous:     " + prevtarget + "\n"    
+            text += tab + "              " + prevtarget + "\n"    
         refsText = [("Reference:    "+ t) for t in pair.target if t.strip()]
         text += tab  + "\n".join(refsText) + "\n"
         if addHistory:
-            text += tab + "Previous:     " + pair.previous.translation + "\n" 
+            text += tab + "              " + pair.previous.translation + "\n" 
         WER = min([getWER(t, pair.translation) for t in pair.target])
         text += tab + "Translation:  " + pair.translation + " (WER=%i%%)\n"%(WER*100)
         widget = urwid.Button(text)
