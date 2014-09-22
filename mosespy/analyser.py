@@ -162,7 +162,7 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Columns([(20,urwid.AttrMap(ConditionButton("Search errors", self), None, focus_map='reversed'))]))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(elList[8][0].original_widget, 'click', 
+        urwid.connect_signal(elList[8][0], 'click', 
                              lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
