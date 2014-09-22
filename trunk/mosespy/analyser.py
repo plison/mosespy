@@ -144,26 +144,25 @@ class ConditionBox(urwid.ListBox):
     def __init__(self, condition, topUI):
         elList = []
         elList.append(urwid.Text("Analysis of errors under\nthe following criteria:"))
-        elList.append(urwid.Divider())
+        elList.append(urwid.AttrMap(urwid.Divider(), "bright"))
     
-        lengthCols = [(16,urwid.Text("Sentence length: ")),
-                      (9, urwid.IntEdit(" from ", str(condition.length[0]))), 
-                      (9, urwid.IntEdit(" to ",str(condition.length[1])))]
+        lengthCols = [(20, urwid.IntEdit("Sentence length:  from ", 
+                                         str(condition.length[0]))), 
+                      (10, urwid.IntEdit(" to ",str(condition.length[1])))]
         elList.append(urwid.Columns(lengthCols))
-        werCols = [(16,urwid.Text("Word Error Rate: ")),
-                   (9, urwid.Edit(" from ",str(condition.wer[0]))), 
-                   (9, urwid.Edit(" to ",str(condition.wer[1])))]
+        werCols = [(20, urwid.Edit("Word Error Rate:  from ",
+                                   str(condition.wer[0]))), 
+                   (10, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
         elList.append(urwid.Edit("Source substring: ", ";".join(condition.inSource)))
         elList.append(urwid.Edit("Target substring: ",";".join(condition.inTarget)))
         elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.AttrMap(ConditionButton("Search errors", self), 
-                                    "bright", focus_map="reversed"))
+        elList.append(urwid.Columns([(20,ConditionButton("Search errors", self))]))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(elList[8].original_widget, 'click', 
+        urwid.connect_signal(elList[8][0], 'click', 
                              lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
