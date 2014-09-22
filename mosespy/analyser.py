@@ -231,7 +231,7 @@ class AnalysisUI(urwid.MainLoop):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
         self.errors = []
-        palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
+        palette = [('cyan', 'dark cyan', 'default'),('bold', 'dark cyan', 'default'), 
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
         urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
         self.updateErrors(condition)
