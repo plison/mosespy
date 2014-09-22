@@ -159,10 +159,10 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Columns([(20,ConditionButton("Search errors", self))]))
+        elList.append(urwid.Columns([(18,ConditionButton("Search errors", self))]))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Text("Number of errors: "))
+        elList.append(urwid.Text("Number of errors: %i/%i"%(len(topUI.errors), len(topUI.aligns))))
         walker = urwid.SimpleFocusListWalker(elList)
 
         urwid.connect_signal(elList[8][0], 'click', 
@@ -181,8 +181,8 @@ class ConditionBox(urwid.ListBox):
         cond.inSource = [t for t in self.body[4].edit_text.split(";") if t.strip()]
         cond.inTarget = [t for t in self.body[5].edit_text.split(";") if t.strip()]
         cond.inTranslation = [t for t in self.body[6].edit_text.split(";") if t.strip()]
-        nbErrors,nbFull = self.topUI.updateErrorBox(cond)
-        self.body[10] = urwid.Text("Number of errors: %i/%i"%(nbErrors, nbFull))
+        self.topUI.updateErrors(cond)
+        self.body[10] = urwid.Text("Number of errors: %i/%i"%(len(self.topUI.errors), len(self.topUI.aligns)))
         
         
         
@@ -223,26 +223,26 @@ class ErrorBox(urwid.ListBox):
 
    
 
-class AnalysisUI():
+class AnalysisUI(urwid.MainLoop):
 
     def __init__(self, condition, results):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
-        top = urwid.Columns([(40, urwid.Frame(ConditionBox(condition, self))), 
-                             (80,ErrorBox([]))], 2, 1)  
-        self.mainLoop = urwid.MainLoop(top)
-        self.mainLoop.run()
-          
+        self.errors = []
+        urwid.MainLoop.__init__(self, urwid.Text("Processing..."))
+        self.run()
+        self.updateErrors(condition)
+        
     
-    def updateErrorBox(self, newCondition):
-        errors = []
+    def updateErrors(self, newCondition):
+        self.errors = []
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
-                errors.append(a)
+                self.errors.append(a)
         cols = urwid.Columns([(40, urwid.Frame(ConditionBox(newCondition, self))), 
-                              (80, ErrorBox(errors))], 2, 1) 
-        self.mainLoop.widget = cols 
-        return len(errors), len(self.aligns)
+                              (80, ErrorBox(self.errors))], 2, 1) 
+        self.widget = cols         
+          
         
                 
 
