@@ -142,20 +142,20 @@ class ConditionBox(urwid.ListBox):
     
     def __init__(self, condition, topUI):
         elList = []
-        elList.append(urwid.Text("Analysis of errors under\n the following criteria:"))
+        elList.append(urwid.Text("Analysis of errors under\nthe following criteria:"))
         elList.append(urwid.Divider())
     
         lengthCols = [(16,urwid.Text("Sentence length: ")),
-                      (10, urwid.IntEdit(" from ", str(condition.length[0]))), 
-                      (10, urwid.IntEdit(" to ",str(condition.length[1])))]
+                      (8, urwid.IntEdit(" from ", str(condition.length[0]))), 
+                      (8, urwid.IntEdit(" to ",str(condition.length[1])))]
         elList.append(urwid.Columns(lengthCols))
         werCols = [(16,urwid.Text("Word Error Rate: ")),
-                   (10, urwid.Edit(" from ",str(condition.wer[0]))), 
-                   (10, urwid.Edit(" to ",str(condition.wer[1])))]
+                   (8, urwid.Edit(" from ",str(condition.wer[0]))), 
+                   (8, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
-        elList.append(urwid.Edit("Source substring: "))
-        elList.append(urwid.Edit("Target substring: "))
-        elList.append(urwid.Edit("Trans. substring: "))
+        elList.append(urwid.Edit("Source substring: "), ";".join(condition.inSource))
+        elList.append(urwid.Edit("Target substring: "),";".join(condition.inTarget))
+        elList.append(urwid.Edit("Translation substring: "),";".join(condition.inTranslation))
         
         elList.append(urwid.Divider())
         elList.append(ConditionButton("Search errors", self))
@@ -175,9 +175,9 @@ class ConditionBox(urwid.ListBox):
                        int(self.body[2][2].edit_text))
         cond.wer = (float(self.body[3][1].edit_text),
                     float(self.body[3][2].edit_text))
-        cond.inSource = [self.body[4].edit_text]
-        cond.inTarget = [self.body[5].edit_text]
-        cond.inTranslation = [self.body[6].edit_text]
+        cond.inSource = [t for t in self.body[4].edit_text.split(";") if t.strip()]
+        cond.inTarget = [t for t in self.body[5].edit_text.split(";") if t.strip()]
+        cond.inTranslation = [t for t in self.body[6].edit_text.split(";") if t.strip()]
         self.topUI.updateErrorBox(cond)
         
         
