@@ -146,19 +146,19 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Divider())
     
         elList.append(urwid.IntEdit("Sentence length:  from ",
-                                    ('cyan', str(condition.length[0]))))
+                                    str(condition.length[0])))
         elList.append(urwid.IntEdit("                  to ",
-                                    ('cyan', str(condition.length[1]))))
+                                    str(condition.length[1])))
         elList.append(urwid.Edit("Word Error Rate:  from ",
-                                    ('cyan', str(condition.wer[0]))))
+                                    str(condition.wer[0])))
         elList.append(urwid.Edit("                  to ",
-                                    ('cyan', str(condition.wer[1]))))
+                                   str(condition.wer[1])))
         elList.append(urwid.Edit("Source substring: ", 
-                                 ('cyan', ";".join(condition.inSource))))
+                                 ";".join(condition.inSource)))
         elList.append(urwid.Edit("Target substring: ",
-                                 ('cyan', ";".join(condition.inTarget))))
+                                 ";".join(condition.inTarget)))
         elList.append(urwid.Edit("Translation substring: ",
-                                 ('cyan', ";".join(condition.inTranslation))))
+                                 ";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
         elList.append(urwid.Columns([(17,ConditionButton("Start search", self))]))
@@ -231,7 +231,7 @@ class AnalysisUI(urwid.MainLoop):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
         self.errors = []
-        palette = [('cyan', 'dark cyan', 'default'),('bold', 'dark cyan', 'default'), 
+        palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
         urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
         self.updateErrors(condition)
