@@ -149,9 +149,9 @@ class ConditionBox(urwid.ListBox):
                                     ('cyan', str(condition.length[0]))))
         elList.append(urwid.IntEdit("                  to ",
                                     ('cyan', str(condition.length[1]))))
-        elList.append(urwid.IntEdit("Word Error Rate:  from ",
+        elList.append(urwid.Edit("Word Error Rate:  from ",
                                     ('cyan', str(condition.wer[0]))))
-        elList.append(urwid.IntEdit("                  to ",
+        elList.append(urwid.Edit("                  to ",
                                     ('cyan', str(condition.wer[1]))))
         elList.append(urwid.Edit("Source substring: ", 
                                  ('cyan', ";".join(condition.inSource))))
