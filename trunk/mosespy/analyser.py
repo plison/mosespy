@@ -101,7 +101,7 @@ class Condition():
             if pair.translation and inT not in pair.translation:
                 return False
         
-        if not any([self.length[0] <= len(t.split()) <= self.length[1] for t in pair.target]):
+        if not any([self.length[0] <= len(t.split()) <= self.length[1] for t in pair.translation]):
             return False
         
         if pair.translation and not any([self.wer[0] <= getWER(t, pair.translation) <= 
@@ -236,8 +236,6 @@ class AnalysisUI():
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 errors.append(a)
-        if str(newCondition) == "'' in source and '' in target and sentence length in [0,1]":
-            raise RuntimeError("number of errors: %i"%(len(errors)))
         cols = urwid.Columns([(40, ConditionBox(newCondition, self)), 
                               (80, ErrorBox(errors))], 2, 1) 
         self.mainLoop.widget = cols 
