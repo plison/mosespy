@@ -136,15 +136,14 @@ class ConditionButton(urwid.Button):
     
     def __init__(self, text, condBox):
         self.condBox = condBox
-        urwid.Button.__init__(self, ('standout', text))
+        urwid.Button.__init__(self, ('cyan', text))
         
  
 class ConditionBox(urwid.ListBox):
     
     def __init__(self, condition, topUI):
         elList = []
-        elList.append(urwid.Text(('dark cyan',"Analysis of errors under\nthe following criteria:")))
-        elList.append(urwid.AttrMap(urwid.Divider(), "bright"))
+        elList.append(urwid.Divider())
     
         lengthCols = [(28, urwid.IntEdit("Sentence length:  from ", 
                                          str(condition.length[0]))), 
@@ -159,13 +158,13 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Columns([(18,ConditionButton("Search errors", self))]))
+        elList.append(urwid.Columns([(17,ConditionButton("Start search", self))]))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Text("Number of errors: %i/%i"%(len(topUI.errors), len(topUI.aligns))))
+        elList.append(urwid.Text("Number of sentences: %i/%i"%(len(topUI.errors), len(topUI.aligns))))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(elList[8][0], 'click', 
+        urwid.connect_signal(elList[7][0], 'click', 
                              lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
@@ -174,15 +173,15 @@ class ConditionBox(urwid.ListBox):
     
     def updateCondition(self):
         cond = Condition()
-        cond.length = (int(self.body[2][0].edit_text),
-                       int(self.body[2][1].edit_text))
-        cond.wer = (float(self.body[3][0].edit_text),
-                    float(self.body[3][1].edit_text))
-        cond.inSource = [t for t in self.body[4].edit_text.split(";") if t.strip()]
-        cond.inTarget = [t for t in self.body[5].edit_text.split(";") if t.strip()]
-        cond.inTranslation = [t for t in self.body[6].edit_text.split(";") if t.strip()]
+        cond.length = (int(self.body[1][0].edit_text),
+                       int(self.body[1][1].edit_text))
+        cond.wer = (float(self.body[2][0].edit_text),
+                    float(self.body[2][1].edit_text))
+        cond.inSource = [t for t in self.body[3].edit_text.split(";") if t.strip()]
+        cond.inTarget = [t for t in self.body[4].edit_text.split(";") if t.strip()]
+        cond.inTranslation = [t for t in self.body[5].edit_text.split(";") if t.strip()]
         self.topUI.updateErrors(cond)
-        self.body[10] = urwid.Text("Number of errors: %i/%i"%(len(self.topUI.errors), len(self.topUI.aligns)))
+        self.body[9] = urwid.Text("Number of errors: %i/%i"%(len(self.topUI.errors), len(self.topUI.aligns)))
         
         
         
@@ -229,7 +228,8 @@ class AnalysisUI(urwid.MainLoop):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
         self.errors = []
-        urwid.MainLoop.__init__(self, urwid.Text("Processing..."))
+        palette = [('cyan', 'dark cyan', 'default'),]
+        urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
         self.updateErrors(condition)
         self.run()
         
@@ -239,7 +239,7 @@ class AnalysisUI(urwid.MainLoop):
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 self.errors.append(a)
-        cols = urwid.Columns([(40, urwid.LineBox(ConditionBox(newCondition, self))), 
+        cols = urwid.Columns([(40, urwid.LineBox(ConditionBox(newCondition, self), "Analysis criteria")), 
                               (80, ErrorBox(self.errors))], 2, 1) 
         self.widget = cols         
           
