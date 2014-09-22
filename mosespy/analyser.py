@@ -239,7 +239,7 @@ class AnalysisUI(urwid.MainLoop):
         for a in self.aligns:
             if newCondition.isSatisfiedBy(a):
                 self.errors.append(a)
-        cols = urwid.Columns([(40, urwid.Frame(ConditionBox(newCondition, self))), 
+        cols = urwid.Columns([(40, urwid.LineBox(ConditionBox(newCondition, self))), 
                               (80, ErrorBox(self.errors))], 2, 1) 
         self.widget = cols         
           
