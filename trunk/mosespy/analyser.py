@@ -153,9 +153,9 @@ class ConditionBox(urwid.ListBox):
                    (8, urwid.Edit(" from ",str(condition.wer[0]))), 
                    (8, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
-        elList.append(urwid.Edit("Source substring: "), ";".join(condition.inSource))
-        elList.append(urwid.Edit("Target substring: "),";".join(condition.inTarget))
-        elList.append(urwid.Edit("Translation substring: "),";".join(condition.inTranslation))
+        elList.append(urwid.Edit("Source substring: ", ";".join(condition.inSource)))
+        elList.append(urwid.Edit("Target substring: ",";".join(condition.inTarget)))
+        elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
         elList.append(ConditionButton("Search errors", self))
