@@ -212,7 +212,7 @@ class ErrorBox(urwid.ListBox):
         if addHistory:
             prevtarget = max(pair.previous.target, key=lambda x : len(x))
             text += tab + "Previous:     " + prevtarget + "\n"    
-        refsText = [(tab+"Reference:    "+ t) for t in pair.target if t.strip()]
+        refsText = [("Reference:    "+ t) for t in pair.target if t.strip()]
         text += tab  + "\n".join(refsText) + "\n"
         if addHistory:
             text += tab + "Previous:     " + pair.previous.translation + "\n" 
