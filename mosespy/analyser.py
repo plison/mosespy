@@ -136,14 +136,14 @@ class ConditionButton(urwid.Button):
     
     def __init__(self, text, condBox):
         self.condBox = condBox
-        urwid.Button.__init__(self, text)
+        urwid.Button.__init__(self, ('bold', text))
         
  
 class ConditionBox(urwid.ListBox):
     
     def __init__(self, condition, topUI):
         elList = []
-        elList.append(urwid.Text("Analysis of errors under\nthe following criteria:"))
+        elList.append(urwid.Text(('bold', "Analysis of errors under\nthe following criteria:")))
         elList.append(urwid.AttrMap(urwid.Divider(), "bright"))
     
         lengthCols = [(28, urwid.IntEdit("Sentence length:  from ", 
