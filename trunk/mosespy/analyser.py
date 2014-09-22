@@ -199,7 +199,7 @@ class ErrorBox(urwid.ListBox):
             elList.append(widget)
         walker = urwid.SimpleFocusListWalker(elList)
         urwid.ListBox.__init__(self, walker)
-        self.lineInFocus = 0
+        self.lineInFocus = -1
         
     
     def getAlignWidget(self, number, addHistory=False):
@@ -226,7 +226,7 @@ class ErrorBox(urwid.ListBox):
     def selection(self, _, choice):
         addHistory = self.lineInFocus!=choice
         self.body[choice] = self.getAlignWidget(choice, addHistory)
-        self.lineInFocus = choice if addHistory else 0
+        self.lineInFocus = choice if addHistory else -1
 
    
 
