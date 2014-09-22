@@ -146,11 +146,11 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Text("Analysis of errors under\nthe following criteria:"))
         elList.append(urwid.AttrMap(urwid.Divider(), "bright"))
     
-        lengthCols = [(20, urwid.IntEdit("Sentence length:  from ", 
+        lengthCols = [(25, urwid.IntEdit("Sentence length:  from ", 
                                          str(condition.length[0]))), 
                       (10, urwid.IntEdit(" to ",str(condition.length[1])))]
         elList.append(urwid.Columns(lengthCols))
-        werCols = [(20, urwid.Edit("Word Error Rate:  from ",
+        werCols = [(25, urwid.Edit("Word Error Rate:  from ",
                                    str(condition.wer[0]))), 
                    (10, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
@@ -171,10 +171,10 @@ class ConditionBox(urwid.ListBox):
     
     def updateCondition(self):
         cond = Condition()
-        cond.length = (int(self.body[2][1].edit_text),
-                       int(self.body[2][2].edit_text))
-        cond.wer = (float(self.body[3][1].edit_text),
-                    float(self.body[3][2].edit_text))
+        cond.length = (int(self.body[2][0].edit_text),
+                       int(self.body[2][1].edit_text))
+        cond.wer = (float(self.body[3][0].edit_text),
+                    float(self.body[3][1].edit_text))
         cond.inSource = [t for t in self.body[4].edit_text.split(";") if t.strip()]
         cond.inTarget = [t for t in self.body[5].edit_text.split(";") if t.strip()]
         cond.inTranslation = [t for t in self.body[6].edit_text.split(";") if t.strip()]
