@@ -136,7 +136,7 @@ class ConditionButton(urwid.Button):
     
     def __init__(self, text, condBox):
         self.condBox = condBox
-        urwid.Button.__init__(self, ('cyan', text))
+        urwid.Button.__init__(self, ('bold', text))
         
  
 class ConditionBox(urwid.ListBox):
@@ -145,27 +145,30 @@ class ConditionBox(urwid.ListBox):
         elList = []
         elList.append(urwid.Divider())
     
-        lengthCols = [(28, urwid.IntEdit("Sentence length:  from ", 
-                                         str(condition.length[0]))), 
-                      (9, urwid.IntEdit(" to ",str(condition.length[1])))]
-        elList.append(urwid.Columns(lengthCols))
-        werCols = [(28, urwid.Edit("Word Error Rate:  from ",
-                                   str(condition.wer[0]))), 
-                   (9, urwid.Edit(" to ",str(condition.wer[1])))]
-        elList.append(urwid.Columns(werCols))   
-        elList.append(urwid.Edit("Source substring: ", ";".join(condition.inSource)))
-        elList.append(urwid.Edit("Target substring: ",";".join(condition.inTarget)))
-        elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
+        elList.append(urwid.IntEdit("Sentence length:  from ",
+                                    ('cyan', str(condition.length[0]))))
+        elList.append(urwid.IntEdit("                  to ",
+                                    ('cyan', str(condition.length[1]))))
+        elList.append(urwid.IntEdit("Word Error Rate:  from ",
+                                    ('cyan', str(condition.wer[0]))))
+        elList.append(urwid.IntEdit("                  to ",
+                                    ('cyan', str(condition.wer[1]))))
+        elList.append(urwid.Edit("Source substring: ", 
+                                 ('cyan', ";".join(condition.inSource))))
+        elList.append(urwid.Edit("Target substring: ",
+                                 ('cyan', ";".join(condition.inTarget))))
+        elList.append(urwid.Edit("Translation substring: ",
+                                 ('cyan', ";".join(condition.inTranslation))))
         
         elList.append(urwid.Divider())
         elList.append(urwid.Columns([(17,ConditionButton("Start search", self))]))
-        
+        urwid.connect_signal(elList[9][0], 'click', 
+                            lambda x : x.condBox.updateCondition())
+       
         elList.append(urwid.Divider())
         elList.append(urwid.Text("Number of sentences: %i/%i"%(len(topUI.errors), len(topUI.aligns))))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(elList[7][0], 'click', 
-                             lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
@@ -173,15 +176,15 @@ class ConditionBox(urwid.ListBox):
     
     def updateCondition(self):
         cond = Condition()
-        cond.length = (int(self.body[1][0].edit_text),
-                       int(self.body[1][1].edit_text))
-        cond.wer = (float(self.body[2][0].edit_text),
-                    float(self.body[2][1].edit_text))
-        cond.inSource = [t for t in self.body[3].edit_text.split(";") if t.strip()]
-        cond.inTarget = [t for t in self.body[4].edit_text.split(";") if t.strip()]
-        cond.inTranslation = [t for t in self.body[5].edit_text.split(";") if t.strip()]
+        cond.length = (int(self.body[1].edit_text),
+                       int(self.body[2].edit_text))
+        cond.wer = (float(self.body[3].edit_text),
+                    float(self.body[4].edit_text))
+        cond.inSource = [t for t in self.body[5].edit_text.split(";") if t.strip()]
+        cond.inTarget = [t for t in self.body[6].edit_text.split(";") if t.strip()]
+        cond.inTranslation = [t for t in self.body[7].edit_text.split(";") if t.strip()]
         self.topUI.updateErrors(cond)
-        self.body[9] = urwid.Text("Number of errors: %i/%i"%(len(self.topUI.errors), len(self.topUI.aligns)))
+        self.body[11] = urwid.Text("Number of errors: %i/%i"%(len(self.topUI.errors), len(self.topUI.aligns)))
         
         
         
@@ -228,7 +231,8 @@ class AnalysisUI(urwid.MainLoop):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
         self.errors = []
-        palette = [('cyan', 'dark cyan', 'default'),]
+        palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
+                   ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
         urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
         self.updateErrors(condition)
         self.run()
