@@ -170,7 +170,6 @@ class ConditionBox(urwid.ListBox):
         
         self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
-        self.updateCondition()
         
     
     def updateCondition(self):
