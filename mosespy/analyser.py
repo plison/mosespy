@@ -146,23 +146,23 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Text("Analysis of errors under\nthe following criteria:"))
         elList.append(urwid.AttrMap(urwid.Divider(), "bright"))
     
-        lengthCols = [(25, urwid.IntEdit("Sentence length:  from ", 
+        lengthCols = [(28, urwid.IntEdit("Sentence length:  from ", 
                                          str(condition.length[0]))), 
-                      (10, urwid.IntEdit(" to ",str(condition.length[1])))]
+                      (9, urwid.IntEdit(" to ",str(condition.length[1])))]
         elList.append(urwid.Columns(lengthCols))
-        werCols = [(25, urwid.Edit("Word Error Rate:  from ",
+        werCols = [(28, urwid.Edit("Word Error Rate:  from ",
                                    str(condition.wer[0]))), 
-                   (10, urwid.Edit(" to ",str(condition.wer[1])))]
+                   (9, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
         elList.append(urwid.Edit("Source substring: ", ";".join(condition.inSource)))
         elList.append(urwid.Edit("Target substring: ",";".join(condition.inTarget)))
         elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Columns([(20,ConditionButton("Search errors", self))]))
+        elList.append(urwid.Columns([(20,urwid.AttrMap(ConditionButton("Search errors", self), None, focus_map='reversed'))]))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(elList[8][0], 'click', 
+        urwid.connect_signal(elList[8][0].original_widget, 'click', 
                              lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
