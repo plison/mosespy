@@ -159,7 +159,7 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Columns([(20,urwid.AttrMap(ConditionButton("Search errors", self), None, focus_map='reversed'))]))
+        elList.append(urwid.Columns([(20,ConditionButton("Search errors", self))]))
         walker = urwid.SimpleFocusListWalker(elList)
 
         urwid.connect_signal(elList[8][0], 'click', 
