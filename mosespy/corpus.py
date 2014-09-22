@@ -126,13 +126,13 @@ class AlignedPair():
         """
         self.source = source
         self.target = target
-        self.targethistory = None
+        self.previous = None
         
-    def addTargetHistory(self, history):
+    def addPrevious(self, previous):
         """Adds a history of previous sentence to the pair.
         
         """
-        self.targethistory = history
+        self.previous = previous
 
         
 
@@ -206,15 +206,9 @@ class AlignedCorpus(object):
         alignments = []
         for i in range(0, len(sourceLines)):
             pair = AlignedPair(sourceLines[i].strip(),targetLines[i].strip())
+            if addHistory and i > 0:
+                pair.addPrevious(alignments[-1])
             alignments.append(pair)
-            
-        if addHistory:
-            targetCorpus = self.getTargetCorpus()
-            histories = targetCorpus.getHistories()
-            for i in range(0, len(alignments)):
-                pair = alignments[i]
-                if histories.has_key(i) and len(histories[i]) > 0:
-                    pair.addTargetHistory(histories[i][-1])
                  
         return alignments
 
@@ -327,16 +321,10 @@ class ReferenceCorpus(object):
         for i in range(0, len(sourceLines)):
             targets = [targetLine[i].strip() for targetLine in targetLines]
             pair = AlignedReference(sourceLines[i].strip(), targets)
+            if addHistory and i > 0:
+                pair.addPrevious(alignments[-1])
             alignments.append(pair)
-            
-        if addHistory:
-            targetCorpus = max(self.refCorpora, key=lambda x : x.getSize())
-            histories = targetCorpus.getHistories()
-            for i in range(0, len(alignments)):
-                pair = alignments[i]
-                if histories.has_key(i) and len(histories[i]) > 0:
-                    pair.addTargetHistory(histories[i][-1])
-                    
+                     
         if self.translation:       
             translationLines = self.translation.readlines()
             for i in range(0, len(alignments)):

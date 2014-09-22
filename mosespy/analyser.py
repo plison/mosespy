@@ -178,9 +178,9 @@ class ConditionBox(urwid.ListBox):
                        int(self.body[2].edit_text))
         cond.wer = (float(self.body[3].edit_text),
                     float(self.body[4].edit_text))
-        cond.inSource = [t for t in self.body[5].edit_text.split(";") if t.strip()]
-        cond.inTarget = [t for t in self.body[6].edit_text.split(";") if t.strip()]
-        cond.inTranslation = [t for t in self.body[7].edit_text.split(";") if t.strip()]
+        cond.inSource = [t.strip() for t in self.body[5].edit_text.split(";") if t.strip()]
+        cond.inTarget = [t.strip() for t in self.body[6].edit_text.split(";") if t.strip()]
+        cond.inTranslation = [t.strip() for t in self.body[7].edit_text.split(";") if t.strip()]
         self.topUI.updateErrors(cond)
         self.body[11] = urwid.Text(" Number of sentences:\n %i/%i"
                                    %(len(self.topUI.errors), len(self.topUI.aligns)))
@@ -205,11 +205,16 @@ class ErrorBox(urwid.ListBox):
     def getAlignWidget(self, number, addHistory=False):
         tab = " " * (len(str(number+1))+2)
         pair = self.aligns[number]
-        refsText = [(tab+"Reference:    "+ t) for t in pair.target if t.strip()]
-        text= ("%i. Source:       %s"%((number+1), pair.source) + "\n" 
-               + "\n".join(refsText) + "\n")
+        text = "%i. "%(number+1)
         if addHistory:
-            text += tab + "Previous:     " + pair.targethistory + "\n"    
+            text += "Previous:     " + pair.previous.source + "\n" + tab        
+        text += "Source:       " + pair.source + "\n" 
+        if addHistory:
+            text += tab + "Previous:     " + pair.previous.target + "\n"    
+        refsText = [(tab+"Reference:    "+ t) for t in pair.target if t.strip()]
+        text += tab +  + "\n".join(refsText) + "\n"
+        if addHistory:
+            text += tab + "Previous:     " + pair.previous.translation + "\n" 
         WER = min([getWER(t, pair.translation) for t in pair.target])
         text += tab + "Translation:  " + pair.translation + " (WER=%i%%)\n"%(WER*100)
         widget = urwid.Button(text)
