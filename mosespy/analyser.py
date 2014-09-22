@@ -137,6 +137,7 @@ class ConditionButton(urwid.Button):
     def __init__(self, text, condBox):
         self.condBox = condBox
         urwid.Button.__init__(self, text)
+        
  
 class ConditionBox(urwid.ListBox):
     
@@ -146,24 +147,23 @@ class ConditionBox(urwid.ListBox):
         elList.append(urwid.Divider())
     
         lengthCols = [(16,urwid.Text("Sentence length: ")),
-                      (8, urwid.IntEdit(" from ", str(condition.length[0]))), 
-                      (8, urwid.IntEdit(" to ",str(condition.length[1])))]
+                      (9, urwid.IntEdit(" from ", str(condition.length[0]))), 
+                      (9, urwid.IntEdit(" to ",str(condition.length[1])))]
         elList.append(urwid.Columns(lengthCols))
         werCols = [(16,urwid.Text("Word Error Rate: ")),
-                   (8, urwid.Edit(" from ",str(condition.wer[0]))), 
-                   (8, urwid.Edit(" to ",str(condition.wer[1])))]
+                   (9, urwid.Edit(" from ",str(condition.wer[0]))), 
+                   (9, urwid.Edit(" to ",str(condition.wer[1])))]
         elList.append(urwid.Columns(werCols))   
         elList.append(urwid.Edit("Source substring: ", ";".join(condition.inSource)))
         elList.append(urwid.Edit("Target substring: ",";".join(condition.inTarget)))
         elList.append(urwid.Edit("Translation substring: ",";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(ConditionButton("Search errors", self))
+        elList.append(urwid.AttrMap(ConditionButton("Search errors", self), 
+                                    "bright", focus_map="reversed"))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        def update(button):
-            button.condBox.updateCondition()
-        urwid.connect_signal(elList[8], 'click', update)
+        urwid.connect_signal(elList[8], 'click', lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
