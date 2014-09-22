@@ -163,7 +163,8 @@ class ConditionBox(urwid.ListBox):
                                     "bright", focus_map="reversed"))
         walker = urwid.SimpleFocusListWalker(elList)
 
-        urwid.connect_signal(elList[8], 'click', lambda x : x.condBox.updateCondition())
+        urwid.connect_signal(elList[8].original_widget, 'click', 
+                             lambda x : x.condBox.updateCondition())
         
         self.topUI = topUI
         urwid.ListBox.__init__(self, walker)
