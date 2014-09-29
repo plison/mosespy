@@ -92,9 +92,12 @@ class Condition():
         of the condition, and false otherwise.
         
         """
+        closeTrg = min([t for t in pair.target if t.strip()],
+                            key=lambda t : getWER(t,pair.translation))
+        
         if self.inSource and not any([inS in pair.source for inS in self.inSource]):
             return False
-        if self.inTarget and not any([inT in trg for inT in self.inTarget for trg in pair.target]):
+        if self.inTarget and not any([inT in closeTrg for inT in self.inTarget]):
             return False
         if self.inTranslation and not any([inT in pair.translation for inT in self.inTranslation]):
             return False
@@ -102,9 +105,7 @@ class Condition():
         if not (self.length[0] <= len(pair.translation.split())<= self.length[1]):
             return False
         
-        bestWER = min([t for t in pair.target if t.strip()], 
-                      key=lambda t : getWER(t, pair.translation))
-        if pair.translation and not self.wer[0] <= bestWER <= self.wer[1]:
+        if pair.translation and not self.wer[0] <= getWER(closeTrg,pair.translation) <= self.wer[1]:
             return False
         
         return True
