@@ -206,13 +206,13 @@ class ErrorBox(ListBox):
             text += "Previous:     " + pair.previous.source + "\n" + tab        
         text += "Source:       " + pair.source + "\n" 
         if addHistory and pair.previous:
-            text += "---------------------\n"
+            text += "   ---------------------\n"
             prevtarget = max(pair.previous.target, key=lambda x : len(x))
             text += tab + "Previous:     " + prevtarget + "\n"    
         refsText = [(tab + "Reference:    "+ t) for t in pair.target if t.strip()]
         text += "\n".join(refsText) + "\n"
         if addHistory and pair.previous:
-            text += "---------------------\n"
+            text += "   ---------------------\n"
             text += tab + "Previous:     " + pair.previous.translation + "\n" 
         WER = min([getWER(t, pair.translation) for t in pair.target])
         text += tab + "Translation:  " + pair.translation + " (WER=%i%%)\n"%(WER*100)
