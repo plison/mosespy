@@ -129,20 +129,11 @@ class Condition():
     
  
         
-class ConditionButton(urwid.Button):
-    
-    def __init__(self, text, topUI):
-        self.topUI = topUI
-        urwid.Button.__init__(self, ('bold', text))
-         
-    
-    def updateCondition(self):
-        self.topUI.updateErrors()
-        
-         
+
  
 class ConditionBox(urwid.ListBox):
-    
+                
+         
     def __init__(self, condition, topUI):
         elList = []
         elList.append(urwid.Divider())
@@ -163,9 +154,12 @@ class ConditionBox(urwid.ListBox):
                                  ";".join(condition.inTranslation)))
         
         elList.append(urwid.Divider())
-        elList.append(urwid.Columns([(17,ConditionButton("Start search", topUI))]))
-        urwid.connect_signal(elList[9][0], 'click', 
-                            lambda x : x.updateCondition())
+        elList.append(urwid.Columns([(17,urwid.Button("Start search"))]))
+        
+        def performUpdate(_, self, topUIArg):
+            topUIArg.updateErrors(self.getCurrentCondition())
+                
+        urwid.connect_signal(elList[9][0], 'click', performUpdate)
        
         elList.append(urwid.Divider())
         elList.append(urwid.Text(('cyan'," Number of sentences:\n %i/%i"
@@ -185,7 +179,8 @@ class ConditionBox(urwid.ListBox):
         cond.inTarget = [t.strip() for t in self.body[6].edit_text.split(";") if t.strip()]
         cond.inTranslation = [t.strip() for t in self.body[7].edit_text.split(";") if t.strip()]
         return cond    
-         
+    
+             
         
            
 
@@ -233,23 +228,22 @@ class ErrorBox(urwid.ListBox):
 class AnalysisUI(urwid.MainLoop):
 
     def __init__(self, condition, results):
-        self.aligns = results.getAlignments(addHistory=True)        
+        self.aligns = results.getAlignments(addHistory=True)
+        self.errors = []
         self.focus = None
         palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
         urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
-        self.condBox = ConditionBox(condition, self)
-        self.updateErrors()
+        self.updateErrors(condition)
         self.run()
         
     
-    def updateErrors(self):
+    def updateErrors(self, newCondition):
         
-        newCondition = self.condBox.getCurrentCondition()
-        self.condBox = ConditionBox(newCondition, self)
-        errors = [a for a in self.aligns if newCondition.isSatisfiedBy(a)]
-        cols = urwid.Columns([(35, urwid.LineBox(self.condBox, "Analysis criteria")), 
-                              (120, ErrorBox(errors))], 2, 1) 
+        self.errors = [a for a in self.aligns if newCondition.isSatisfiedBy(a)]
+        lineBox = urwid.LineBox(ConditionBox(newCondition, self), "Analysis criteria")
+        errorBox = ErrorBox(self.errors)
+        cols = urwid.Columns([(35, lineBox),  (120, errorBox)], 2, 1) 
         self.widget = cols         
           
         
