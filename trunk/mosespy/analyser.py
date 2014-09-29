@@ -36,7 +36,7 @@ __version__ = "$Date::                      $"
 
 import string
 from urwid import (ListBox,LineBox,Button,Text,Divider,Columns,SimpleFocusListWalker,
-                   connect_signal,MainLoop,Edit,IntEdit)
+                   connect_signal,MainLoop,Edit,IntEdit,Frame)
 from mosespy.corpus import ReferenceCorpus
 
 
@@ -236,7 +236,7 @@ class AnalysisUI(MainLoop):
         self.focus = None
         palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
-        MainLoop.__init__(self, ListBox([Text("Processing...")]), palette)
+        MainLoop.__init__(self, Frame([Text("Processing...")]), palette)
         self.updateErrors(condition)
         self.run()
         
