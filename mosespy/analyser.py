@@ -157,10 +157,8 @@ class ConditionBox(ListBox):
         elList.append(Divider())
         elList.append(Columns([(17,Button("Start search"))]))
         
-        def performUpdate(_, (self, topUI)):
-            topUI.updateErrors(self.getCurrentCondition())
                 
-        connect_signal(elList[9][0], 'click', performUpdate, (self, topUI))
+        connect_signal(elList[9][0], 'click', lambda _ : topUI.updateErrors(self.getCurrentCondition()), (self, topUI))
        
         elList.append(Divider())
         elList.append(Text(('cyan'," Number of sentences:\n %i/%i"
