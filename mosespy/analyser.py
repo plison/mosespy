@@ -233,7 +233,7 @@ class AnalysisUI(urwid.MainLoop):
         self.focus = None
         palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
-        urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
+        urwid.MainLoop.__init__(self, urwid.ListBox([urwid.Text("Processing...")]), palette)
      #   self.updateErrors(condition)
         self.run()
         
