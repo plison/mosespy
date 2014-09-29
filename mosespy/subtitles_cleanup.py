@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, json, re, codecs, os, collections
+import  math, sys, gzip, json, re, os, collections
 from mosespy.corpus import BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
@@ -153,11 +153,11 @@ class AlignedSubtitles(object):
         print ("Generating bitexts %s.%s -> %s.%s (number of translations: %i)"
                %(stem, self.sourceLang, stem, self.targetLang, nbTranslations))
         
-        srcFile = codecs.open(stem+"." + self.sourceLang, 'w', "utf-8")
-        trgFile = codecs.open(stem + "." + self.targetLang, 'w', "utf-8")
+        srcFile = open(stem+"." + self.sourceLang, 'w')
+        trgFile = open(stem + "." + self.targetLang, 'w')
         altFiles = []
         if nbTranslations > 1:      
-            altFiles = [codecs.open((trgFile.name + str(i)), 'w', "utf-8") 
+            altFiles = [open((trgFile.name + str(i)), 'w')
                         for i in range(0, nbTranslations)]
         
         # Sorted by year, then number
