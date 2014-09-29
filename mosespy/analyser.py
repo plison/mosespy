@@ -203,15 +203,17 @@ class ErrorBox(ListBox):
         pair = self.aligns[number]
         text = "%i. "%(number+1)
         if addHistory and pair.previous:
-            text += "              " + pair.previous.source + "\n" + tab        
+            text += "Previous:     " + pair.previous.source + "\n" + tab        
         text += "Source:       " + pair.source + "\n" 
         if addHistory and pair.previous:
+            text += "---------------------\n"
             prevtarget = max(pair.previous.target, key=lambda x : len(x))
-            text += tab + "              " + prevtarget + "\n"    
-        refsText = [("Reference:    "+ t) for t in pair.target if t.strip()]
-        text += tab  + "\n".join(refsText) + "\n"
+            text += tab + "Previous:     " + prevtarget + "\n"    
+        refsText = [(tab + "Reference:    "+ t) for t in pair.target if t.strip()]
+        text += "\n".join(refsText) + "\n"
         if addHistory and pair.previous:
-            text += tab + "              " + pair.previous.translation + "\n" 
+            text += "---------------------\n"
+            text += tab + "Previous:     " + pair.previous.translation + "\n" 
         WER = min([getWER(t, pair.translation) for t in pair.target])
         text += tab + "Translation:  " + pair.translation + " (WER=%i%%)\n"%(WER*100)
         widget = Button(text)
