@@ -102,8 +102,9 @@ class Condition():
         if not (self.length[0] <= len(pair.translation.split())<= self.length[1]):
             return False
         
-        if pair.translation and not any([self.wer[0] <= getWER(t, pair.translation) <= 
-                                         self.wer[1] for t in pair.target if t.strip()]):
+        bestWER = min([t for t in pair.target if t.strip()], 
+                      key=lambda t : getWER(t, pair.translation))
+        if pair.translation and not self.wer[0] <= bestWER <= self.wer[1]:
             return False
         
         return True
