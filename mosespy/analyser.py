@@ -235,7 +235,6 @@ class AnalysisUI(urwid.MainLoop):
     def __init__(self, condition, results):
         self.aligns = results.getAlignments(addHistory=True)        
         self.focus = None
-        self.errors = []
         palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
         urwid.MainLoop.__init__(self, urwid.Text("Processing..."), palette)
@@ -248,12 +247,9 @@ class AnalysisUI(urwid.MainLoop):
         
         newCondition = self.condBox.getCurrentCondition()
         self.condBox = ConditionBox(newCondition, self)
-        self.errors = []
-        for a in self.aligns:
-            if newCondition.isSatisfiedBy(a):
-                self.errors.append(a)
+        errors = [a for a in self.aligns if newCondition.isSatisfiedBy(a)]
         cols = urwid.Columns([(35, urwid.LineBox(self.condBox, "Analysis criteria")), 
-                              (120, ErrorBox(self.errors))], 2, 1) 
+                              (120, ErrorBox(errors))], 2, 1) 
         self.widget = cols         
           
         
