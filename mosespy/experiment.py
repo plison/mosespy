@@ -429,31 +429,6 @@ class Experiment(object):
         self._recordState()
         print "Finished binarising the translation model in directory " + binaDir.getDescription()
       
-
-    def trainContinuousLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
-           
-        print "Building language model based on " + trainFile
-        train = BasicCorpus(trainFile)
-        if preprocess:
-            train = self.processor.processCorpus(train)
-        
-        sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
-        with open(sbFile, 'w') as sbContent:
-            lines = train.readlines()
-            for i in range(0, len(lines)):
-                line = lines[i].replace("\n", "")
-                sbContent.write(line + " <t> " if i < len(lines)-1 else line)
-
-        
-        blmFile = self.expPath + "/langmodel.continuous.blm." + self.targetLang
-        self._estimateLanguageModel(sbFile, ngram_order, blmFile, True)
-        
-        sbFile.remove()
-
-        self.continuous_lm = (blmFile, ngram_order)
-        self._recordState()
-             
-     
      
     def queryLanguageModel(self, text):
         """Queries the language model with a given sentence.  The method returns the
@@ -760,7 +735,8 @@ class Experiment(object):
             if settings.has_key("ini"):
                 self.iniFile = Path(settings["ini"])
             if settings.has_key("results"):
-                self.results = ReferenceCorpus(settings["results"]["stem"], self.sourceLang, self.targetLang)
+                self.results = ReferenceCorpus(settings["results"]["stem"], 
+                                               self.sourceLang, self.targetLang)
                 self.results.addTranslation(settings["results"]["translation"])            
            
     

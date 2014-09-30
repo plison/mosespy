@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, json, re, os, collections
+import  math, sys, gzip, re, os, collections, uuid
 from mosespy.corpus import BasicCorpus
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
@@ -221,13 +221,6 @@ class XCESCorpus(AlignedSubtitles):
                   
     def getAlignments(self):
         
-        if Path(self.xcesFile+".json").exists():
-            dump = json.loads((self.xcesFile+".json").read())
-            newAligns = {}
-            for a in dump:
-                newAligns[Path(a)] = dump[a]
-            return newAligns
-        
         print "Extracting alignments"
         bitext = {}
         for l in range(0, len(self.xmlRoot)):
@@ -261,9 +254,6 @@ class XCESCorpus(AlignedSubtitles):
           
         print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(bitext))
                                                       *100/len(self.xmlRoot))
-        dump = json.dumps(bitext)
-        Path(self.xcesFile + ".json").write(dump)
-            
         return bitext
 
  
@@ -342,7 +332,7 @@ def filterOutLines(fullCorpusFile, *toRemoveFiles):
         histories[toRemoveFile] = toRemoveCorpus.getHistories()
 
 
-    outputFile = fullCorpus.addFlag("filtered") 
+    outputFile = fullCorpus.addFlag("filtered" + str(uuid.uuid4())[0:2]) 
     with open(outputFile, 'w', 1000000) as newLmFileD:                 
         inputLines = fullCorpus.readlines()
         skippedLines = []
