@@ -99,7 +99,6 @@ class Experiment(object):
                 
         self.expPath = Path(install.expDir+expName).getAbsolute()
         self.lm = None
-        self.continuous_lm = None
         self.tm = None
         self.iniFile = None
         self.results = None
@@ -126,7 +125,8 @@ class Experiment(object):
         self.decoder = install.decoder
                    
     
-    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3):
+    def trainLanguageModel(self, trainFile, preprocess= True, ngram_order=3, 
+                           filterOut=None):
         """Trains the language model used for the experiment.  The method starts
         by inserting start and end characters <s> and </s> to the lines of the
         training files, then estimates the model parameters, builds the model, and
@@ -137,15 +137,19 @@ class Experiment(object):
             preprocess (bool): whether to tokenise and truecase the training data
                 before estimating the model parameters
             ngram_order: order of the N-gram
-            continuous (bool): whether to use a continuous language model.
-    
+            filterOut (str): optional path of file whose occurrences must be filtered
+                out of the training file. Use to remove sentences from the development
+                or test set prior to estimating the LM. 
+                    
         If the operation is successful, the binarised language model is set to the
         instance self.lm as a tuple (file path, n-gram order).
         
-        """     
-           
+        """         
+
         print "Building language model based on " + trainFile
         train = BasicCorpus(trainFile)
+        if filterOut:
+            train = self.processor.filterOutLines(train, filterOut)
         if preprocess:
             train = self.processor.processCorpus(train)
         
@@ -210,8 +214,6 @@ class Experiment(object):
         self.iniFile = self.tm +"/moses.ini"
         if pruning:
             self._prunePhraseTable()
-        if self.continuous_lm:
-            MosesConfig(self.iniFile).replaceLanguageModel(self.continuous_lm)
         self._recordState()
         
  
@@ -503,7 +505,6 @@ class Experiment(object):
         """
         newexp = Experiment(nexExpName, self.sourceLang, self.targetLang)
         newexp.lm = self.lm
-        newexp.continuous_lm = self.continuous_lm
         newexp.tm = self.tm
         newexp.nbThreads = self.nbThreads
         newexp.iniFile = self.iniFile
@@ -512,6 +513,7 @@ class Experiment(object):
         newexp.results = self.results
         newexp.processor = self.processor
         return newexp
+ 
  
     
     def _estimateLanguageModel(self, corpusFile, ngram_order, outputFile, continuous=False):
@@ -699,8 +701,6 @@ class Experiment(object):
         settings = {"path":self.expPath, "source":self.sourceLang, "target":self.targetLang}
         if self.lm:
             settings["lm"] = {"lm":self.lm[0], "ngram_order":self.lm[1]}
-        if self.continuous_lm:
-            settings["continuous_lm"] = {"lm":self.lm[0], "ngram_order":self.lm[1]}
         if self.tm:
             settings["tm"] = self.tm
         if self.iniFile:
@@ -727,9 +727,6 @@ class Experiment(object):
             if settings.has_key("lm"):
                 lm = settings["lm"]
                 self.lm = (Path(lm["lm"]), int(lm["ngram_order"]))
-            if settings.has_key("continuous_lm"):
-                lm = settings["continuous_lm"]
-                self.continuous_lm = (Path(lm["lm"]), int(lm["ngram_order"]))
             if settings.has_key("tm"):
                 self.tm = Path(settings["tm"])
             if settings.has_key("ini"):

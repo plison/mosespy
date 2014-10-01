@@ -90,7 +90,7 @@ class BasicCorpus(Path):
                 
         return occurrences
    
-    def getHistories(self, historyWindow=2):
+    def getHistories(self, historyWindow=3):
         """Returns a dictionary where the keys correspond to the line
         numbers, and the values represent the list of lines that immediately
         precedes this line.
@@ -111,7 +111,6 @@ class BasicCorpus(Path):
             histories[i] = originLines[max(0,i-historyWindow):max(0,i)]
  
         return histories
-
 
 
 class AlignedPair():
@@ -483,6 +482,42 @@ class CorpusProcessor():
         detokText = self.tokeniser.detokenise(text, lang).strip("\n") + "\n" 
         finalText = self.tokeniser.deescape(detokText).strip("\n")
         return finalText
+    
+    
+
+    def filterOutLines(self, corpusFile, toRemoveFile):
+        """Filters out sentences from the corpus represented by toRemoveFile
+        from the corpus in fullCorpusFile.  This method is used to prune 
+        language model data from development and test sentences.
+        
+        """
+    
+        print "Filtering out file " + str(toRemoveFile) + " from " + str(corpusFile)
+        toRemoveCorpus = BasicCorpus(toRemoveFile)
+        occurrences = toRemoveCorpus.getOccurrences()
+        histories = toRemoveCorpus.getHistories()
+    
+        filteredLines = []
+        inputLines = corpusFile.readlines()
+        for i in range(3, len(inputLines)):
+            l = inputLines[i].strip()
+            toSkip = False
+            if l in occurrences:
+                for index in occurrences[l]:
+                    history = histories[index]
+                    if history == [iline.strip("\n") for iline in inputLines[i-len(history):i]]:
+                        toSkip = True
+                        break
+            if not toSkip:
+                inputLines.append(l+"\n")
+                 
+        outputFile = self.workPath + "/" + corpusFile.basename().changeFlag("filtered") 
+        outputFile.writelines(filteredLines)                                           
+    
+        print "Number of skipped lines: " + str((len(inputLines)-len(filteredLines)))
+        return BasicCorpus(outputFile)
+
+
 
    
     def cutCorpus(self, inputCorpus, outputStem, maxLength):
