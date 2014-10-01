@@ -509,7 +509,7 @@ class CorpusProcessor():
                         toSkip = True
                         break
             if not toSkip:
-                inputLines.append(l+"\n")
+                filteredLines.append(l+"\n")
                  
         outputFile = self.workPath + "/" + corpusFile.basename().changeFlag("filtered") 
         outputFile.writelines(filteredLines)                                           
