@@ -37,8 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, re, os, collections, uuid
-from mosespy.corpus import BasicCorpus
+import  math, sys, gzip, re, os, collections
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -314,44 +313,6 @@ def normalise(line):
                 
                 
  
-
-def filterOutLines(fullCorpusFile, *toRemoveFiles):
-    """Filters out sentences from the corpus represented by toRemoveFiles
-    from the corpus in fullCorpusFile.  This method is used to prune 
-    language model data from development and test sentences.
-    
-    """
-    fullCorpus = BasicCorpus(fullCorpusFile)
-
-    print "Filtering out files " + str(toRemoveFiles) + " from " + fullCorpusFile
-    occurrences = {}
-    histories = {}
-    for toRemoveFile in toRemoveFiles:
-        toRemoveCorpus= BasicCorpus(toRemoveFile)
-        occurrences[toRemoveFile] = toRemoveCorpus.getOccurrences()
-        histories[toRemoveFile] = toRemoveCorpus.getHistories()
-
-
-    outputFile = fullCorpus.addFlag("filtered" + str(uuid.uuid4())[0:2]) 
-    with open(outputFile, 'w', 1000000) as newLmFileD:                 
-        inputLines = fullCorpus.readlines()
-        skippedLines = []
-        for i in range(2, len(inputLines)):
-            l = inputLines[i].strip()
-            toSkip = False
-            for f in occurrences:
-                if l in occurrences[f]:
-                    for index in occurrences[f][l]:
-                        if histories[f][index] == [iline.strip("\n") for 
-                                                   iline in inputLines[i-2:i]]:
-                            skippedLines.append(l)
-                            toSkip = True
-            if not toSkip:
-                newLmFileD.write(l+"\n")                                
-
-    print "Number of skipped lines: " + str(len(skippedLines))
-    return outputFile
-
 
            
               
