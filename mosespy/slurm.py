@@ -255,8 +255,6 @@ def correctSlurmEnv():
     # System-dependent settings for the Abel cluster, change it to suit your needs
     if system.existsExecutable("srun"):
         modScript = "module load intel boost/1.53.0 ; echo $LD_LIBRARY_PATH"
-        print "MODSCRIPT" + modScript
-        print "output: " + str(system.run_output(modScript))
         system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
                       +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
         system.setEnv("PATH", "/opt/rocks/bin", override=False)
