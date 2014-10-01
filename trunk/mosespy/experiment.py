@@ -152,7 +152,10 @@ class Experiment(object):
             train = self.processor.filterOutLines(train, filterOut)
         if preprocess:
             train = self.processor.processCorpus(train)
-        
+       
+        regex = re.compile("</?s>", re.I)
+        lines = [regex.sub("",l) for l in train.readlines()]
+        train.writelines(lines)
         sbFile = self.expPath + "/" + train.basename().changeFlag("sb")              
         self.executor.run(install.irstlm_root+"/bin/add-start-end.sh", train, sbFile)
         
