@@ -46,7 +46,6 @@ from mosespy.system import Path, ShellExecutor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair, AlignedReference
 from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
-from mosespy.analyser import ErrorAnalyser, Condition
 import mosespy.datadivision as datadivision
 
 slurm.correctSlurmEnv()

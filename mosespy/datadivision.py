@@ -37,11 +37,8 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import sys, math, random, gzip, re, copy, uuid
-import mosespy.slurm as slurm
-from mosespy.corpus import AlignedCorpus, BasicCorpus
-from mosespy.system import Path, ShellExecutor
-import xml.etree.cElementTree as etree
+import random
+from mosespy.corpus import AlignedCorpus
     
 
 def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
