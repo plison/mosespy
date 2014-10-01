@@ -342,7 +342,6 @@ class ShellExecutor(object):
             return code of the script execution otherwise.
         
         """
-        self.quiet=False
         self.callincr += 1
         curcall = int(self.callincr)
            
