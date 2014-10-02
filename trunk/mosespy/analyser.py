@@ -51,7 +51,7 @@ class AnalysisUI(MainLoop):
                    ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
         
         def unhandled_input(key):
-            if key in ('q,', 'Q'):
+            if key in ('q', 'Q'):
                 raise ExitMainLoop()
         
         MainLoop.__init__(self, Frame([Text("Processing...")]), palette, 
@@ -174,7 +174,7 @@ class ConditionBox(ListBox):
                                  ";".join(condition.inTranslation)))
         
         elList.append(Divider())
-        elList.append(Columns([(17,Button("Start search"))]))
+        elList.append(Columns([(17,Button(('bold',"Start search")))]))
         
         def performUpdate(_):
             topUI.updateErrors(self.getCurrentCondition())
@@ -186,7 +186,7 @@ class ConditionBox(ListBox):
                                   %(len(topUI.errors), len(topUI.aligns)))))
         elList.append(Divider())
         elList.append(Divider())
-        elList.append(Text(('red', "Press 'q' to exit the interface")))
+        elList.append(Text(('red', "Press 'q' to exit")))
         walker = SimpleFocusListWalker(elList)
         
         ListBox.__init__(self, walker)
