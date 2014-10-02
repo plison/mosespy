@@ -318,7 +318,7 @@ def opushash(path):
    
 
 def indextar(dbtarfile,indexfile):
-    with tarfile.open(dbtarfile, 'r|') as db:
+    with tarfile.open(dbtarfile) as db:
         if os.path.isfile(indexfile):
             print('file exists. exiting')
 
