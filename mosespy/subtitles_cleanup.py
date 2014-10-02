@@ -214,24 +214,26 @@ class XCESCorpus(AlignedSubtitles):
                 break     
            
         print "Opening zipped files in same directory..."
-        self.srcTars = {}
-        self.trgTars = {}
-        for fileInSameDir in self.xcesFile.getUp().listdir():
-            if ".tar.gz" in fileInSameDir:
-                fileOpen = tarfile.open(fileInSameDir)
-                lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
-                                 fileOpen.getnames()[0]).group(2)
-                if lang == self.sourceLang:
-                    self.srcTars[fileInSameDir] = fileOpen
-                elif lang == self.targetLang:
-                    self.trgTars[fileInSameDir] = fileOpen
+        self.srcTars, self.trgTars = self.loadTarFiles()
                     
         print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
         AlignedSubtitles.__init__(self, self.getAlignments(), self.sourceLang, self.targetLang)
         print "Finished parsing file " + xcesFile
      
                     
-                    
+    def loadTarFiles(self):
+        srcTars = {}
+        trgTars = {}
+        for fileInSameDir in self.xcesFile.getUp().listdir():
+            if ".tar.gz" in fileInSameDir:
+                fileOpen = tarfile.open(self.xcesFile.getUp() + "/" + fileInSameDir)
+                lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
+                                 fileOpen.getnames()[0]).group(2)
+                if lang == self.sourceLang:
+                    srcTars[fileInSameDir] = fileOpen
+                elif lang == self.targetLang:
+                    trgTars[fileInSameDir] = fileOpen 
+        return srcTars, trgTars
         
                   
     def getAlignments(self):
