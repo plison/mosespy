@@ -37,7 +37,8 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, re, os, collections, tarfile, time
+import  math, sys, re, os, collections, tarfile
+from cStringIO import StringIO
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 from gzip import GzipFile
@@ -214,7 +215,7 @@ class XCESCorpus(AlignedSubtitles):
                 break     
            
         print "Opening zipped files in same directory..."
-        self.srcTars, self.trgTars = self.loadTarFiles()
+        self.subtitles = self.loadTarFiles()
                     
         print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
         AlignedSubtitles.__init__(self, self.getAlignments(), self.sourceLang, self.targetLang)
@@ -222,22 +223,24 @@ class XCESCorpus(AlignedSubtitles):
      
                     
     def loadTarFiles(self):
-        srcTars = {}
-        trgTars = {}
-        for fileInSameDir in self.xcesFile.getUp().listdir():
-            if ".tar.gz" in fileInSameDir:
-                fileOpen = tarfile.open(self.xcesFile.getUp() + "/" + fileInSameDir)
-                lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
-                                 fileOpen.getnames()[0]).group(2)
-                if lang == self.sourceLang:
-                    srcTars[fileInSameDir] = fileOpen
-                    print "Finished loading file " + fileInSameDir
-                elif lang == self.targetLang:
-                    trgTars[fileInSameDir] = fileOpen 
-                    print "Finished loading file " + fileInSameDir
-        return srcTars, trgTars
+        subtitles = {}
+        for fileInDir in self.xcesFile.getUp().listdir():
+            if not ".tar.gz" in fileInDir:
+                continue
+            fileOpen = tarfile.open(self.xcesFile.getUp() + "/" + fileInDir)
+            lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
+                             fileOpen.getnames()[0]).group(2)
+            if not lang == self.sourceLang and not lang == self.targetLang:
+                continue
+            for tari in fileOpen:
+                if not tari.issym():
+                    if subtitles.has_key(tari.name):
+                        print "Problem: two occurrences of " + tari.name
+                    subtitles[tari.name] = (fileInDir, tari.offset_data, tari.size)
+            print "Finished processing file " + fileInDir
+        return subtitles
         
-                  
+                                           
     def getAlignments(self):
         
         print "Extracting alignments"
@@ -275,29 +278,24 @@ class XCESCorpus(AlignedSubtitles):
 
  
     def extractLines(self, doc):   
-        lang = doc.split("/")[0] 
-        tars = self.srcTars if lang == self.sourceLang else self.trgTars
-        for filename in tars:
-            tarFile = tars[filename]
-            allFiles = tarFile.getnames()
-            for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
-                if expansion + doc in allFiles and not tarFile.getmember(expansion+doc).issym():
-                    return self.getLines(tarFile, expansion+doc)
+        for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
+            if self.subtitles.has_key(expansion+doc):
+                tarFile = open(self.subtitles[expansion+doc][0])
+                offset, size = self.subtitles[expansion+doc][1:]
+                tarFile.seek(offset)
+                data = tarFile.read(size)
+                gzipContent = GzipFile(fileobj=StringIO(data))
+                root = etree.parse(gzipContent).getroot()
+                lines = []
+                for s in root:
+                    if s.tag == 's':
+                        line = getLine(s)
+                        lines.append(line)
+                tarFile.close()
+                return lines
         raise RuntimeError("could not find file " + doc)
-                
-                
-    def getLines(self, tarFile, selectFile):            
-        print "Reading file " + selectFile
-        extracted = tarFile.extractfile(selectFile)
-        gzipContent = GzipFile(fileobj=extracted)
-        root = etree.parse(gzipContent).getroot()
-        lines = []
-        for s in root:
-            if s.tag == 's':
-                line = getLine(s)
-                lines.append(line)
-        return lines
-
+    
+     
 def getLine(xmlChunk):
     wordList = []
     for w in xmlChunk:
@@ -316,21 +314,7 @@ def opushash(path):
         result += ord(number[i])*(100000/math.pow(10,i))
     return result
    
-
-def indextar(dbtarfile,indexfile):
-    db = tarfile.open(dbtarfile, 'r:gz') 
-
-    with open(indexfile, 'w') as outfile:
-        counter = 0
-        print('One dot stands for 1000 indexed files.')
-        for tarinfo in db:
-            rec = "%s %d %d\n" % (tarinfo.name, tarinfo.offset_data, tarinfo.size)
-            outfile.write(rec)
-            counter += 1
-            if counter % 1000 == 0:
-                db.members = []  
-    db.close()
-                               
+      
     
 def normalise(line):
     if isinstance(line, list):
