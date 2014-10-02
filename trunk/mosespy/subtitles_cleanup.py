@@ -270,8 +270,9 @@ class XCESCorpus(AlignedSubtitles):
                     bitext[linkGrp.attrib['fromDoc']] = alignmentList
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
-                print ("%i aligned files already processed (%i %% of %i): %i stored and %i discarded."
-                       %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot), len(bitext), (l+1)-len(bitext)))
+                print ("%i aligned files already processed (%i %% of %i):"
+                       %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot))
+                       + " %i stored and %i discarded."%len(bitext), (l+1)-len(bitext))
           
         print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(bitext))
                                                       *100/len(self.xmlRoot))
@@ -286,7 +287,7 @@ class XCESCorpus(AlignedSubtitles):
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset)
                 gzippedData = tarFile.read(size)
-                print "Step 2 "
+                print "Step 2 (size: %i)"%(len(gzippedData))
                 zippedFile = gzip.GzipFile(fileobj=StringIO.StringIO(gzippedData))
                 print "Step 3 "
                 root = etree.parse(zippedFile).getroot()
