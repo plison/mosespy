@@ -226,18 +226,19 @@ class XCESCorpus(AlignedSubtitles):
         for fileInDir in self.xcesFile.getUp().listdir():
             if not ".tar.gz" in fileInDir:
                 continue
-            fileOpen = tarfile.open(self.xcesFile.getUp() + "/" + fileInDir)
+            tarFile = tarfile.open(self.xcesFile.getUp() + "/" + fileInDir)
+            gzipFile = gzip.open(tarFile.name, 'r')
             lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
-                             fileOpen.getnames()[0]).group(2)
+                             tarFile.getnames()[0]).group(2)
             if not lang == self.sourceLang and not lang == self.targetLang:
                 continue
-            for tari in fileOpen:
+            for tari in tarFile:
                 if not tari.issym():
                     if subtitles.has_key(tari.name):
                         print "Problem: two occurrences of " + tari.name
-                    subtitles[tari.name] = (gzip.open(fileOpen.name, 'r'), 
-                                            tari.offset_data, tari.size)
+                    subtitles[tari.name] = gzipFile,tari.offset_data, tari.size
             print "Finished processing file " + fileInDir
+            tarFile.close()
         return subtitles
         
                                            
