@@ -235,7 +235,8 @@ class XCESCorpus(AlignedSubtitles):
                 if not tari.issym():
                     if subtitles.has_key(tari.name):
                         print "Problem: two occurrences of " + tari.name
-                    subtitles[tari.name] = (fileOpen.name, tari.offset_data, tari.size)
+                    subtitles[tari.name] = (gzip.open(fileOpen.name, 'r'), 
+                                            tari.offset_data, tari.size)
             print "Finished processing file " + fileInDir
         return subtitles
         
@@ -279,8 +280,7 @@ class XCESCorpus(AlignedSubtitles):
     def extractLines(self, doc):   
         for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
             if self.subtitles.has_key(expansion+doc):
-                print "Step 0 "
-                tarFile = gzip.open(self.subtitles[expansion+doc][0], 'r')
+                tarFile = self.subtitles[expansion+doc][0]
                 print "Step 1 "
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset)
