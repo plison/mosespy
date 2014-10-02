@@ -37,35 +37,36 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, gzip, re, os, collections
+import  math, sys, re, os, collections, tarfile
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
+from gzip import GzipFile
 
 
 
 class AlignedSubtitles(object):
     
     def __init__(self, bitext, sourceLang, targetLang):
-        self.aligns = bitext
+        self.bitext = bitext
         self.sourceLang = sourceLang
         self.targetLang = targetLang
           
 
     def extractSubset(self, subsetkeys):
         subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
-                  map(None, subsetkeys, map(self.aligns.get, subsetkeys)), {})
+                  map(None, subsetkeys, map(self.bitext.get, subsetkeys)), {})
         
         return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
     
     def addAlternatives(self):
         correlatedAligns = {}
-        for fromdoc in self.aligns:
+        for fromdoc in self.bitext:
             print "Search correlated sources for " + fromdoc
-            initAligns = self.aligns[fromdoc]
+            initAligns = self.bitext[fromdoc]
             correlatedAligns[fromdoc] = [(s,set([t] if t else [])) for (s,t) in initAligns]
-            for otherfromDoc in [x for x in self.aligns if x!=fromdoc]:                              
-                otherAligns = self.aligns[otherfromDoc]
+            for otherfromDoc in [x for x in self.bitext if x!=fromdoc]:                              
+                otherAligns = self.bitext[otherfromDoc]
                 for i in range(0, len(initAligns)):
                     initPair = initAligns[i]  
                     for k in range(i-int(10*math.log(i+1)), i+int(10*math.log(i+1))):
@@ -74,36 +75,36 @@ class AlignedSubtitles(object):
                             correlatedAligns[fromdoc][i][1].add(otherPair[1])
                             break                         
         
-        self.aligns = correlatedAligns
-        for d in self.aligns:
-            self.aligns[d] = [(s,list(t)) for (s,t) in self.aligns[d]]
+        self.bitext = correlatedAligns
+        for d in self.bitext:
+            self.bitext[d] = [(s,list(t)) for (s,t) in self.bitext[d]]
         return self        
+    
     
     def getNbAlternativeTranslations(self):
         nbTranslations = 1
-        for a in self.aligns:
-            for p in self.aligns[a]:
+        for a in self.bitext:
+            for p in self.bitext[a]:
                 if isinstance(p[1], list) and len(p[1]) > nbTranslations:
                     nbTranslations = len(p[1])
         return nbTranslations
        
 
-    
     def addSubtitles(self, alignedSubtitles):
-        self.aligns.update(alignedSubtitles.aligns)   
+        self.bitext.update(alignedSubtitles.bitext)   
         
         
     def removeDirs(self, dirsToRemove):
         newAligns = {}
-        for a in self.aligns:
+        for a in self.bitext:
             if a.getUp() not in dirsToRemove:
-                newAligns[a] = self.aligns[a]
-        self.aligns = newAligns
+                newAligns[a] = self.bitext[a]
+        self.bitext = newAligns
         
         
     def getDirs(self):
         dirs = set()
-        for a in self.aligns:
+        for a in self.bitext:
             dirs.add(a.getUp())
         return list(dirs)
   
@@ -111,8 +112,8 @@ class AlignedSubtitles(object):
     def getInverse(self):
         invertedDict = {}
         flatten = lambda x : x[0] if isinstance(x,list) else x
-        for a in self.aligns:
-            invertedDict[a] = [(flatten(t),s) for (s,t) in self.aligns[a]]
+        for a in self.bitext:
+            invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
         return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
@@ -121,23 +122,23 @@ class AlignedSubtitles(object):
         
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
-        if len(self.aligns) < 20:
+        if len(self.bitext) < 20:
             raise RuntimeError("not enough data to divide")
         
         print "Sorting data by number of duplicates"
         nbEntries = collections.defaultdict(int)
-        for a in self.aligns.keys():
+        for a in self.bitext.keys():
             nbEntries[a.getUp()] += 1
         directories = sorted(nbEntries.keys(), key=lambda x : nbEntries[x])
         
-        while len(alignedData.aligns) < nbDirs:
+        while len(alignedData.bitext) < nbDirs:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
-            alignsInDir = self.extractSubset([x for x in self.aligns if testDir in x])
+            alignsInDir = self.extractSubset([x for x in self.bitext if testDir in x])
             if addAlternatives:
                 alignsInDir.addAlternatives()
-            alignedDocs= alignsInDir.aligns.keys()
-            alignedDocs.sort(key=lambda x: max([len(y) for y in alignsInDir.aligns[x]]))
+            alignedDocs= alignsInDir.bitext.keys()
+            alignedDocs.sort(key=lambda x: max([len(y) for y in alignsInDir.bitext[x]]))
             bestAlignment = alignsInDir.extractSubset([alignedDocs[-1]])
             alignedData.addSubtitles(bestAlignment)
 
@@ -161,19 +162,19 @@ class AlignedSubtitles(object):
         
         # Sorted by year, then number
         
-        prefix = os.path.commonprefix(self.aligns.keys())
-        alignKeys = [x.replace(prefix, "") for x in list(self.aligns.keys())]
+        prefix = os.path.commonprefix(self.bitext.keys())
+        alignKeys = [x.replace(prefix, "") for x in list(self.bitext.keys())]
         alignKeys.sort(key=lambda x : opushash(x))              
                            
         for document in alignKeys:
             document = prefix + document
-            for pair in self.aligns[document]:
+            for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
-                    srcFile.write(normalise(pair[0]).encode('utf-8'))
-                    trgFile.write(normalise(pair[1]).encode('utf-8'))
+                    srcFile.write(normalise(pair[0]))
+                    trgFile.write(normalise(pair[1]))
                     for i in range(0, len(altFiles)):
                         altLine = pair[1][i] if i < len(pair[1]) else ""
-                        altFiles[i].write(normalise(altLine).encode('utf-8'))
+                        altFiles[i].write(normalise(altLine))
         
         srcFile.close()
         trgFile.close()
@@ -181,11 +182,10 @@ class AlignedSubtitles(object):
             altFile.close()
 
             
-
      
     def divideData(self, nbTuningFiles=2, nbDevFiles=5, nbTestFiles=5):
         
-        trainingData = AlignedSubtitles(self.aligns, self.sourceLang, self.targetLang)
+        trainingData = AlignedSubtitles(self.bitext, self.sourceLang, self.targetLang)
         
         print "Extracting test data"
         testData = trainingData.extractData(nbTestFiles, True)        
@@ -198,7 +198,7 @@ class AlignedSubtitles(object):
         
         return trainingData, tuneData, devData, testData
         
-       
+
 
 class XCESCorpus(AlignedSubtitles):
     
@@ -217,6 +217,21 @@ class XCESCorpus(AlignedSubtitles):
         AlignedSubtitles.__init__(self, self.getAlignments(), sourceLang, targetLang)
         print "Finished parsing file " + xcesFile
         
+        print "Opening zipped files in same directory..."
+        self.srcTars = {}
+        self.trgTars = {}
+        for fileInSameDir in self.xcesFile.getUp().listdir():
+            if ".tar.gz" in fileInSameDir:
+                fileOpen = tarfile.open(fileInSameDir)
+                lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
+                                 fileOpen.getnames()[0]).group(2)
+                if lang == sourceLang:
+                    self.srcTars[fileInSameDir] = fileOpen
+                elif lang == targetLang:
+                    self.trgTars[fileInSameDir] = fileOpen
+                    
+                    
+        
                   
     def getAlignments(self):
         
@@ -225,11 +240,9 @@ class XCESCorpus(AlignedSubtitles):
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                fromdoc = self.expandPath(linkGrp.attrib['fromDoc'])
-                todoc =  self.expandPath(linkGrp.attrib['toDoc'])
-                
-                fromLines = self.getLines(fromdoc)
-                toLines = self.getLines(todoc)
+                fromLines = self.extractLines(linkGrp.attrib['fromDoc'])
+                toLines =  self.extractLines(linkGrp.attrib['toDoc'])
+                           
                 alignmentList = []
                 for link in linkGrp:
                     if link.tag == 'link':
@@ -245,7 +258,7 @@ class XCESCorpus(AlignedSubtitles):
                             alignmentList.append((sourceLine, targetLine))
                 
                 if len(alignmentList) > (2*len(linkGrp)/3):
-                    bitext[fromdoc] = alignmentList
+                    bitext[linkGrp.attrib['fromDoc']] = alignmentList
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i): %i stored and %i discarded."
@@ -256,18 +269,22 @@ class XCESCorpus(AlignedSubtitles):
         return bitext
 
  
-    def expandPath(self, doc):               
-        for basePath in ["/OpenSubtitles2013/xml/","/OpenSubtitles2013/"]:
-            docPath = Path(self.xcesFile.getUp() + basePath + doc)
-            if docPath.exists():
-                break
-        if not docPath.exists():
-            raise RuntimeError("could not find " + docPath)
-        return docPath
-        
-    def getLines(self, gzipDoc):
-        
-        text = gzip.open(gzipDoc, 'r').read()
+    def extractLines(self, doc):   
+        lang = doc.split("/")[0] 
+        tars = self.srcTars if lang == self.sourceLang else self.trgTars
+        for filename in tars:
+            tarFile = tars[filename]
+            allFiles = tarFile.getnames()
+            for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
+                tarObject = tarFile.getmember(expansion+doc)
+                if (expansion + doc in allFiles and not tarObject.issym()):
+                    return self.getLines(tarFile, expansion+doc)
+        raise RuntimeError("could not find file " + doc)
+                
+                
+    def getLines(self, tarFile, selectFile):            
+        gzipContent = GzipFile(fileobj=tarFile.extractfile(selectFile))
+        text = gzipContent.read()
         root = etree.fromstring(text)
         lines = []
         for s in root:
@@ -305,16 +322,14 @@ def normalise(line):
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
         line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
         line = re.sub(r"\[\s*and\s*\]", "", line)
-        line = unicode(line).translate({ord(u"\u201c"):ord('"'), ord(u"\u201d"):ord('"'),
-                               ord(u"\u201e"):ord('"'), ord(u"\u201f"):ord('"'),
-                               ord(u"\u2013"):ord('-')})
+    #    line = unicode(line).translate({ord(u"\u201c"):ord('"'), ord(u"\u201d"):ord('"'),
+    #                           ord(u"\u201e"):ord('"'), ord(u"\u201f"):ord('"'),
+    #                           ord(u"\u2013"):ord('-')})
         line = re.sub(r"\|", "_", line)
-        return (line + "\n")
+        return (line + "\n").encode('utf-8')
                 
                 
- 
 
-           
               
 if __name__ == '__main__':
     if len(sys.argv) != 2:
