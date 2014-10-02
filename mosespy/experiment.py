@@ -64,7 +64,6 @@ import mosespy.system as system
 import mosespy.install as install
 from mosespy.system import Path
 from mosespy.corpus import BasicCorpus, AlignedCorpus, ReferenceCorpus, CorpusProcessor
-from mosespy.analyser import AnalysisUI,Condition
 
 
 class Experiment(object):
@@ -409,14 +408,16 @@ class Experiment(object):
         
     
         """
+        from mosespy.analyser import AnalysisUI,Condition
         if not self.results:
             raise RuntimeError("Results must first be generated with evaluateBLEU(...)")
         elif not isinstance(self.results, ReferenceCorpus):
             raise RuntimeError("results must be of type ReferenceCorpus")
         if not initCondition:
             initCondition=Condition()
-        results = self.processor.revertReferenceCorpus(self.results)
-        AnalysisUI(initCondition, results)
+        readResults = self.processor.revertReferenceCorpus(self.results)
+        AnalysisUI(initCondition, readResults)
+        readResults.remove()
   
 
 
