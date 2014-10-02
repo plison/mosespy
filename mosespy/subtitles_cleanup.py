@@ -231,8 +231,10 @@ class XCESCorpus(AlignedSubtitles):
                                  fileOpen.getnames()[0]).group(2)
                 if lang == self.sourceLang:
                     srcTars[fileInSameDir] = fileOpen
+                    print "Finished loading file " + fileInSameDir
                 elif lang == self.targetLang:
                     trgTars[fileInSameDir] = fileOpen 
+                    print "Finished loading file " + fileInSameDir
         return srcTars, trgTars
         
                   
