@@ -64,7 +64,7 @@ import mosespy.system as system
 import mosespy.install as install
 from mosespy.system import Path
 from mosespy.corpus import BasicCorpus, AlignedCorpus, ReferenceCorpus, CorpusProcessor
-
+from mosespy.analyser import AnalysisUI,Condition
 
 
 class Experiment(object):
@@ -388,13 +388,36 @@ class Experiment(object):
         
         self.translateFile(testCorpus.getSourceCorpus(), transPath, False, True, False)    
         testCorpus.addTranslation(transPath)      
-        self.results = self.processor.revertReferenceCorpus(testCorpus)
+        self.results = testCorpus
         self._recordState()
         
         bleu, bleu_output = self.processor.getBleuScore(testCorpus)
         print bleu_output
         return testCorpus, bleu
     
+    
+    def analyseResults(self, initCondition=None):
+        """Analyse the translation results (encoded as a ReferenceCorpus)
+        using the analysis user interface.  The results must first be
+        generated using the method evaluateBLEU(...) prior to calling this
+        method. The translation results are detokenised and special characters
+        are deescaped for easier reading. 
+        
+        Args:
+            initCondition (Condition): optional condition to initialise the 
+                user interface.
+        
+    
+        """
+        if not self.results:
+            raise RuntimeError("Results must first be generated with evaluateBLEU(...)")
+        elif not isinstance(self.results, ReferenceCorpus):
+            raise RuntimeError("results must be of type ReferenceCorpus")
+        if not initCondition:
+            initCondition=Condition()
+        results = self.processor.revertReferenceCorpus(self.results)
+        AnalysisUI(initCondition, results)
+  
 
 
     def binariseModel(self):

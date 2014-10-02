@@ -37,20 +37,8 @@ __version__ = "$Date::                      $"
 import string
 from urwid import (ListBox,LineBox,Button,Text,Divider,Columns,SimpleFocusListWalker,
                    connect_signal,MainLoop,Edit,IntEdit,Frame)
-from mosespy.corpus import ReferenceCorpus
 
 
-def startAnalysis(results, initCondition=None):
-    """Analyse the translation results (encoded as a translated corpus)
-    under a particular set of conditions.
-    
-    """
-    if not initCondition:
-        initCondition=Condition()
-    if not isinstance(results, ReferenceCorpus):
-        raise RuntimeError("results must be of type ReferenceCorpus")
-    AnalysisUI(initCondition, results)
-  
 
 class Condition():
     """Condition on an alignment pair, made of:
