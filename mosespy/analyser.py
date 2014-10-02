@@ -36,9 +36,39 @@ __version__ = "$Date::                      $"
 
 import string
 from urwid import (ListBox,LineBox,Button,Text,Divider,Columns,SimpleFocusListWalker,
-                   connect_signal,MainLoop,Edit,IntEdit,Frame)
+                   connect_signal,MainLoop,Edit,IntEdit,Frame, ExitMainLoop)
 
 
+
+
+class AnalysisUI(MainLoop):
+
+    def __init__(self, condition, results):
+        self.aligns = results.getAlignments(addHistory=True)
+        self.errors = []
+        self.focus = None
+        palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
+                   ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
+        
+        def unhandled_input(key):
+            if key in ('q,', 'Q'):
+                raise ExitMainLoop()
+        
+        MainLoop.__init__(self, Frame([Text("Processing...")]), palette, 
+                          unhandled_input=unhandled_input)
+        self.updateErrors(condition)
+        self.run()
+    
+        
+    
+    def updateErrors(self, newCondition):
+        self.errors = [a for a in self.aligns if newCondition.isSatisfiedBy(a)]
+        lineBox = LineBox(ConditionBox(newCondition, self), "Analysis criteria")
+        errorBox = ErrorBox(self.errors)
+        self.widget = Columns([(35, lineBox),  (120, errorBox)], 2, 1)          
+          
+        
+    
 
 class Condition():
     """Condition on an alignment pair, made of:
@@ -121,7 +151,6 @@ class Condition():
  
         
 
- 
 class ConditionBox(ListBox):
                 
          
@@ -216,29 +245,7 @@ class ErrorBox(ListBox):
         self.body[choice] = self.getAlignWidget(choice, addHistory)
         self.lineInFocus = choice if addHistory else -1
 
-   
-
-class AnalysisUI(MainLoop):
-
-    def __init__(self, condition, results):
-        self.aligns = results.getAlignments(addHistory=True)
-        self.errors = []
-        self.focus = None
-        palette = [('cyan', 'dark cyan', 'default'),('bold', 'bold', 'default'), 
-                   ('red', 'dark red', 'default'), ('green', 'dark green', 'default')]
-        MainLoop.__init__(self, Frame([Text("Processing...")]), palette)
-        self.updateErrors(condition)
-        self.run()
-        
-    
-    def updateErrors(self, newCondition):
-        self.errors = [a for a in self.aligns if newCondition.isSatisfiedBy(a)]
-        lineBox = LineBox(ConditionBox(newCondition, self), "Analysis criteria")
-        errorBox = ErrorBox(self.errors)
-        self.widget = Columns([(35, lineBox),  (120, errorBox)], 2, 1)          
-          
-        
-                
+               
 
 def extractNgrams(tokens, size):
     """Extract the n-grams of a particular size in the list of tokens.
