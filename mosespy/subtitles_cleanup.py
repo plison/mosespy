@@ -236,7 +236,7 @@ class XCESCorpus(AlignedSubtitles):
                 if not tari.issym():
                     if subtitles.has_key(tari.name):
                         print "Problem: two occurrences of " + tari.name
-                    subtitles[tari.name] = (fileInDir, tari.offset_data, tari.size)
+                    subtitles[tari.name] = (fileOpen.name, tari.offset_data, tari.size)
             print "Finished processing file " + fileInDir
         return subtitles
         
