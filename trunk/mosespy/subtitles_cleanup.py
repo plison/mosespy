@@ -285,7 +285,7 @@ class XCESCorpus(AlignedSubtitles):
                 tarFile = self.subtitles[expansion+doc][0]
                 print "Step 1 "
                 offset, size = self.subtitles[expansion+doc][1:]
-                tarFile.seek(offset)
+                tarFile.seek(offset,0)
                 gzippedData = tarFile.read(size)
                 print "Step 2 (size: %i)"%(len(gzippedData))
                 zippedFile = gzip.GzipFile(fileobj=StringIO.StringIO(gzippedData))
