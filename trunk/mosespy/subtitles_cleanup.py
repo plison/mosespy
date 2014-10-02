@@ -284,6 +284,7 @@ class XCESCorpus(AlignedSubtitles):
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset)
                 data = tarFile.read(size)
+                print data
                 gzipContent = GzipFile(fileobj=StringIO(data))
                 root = etree.parse(gzipContent).getroot()
                 lines = []
