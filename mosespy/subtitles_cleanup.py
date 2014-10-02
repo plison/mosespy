@@ -281,8 +281,7 @@ class XCESCorpus(AlignedSubtitles):
             tarFile = tars[filename]
             allFiles = tarFile.getnames()
             for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
-                tarObject = tarFile.getmember(expansion+doc)
-                if (expansion + doc in allFiles and not tarObject.issym()):
+                if expansion + doc in allFiles and not tarFile.getmember(expansion+doc).issym():
                     return self.getLines(tarFile, expansion+doc)
         raise RuntimeError("could not find file " + doc)
                 
