@@ -211,12 +211,8 @@ class XCESCorpus(AlignedSubtitles):
             if linkGrp.tag == 'linkGrp':
                 self.sourceLang = linkGrp.attrib['fromDoc'].split("/")[0] 
                 self.targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
-                break
-             
-        print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
-        AlignedSubtitles.__init__(self, self.getAlignments(), self.sourceLang, self.targetLang)
-        print "Finished parsing file " + xcesFile
-        
+                break     
+           
         print "Opening zipped files in same directory..."
         self.srcTars = {}
         self.trgTars = {}
@@ -229,6 +225,11 @@ class XCESCorpus(AlignedSubtitles):
                     self.srcTars[fileInSameDir] = fileOpen
                 elif lang == self.targetLang:
                     self.trgTars[fileInSameDir] = fileOpen
+                    
+        print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
+        AlignedSubtitles.__init__(self, self.getAlignments(), self.sourceLang, self.targetLang)
+        print "Finished parsing file " + xcesFile
+     
                     
                     
         
