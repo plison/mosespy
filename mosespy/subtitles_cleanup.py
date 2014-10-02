@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, re, os, collections, tarfile
+import  math, sys, re, os, collections, tarfile, time
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 from gzip import GzipFile
@@ -315,8 +315,23 @@ def opushash(path):
     for i in range(0, min(6,len(number))):
         result += ord(number[i])*(100000/math.pow(10,i))
     return result
-        
-        
+   
+
+def indextar(dbtarfile,indexfile):
+    with tarfile.open(dbtarfile, 'r|') as db:
+        if os.path.isfile(indexfile):
+            print('file exists. exiting')
+
+        with open(indexfile, 'w') as outfile:
+            counter = 0
+            print('One dot stands for 1000 indexed files.')
+            for tarinfo in db:
+                rec = "%s %d %d\n" % (tarinfo.name, tarinfo.offset_data, tarinfo.size)
+                outfile.write(rec)
+                counter += 1
+                if counter % 1000 == 0:
+                    db.members = []  
+                                   
     
 def normalise(line):
     if isinstance(line, list):
