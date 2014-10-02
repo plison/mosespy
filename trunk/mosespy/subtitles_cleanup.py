@@ -37,11 +37,9 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import  math, sys, re, os, collections, tarfile
-from cStringIO import StringIO
+import  math, sys, re, os, collections, tarfile, zlib
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
-from gzip import GzipFile
 
 
 
@@ -280,13 +278,11 @@ class XCESCorpus(AlignedSubtitles):
     def extractLines(self, doc):   
         for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
             if self.subtitles.has_key(expansion+doc):
-                tarFile = open(self.subtitles[expansion+doc][0])
+                tarFile = open(self.subtitles[expansion+doc][0], 'r')
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset)
-                data = tarFile.read(size)
-                print data
-                gzipContent = GzipFile(fileobj=StringIO(data))
-                root = etree.parse(gzipContent).getroot()
+                data = zlib.decompress(tarFile.read(size))
+                root = etree.fromstring(data)
                 lines = []
                 for s in root:
                     if s.tag == 's':
