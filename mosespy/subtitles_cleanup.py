@@ -288,7 +288,7 @@ class XCESCorpus(AlignedSubtitles):
                 
     def getLines(self, tarFile, selectFile):            
         gzipContent = GzipFile(fileobj=tarFile.extractfile(selectFile))
-        root = etree.parse(gzipContent)
+        root = etree.parse(gzipContent).getroot()
         lines = []
         for s in root:
             if s.tag == 's':
