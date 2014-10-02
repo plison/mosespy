@@ -318,20 +318,19 @@ def opushash(path):
    
 
 def indextar(dbtarfile,indexfile):
-    with tarfile.open(dbtarfile, 'r:gz') as db:
-        if os.path.isfile(indexfile):
-            print('file exists. exiting')
+    db = tarfile.open(dbtarfile, 'r:gz') 
 
-        with open(indexfile, 'w') as outfile:
-            counter = 0
-            print('One dot stands for 1000 indexed files.')
-            for tarinfo in db:
-                rec = "%s %d %d\n" % (tarinfo.name, tarinfo.offset_data, tarinfo.size)
-                outfile.write(rec)
-                counter += 1
-                if counter % 1000 == 0:
-                    db.members = []  
-                                   
+    with open(indexfile, 'w') as outfile:
+        counter = 0
+        print('One dot stands for 1000 indexed files.')
+        for tarinfo in db:
+            rec = "%s %d %d\n" % (tarinfo.name, tarinfo.offset_data, tarinfo.size)
+            outfile.write(rec)
+            counter += 1
+            if counter % 1000 == 0:
+                db.members = []  
+    db.close()
+                               
     
 def normalise(line):
     if isinstance(line, list):
