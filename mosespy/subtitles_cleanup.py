@@ -209,12 +209,12 @@ class XCESCorpus(AlignedSubtitles):
         self.xmlRoot = tree.getroot()        
         for linkGrp in self.xmlRoot:
             if linkGrp.tag == 'linkGrp':
-                sourceLang = linkGrp.attrib['fromDoc'].split("/")[0] 
-                targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
+                self.sourceLang = linkGrp.attrib['fromDoc'].split("/")[0] 
+                self.targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
                 break
              
-        print "Source lang: %s, target lang: %s"%(sourceLang, targetLang)
-        AlignedSubtitles.__init__(self, self.getAlignments(), sourceLang, targetLang)
+        print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
+        AlignedSubtitles.__init__(self, self.getAlignments(), self.sourceLang, self.targetLang)
         print "Finished parsing file " + xcesFile
         
         print "Opening zipped files in same directory..."
@@ -225,9 +225,9 @@ class XCESCorpus(AlignedSubtitles):
                 fileOpen = tarfile.open(fileInSameDir)
                 lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
                                  fileOpen.getnames()[0]).group(2)
-                if lang == sourceLang:
+                if lang == self.sourceLang:
                     self.srcTars[fileInSameDir] = fileOpen
-                elif lang == targetLang:
+                elif lang == self.targetLang:
                     self.trgTars[fileInSameDir] = fileOpen
                     
                     
