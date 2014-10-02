@@ -184,6 +184,9 @@ class ConditionBox(ListBox):
         elList.append(Divider())
         elList.append(Text(('cyan'," Number of sentences:\n %i/%i"
                                   %(len(topUI.errors), len(topUI.aligns)))))
+        elList.append(Divider())
+        elList.append(Divider())
+        elList.append(Text(('red', "Press 'q' to exit the interface")))
         walker = SimpleFocusListWalker(elList)
         
         ListBox.__init__(self, walker)
