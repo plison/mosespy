@@ -279,12 +279,17 @@ class XCESCorpus(AlignedSubtitles):
     def extractLines(self, doc):   
         for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
             if self.subtitles.has_key(expansion+doc):
+                print "Step 0 "
                 tarFile = gzip.open(self.subtitles[expansion+doc][0], 'r')
+                print "Step 1 "
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset)
                 gzippedData = tarFile.read(size)
+                print "Step 2 "
                 zippedFile = gzip.GzipFile(fileobj=StringIO.StringIO(gzippedData))
+                print "Step 3 "
                 root = etree.parse(zippedFile).getroot()
+                print "Step 4 "
                 lines = []
                 for s in root:
                     if s.tag == 's':
