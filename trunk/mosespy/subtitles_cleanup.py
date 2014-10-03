@@ -37,7 +37,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-import cStringIO as StringIO
+from io import BytesIO
 import  math, sys, re, os, collections, tarfile, gzip
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
@@ -227,7 +227,7 @@ class XCESCorpus(AlignedSubtitles):
             if not ".tar.gz" in fileInDir:
                 continue
             tarFile = tarfile.open(self.xcesFile.getUp() + "/" + fileInDir)
-            gzipFile = gzip.open(tarFile.name, 'r')
+            gzipFile = gzip.open(tarFile.name, 'rb')
             lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
                              tarFile.getnames()[0]).group(2)
             if not lang == self.sourceLang and not lang == self.targetLang:
@@ -283,15 +283,11 @@ class XCESCorpus(AlignedSubtitles):
         for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
             if self.subtitles.has_key(expansion+doc):
                 tarFile = self.subtitles[expansion+doc][0]
-                print "Step 1 "
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset,0)
                 gzippedData = tarFile.read(size)
-                print "Step 2 (size: %i)"%(len(gzippedData))
-                zippedFile = gzip.GzipFile(fileobj=StringIO.StringIO(gzippedData))
-                print "Step 3 "
+                zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
                 root = etree.parse(zippedFile).getroot()
-                print "Step 4 "
                 lines = []
                 for s in root:
                     if s.tag == 's':
