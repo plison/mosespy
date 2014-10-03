@@ -269,6 +269,19 @@ class Path(str):
         else:
             raise RuntimeError(self + " not a directory")
         
+    
+    def getFirstLine(self):
+        """Returns the first line of the file (if it exists). If
+        the file is compressed, used zcat to uncompress it.
+        
+        """
+        if self.exists() and os.path.isfile(self):
+            catCmd = "cat " if not self.endswith(".gz") else "zcat "
+            return run_output(catCmd + self + " | head -n 1")
+        else:
+            print "Cannot read " + self
+            return ""
+        
         
     def readlines(self):
         """Reads the lines in the file and returns the result.

@@ -40,6 +40,7 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 from io import BytesIO
 import  math, sys, re, os, collections, tarfile, gzip
 from mosespy.system import Path
+import mosespy.system as system
 import xml.etree.cElementTree as etree
 
 
@@ -229,15 +230,15 @@ class XCESCorpus(AlignedSubtitles):
         subtitles = {}
         rootDir = self.xcesFile.getUp() + "/"
         tarPaths = [rootDir + f for f in rootDir.listdir() 
-                    if f.endswith(".tar") or f.endswith(".tar.gz")]
+                    if (f.endswith(".tar") or f.endswith(".tar.gz"))]
         
         for tarPath in tarPaths:
             print "checking file " + tarPath
-            tarFile = tarfile.open(tarPath, 'r') 
-            lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
-                             tarFile.getnames()[0]).group(2)
+            
+            lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)", tarPath.getFirstLine())
             if not lang == self.sourceLang and not lang == self.targetLang:
-                continue      
+                continue 
+                 
             print "Start processing file " + tarPath
             if tarPath.endswith(".tar.gz"):
                 print "Decompressing file " + tarPath               

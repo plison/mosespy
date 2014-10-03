@@ -186,7 +186,8 @@ class ConditionBox(ListBox):
                                   %(len(topUI.errors), len(topUI.aligns)))))
         elList.append(Divider())
         elList.append(Divider())
-        elList.append(Text(('red', "Press 'q' to exit")))
+        elList.append(Divider())
+        elList.append(Text(('red', " Press 'q' to exit")))
         walker = SimpleFocusListWalker(elList)
         
         ListBox.__init__(self, walker)
