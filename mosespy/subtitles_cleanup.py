@@ -295,7 +295,7 @@ class XCESCorpus(AlignedSubtitles):
                             sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
                             targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
                         except IndexError:
-                            print "error when processing file %i, %s and %s"%(todoc,str(sourceLines), str(targetLines))
+                            print "error when processing file %s, %s and %s"%(todoc,str(sourceLines), str(targetLines))
                             continue
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
