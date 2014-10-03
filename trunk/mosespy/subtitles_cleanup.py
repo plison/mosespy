@@ -198,12 +198,12 @@ class Dictionary():
         if not dicFile.exists():
             raise RuntimeError("Dictionary " + dicFile + " cannot be found")
         self.words = set()
-        with open(dicFile) as dico:
+        with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
                 print l
                 print type(l)
                 if not l.startswith("%%") and not l.startswith("#"):
-                    self.words.add(l.strip().encode("utf8"))
+                    self.words.add(l.strip().encode("utf-8"))
         print "Total number of words in dictionary: %i"%(len(self.words))
     
     def isWord(self, word):
