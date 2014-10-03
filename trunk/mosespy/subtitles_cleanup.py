@@ -102,7 +102,7 @@ class AlignedSubtitles(object):
             print "Extracting best alignments for " + testDir
             subset = extraction([x for x in self.bitext if testDir in x])
             alignedDocs= subset.keys()
-            alignedDocs.sort(key=lambda x: max([len(y) for y in subset.bitext[x]]))
+            alignedDocs.sort(key=lambda x: max([len(y) for y in subset[x]]))
             bestAlignment = extraction([alignedDocs[-1]])
             extractedBitext.update(bestAlignment)
             self.removeDirs([testDir])
