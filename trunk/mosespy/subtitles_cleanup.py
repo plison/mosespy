@@ -38,7 +38,7 @@ __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
-import  math, sys, re, collections, tarfile, gzip
+import  math, sys, re, collections, tarfile, gzip, codecs
 from mosespy.system import Path
 import xml.etree.cElementTree as etree
 
@@ -198,7 +198,7 @@ class Dictionary():
         if not dicFile.exists():
             raise RuntimeError("Dictionary " + dicFile + " cannot be found")
         self.words = set()
-        with open(dicFile) as dico:
+        with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
                     self.words.add(l.strip().encode("utf8"))
