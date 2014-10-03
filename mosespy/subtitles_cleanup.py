@@ -38,57 +38,35 @@ __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
-import  math, sys, re, os, collections, tarfile, gzip
+import  math, sys, re, collections, tarfile, gzip
 from mosespy.system import Path
-import mosespy.system as system
 import xml.etree.cElementTree as etree
 
 
 
 class AlignedSubtitles(object):
+    "Representation of a set of aligned subtitles."
     
     def __init__(self, bitext, sourceLang, targetLang):
+        """Creates a new set of aligned subtitles with the bitext content
+        as well as the source and target language codes.
+        
+        """
         self.bitext = bitext
         self.sourceLang = sourceLang
         self.targetLang = targetLang
           
 
-    def extractSubset(self, subsetkeys):
+    def _extractSubset(self, subsetkeys):
+        """Extracts a subset of subtitles (anchored by their document ID)
+        and returns a new AlignedSubtitles object with them.
+        
+        """
         subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                   map(None, subsetkeys, map(self.bitext.get, subsetkeys)), {})
         return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
-    
-    def addAlternatives(self):
-        correlatedAligns = {}
-        for fromdoc in self.bitext:
-            print "Search correlated sources for " + fromdoc
-            initAligns = self.bitext[fromdoc]
-            correlatedAligns[fromdoc] = [(s,set([t] if t else [])) for (s,t) in initAligns]
-            for otherfromDoc in [x for x in self.bitext if x!=fromdoc]:                              
-                otherAligns = self.bitext[otherfromDoc]
-                for i in range(0, len(initAligns)):
-                    initPair = initAligns[i]  
-                    for k in range(i-int(10*math.log(i+1)), i+int(10*math.log(i+1))):
-                        otherPair = otherAligns[k] if k < len(otherAligns) else None  
-                        if otherPair and initPair[0] == otherPair[0]:
-                            correlatedAligns[fromdoc][i][1].add(otherPair[1])
-                            break                         
-        
-        self.bitext = correlatedAligns
-        for d in self.bitext:
-            self.bitext[d] = [(s,list(t)) for (s,t) in self.bitext[d]]
-        return self        
-    
-    
-    def getNbAlternativeTranslations(self):
-        nbTranslations = 1
-        for a in self.bitext:
-            for p in self.bitext[a]:
-                if isinstance(p[1], list) and len(p[1]) > nbTranslations:
-                    nbTranslations = len(p[1])
-        return nbTranslations
-       
+          
 
     def addSubtitles(self, alignedSubtitles):
         self.bitext.update(alignedSubtitles.bitext)   
@@ -120,7 +98,10 @@ class AlignedSubtitles(object):
     
     def extractData(self, nbDirs, addAlternatives=False):
         
-        alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
+        if addAlternatives:
+            alignedData = MultiAlignedSubtitles({}, self.sourceLang, self.targetLang)
+        else:
+            alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
         if len(self.bitext) < 20:
             raise RuntimeError("not enough data to divide")
@@ -134,14 +115,11 @@ class AlignedSubtitles(object):
         while len(alignedData.bitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
-            alignsInDir = self.extractSubset([x for x in self.bitext if testDir in x])
-            if addAlternatives:
-                alignsInDir.addAlternatives()
-            alignedDocs= alignsInDir.bitext.keys()
-            alignedDocs.sort(key=lambda x: max([len(y) for y in alignsInDir.bitext[x]]))
-            bestAlignment = alignsInDir.extractSubset([alignedDocs[-1]])
+            subset = self._extractSubset([x for x in self.bitext if testDir in x])
+            alignedDocs= subset.bitext.keys()
+            alignedDocs.sort(key=lambda x: max([len(y) for y in subset.bitext[x]]))
+            bestAlignment = subset._extractSubset([alignedDocs[-1]])
             alignedData.addSubtitles(bestAlignment)
-
             self.removeDirs([testDir])
 
         return alignedData   
@@ -149,16 +127,15 @@ class AlignedSubtitles(object):
 
     
     def generateMosesFiles(self, stem):
-        nbTranslations = self.getNbAlternativeTranslations()
-        print ("Generating bitexts %s.%s -> %s.%s (number of translations: %i)"
-               %(stem, self.sourceLang, stem, self.targetLang, nbTranslations))
+        """Generates the moses files from the aligned documents. The 
+        generated files will be stem.{sourceLang} and stem.{targetLang}.
+        
+        """
+        print ("Generating bitexts %s.%s -> %s.%s"
+               %(stem, self.sourceLang, stem, self.targetLang))
         
         srcFile = open(stem+"." + self.sourceLang, 'w')
         trgFile = open(stem + "." + self.targetLang, 'w')
-        altFiles = []
-        if nbTranslations > 1:      
-            altFiles = [open((trgFile.name + str(i)), 'w')
-                        for i in range(0, nbTranslations)]
         
         # Sorted by year, then number
         
@@ -170,15 +147,9 @@ class AlignedSubtitles(object):
                 if pair[0] and pair[1]:
                     srcFile.write(normalise(pair[0]))
                     trgFile.write(normalise(pair[1]))
-                    for i in range(0, len(altFiles)):
-                        altLine = pair[1][i] if i < len(pair[1]) else ""
-                        altFiles[i].write(normalise(altLine))
         
         srcFile.close()
         trgFile.close()
-        for altFile in altFiles:
-            altFile.close()
-
             
      
     def divideData(self, nbTuningFiles=2, nbDevFiles=5, nbTestFiles=5):
@@ -198,6 +169,83 @@ class AlignedSubtitles(object):
         
 
 
+class MultiAlignedSubtitles(AlignedSubtitles):
+    
+    def addSubtitles(self, newBitext):
+        
+        """Augments the aligned subtitles by searching for alternative translations
+        (by checking for translations in the same directory, and trying to align
+        them).
+        
+        """
+        correlatedAligns = {}
+        for fromdoc in newBitext:
+            print "Search correlated sources for " + fromdoc
+            initAligns = newBitext[fromdoc]
+            correlatedAligns[fromdoc] = [(s,set([t] if t else [])) for (s,t) in initAligns]
+            for otherfromDoc in [x for x in newBitext if x!=fromdoc]:                              
+                otherAligns = newBitext[otherfromDoc]
+                for i in range(0, len(initAligns)):
+                    initPair = initAligns[i]  
+                    for k in range(i-int(10*math.log(i+1)), i+int(10*math.log(i+1))):
+                        otherPair = otherAligns[k] if k < len(otherAligns) else None  
+                        if otherPair and initPair[0] == otherPair[0]:
+                            correlatedAligns[fromdoc][i][1].add(otherPair[1])
+                            break                         
+        
+        for d in correlatedAligns:
+            newBitext[d] = [(s,list(t)) for (s,t) in correlatedAligns[d]]
+        
+        self.bitext.update(newBitext)
+        
+                
+        
+    def getNbAlternativeTranslations(self):
+        """Returns the maximum number of alternative translations for the 
+        aligned subtitles.
+        
+        """
+        nbTranslations = 1
+        for a in self.bitext:
+            for p in self.bitext[a]:
+                if isinstance(p[1], list) and len(p[1]) > nbTranslations:
+                    nbTranslations = len(p[1])
+        return nbTranslations
+
+
+    
+    def generateMosesFiles(self, stem):
+        """Generates the moses files from the aligned documents. The 
+        generated files will be stem.{sourceLang} and stem.{targetLang}.
+        
+        """
+        
+        AlignedSubtitles.generateMosesFiles(self, stem)
+        
+        nbTranslations = self.getNbAlternativeTranslations()
+        print "Generating %i alternative translations"%(nbTranslations)
+  
+        altFiles = []
+        if nbTranslations > 1:      
+            altFiles = [open((stem + "." + self.targetLang + str(i)), 'w')
+                        for i in range(0, nbTranslations)]
+        
+        # Sorted by year, then number    
+        alignKeys = list(self.bitext.keys())
+        alignKeys.sort(key=lambda x : opushash(x))              
+                           
+        for document in alignKeys:
+            for pair in self.bitext[document]:
+                if pair[0] and pair[1]:
+                    for i in range(0, len(altFiles)):
+                        altLine = pair[1][i] if i < len(pair[1]) else ""
+                        altFiles[i].write(normalise(altLine))
+        
+        for altFile in altFiles:
+            altFile.close()
+
+
+        
 class XCESCorpus(AlignedSubtitles):
     """Representation of an XCES file that contains aligned documents.
     
