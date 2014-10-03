@@ -55,16 +55,6 @@ class AlignedSubtitles(object):
         self.bitext = bitext
         self.sourceLang = sourceLang
         self.targetLang = targetLang
-          
-
-    def _extractSubset(self, subsetkeys):
-        """Extracts a subset of subtitles (anchored by their document ID)
-        and returns a new AlignedSubtitles object with them.
-        
-        """
-        subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
-                  map(None, subsetkeys, map(self.bitext.get, subsetkeys)), {})
-        return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
         
     def removeDirs(self, dirsToRemove):
@@ -92,24 +82,28 @@ class AlignedSubtitles(object):
 
     
     def extractData(self, nbDirs):
-        
-        extractedBitext = {}
+                
    #     if len(self.bitext) < 20:
    #         raise RuntimeError("not enough data to divide")
         
+        extractedBitext = {}
         print "Sorting data by number of duplicates"
         nbEntries = collections.defaultdict(int)
         for a in self.bitext.keys():
             nbEntries[a.getUp()] += 1
         directories = sorted(list(nbEntries.keys()), key=lambda x : nbEntries[x])
-        
+  
+        def extraction(subkeys):
+            return reduce(lambda x, y: x.update({y[0]:y[1]}) or x, 
+                          map(None, subkeys, map(self.bitext.get, subkeys)), {})
+      
         while len(extractedBitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
-            subset = self._extractSubset([x for x in self.bitext if testDir in x])
-            alignedDocs= subset.bitext.keys()
+            subset = extraction([x for x in self.bitext if testDir in x])
+            alignedDocs= subset.keys()
             alignedDocs.sort(key=lambda x: max([len(y) for y in subset.bitext[x]]))
-            bestAlignment = subset._extractSubset([alignedDocs[-1]])
+            bestAlignment = extraction([alignedDocs[-1]])
             extractedBitext.update(bestAlignment)
             self.removeDirs([testDir])
 
