@@ -203,7 +203,7 @@ class AlignedSubtitles(object):
 
 class XCESCorpus(AlignedSubtitles):
     
-    def __init__(self, xcesFile):
+    def __init__(self, xcesFile, rezipFiles=True):
         self.xcesFile = Path(xcesFile)
         print "Parsing file " + xcesFile
         tree = etree.parse(str(xcesFile))
@@ -221,7 +221,8 @@ class XCESCorpus(AlignedSubtitles):
         AlignedSubtitles.__init__(self, bitext, self.sourceLang, self.targetLang)
         print "Finished parsing file " + xcesFile
         
-        self.rezipTarFiles()
+        if rezipFiles:
+            self.rezipTarFiles()
      
                     
     def loadTarFiles(self):
@@ -260,15 +261,17 @@ class XCESCorpus(AlignedSubtitles):
     
     
     def rezipTarFiles(self):
-        for fileInDir in self.xcesFile.getUp().listdir():
-            if fileInDir.endswith(".tar"):
-                filepath = Path(self.xcesFile.getUp() + "/" + fileInDir)
-                f_in = open(filepath, 'rb')
-                f_out = gzip.open(filepath + ".gz", 'wb')
-                f_out.writelines(f_in)
-                f_out.close()
-                f_in.close()
-                filepath.remove()
+        unzippedFiles = set()
+        for (tarPath,_,_) in self.subtitles.values():
+            unzippedFiles.add(tarPath)
+            
+        for tarPath in unzippedFiles:
+            f_in = open(tarPath, 'rb')
+            f_out = gzip.open(tarPath + ".gz", 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+            tarPath.remove()
         print "Tar files rezipped"
         
                                            
@@ -318,7 +321,7 @@ class XCESCorpus(AlignedSubtitles):
 
  
     def extractLines(self, doc):   
-        for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
+        for expansion in ["OpenSubtitles2013/xml", "OpenSubtitles2012"]:
             if self.subtitles.has_key(expansion+doc):
                 tarFile = open(self.subtitles[expansion+doc][0])
                 offset, size = self.subtitles[expansion+doc][1:]
