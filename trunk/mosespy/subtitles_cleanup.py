@@ -235,8 +235,9 @@ class XCESCorpus(AlignedSubtitles):
         for tarPath in tarPaths:
             print "checking file " + tarPath
             
-            lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)", tarPath.getFirstLine())
-            if not lang == self.sourceLang and not lang == self.targetLang:
+            match = tarPath.find(r"OpenSubtitles201(2|3/xml)/(\w+)")
+            if not match or (match.group(2) != self.sourceLang 
+                             and match.group(2) != self.targetLang):
                 continue 
                  
             print "Start processing file " + tarPath
