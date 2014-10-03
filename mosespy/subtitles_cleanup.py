@@ -229,6 +229,15 @@ class XCESCorpus(AlignedSubtitles):
         for fileInDir in self.xcesFile.getUp().listdir():
             filePath = self.xcesFile.getUp() + "/" + fileInDir
             
+            if not filePath.endswith(".tar") and not filePath.endswith(".tar.gz"):
+                continue
+            
+            tarFile = tarfile.open(filePath, 'rb') 
+            lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
+                             tarFile.getnames()[0]).group(2)
+            if not lang == self.sourceLang and not lang == self.targetLang:
+                continue      
+            
             if filePath.endswith(".tar.gz"):
                 print "Decompressing file " + filePath               
                 zipped = gzip.open(filePath, 'rb')
@@ -236,16 +245,7 @@ class XCESCorpus(AlignedSubtitles):
                 unzipped.write(zipped.read())
                 zipped.close()
                 unzipped.close()
-                filePath = unzipped.name
-                
-            if not filePath.endswith(".tar"):
-                continue
-            
-            tarFile = tarfile.open(filePath, 'r') 
-            lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
-                             tarFile.getnames()[0]).group(2)
-            if not lang == self.sourceLang and not lang == self.targetLang:
-                continue
+                tarFile = tarfile.open(unzipped.name, 'r')           
             
             for tari in tarFile:
                 if not tari.issym():
