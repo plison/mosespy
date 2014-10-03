@@ -35,7 +35,7 @@ __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
 
-import os, shutil, subprocess, time, Queue, threading, copy, re
+import os, shutil, subprocess, time, Queue, threading, copy, re, gzip
 from datetime import datetime
 from xml.dom import minidom
 
@@ -270,17 +270,25 @@ class Path(str):
             raise RuntimeError(self + " not a directory")
         
     
-    def getFirstLine(self):
-        """Returns the first line of the file (if it exists). If
-        the file is compressed, used zcat to uncompress it.
+    def searchMatch(self, regex, maxNbLines=10):
+        """Find the first occurrence of the given regular expression.
+        If an occurrence can be found, returns the match object.
+        If the file is compressed, uncompress it first.
         
         """
         if self.exists() and os.path.isfile(self):
-            catCmd = "cat " if not self.endswith(".gz") else "zcat "
-            return run_output(catCmd + self + " | head -n 1")
+            f = gzip.open(self) if self.endswith(".gz") else open(self)
+            nbLines = 0
+            for l in f:
+                m = re.search(regex, l)
+                if m:
+                    return m
+                nbLines += 1
+                if nbLines == maxNbLines:
+                    return None
         else:
             print "Cannot read " + self
-            return ""
+            return None
         
         
     def readlines(self):
