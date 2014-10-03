@@ -336,7 +336,7 @@ class ShellExecutor(object):
         
         """
         self.callincr = 0
-        self.quiet = quiet
+        self.quiet = False
         
 
     def run(self, script, stdin=None, stdout=None):
