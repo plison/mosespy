@@ -214,7 +214,6 @@ class XCESCorpus(AlignedSubtitles):
                 self.targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
                 break     
            
-        print "Opening zipped files in same directory..."
         self.subtitles = self.loadTarFiles()
                     
         print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
@@ -232,13 +231,13 @@ class XCESCorpus(AlignedSubtitles):
         tarPaths = [Path(rootDir + f) for f in rootDir.listdir() 
                     if (f.endswith(".tar") or f.endswith(".tar.gz"))]
         
+        print "Opening tarred files in same directory..."
         for tarPath in tarPaths:            
             match = tarPath.searchMatch(r"OpenSubtitles201(2|3/xml)/(\w+)")
             if not match or (match.group(2) != self.sourceLang 
                              and match.group(2) != self.targetLang):
                 continue 
                  
-            print "Start processing file " + tarPath
             if tarPath.endswith(".tar.gz"):
                 print "Decompressing file " + tarPath               
                 zipped = gzip.open(tarPath, 'rb')
@@ -286,16 +285,16 @@ class XCESCorpus(AlignedSubtitles):
                 for link in linkGrp:
                     if link.tag == 'link':
                         split = link.attrib["xtargets"].split(";")
-                        sourceLines = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
-                        targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
-                        if (len(sourceLines) == 0 or len(targetLines)==0 
-                            or len(sourceLines) >2 or len(targetLines) > 2):
+                        srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
+                        trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
+                        if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
+                            or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
                             continue    
                         try:   
-                            sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
-                            targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
+                            sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
+                            targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
                         except IndexError:
-                            print "error when processing file %s, %s and %s"%(todoc,str(sourceLines), str(targetLines))
+                            print "error when processing file %s, %s and %s"%(todoc,str(srcLineIndices), str(trgLineIndices))
                             continue
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
@@ -322,13 +321,20 @@ class XCESCorpus(AlignedSubtitles):
                 gzippedData = tarFile.read(size)
                 zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
                 root = etree.parse(zippedFile).getroot()
-                lines = []
+                lines = {}
                 for s in root:
                     if s.tag == 's':
-                        line = getLine(s)
-                        lines.append(line)
+                        lineId = int(s.attrib["id"])
+                        lines[lineId] = getLine(s)
                 tarFile.close()
-                return lines
+                linesList = []
+                for i in range(0, max(lines.keys())):
+                    if lines.has_key(i):
+                        linesList.append(lines[i])
+                    else:
+                        print "Missing line number %i in %s"%(i,doc)
+                        linesList.append("")
+                    
         raise RuntimeError("could not find file " + doc)
     
      
