@@ -277,7 +277,7 @@ class XCESCorpus(AlignedSubtitles):
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                todoc = linkGrp.attrib['fromDoc']
+                todoc = Path(linkGrp.attrib['fromDoc'])
                 fromLines = self.extractLines(todoc)
                 toLines =  self.extractLines(linkGrp.attrib['toDoc'])
                            
