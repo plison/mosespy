@@ -87,12 +87,15 @@ class AlignedSubtitles(object):
         return list(dirs)
   
   
-    def getInverse(self):
+    def getInverse(self, addAlternatives=False):
         invertedDict = {}
         flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.bitext:
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
-        return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
+        if addAlternatives:
+            return MultiAlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)        
+        else:
+            return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
     
@@ -171,20 +174,24 @@ class AlignedSubtitles(object):
 
 class MultiAlignedSubtitles(AlignedSubtitles):
     
+    def __init__(self, bitext, sourceLang, targetLang):
+        multiBitext = self._getMultiBitext(bitext)
+        AlignedSubtitles.__init__(self, multiBitext, sourceLang, targetLang)
+    
+    
     def addSubtitles(self, newBitext):
+        multiBitext = self._getMultiBitext(newBitext)
+        self.bitext.update(multiBitext)
         
-        """Augments the aligned subtitles by searching for alternative translations
-        (by checking for translations in the same directory, and trying to align
-        them).
         
-        """
+    def _getMultiBitext(self, bitext):
         correlatedAligns = {}
-        for fromdoc in newBitext:
+        for fromdoc in bitext:
             print "Search correlated sources for " + fromdoc
-            initAligns = newBitext[fromdoc]
+            initAligns = bitext[fromdoc]
             correlatedAligns[fromdoc] = [(s,set([t] if t else [])) for (s,t) in initAligns]
-            for otherfromDoc in [x for x in newBitext if x!=fromdoc]:                              
-                otherAligns = newBitext[otherfromDoc]
+            for otherfromDoc in [x for x in bitext if x!=fromdoc]:                              
+                otherAligns = bitext[otherfromDoc]
                 for i in range(0, len(initAligns)):
                     initPair = initAligns[i]  
                     for k in range(i-int(10*math.log(i+1)), i+int(10*math.log(i+1))):
@@ -194,11 +201,9 @@ class MultiAlignedSubtitles(AlignedSubtitles):
                             break                         
         
         for d in correlatedAligns:
-            newBitext[d] = [(s,list(t)) for (s,t) in correlatedAligns[d]]
-        
-        self.bitext.update(newBitext)
-        
-                
+            bitext[d] = [(s,list(t)) for (s,t) in correlatedAligns[d]]
+        return bitext
+       
         
     def getNbAlternativeTranslations(self):
         """Returns the maximum number of alternative translations for the 
@@ -488,10 +493,10 @@ if __name__ == '__main__':
         dev.generateMosesFiles(baseStem + ".dev")
         test.generateMosesFiles(baseStem+ ".test")
         
-        devInv = dev.getInverse().addAlternatives()
+        devInv = dev.getInverse(addAlternatives=True)
         devInv.generateMosesFiles(baseStem + ".dev")
         
-        testInv = test.getInverse().addAlternatives()
+        testInv = test.getInverse(addAlternatives=True)
         testInv.generateMosesFiles(baseStem + ".test")
 
 
