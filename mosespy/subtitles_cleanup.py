@@ -101,8 +101,8 @@ class AlignedSubtitles(object):
     def findUnknownWords(self):
         srcUnk =  collections.defaultdict(int)
         trgUnk =  collections.defaultdict(int)
-        srcDic = Dictionary(self.sourceLang)
         trgDic = Dictionary(self.targetLang)
+        srcDic = Dictionary(self.sourceLang)
         for doc in self.bitext:
             bitextdoc = self.bitext[doc]
             for i in range(0, len(bitextdoc)):
