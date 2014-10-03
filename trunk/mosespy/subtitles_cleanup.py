@@ -511,7 +511,7 @@ def docOrder(path):
     return result
    
 def logList(aList, logFile):
-    with open(logFile) as logFile:
+    with open(logFile, 'w') as logFile:
         logFile.write("\n".join(aList))
     
 def normalise(line):
