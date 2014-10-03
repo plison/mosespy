@@ -342,7 +342,7 @@ class XCESCorpus(AlignedSubtitles):
         subtitle documents must already be generated  in self.subtitles
         
         """
-        for expansion in ["OpenSubtitles2013/xml", "OpenSubtitles2012"]:
+        for expansion in ["OpenSubtitles2013/xml/", "OpenSubtitles2012/"]:
             if self.subtitles.has_key(expansion+doc):
                 tarFile = open(self.subtitles[expansion+doc][0])
                 offset, size = self.subtitles[expansion+doc][1:]
