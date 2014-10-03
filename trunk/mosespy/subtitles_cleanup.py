@@ -56,7 +56,7 @@ class AlignedSubtitles(object):
     def extractSubset(self, subsetkeys):
         subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                   map(None, subsetkeys, map(self.bitext.get, subsetkeys)), {})
-        
+        print "size of subdico with keys %s : %i"%(str(subsetkeys), len(subdico))
         return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
     
@@ -122,6 +122,9 @@ class AlignedSubtitles(object):
     def extractData(self, nbDirs, addAlternatives=False):
         
         alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
+        
+ #       if len(self.bitext) < 20:
+ #           raise RuntimeError("not enough data to divide")
         
         print "Sorting data by number of duplicates"
         nbEntries = collections.defaultdict(int)
