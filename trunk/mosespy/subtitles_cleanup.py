@@ -250,12 +250,11 @@ class XCESCorpus(AlignedSubtitles):
                 tarPath = unzipped.name
             
             tarFile = tarfile.open(tarPath, 'r')          
-            tarFile2 = open(tarPath, 'r')          
             for tari in tarFile:
                 if not tari.issym():
                     if subtitles.has_key(tari.name):
                         print "Problem: two occurrences of " + tari.name
-                    subtitles[tari.name] = tarFile2,tari.offset_data, tari.size
+                    subtitles[tari.name] = tarPath,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
@@ -317,7 +316,7 @@ class XCESCorpus(AlignedSubtitles):
     def extractLines(self, doc):   
         for expansion in ["OpenSubtitles2012/", "OpenSubtitles2013/xml/"]:
             if self.subtitles.has_key(expansion+doc):
-                tarFile = self.subtitles[expansion+doc][0]
+                tarFile = open(self.subtitles[expansion+doc][0])
                 offset, size = self.subtitles[expansion+doc][1:]
                 tarFile.seek(offset,0)
                 gzippedData = tarFile.read(size)
@@ -329,6 +328,7 @@ class XCESCorpus(AlignedSubtitles):
                         line = getLine(s)
                         lines.append(line)
                 print "finished processing file " + doc
+                tarFile.close()
                 return lines
         raise RuntimeError("could not find file " + doc)
     
