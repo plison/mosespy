@@ -101,7 +101,7 @@ class AlignedSubtitles(object):
         nbEntries = collections.defaultdict(int)
         for a in self.bitext.keys():
             nbEntries[a.getUp()] += 1
-        directories = sorted(nbEntries.keys(), key=lambda x : nbEntries[x])
+        directories = sorted(list(nbEntries.keys()), key=lambda x : nbEntries[x])
         
         while len(extractedBitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
@@ -127,13 +127,8 @@ class AlignedSubtitles(object):
         
         srcFile = open(stem+"." + self.sourceLang, 'w')
         trgFile = open(stem + "." + self.targetLang, 'w')
-        
-        # Sorted by year, then number
-        
-        alignKeys = list(self.bitext.keys())
-        alignKeys.sort(key=lambda x : opushash(x))              
-                           
-        for document in alignKeys:
+             
+        for document in sorted(self.bitext.keys(),key=lambda x: docOrder(x)):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(normalise(pair[0]))
@@ -228,11 +223,8 @@ class MultiAlignedSubtitles(AlignedSubtitles):
             altFiles = [open((stem + "." + self.targetLang + str(i)), 'w')
                         for i in range(0, nbTranslations)]
         
-        # Sorted by year, then number    
-        alignKeys = list(self.bitext.keys())
-        alignKeys.sort(key=lambda x : opushash(x))              
-                           
-        for document in alignKeys:
+   
+        for document in sorted(self.bitext.keys(),key=lambda x: docOrder(x)):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     for i in range(0, len(altFiles)):
@@ -438,7 +430,7 @@ def getLine(xmlChunk):
     return " ".join(wordList)
 
 
-def opushash(path):
+def docOrder(path):
     year = int(path.split("/")[1])
     number = path.split("/")[2]
     result = year*1000000000
