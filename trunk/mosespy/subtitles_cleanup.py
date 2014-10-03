@@ -103,24 +103,26 @@ class AlignedSubtitles(object):
         trgUnk =  collections.defaultdict(int)
         srcDic = Dictionary(self.sourceLang)
         trgDic = Dictionary(self.targetLang)
-        for i in range(0, len(self.bitext)):
-            sourceLine = self.bitext[i][0]
-            targetLine = self.bitext[i][1]
-            for w in sourceLine.split():
-                commonWord = True if w[0].islower() else w not in targetLine
-                if commonWord:    
-                    isWord = srcDic.isWord(w.lower())
-                    if not isWord:
-                        srcUnk[w]  += 1
-            for w in targetLine.split():
-                commonWord = True if w[0].islower() else w not in sourceLine
-                if commonWord:    
-                    isWord = trgDic.isWord(w.lower())
-                    if not isWord:
-                        trgUnk[w]  += 1
-            if not (i % (len(self.bitext)/min(100,len(self.bitext)))):
-                print ("%i lines already spell-checked (%i %% of %i):"
-                       %(i, (i*100/len(self.bitext)), len(self.bitext)))
+        for doc in self.bitext:
+            bitextdoc = self.bitext[doc]
+            for i in range(0, len(bitextdoc)):
+                sourceLine = bitextdoc[i][0]
+                targetLine = bitextdoc[i][1]
+                for w in sourceLine.split():
+                    commonWord = True if w[0].islower() else w not in targetLine
+                    if commonWord:    
+                        isWord = srcDic.isWord(w.lower())
+                        if not isWord:
+                            srcUnk[w]  += 1
+                for w in targetLine.split():
+                    commonWord = True if w[0].islower() else w not in sourceLine
+                    if commonWord:    
+                        isWord = trgDic.isWord(w.lower())
+                        if not isWord:
+                            trgUnk[w]  += 1
+                if not (i % (len(self.bitext)/min(100,len(self.bitext)))):
+                    print ("%i lines already spell-checked (%i %% of %i):"
+                           %(i, (i*100/len(self.bitext)), len(self.bitext)))
                         
         srcUnkList = sorted(srcUnk.keys(), key=lambda x :srcUnk[x], reverse=True)
         trgUnkList = sorted(trgUnk.keys(), key=lambda x :trgUnk[x], reverse=True)
