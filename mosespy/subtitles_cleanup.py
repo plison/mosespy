@@ -272,7 +272,7 @@ class XCESCorpus(AlignedSubtitles):
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i):"
                        %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot))
-                       + " %i stored and %i discarded."%len(bitext), (l+1)-len(bitext))
+                       + " %i stored and %i discarded."%(len(bitext), (l+1)-len(bitext)))
           
         print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(bitext))
                                                       *100/len(self.xmlRoot))
