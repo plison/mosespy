@@ -98,7 +98,7 @@ class AlignedSubtitles(object):
         return trainingData, tuneData, devData, testData
         
    
-    def correctSpelling(self, logStem):
+    def findUnknownWords(self):
         srcUnk =  collections.defaultdict(int)
         trgUnk =  collections.defaultdict(int)
         srcDic = Dictionary(self.sourceLang)
@@ -124,12 +124,7 @@ class AlignedSubtitles(object):
                         
         srcUnkList = sorted(srcUnk.keys(), key=lambda x :srcUnk[x], reverse=True)
         trgUnkList = sorted(trgUnk.keys(), key=lambda x :trgUnk[x], reverse=True)
-        with open(logStem+"."+self.sourceLang) as srcLog:
-            srcLog.write("\n".join(srcUnkList))
-        with open(logStem+"."+self.targetLang) as trgLog:
-            trgLog.write("\n".join(trgUnkList))
-            
-            
+        return srcUnkList, trgUnkList
             
         
     def generateMosesFiles(self, stem):
@@ -513,7 +508,9 @@ def docOrder(path):
         result += ord(number[i])*(100000/math.pow(10,i))
     return result
    
-      
+def logList(aList, logFile):
+    with open(logFile) as logFile:
+        logFile.write("\n".join(aList))
     
 def normalise(line):
     if isinstance(line, list):
