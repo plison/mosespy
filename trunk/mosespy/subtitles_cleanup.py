@@ -179,8 +179,8 @@ class MultiAlignedSubtitles(AlignedSubtitles):
         AlignedSubtitles.__init__(self, multiBitext, sourceLang, targetLang)
     
     
-    def addSubtitles(self, newBitext):
-        multiBitext = self._getMultiBitext(newBitext)
+    def addSubtitles(self, newSubtitles):
+        multiBitext = self._getMultiBitext(newSubtitles.bitext)
         self.bitext.update(multiBitext)
         
         
