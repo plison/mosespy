@@ -330,7 +330,7 @@ class XCESCorpus(AlignedSubtitles):
                         lines[lineId] = getLine(s)
                 tarFile.close()
                 linesList = []
-                for i in range(1, max(lines.keys())):
+                for i in range(1, max(lines.keys())+1):
                     if lines.has_key(i):
                         linesList.append(lines[i])
                     else:
