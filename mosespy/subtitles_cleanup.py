@@ -106,8 +106,8 @@ class AlignedSubtitles(object):
         else:
             alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
         
-        if len(self.bitext) < 20:
-            raise RuntimeError("not enough data to divide")
+   #     if len(self.bitext) < 20:
+   #         raise RuntimeError("not enough data to divide")
         
         print "Sorting data by number of duplicates"
         nbEntries = collections.defaultdict(int)
