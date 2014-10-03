@@ -225,26 +225,28 @@ class XCESCorpus(AlignedSubtitles):
      
                     
     def loadTarFiles(self):
+        
         subtitles = {}
-        for fileInDir in self.xcesFile.getUp().listdir():
-            filePath = self.xcesFile.getUp() + "/" + fileInDir
-            
-            if not filePath.endswith(".tar") and not filePath.endswith(".tar.gz"):
-                continue
-            
-            tarFile = tarfile.open(filePath, 'r') 
+        rootDir = self.xcesFile.getUp() + "/"
+        tarPaths = [rootDir + f for f in rootDir.listdir() 
+                    if f.endswith(".tar") or f.endswith(".tar.gz")]
+        
+        for tarPath in tarPaths:
+            print "checking file " + tarPath
+            tarFile = tarfile.open(tarPath, 'r') 
             lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
                              tarFile.getnames()[0]).group(2)
             if not lang == self.sourceLang and not lang == self.targetLang:
                 continue      
-            
-            if filePath.endswith(".tar.gz"):
-                print "Decompressing file " + filePath               
-                zipped = gzip.open(filePath, 'rb')
-                unzipped = open(filePath.replace(".gz", ""), 'wb')
+            print "Start processing file " + tarPath
+            if tarPath.endswith(".tar.gz"):
+                print "Decompressing file " + tarPath               
+                zipped = gzip.open(tarPath, 'rb')
+                unzipped = open(tarPath.replace(".gz", ""), 'wb')
                 unzipped.write(zipped.read())
                 zipped.close()
                 unzipped.close()
+                tarPath.remove()
                 tarFile = tarfile.open(unzipped.name, 'r')           
             
             for tari in tarFile:
@@ -252,7 +254,7 @@ class XCESCorpus(AlignedSubtitles):
                     if subtitles.has_key(tari.name):
                         print "Problem: two occurrences of " + tari.name
                     subtitles[tari.name] = tarFile,tari.offset_data, tari.size
-            print "Finished processing file " + fileInDir
+            print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
     
