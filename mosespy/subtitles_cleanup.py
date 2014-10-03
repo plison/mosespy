@@ -66,11 +66,6 @@ class AlignedSubtitles(object):
                   map(None, subsetkeys, map(self.bitext.get, subsetkeys)), {})
         return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
-          
-
-    def addSubtitles(self, alignedSubtitles):
-        self.bitext.update(alignedSubtitles.bitext)   
-        
         
     def removeDirs(self, dirsToRemove):
         newAligns = {}
@@ -87,25 +82,18 @@ class AlignedSubtitles(object):
         return list(dirs)
   
   
-    def getInverse(self, addAlternatives=False):
+    def getInverse(self):
         invertedDict = {}
         flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.bitext:
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
-        if addAlternatives:
-            return MultiAlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)        
-        else:
-            return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
+        return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
 
 
     
-    def extractData(self, nbDirs, addAlternatives=False):
+    def extractData(self, nbDirs):
         
-        if addAlternatives:
-            alignedData = MultiAlignedSubtitles({}, self.sourceLang, self.targetLang)
-        else:
-            alignedData = AlignedSubtitles({}, self.sourceLang, self.targetLang)
-        
+        extractedBitext = {}
    #     if len(self.bitext) < 20:
    #         raise RuntimeError("not enough data to divide")
         
@@ -115,17 +103,17 @@ class AlignedSubtitles(object):
             nbEntries[a.getUp()] += 1
         directories = sorted(nbEntries.keys(), key=lambda x : nbEntries[x])
         
-        while len(alignedData.bitext) < nbDirs and len(directories)>0:
+        while len(extractedBitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
             subset = self._extractSubset([x for x in self.bitext if testDir in x])
             alignedDocs= subset.bitext.keys()
             alignedDocs.sort(key=lambda x: max([len(y) for y in subset.bitext[x]]))
             bestAlignment = subset._extractSubset([alignedDocs[-1]])
-            alignedData.addSubtitles(bestAlignment)
+            extractedBitext.update(bestAlignment)
             self.removeDirs([testDir])
 
-        return alignedData   
+        return extractedBitext   
     
 
     
@@ -160,13 +148,16 @@ class AlignedSubtitles(object):
         trainingData = AlignedSubtitles(self.bitext, self.sourceLang, self.targetLang)
         
         print "Extracting test data"
-        testData = trainingData.extractData(nbTestFiles, True)        
+        extractedData = trainingData.extractData(nbTestFiles)
+        testData = MultiAlignedSubtitles(extractedData, self.sourceLang, self.targetLang)      
      
         print "Extracting development data"
-        devData = trainingData.extractData(nbDevFiles, True)        
+        extractedData = trainingData.extractData(nbDevFiles)
+        devData = MultiAlignedSubtitles(extractedData, self.sourceLang, self.targetLang)      
 
         print "Extracting tuning data"
-        tuneData = trainingData.extractData(nbTuningFiles, False)        
+        extractedData = trainingData.extractData(nbTuningFiles)
+        tuneData = AlignedSubtitles(extractedData, self.sourceLang, self.targetLang)      
         
         return trainingData, tuneData, devData, testData
         
@@ -178,11 +169,6 @@ class MultiAlignedSubtitles(AlignedSubtitles):
         multiBitext = self._getMultiBitext(bitext)
         AlignedSubtitles.__init__(self, multiBitext, sourceLang, targetLang)
     
-    
-    def addSubtitles(self, newSubtitles):
-        multiBitext = self._getMultiBitext(newSubtitles.bitext)
-        self.bitext.update(multiBitext)
-        
         
     def _getMultiBitext(self, bitext):
         correlatedAligns = {}
@@ -204,6 +190,13 @@ class MultiAlignedSubtitles(AlignedSubtitles):
             bitext[d] = [(s,list(t)) for (s,t) in correlatedAligns[d]]
         return bitext
        
+ 
+    def getInverse(self):
+        basicInv = AlignedSubtitles.getInverse(self)
+        return MultiAlignedSubtitles(basicInv.bitext, basicInv.sourceLang, 
+                                     basicInv.targetLang)
+
+
         
     def getNbAlternativeTranslations(self):
         """Returns the maximum number of alternative translations for the 
@@ -493,10 +486,10 @@ if __name__ == '__main__':
         dev.generateMosesFiles(baseStem + ".dev")
         test.generateMosesFiles(baseStem+ ".test")
         
-        devInv = dev.getInverse(addAlternatives=True)
+        devInv = dev.getInverse()
         devInv.generateMosesFiles(baseStem + ".dev")
         
-        testInv = test.getInverse(addAlternatives=True)
+        testInv = test.getInverse()
         testInv.generateMosesFiles(baseStem + ".test")
 
 
