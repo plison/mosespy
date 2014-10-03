@@ -327,7 +327,6 @@ class XCESCorpus(AlignedSubtitles):
                     if s.tag == 's':
                         line = getLine(s)
                         lines.append(line)
-                print "finished processing file " + doc
                 tarFile.close()
                 return lines
         raise RuntimeError("could not find file " + doc)
