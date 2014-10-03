@@ -162,12 +162,10 @@ class AlignedSubtitles(object):
         
         # Sorted by year, then number
         
-        prefix = os.path.commonprefix(self.bitext.keys())
-        alignKeys = [x.replace(prefix, "") for x in list(self.bitext.keys())]
+        alignKeys = list(self.bitext.keys())
         alignKeys.sort(key=lambda x : opushash(x))              
                            
         for document in alignKeys:
-            document = prefix + document
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(normalise(pair[0]))
