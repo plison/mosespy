@@ -109,14 +109,12 @@ class AlignedSubtitles(object):
                 sourceLine = bitextdoc[i][0]
                 targetLine = bitextdoc[i][1]
                 for w in sourceLine.split():
-                    commonWord = True if w[0].islower() else w not in targetLine
-                    if commonWord:    
+                    if w[0].isalpha() and (w[0].islower() or w not in targetLine):                      
                         isWord = srcDic.isWord(w.lower())
                         if not isWord:
                             srcUnk[w]  += 1
                 for w in targetLine.split():
-                    commonWord = True if w[0].islower() else w not in sourceLine
-                    if commonWord:    
+                    if w[0].isalpha() and (w[0].islower() or w not in sourceLine):                      
                         isWord = trgDic.isWord(w.lower())
                         if not isWord:
                             trgUnk[w]  += 1
@@ -206,7 +204,7 @@ class Dictionary():
                     self.words.add(l.strip())
     
     def isWord(self, word):
-        return word in self.words
+        return word in self.words or word.replace("'", "") in self.words
 
 
 class MosesAlignment(AlignedSubtitles):
