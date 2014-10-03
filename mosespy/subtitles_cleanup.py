@@ -334,6 +334,7 @@ class XCESCorpus(AlignedSubtitles):
                     else:
                         print "Missing line number %i in %s"%(i,doc)
                         linesList.append("")
+                return linesList
                     
         raise RuntimeError("could not find file " + doc)
     
