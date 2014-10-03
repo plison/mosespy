@@ -202,8 +202,19 @@ class AlignedSubtitles(object):
 
 
 class XCESCorpus(AlignedSubtitles):
+    """Representation of an XCES file that contains aligned documents.
     
-    def __init__(self, xcesFile, rezipFiles=True):
+    """
+    
+    def __init__(self, xcesFile, rezipFiles=False):
+        """Creates a new XCESCorpus object from the file cxesFile.
+        
+        Args:
+            xcesFile (str): path to the xcesFile
+            rezipFiles (bool): whether to rezip the tar files after
+                the extraction of the aligned documents.
+        
+        """
         self.xcesFile = Path(xcesFile)
         print "Parsing file " + xcesFile
         tree = etree.parse(str(xcesFile))
@@ -226,7 +237,12 @@ class XCESCorpus(AlignedSubtitles):
      
                     
     def _loadTarFiles(self):
+        """Loads the tar files that correspond to the corpus files for the
+        XCES alignments.  The files can be in .tar or .tar.gz format (in which
+        case they are uncompressed).  A list of subtitle documents (with the
+        detailed location in each tar file) is generated from these files.
         
+        """
         subtitles = {}
         rootDir = self.xcesFile.getUp() + "/"
         tarPaths = [Path(rootDir + f) for f in rootDir.listdir() 
@@ -272,8 +288,8 @@ class XCESCorpus(AlignedSubtitles):
         aligned pairs (2) documents for which the resulting alignment list is less than 
         two third of the original alignments in the XCES file (which often indicates
         that the two subtitles refer to different sources).
-        """
         
+        """       
         print "Extracting alignments"
         bitext = {}
         for l in range(0, len(self.xmlRoot)):
@@ -321,7 +337,11 @@ class XCESCorpus(AlignedSubtitles):
         return bitext
 
  
-    def _extractLines(self, doc):   
+    def _extractLines(self, doc): 
+        """Extracts the list of lines from the document.  The list of 
+        subtitle documents must already be generated  in self.subtitles
+        
+        """
         for expansion in ["OpenSubtitles2013/xml", "OpenSubtitles2012"]:
             if self.subtitles.has_key(expansion+doc):
                 tarFile = open(self.subtitles[expansion+doc][0])
@@ -347,12 +367,13 @@ class XCESCorpus(AlignedSubtitles):
                     
         raise RuntimeError("could not find file " + doc)
     
-  
-    
     def _rezipTarFiles(self):
+        """Rezips the tar files."""
+        
         unzippedFiles = set()
         for (tarPath,_,_) in self.subtitles.values():
             unzippedFiles.add(tarPath)
+        print "Rezipping the tar files: %s"%(str(unzippedFiles))
             
         for tarPath in unzippedFiles:
             f_in = open(tarPath, 'rb')
@@ -362,6 +383,7 @@ class XCESCorpus(AlignedSubtitles):
             f_in.close()
             tarPath.remove()
         print "Tar files rezipped"
+        
              
 def getLine(xmlChunk):
     wordList = []
