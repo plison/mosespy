@@ -262,11 +262,13 @@ class XCESCorpus(AlignedSubtitles):
     def rezipTarFiles(self):
         for fileInDir in self.xcesFile.getUp().listdir():
             if fileInDir.endswith(".tar"):
-                f_in = open(self.xcesFile.getUp() + "/" + fileInDir, 'rb')
-                f_out = gzip.open(self.xcesFile.getUp() + "/" + fileInDir + ".gz", 'wb')
+                filepath = Path(self.xcesFile.getUp() + "/" + fileInDir)
+                f_in = open(filepath, 'rb')
+                f_out = gzip.open(filepath + ".gz", 'wb')
                 f_out.writelines(f_in)
                 f_out.close()
                 f_in.close()
+                filepath.remove()
         print "Tar files rezipped"
         
                                            
