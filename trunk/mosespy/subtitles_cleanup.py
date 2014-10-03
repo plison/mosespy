@@ -217,23 +217,31 @@ class XCESCorpus(AlignedSubtitles):
         self.subtitles = self.loadTarFiles()
                     
         print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
-        AlignedSubtitles.__init__(self, self.getAlignments(), self.sourceLang, self.targetLang)
+        bitext = self.getBitext()
+        AlignedSubtitles.__init__(self, bitext, self.sourceLang, self.targetLang)
         print "Finished parsing file " + xcesFile
+        
+        self.rezipTarFiles()
      
                     
     def loadTarFiles(self):
         subtitles = {}
         for fileInDir in self.xcesFile.getUp().listdir():
-            if not ".tar.gz" in fileInDir:
+            filePath = self.xcesFile.getUp() + "/" + fileInDir
+            
+            if filePath.endswith(".tar.gz"):
+                print "Decompressing file " + filePath               
+                zipped = gzip.open(filePath, 'rb')
+                unzipped = open(filePath.replace(".gz", ""), 'wb')
+                unzipped.write(zipped.read())
+                zipped.close()
+                unzipped.close()
+                filePath = unzipped.name
+                
+            if not filePath.endswith(".tar"):
                 continue
             
-            zipped = gzip.open(self.xcesFile.getUp() + "/" + fileInDir, 'rb')
-            unzipped = open(zipped.name.replace(".gz", ""), 'w')
-            unzipped.write(zipped.read())
-            zipped.close()
-            unzipped.close()
-            
-            tarFile = tarfile.open(unzipped.name)
+            tarFile = tarfile.open(filePath, 'r') 
             lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
                              tarFile.getnames()[0]).group(2)
             if not lang == self.sourceLang and not lang == self.targetLang:
@@ -247,9 +255,20 @@ class XCESCorpus(AlignedSubtitles):
             print "Finished processing file " + fileInDir
             tarFile.close()
         return subtitles
+    
+    
+    def rezipTarFiles(self):
+        for fileInDir in self.xcesFile.getUp().listdir():
+            if fileInDir.endswith(".tar"):
+                f_in = open(self.xcesFile.getUp() + "/" + fileInDir, 'rb')
+                f_out = gzip.open(self.xcesFile.getUp() + "/" + fileInDir + ".gz", 'wb')
+                f_out.writelines(f_in)
+                f_out.close()
+                f_in.close()
+        print "Tar files rezipped"
         
                                            
-    def getAlignments(self):
+    def getBitext(self):
         
         print "Extracting alignments"
         bitext = {}
