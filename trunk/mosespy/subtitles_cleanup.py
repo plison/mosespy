@@ -201,7 +201,7 @@ class Dictionary():
         with open(dicFile) as dico:
             for l in dico:
                 if not l.startswith("%%"):
-                    self.words.add(unicode(l.strip())
+                    self.words.add(unicode(l.strip()))
         print "Total number of words in dictionary: %i"%(len(self.words))
     
     def isWord(self, word):
