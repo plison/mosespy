@@ -229,7 +229,7 @@ class XCESCorpus(AlignedSubtitles):
         
         subtitles = {}
         rootDir = self.xcesFile.getUp() + "/"
-        tarPaths = [rootDir + f for f in rootDir.listdir() 
+        tarPaths = [Path(rootDir + f) for f in rootDir.listdir() 
                     if (f.endswith(".tar") or f.endswith(".tar.gz"))]
         
         for tarPath in tarPaths:
