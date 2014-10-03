@@ -226,17 +226,24 @@ class XCESCorpus(AlignedSubtitles):
         for fileInDir in self.xcesFile.getUp().listdir():
             if not ".tar.gz" in fileInDir:
                 continue
-            tarFile = tarfile.open(self.xcesFile.getUp() + "/" + fileInDir)
-            gzipFile = gzip.open(tarFile.name, 'rb')
+            
+            zipped = gzip.open(self.xcesFile.getUp() + "/" + fileInDir, 'rb')
+            unzipped = open(zipped.name.replace(".gz", ""), 'w')
+            unzipped.write(zipped.read())
+            zipped.close()
+            unzipped.close()
+            
+            tarFile = tarfile.open(unzipped.name)
             lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
                              tarFile.getnames()[0]).group(2)
             if not lang == self.sourceLang and not lang == self.targetLang:
                 continue
+            
             for tari in tarFile:
                 if not tari.issym():
                     if subtitles.has_key(tari.name):
                         print "Problem: two occurrences of " + tari.name
-                    subtitles[tari.name] = gzipFile,tari.offset_data, tari.size
+                    subtitles[tari.name] = tarFile,tari.offset_data, tari.size
             print "Finished processing file " + fileInDir
             tarFile.close()
         return subtitles
@@ -249,7 +256,8 @@ class XCESCorpus(AlignedSubtitles):
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                fromLines = self.extractLines(linkGrp.attrib['fromDoc'])
+                todoc = linkGrp.attrib['fromDoc']
+                fromLines = self.extractLines(todoc)
                 toLines =  self.extractLines(linkGrp.attrib['toDoc'])
                            
                 alignmentList = []
@@ -260,14 +268,18 @@ class XCESCorpus(AlignedSubtitles):
                         targetLines = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
                         if (len(sourceLines) == 0 or len(targetLines)==0 
                             or len(sourceLines) >2 or len(targetLines) > 2):
-                            continue       
-                        sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
-                        targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
+                            continue    
+                        try:   
+                            sourceLine = " ".join([fromLines[s-1].strip() for s in sourceLines])
+                            targetLine = " ".join([toLines[s-1].strip() for s in targetLines])
+                        except IndexError:
+                            print "error when processing file %i, %s and %s"%(todoc,str(sourceLines), str(targetLines))
+                            continue
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
                 
                 if len(alignmentList) > (2*len(linkGrp)/3):
-                    bitext[linkGrp.attrib['fromDoc']] = alignmentList
+                    bitext[todoc] = alignmentList
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i):"
