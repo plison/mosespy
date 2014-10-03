@@ -202,10 +202,11 @@ class Dictionary():
             for l in dico:
                 if not l.startswith("%%"):
                     print l.strip()
-                    self.words.add(unicode(l.strip(),"utf8"))
+                    self.words.add(l.strip())
         print "Total number of words in dictionary: %i"%(len(self.words))
     
     def isWord(self, word):
+        word = unicode(word)
         print "is %s in dictionary? %s"%(word, str(word in self.words))
         return word in self.words or word.replace("'", "") in self.words
 
