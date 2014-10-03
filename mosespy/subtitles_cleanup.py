@@ -202,6 +202,7 @@ class Dictionary():
             for l in dico:
                 if not l.startswith("%%"):
                     self.words.add(l.strip())
+        print "Total number of words in dictionary: %i"%(len(self.words))
     
     def isWord(self, word):
         return word in self.words or word.replace("'", "") in self.words
