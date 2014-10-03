@@ -232,7 +232,7 @@ class XCESCorpus(AlignedSubtitles):
             if not filePath.endswith(".tar") and not filePath.endswith(".tar.gz"):
                 continue
             
-            tarFile = tarfile.open(filePath, 'rb') 
+            tarFile = tarfile.open(filePath, 'r') 
             lang = re.search(r"OpenSubtitles201(2|3/xml)/(\w+)",
                              tarFile.getnames()[0]).group(2)
             if not lang == self.sourceLang and not lang == self.targetLang:
