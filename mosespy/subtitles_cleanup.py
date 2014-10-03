@@ -56,7 +56,6 @@ class AlignedSubtitles(object):
     def extractSubset(self, subsetkeys):
         subdico = reduce(lambda x, y: x.update({y[0]:y[1]}) or x,
                   map(None, subsetkeys, map(self.bitext.get, subsetkeys)), {})
-        print "size of subdico with keys %s : %i"%(str(subsetkeys), len(subdico))
         return AlignedSubtitles(subdico, self.sourceLang, self.targetLang)
     
     
@@ -132,7 +131,7 @@ class AlignedSubtitles(object):
             nbEntries[a.getUp()] += 1
         directories = sorted(nbEntries.keys(), key=lambda x : nbEntries[x])
         
-        while len(alignedData.bitext) < nbDirs:
+        while len(alignedData.bitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
             alignsInDir = self.extractSubset([x for x in self.bitext if testDir in x])
