@@ -205,6 +205,7 @@ class Dictionary():
         print "Total number of words in dictionary: %i"%(len(self.words))
     
     def isWord(self, word):
+        print "is %s in dictionary? %s"%(word, str(word in self.words))
         return word in self.words or word.replace("'", "") in self.words
 
 
