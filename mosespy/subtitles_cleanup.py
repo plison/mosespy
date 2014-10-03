@@ -214,7 +214,7 @@ class XCESCorpus(AlignedSubtitles):
                 self.targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
                 break     
            
-        self.subtitles = self.loadTarFiles()
+        self.subtitles = self._loadTarFiles()
                     
         print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
         bitext = self.getBitext()
@@ -222,10 +222,10 @@ class XCESCorpus(AlignedSubtitles):
         print "Finished parsing file " + xcesFile
         
         if rezipFiles:
-            self.rezipTarFiles()
+            self._rezipTarFiles()
      
                     
-    def loadTarFiles(self):
+    def _loadTarFiles(self):
         
         subtitles = {}
         rootDir = self.xcesFile.getUp() + "/"
@@ -258,24 +258,21 @@ class XCESCorpus(AlignedSubtitles):
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
-    
-    
-    def rezipTarFiles(self):
-        unzippedFiles = set()
-        for (tarPath,_,_) in self.subtitles.values():
-            unzippedFiles.add(tarPath)
-            
-        for tarPath in unzippedFiles:
-            f_in = open(tarPath, 'rb')
-            f_out = gzip.open(tarPath + ".gz", 'wb')
-            f_out.writelines(f_in)
-            f_out.close()
-            f_in.close()
-            tarPath.remove()
-        print "Tar files rezipped"
-        
+  
                                            
     def getBitext(self):
+        """Extracts the bitext from the XCES corpus.  The bitext is a set of aligned
+        documents, each document being composed of a list of aligned pairs
+        (sourceLine, targetLine).
+        
+        In order to work, the corresponding corpus files (in .tar or .tar.gz format) 
+        must be present in the same directory as the XCES file.
+        
+        The method prunes the following alignments: (1) empty or seriously unbalanced
+        aligned pairs (2) documents for which the resulting alignment list is less than 
+        two third of the original alignments in the XCES file (which often indicates
+        that the two subtitles refer to different sources).
+        """
         
         print "Extracting alignments"
         bitext = {}
@@ -283,8 +280,10 @@ class XCESCorpus(AlignedSubtitles):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
                 todoc = Path(linkGrp.attrib['fromDoc'])
-                fromLines = self.extractLines(todoc)
-                toLines =  self.extractLines(linkGrp.attrib['toDoc'])
+                
+                #Extracting the source and target lines
+                fromLines = self._extractLines(todoc)
+                toLines =  self._extractLines(linkGrp.attrib['toDoc'])
                            
                 alignmentList = []
                 for link in linkGrp:
@@ -292,7 +291,8 @@ class XCESCorpus(AlignedSubtitles):
                         split = link.attrib["xtargets"].split(";")
                         srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
                         trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
-                                         
+                                      
+                        # Pruning out empty or seriously unbalanced alignments   
                         if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
                             or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
                             continue    
@@ -301,12 +301,13 @@ class XCESCorpus(AlignedSubtitles):
                             targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
                         except IndexError:
                             print "alignment error with file %s"%(todoc)
-                            print "lineindices are %s and %s"%(str(srcLineIndices), str(trgLineIndices))
-                            print "length of from and to lines: %i and %i"%(len(fromLines), len(toLines))
                             continue
+                        
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
                 
+                # If the resulting list of alignments is less than two thirds of the
+                # original number of alignments, discard the document
                 if len(alignmentList) > (2*len(linkGrp)/3):
                     bitext[todoc] = alignmentList
                     
@@ -315,12 +316,12 @@ class XCESCorpus(AlignedSubtitles):
                        %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot))
                        + " %i stored and %i discarded."%(len(bitext), (l+1)-len(bitext)))
           
-        print "Percentage of discarded pairs: %i %%"%((len(self.xmlRoot)-len(bitext))
-                                                      *100/len(self.xmlRoot))
+        print ("Percentage of discarded pairs: %i %%"
+               %((len(self.xmlRoot)-len(bitext))*100/len(self.xmlRoot)))
         return bitext
 
  
-    def extractLines(self, doc):   
+    def _extractLines(self, doc):   
         for expansion in ["OpenSubtitles2013/xml", "OpenSubtitles2012"]:
             if self.subtitles.has_key(expansion+doc):
                 tarFile = open(self.subtitles[expansion+doc][0])
@@ -346,7 +347,22 @@ class XCESCorpus(AlignedSubtitles):
                     
         raise RuntimeError("could not find file " + doc)
     
-     
+  
+    
+    def _rezipTarFiles(self):
+        unzippedFiles = set()
+        for (tarPath,_,_) in self.subtitles.values():
+            unzippedFiles.add(tarPath)
+            
+        for tarPath in unzippedFiles:
+            f_in = open(tarPath, 'rb')
+            f_out = gzip.open(tarPath + ".gz", 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+            tarPath.remove()
+        print "Tar files rezipped"
+             
 def getLine(xmlChunk):
     wordList = []
     for w in xmlChunk:
