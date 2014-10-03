@@ -254,7 +254,7 @@ class Path(str):
         """Returns the upper directory for the path.
         
         """
-        return Path(os.path.realpath(os.path.dirname(self)))
+        return Path(os.path.dirname(self))
         
     def listdir(self):
         """Returns the list of files in the directory (provided
