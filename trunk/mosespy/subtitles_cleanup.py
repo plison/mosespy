@@ -236,7 +236,6 @@ class XCESCorpus(AlignedSubtitles):
             print "checking file " + tarPath
             
             match = tarPath.searchMatch(r"OpenSubtitles201(2|3/xml)/(\w+)")
-            print "match: " + str(match)
             if not match or (match.group(2) != self.sourceLang 
                              and match.group(2) != self.targetLang):
                 continue 
@@ -250,7 +249,9 @@ class XCESCorpus(AlignedSubtitles):
                 zipped.close()
                 unzipped.close()
                 tarPath.remove()
-                tarFile = tarfile.open(unzipped.name, 'r')           
+                tarFile = tarfile.open(unzipped.name, 'r')  
+            else:
+                tarFile = tarfile.open(tarPath, 'r')         
             
             for tari in tarFile:
                 if not tari.issym():
