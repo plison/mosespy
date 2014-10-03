@@ -198,7 +198,7 @@ class Dictionary():
         if not dicFile.exists():
             raise RuntimeError("Dictionary " + dicFile + " cannot be found")
         self.words = set()
-        with codecs.open(dicFile, encoding='utf-8') as dico:
+        with codecs.open(dicFile, encoding='utf-16') as dico:
             for l in dico:
                 print l
                 print type(l)
