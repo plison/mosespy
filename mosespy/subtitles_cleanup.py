@@ -118,6 +118,9 @@ class AlignedSubtitles(object):
                     isWord = trgDic.isWord(w.lower())
                     if not isWord:
                         trgUnk[w]  += 1
+            if not (i % (len(self.bitext)/min(100,len(self.bitext)))):
+                print ("%i lines already spell-checked (%i %% of %i):"
+                       %(i, (i*100/len(self.bitext)), len(self.bitext)))
                         
         srcUnkList = sorted(srcUnk.keys(), key=lambda x :srcUnk[x], reverse=True)
         trgUnkList = sorted(trgUnk.keys(), key=lambda x :trgUnk[x], reverse=True)
@@ -220,6 +223,7 @@ class MosesAlignment(AlignedSubtitles):
             pair = (sourceLines[i].strip(), targetLines[i].strip())
             bitext[stem].append(pair)
         AlignedSubtitles.__init__(self, bitext, sourceLang, targetLang)
+        print "finished creating moses alignment"
 
 
 class MultiAlignedSubtitles(AlignedSubtitles):
