@@ -393,8 +393,8 @@ def getLine(xmlChunk):
 
 
 def opushash(path):
-    year = int(path.split("/")[0])
-    number = path.split("/")[1]
+    year = int(path.split("/")[1])
+    number = path.split("/")[2]
     result = year*1000000000
     for i in range(0, min(6,len(number))):
         result += ord(number[i])*(100000/math.pow(10,i))
