@@ -288,7 +288,8 @@ class XCESCorpus(AlignedSubtitles):
                     if link.tag == 'link':
                         split = link.attrib["xtargets"].split(";")
                         srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
-                        trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]                 
+                        trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
+                                         
                         if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
                             or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
                             continue    
@@ -296,7 +297,9 @@ class XCESCorpus(AlignedSubtitles):
                             sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
                             targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
                         except IndexError:
-                            print "error when processing file %s, %s and %s"%(todoc,str(srcLineIndices), str(trgLineIndices))
+                            print "alignment error with file %s"%(todoc)
+                            print "lineindices are %s and %s"%(str(srcLineIndices), str(trgLineIndices))
+                            print "length of from and to lines: %i and %i"%(len(fromLines), len(toLines))
                             continue
                         if sourceLine and targetLine:
                             alignmentList.append((sourceLine, targetLine))
