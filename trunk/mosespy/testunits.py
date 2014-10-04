@@ -48,8 +48,6 @@ from mosespy.experiment import Experiment, MosesConfig
 from mosespy.slurm import SlurmExperiment
 import mosespy.datadivision as datadivision
 
-slurm.correctSlurmEnv()
-
 class Pipeline(unittest.TestCase):
     """Test suite for the MosesPy pipeline.
     
