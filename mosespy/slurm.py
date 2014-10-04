@@ -175,7 +175,6 @@ class SlurmExecutor(ShellExecutor):
         if not self.account:
             print "Warning: cannot use SLURM bindings"
             return
-        correctSlurmEnv()
         
 
     def run(self, script, stdin=None, stdout=None):
@@ -244,20 +243,6 @@ def _getDefaultSlurmAccount():
             account = s.group(1)
             return account
     return None
-
-
-
-
-def correctSlurmEnv():
-    """Corrects the environment variables for the Abel cluster.
-    
-    """
-    # System-dependent settings for the Abel cluster, change it to suit your needs
-    if system.existsExecutable("srun"):
-        modScript = "module load intel boost/1.53.0 ; echo $LD_LIBRARY_PATH"
-        system.setEnv("LD_LIBRARY_PATH", system.run_output(modScript) + ":"
-                      +   "/cluster/home/plison/libs/gperftools-2.2.1/lib/")
-        system.setEnv("PATH", "/opt/rocks/bin", override=False)
 
 
   
