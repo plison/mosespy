@@ -540,9 +540,7 @@ def docOrder(path):
         result += ord(number[i])*(100000/math.pow(10,i))
     return result
    
-def logList(aList, logFile):
-    with open(logFile, 'w') as logFile:
-        logFile.write("\n".join(aList))
+    
     
 def normalise(line):
     if isinstance(line, list):
@@ -553,9 +551,6 @@ def normalise(line):
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
         line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
         line = re.sub(r"\[\s*and\s*\]", "", line)
-    #    line = unicode(line).translate({ord(u"\u201c"):ord('"'), ord(u"\u201d"):ord('"'),
-    #                           ord(u"\u201e"):ord('"'), ord(u"\u201f"):ord('"'),
-    #                           ord(u"\u2013"):ord('-')})
         line = re.sub(r"\|", "_", line)
         return (line + "\n").encode('utf-8')
                 
@@ -563,11 +558,20 @@ def normalise(line):
 
               
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 4:
+        moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
+        unk1, unk2 = moses.findUnknownWords()
+        with open("unk-"+sys.argv[1]+"."+ sys.argv[2], 'w') as logFile:
+            logFile.write("\n".join(unk1))
+        with open("unk-"+sys.argv[1]+"."+ sys.argv[3], 'w') as logFile:
+            logFile.write("\n".join(unk2))
+  
+    elif len(sys.argv) != 2:
         print "Usage: opus2moses2.py [path to XCESFile]"
         
     else:  
         xcesFile = sys.argv[1]
+        
         corpus = XCESCorpus(xcesFile)
         baseStem = xcesFile.replace(".xml", "")
         
