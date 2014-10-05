@@ -72,7 +72,8 @@ class AlignedDocs(object):
     
     
     def splitData(self):
-        docIds = random.shuffle(list(self.bitext.keys()))
+        docIds = list(self.bitext.keys())
+        random.shuffle(docIds)
         part1 = extraction(self.bitext, docIds[0:len(docIds)/2])
         part2 = extraction(self.bitext, docIds[len(docIds)/2:])
         return (AlignedDocs(part1, self.sourceLang, self.targetLang),
