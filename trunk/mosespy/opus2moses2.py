@@ -375,8 +375,8 @@ class XCESCorpus(AlignedSubtitles):
             tarFile = tarfile.open(tarPath, 'r')          
             for tari in tarFile:
                 if not tari.issym():
-                    tarkey = tari.name[max("/"+tari.name.find(self.sourceLang+"/"), 
-                                           "/"+tari.name.find(self.targetLang+"/"))+1:]
+                    tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
+                                           tari.name.find("/"+self.targetLang+"/"))+1:]
                     subtitles[tarkey] = tarPath,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
