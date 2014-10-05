@@ -486,7 +486,7 @@ class XCESCorpus(AlignedSubtitles):
                     relevantTars.append(tarFile)
                 nbLines += 1
                 if nbLines == maxNbLines:
-                    return False
+                    break
         return relevantTars
 
      
