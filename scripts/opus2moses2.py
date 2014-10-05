@@ -354,16 +354,10 @@ class XCESCorpus(AlignedSubtitles):
         
         """
         subtitles = {}
-        rootDir = os.path.dirname(self.xcesFile) + "/"
-        tarPaths = [rootDir + f for f in os.listdir(rootDir) 
-                    if (f.endswith(".tar") or f.endswith(".tar.gz"))]
+        tarPaths = self._getRelevantTarFiles()
         
         print "Opening tarred files in same directory..."
         for tarPath in tarPaths: 
-            if (not tarPath.searchMatch("/"+self.sourceLang+"/") 
-                and not tarPath.searchMatch("/"+self.targetLang+"/")):    
-                continue 
-                 
             if tarPath.endswith(".tar.gz"):
                 print "Decompressing file " + tarPath               
                 zipped = gzip.open(tarPath, 'rb')
@@ -478,19 +472,22 @@ class XCESCorpus(AlignedSubtitles):
         raise RuntimeError("could not find file " + doc)
 
 
-    def _isRelevantTar(self, tarFile, maxNbLines=10):
-        if tarFile.exists() and os.path.isfile(tarFile):
+    def _getRelevantTarFiles(self, maxNbLines=10):
+        rootDir = os.path.dirname(self.xcesFile) + "/"
+        tarFiles = [rootDir + f for f in os.listdir(rootDir) 
+                    if (f.endswith(".tar") or f.endswith(".tar.gz"))]
+        
+        relevantTars = []
+        for tarFile in tarFiles:
             f = gzip.open(tarFile) if tarFile.endswith(".gz") else open(tarFile)
             nbLines = 0
             for l in f:
                 if re.search("/("+self.sourceLang+"|"+self.targetLang+")/", l):
-                    return True 
+                    relevantTars.append(tarFile)
                 nbLines += 1
                 if nbLines == maxNbLines:
                     return False
-        else:
-            print "Cannot read " + self
-            return False      
+        return relevantTars
 
      
     def _rezipTarFiles(self):
