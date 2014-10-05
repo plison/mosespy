@@ -275,7 +275,6 @@ class MultiAlignedDocs(AlignedDocs):
         basicInv = AlignedDocs.getInverse(self)
         return MultiAlignedDocs(basicInv)
 
-
    
     def splitData(self):
         split1, split2 = AlignedDocs.splitData(self)
@@ -372,6 +371,7 @@ class XCESCorpus(AlignedDocs):
         
         print "Opening tarred files in same directory..."
         for tarPath in tarPaths: 
+            
             if tarPath.endswith(".tar.gz"):
                 print "Decompressing file " + tarPath               
                 zipped = gzip.open(tarPath, 'rb')
@@ -379,7 +379,7 @@ class XCESCorpus(AlignedDocs):
                 unzipped.write(zipped.read())
                 zipped.close()
                 unzipped.close()
-                tarPath.remove()
+                os.remove(tarPath)
                 tarPath = unzipped.name
             
             tarFile = tarfile.open(tarPath, 'r')          
@@ -490,7 +490,7 @@ class XCESCorpus(AlignedDocs):
         rootDir = os.path.dirname(self.xcesFile) + "/"
         tarFiles = [rootDir + f for f in os.listdir(rootDir) 
                     if (f.endswith(".tar") or f.endswith(".tar.gz"))]
-        
+        tarFiles.sort()
         relevantTars = []
         for tarFile in tarFiles:
             f = gzip.open(tarFile) if tarFile.endswith(".gz") else open(tarFile)
@@ -518,7 +518,7 @@ class XCESCorpus(AlignedDocs):
             f_out.writelines(f_in)
             f_out.close()
             f_in.close()
-            tarPath.remove()
+            os.remove(tarPath)
         print "Tar files rezipped"
         
              
@@ -576,7 +576,7 @@ if __name__ == '__main__':
         
         for inDir in os.listdir(os.path.dirname(baseStem)):
             if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
-                inDir.remove()
+                os.remove(inDir)
         
         train.generateMosesFiles(baseStem + ".train")
         tune.generateMosesFiles(baseStem + ".tune")
