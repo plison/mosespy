@@ -564,7 +564,7 @@ if __name__ == '__main__':
         unk1, unk2 = moses.findUnknownWords()
         with open(sys.argv[1]+"."+ sys.argv[2]+"-unk", 'w') as logFile:
             logFile.write("\n".join(unk1))
-        with open("unk-"+sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
+        with open(sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
             logFile.write("\n".join(unk2))
   
     elif len(sys.argv) != 2:
