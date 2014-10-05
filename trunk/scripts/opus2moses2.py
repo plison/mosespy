@@ -232,7 +232,7 @@ class MosesAlignment(AlignedDocs):
 class MultiAlignedDocs(AlignedDocs):
     
     def __init__(self, docs):
-        if not isinstance(docs.bitext[docs.bitext[0]][0][1], list):
+        if not isinstance(docs.bitext[docs.bitext.keys()[0]][0][1], list):
             bitext = self._getMultiBitext(docs.bitext)
         AlignedDocs.__init__(self, bitext, docs.sourceLang, docs.targetLang)
     
