@@ -233,13 +233,17 @@ class MosesAlignment(AlignedDocs):
 class MultiAlignedDocs(AlignedDocs):
     
     def __init__(self, docs):
-        if (len(docs.bitext) > 0 and not 
-            isinstance(docs.bitext[docs.bitext.keys()[0]][0][1], list)):
-            bitext = self._getMultiBitext(docs.bitext)
+        bitext = self._getMultiBitext(docs.bitext)
         AlignedDocs.__init__(self, bitext, docs.sourceLang, docs.targetLang)
     
         
     def _getMultiBitext(self, bitext):
+
+        if len(bitext)== 0:
+            return bitext
+        elif isinstance(bitext[bitext.keys()[0]][0][1], list):
+            return bitext
+
         correlatedAligns = {}
         for fromdoc in bitext:
             print "Search correlated sources for " + fromdoc
