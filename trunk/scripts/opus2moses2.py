@@ -273,7 +273,7 @@ class MultiAlignedDocs(AlignedDocs):
  
     def getInverse(self):
         basicInv = AlignedDocs.getInverse(self)
-        return MultiAlignedDocs(basicInv.bitext)
+        return MultiAlignedDocs(basicInv)
 
 
    
