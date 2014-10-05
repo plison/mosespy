@@ -40,7 +40,6 @@ import uuid
 import os
 import shutil 
 import mosespy.install as install
-import mosespy.slurm as slurm
 import mosespy.system as system
 from mosespy.system import Path, ShellExecutor
 from mosespy.corpus import BasicCorpus, AlignedCorpus, CorpusProcessor, AlignedPair, AlignedReference

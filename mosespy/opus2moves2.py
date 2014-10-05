@@ -357,10 +357,9 @@ class XCESCorpus(AlignedSubtitles):
                     if (f.endswith(".tar") or f.endswith(".tar.gz"))]
         
         print "Opening tarred files in same directory..."
-        for tarPath in tarPaths:            
-            match = tarPath.searchMatch(r"OpenSubtitles201(2|3/xml)/(\w+)")
-            if not match or (match.group(2) != self.sourceLang 
-                             and match.group(2) != self.targetLang):
+        for tarPath in tarPaths: 
+            if (not tarPath.searchMatch("/"+self.sourceLang+"/") 
+                and not tarPath.searchMatch("/"+self.targetLang+"/")):    
                 continue 
                  
             if tarPath.endswith(".tar.gz"):
@@ -376,9 +375,9 @@ class XCESCorpus(AlignedSubtitles):
             tarFile = tarfile.open(tarPath, 'r')          
             for tari in tarFile:
                 if not tari.issym():
-                    if subtitles.has_key(tari.name):
-                        print "Problem: two occurrences of " + tari.name
-                    subtitles[tari.name] = tarPath,tari.offset_data, tari.size
+                    tarkey = tari.name[max("/"+tari.name.find(self.sourceLang+"/"), 
+                                           "/"+tari.name.find(self.targetLang+"/"))+1:]
+                    subtitles[tarkey] = tarPath,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
@@ -450,28 +449,28 @@ class XCESCorpus(AlignedSubtitles):
         subtitle documents must already be generated  in self.subtitles
         
         """
-        for expansion in ["OpenSubtitles2013/xml/", "OpenSubtitles2012/"]:
-            if self.subtitles.has_key(expansion+doc):
-                tarFile = open(self.subtitles[expansion+doc][0])
-                offset, size = self.subtitles[expansion+doc][1:]
-                tarFile.seek(offset,0)
-                gzippedData = tarFile.read(size)
-                zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
-                root = etree.parse(zippedFile).getroot()
-                lines = {}
-                for s in root:
-                    if s.tag == 's':
-                        lineId = int(s.attrib["id"])
-                        lines[lineId] = getLine(s)
-                tarFile.close()
-                linesList = []
-                for i in range(1, max(lines.keys())+1):
-                    if lines.has_key(i):
-                        linesList.append(lines[i])
-                    else:
-                        print "Missing line number %i in %s"%(i,doc)
-                        linesList.append("")
-                return linesList
+        
+        if self.subtitles.has_key(doc):
+            tarFile = open(self.subtitles[doc][0])
+            offset, size = self.subtitles[doc][1:]
+            tarFile.seek(offset,0)
+            gzippedData = tarFile.read(size)
+            zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
+            root = etree.parse(zippedFile).getroot()
+            lines = {}
+            for s in root:
+                if s.tag == 's':
+                    lineId = int(s.attrib["id"])
+                    lines[lineId] = getLine(s)
+            tarFile.close()
+            linesList = []
+            for i in range(1, max(lines.keys())+1):
+                if lines.has_key(i):
+                    linesList.append(lines[i])
+                else:
+                    print "Missing line number %i in %s"%(i,doc)
+                    linesList.append("")
+            return linesList
                     
         raise RuntimeError("could not find file " + doc)
     
@@ -535,7 +534,7 @@ def normalise(line):
               
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print "Usage: opensubtitles_cleanup.py [path to XCESFile]"
+        print "Usage: opus2moses2.py [path to XCESFile]"
         
     else:  
         xcesFile = sys.argv[1]
