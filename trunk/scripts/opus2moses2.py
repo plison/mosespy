@@ -201,6 +201,7 @@ class Dictionary():
     
     def __init__(self, lang):
         dicFile = os.path.dirname(__file__) + "/data/" + lang + ".dic"
+        dicFile = dicFile[1:] if dicFile.startswith("/") else dicFile
         if not os.path.exists(dicFile):
             raise RuntimeError("Dictionary " + dicFile + " cannot be found")
         self.words = set()
