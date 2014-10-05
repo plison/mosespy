@@ -156,8 +156,8 @@ class AlignedSubtitles(object):
         the aligned subtitles for these documents.
         
         """     
-        if len(self.bitext) < 20:
-            raise RuntimeError("not enough data to divide")
+   #     if len(self.bitext) < 20:
+   #         raise RuntimeError("not enough data to divide")
         
         extractedBitext = {}
         print "Sorting data by number of duplicates"
