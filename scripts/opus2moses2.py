@@ -384,7 +384,8 @@ class XCESCorpus(AlignedSubtitles):
             tarFile.close()
         return subtitles
   
-                                           
+  
+                                       
     def getBitext(self):
         """Extracts the bitext from the XCES corpus.  The bitext is a set of aligned
         documents, each document being composed of a list of aligned pairs
@@ -475,6 +476,22 @@ class XCESCorpus(AlignedSubtitles):
             return linesList
                     
         raise RuntimeError("could not find file " + doc)
+
+
+    def _isRelevantTar(self, tarFile, maxNbLines=10):
+        if tarFile.exists() and os.path.isfile(tarFile):
+            f = gzip.open(tarFile) if tarFile.endswith(".gz") else open(tarFile)
+            nbLines = 0
+            for l in f:
+                if re.search("/("+self.sourceLang+"|"+self.targetLang+")/", l):
+                    return True 
+                nbLines += 1
+                if nbLines == maxNbLines:
+                    return False
+        else:
+            print "Cannot read " + self
+            return False      
+
     
     def _rezipTarFiles(self):
         """Rezips the tar files."""
