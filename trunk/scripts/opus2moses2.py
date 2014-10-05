@@ -558,7 +558,7 @@ def normalise(line):
 
               
 if __name__ == '__main__':
-    if len(sys.argv) != 4:
+    if len(sys.argv) == 4:
         moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
         unk1, unk2 = moses.findUnknownWords()
         with open("unk-"+sys.argv[1]+"."+ sys.argv[2], 'w') as logFile:
