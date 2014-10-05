@@ -38,11 +38,11 @@ __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
-import  os, math, sys, re, collections, tarfile, gzip, codecs
+import  os, math, sys, re, collections, tarfile, gzip, codecs, random
 import xml.etree.cElementTree as etree
 
 
-class AlignedSubtitles(object):
+class AlignedDocs(object):
     """Representation of a set of aligned subtitles, which can be divided into
     subsets (i.e. training, tuning, development and test sets), and converted
     into Moses bitext format. 
@@ -68,32 +68,35 @@ class AlignedSubtitles(object):
         flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.bitext:
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
-        return AlignedSubtitles(invertedDict, self.targetLang, self.sourceLang)
-
+        return AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
+    
+    
+    def splitData(self):
+        docIds = random.shuffle(list(self.bitext.keys()))
+        part1 = extraction(self.bitext, docIds[0:len(docIds)/2])
+        part2 = extraction(self.bitext, docIds[len(docIds)/2:])
+        return (AlignedDocs(part1, self.sourceLang, self.targetLang),
+                AlignedDocs(part2, self.sourceLang, self.targetLang))
       
-    def divideData(self, nbTuningFiles=2, nbDevFiles=5, nbTestFiles=5):
-        """Divides the aligned documents into four subsets that respectively
-        corresponds to the training, tuning, development and test sets. 
+      
+    def divideData(self, nbTuningFiles=2, nbTestFiles=20):
+        """Divides the aligned documents into three subsets that respectively
+        corresponds to the training, tuning and test sets. 
         
-        For the development and test sets, alternative translations (in the same
-        directory as the documents initially selected) are extracted.
+        For the test set, alternative translations (in the same directory as 
+        the  documents initially selected) are extracted.
         
         """
-        trainingData = AlignedSubtitles(self.bitext, self.sourceLang, self.targetLang)
+        trainingData = AlignedDocs(self.bitext, self.sourceLang, self.targetLang)
         
         print "Extracting test data"
-        extractedData = trainingData._extractData(nbTestFiles)
-        testData = MultiAlignedSubtitles(extractedData, self.sourceLang, self.targetLang)      
+        testData = trainingData.extractData(nbTestFiles)        
+        testData = MultiAlignedDocs(testData)      
      
-        print "Extracting development data"
-        extractedData = trainingData._extractData(nbDevFiles)
-        devData = MultiAlignedSubtitles(extractedData, self.sourceLang, self.targetLang)      
-
         print "Extracting tuning data"
-        extractedData = trainingData._extractData(nbTuningFiles)
-        tuneData = AlignedSubtitles(extractedData, self.sourceLang, self.targetLang)      
+        tuneData = trainingData.extractData(nbTuningFiles)
         
-        return trainingData, tuneData, devData, testData
+        return trainingData, tuneData, testData
         
    
     def findUnknownWords(self):
@@ -148,7 +151,7 @@ class AlignedSubtitles(object):
         trgFile.close()
             
     
-    def _extractData(self, nbDirs):
+    def extractData(self, nbDirs):
         """Extracts aligned documents from a number of directories (the directories
         with the largest number of documents being selected first) and returns
         the aligned subtitles for these documents.
@@ -163,22 +166,18 @@ class AlignedSubtitles(object):
         for a in self.bitext.keys():
             nbEntries[os.path.dirname(a)] += 1
         directories = sorted(list(nbEntries.keys()), key=lambda x : nbEntries[x])
-        
-        def extraction(subkeys):
-            return reduce(lambda x, y: x.update({y[0]:y[1]}) or x, 
-                          map(None, subkeys, map(self.bitext.get, subkeys)), {})
-      
+              
         while len(extractedBitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
             print "Extracting best alignments for " + testDir
-            subset = extraction([x for x in self.bitext if testDir in x])
+            subset = extraction(self.bitext, [x for x in self.bitext if testDir in x])
             alignedDocs= subset.keys()
             alignedDocs.sort(key=lambda x: max([len(y) for y in subset[x]]))
-            bestAlignment = extraction([alignedDocs[-1]])
+            bestAlignment = extraction(self.bitext, [alignedDocs[-1]])
             extractedBitext.update(bestAlignment)
             self._removeDirs([testDir])
 
-        return extractedBitext   
+        return AlignedDocs(extractedBitext, self.sourceLang, self.targetLang)   
     
   
     def _removeDirs(self, dirsToRemove):
@@ -189,6 +188,10 @@ class AlignedSubtitles(object):
                 newAligns[a] = self.bitext[a]
         self.bitext = newAligns
  
+
+def extraction(fullDic, subkeys):
+    return reduce(lambda x, y: x.update({y[0]:y[1]}) or x, 
+        map(None, subkeys, map(fullDic.get, subkeys)), {})
 
 
     
@@ -210,7 +213,7 @@ class Dictionary():
         return word in self.words or re.sub(r"['-]","",word) in self.words
 
 
-class MosesAlignment(AlignedSubtitles):
+class MosesAlignment(AlignedDocs):
     
     def __init__(self, stem, sourceLang, targetLang):
         bitext = {}
@@ -222,15 +225,16 @@ class MosesAlignment(AlignedSubtitles):
         for i in range(0, len(sourceLines)):
             pair = (sourceLines[i].strip(), targetLines[i].strip())
             bitext[stem].append(pair)
-        AlignedSubtitles.__init__(self, bitext, sourceLang, targetLang)
+        AlignedDocs.__init__(self, bitext, sourceLang, targetLang)
         print "finished creating moses alignment"
 
 
-class MultiAlignedSubtitles(AlignedSubtitles):
+class MultiAlignedDocs(AlignedDocs):
     
-    def __init__(self, bitext, sourceLang, targetLang):
-        multiBitext = self._getMultiBitext(bitext)
-        AlignedSubtitles.__init__(self, multiBitext, sourceLang, targetLang)
+    def __init__(self, docs):
+        if not isinstance(docs.bitext[docs.bitext[0]][0][1], list):
+            bitext = self._getMultiBitext(docs.bitext)
+        AlignedDocs.__init__(self, bitext, docs.sourceLang, docs.targetLang)
     
         
     def _getMultiBitext(self, bitext):
@@ -262,11 +266,15 @@ class MultiAlignedSubtitles(AlignedSubtitles):
        
  
     def getInverse(self):
-        basicInv = AlignedSubtitles.getInverse(self)
-        return MultiAlignedSubtitles(basicInv.bitext, basicInv.sourceLang, 
-                                     basicInv.targetLang)
+        basicInv = AlignedDocs.getInverse(self)
+        return MultiAlignedDocs(basicInv.bitext)
 
 
+   
+    def splitData(self):
+        split1, split2 = AlignedDocs.splitData(self)
+        return MultiAlignedDocs(split1), MultiAlignedDocs(split2)
+        
         
     def getNbAlternativeTranslations(self):
         """Returns the maximum number of alternative translations for the 
@@ -288,7 +296,7 @@ class MultiAlignedSubtitles(AlignedSubtitles):
         
         """
         
-        AlignedSubtitles.generateMosesFiles(self, stem)
+        AlignedDocs.generateMosesFiles(self, stem)
         
         nbTranslations = self.getNbAlternativeTranslations()
         print "Generating %i alternative translations"%(nbTranslations)
@@ -311,7 +319,7 @@ class MultiAlignedSubtitles(AlignedSubtitles):
 
 
         
-class XCESCorpus(AlignedSubtitles):
+class XCESCorpus(AlignedDocs):
     """Representation of an XCES file that contains aligned documents.
     
     """
@@ -339,7 +347,7 @@ class XCESCorpus(AlignedSubtitles):
                     
         print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
         bitext = self.getBitext()
-        AlignedSubtitles.__init__(self, bitext, self.sourceLang, self.targetLang)
+        AlignedDocs.__init__(self, bitext, self.sourceLang, self.targetLang)
         print "Finished parsing file " + xcesFile
         
         if rezipFiles:
@@ -557,7 +565,8 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         baseStem = xcesFile.replace(".xml", "")
         
-        train, tune, dev, test = corpus.divideData()
+        train, tune, devAndTest = corpus.divideData()
+        dev, test = devAndTest.splitData()
         
         for inDir in os.listdir(os.path.dirname(baseStem)):
             if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
