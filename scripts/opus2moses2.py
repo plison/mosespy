@@ -492,7 +492,7 @@ class XCESCorpus(AlignedSubtitles):
             print "Cannot read " + self
             return False      
 
-    
+     
     def _rezipTarFiles(self):
         """Rezips the tar files."""
         
