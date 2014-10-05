@@ -559,7 +559,7 @@ if __name__ == '__main__':
         
         train, tune, dev, test = corpus.divideData()
         
-        for inDir in os.listdir(os.path.basename(baseStem)):
+        for inDir in os.listdir(os.path.dirname(baseStem)):
             if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
                 inDir.remove()
         
