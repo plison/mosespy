@@ -136,8 +136,8 @@ class AlignedDocs(object):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(counter, (counter*100/totalNbLines), totalNbLines))
           
-        srcCorrs = srcDic.getUnknowns() if srcDic else {}
-        trgCorrs = trgDic.getUnknowns() if trgDic else {}
+        srcCorrs = srcDic.unknowns if srcDic else {}
+        trgCorrs = trgDic.unknowns if trgDic else {}
         print ("Number of spellcheck corrections: %i in source and %i in target"
                %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
         return srcCorrs, trgCorrs
@@ -566,9 +566,6 @@ class Dictionary():
     def getWords(self):
         return self.words
     
-    def getUnknowns(self):
-        return sorted(self.unknowns.keys(), key=lambda x :self.unknowns[x], 
-                      reverse=True)
         
         
     def getNbOccurrences(self, word):
