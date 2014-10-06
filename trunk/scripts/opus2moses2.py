@@ -472,7 +472,7 @@ class XCESCorpus(AlignedDocs):
                         if w.tag == 'w' and w.text != None:
                             wordList.append(w.text.strip())
                         else:
-                            toProcess.update(w.getchildren())      
+                            toProcess.extend(w.getchildren())      
                         lines[lineId] = " ".join(wordList)
             tarFile.close()
             linesList = []
