@@ -100,33 +100,38 @@ class AlignedDocs(object):
         return trainingData, tuneData, testData
         
    
-    def findUnknownWords(self):
-        srcUnk =  collections.defaultdict(int)
-        trgUnk =  collections.defaultdict(int)
-        trgDic = Dictionary(self.targetLang)
+    def spellcheck(self, correct=False):
         srcDic = Dictionary(self.sourceLang)
+        trgDic = Dictionary(self.targetLang)
         for doc in self.bitext:
             bitextdoc = self.bitext[doc]
             for i in range(0, len(bitextdoc)):
                 sourceLine = bitextdoc[i][0]
                 targetLine = bitextdoc[i][1]
+                newSrcWords = []
+                newTrgWords = []
                 for w in sourceLine.split():
-                    wlow = w.lower()
-                    if w[0].isalpha() and (w[0].islower() or wlow not in targetLine.lower()):  
-                        if not srcDic.isWord(wlow):
-                            srcUnk[wlow]  += 1
-                for w in targetLine.split():
-                    wlow = w.lower()
-                    if w[0].isalpha() and (w[0].islower() or wlow not in sourceLine.lower()): 
-                        if not trgDic.isWord(wlow):
-                            trgUnk[wlow]  += 1
+                    if not w[0].isalpha() or w in targetLine:
+                        newSrcWords.append(w)
+                    else:
+                        corrected = srcDic.spellcheck(w, correct)
+                        newSrcWords.append(corrected)
+                for w in sourceLine.split():
+                    if not w[0].isalpha() or w in sourceLine:
+                        newTrgWords.append(w)
+                    else:
+                        corrected = trgDic.spellcheck(w, correct)
+                        newTrgWords.append(corrected)
+                bitextdoc[i][0] = " ".join(newSrcWords)
+                bitextdoc[i][1] = " ".join(newTrgWords)
+                
                 if not (i % (len(bitextdoc)/min(100,len(bitextdoc)))):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(i, (i*100/len(bitextdoc)), len(bitextdoc)))
-                        
-        srcUnkList = sorted(srcUnk.keys(), key=lambda x :srcUnk[x], reverse=True)
-        trgUnkList = sorted(trgUnk.keys(), key=lambda x :trgUnk[x], reverse=True)
-        return srcUnkList, trgUnkList
+          
+        if not correct:              
+            return srcDic.getUnknowns(), trgDic.getUnknowns()
+    
             
         
     def generateMosesFiles(self, stem):
@@ -209,13 +214,25 @@ class Dictionary():
                     self.words.add(l.strip().encode("utf-8"))
         if lang != "en":
             self.words.update(Dictionary("en").getWords())
+        self.unknowns =  collections.defaultdict(int)
         print "Total number of words in dictionary: %i"%(len(self.words))
     
-    def isWord(self, word):
-        return word in self.words or re.sub(r"['-]","",word) in self.words
+    
+    def spellcheck(self, word, correct=False):
+        wlow = word.lower()
+        isKnown = wlow in self.words or re.sub(r"['-]","",wlow) in self.words
+        if not isKnown:
+            self.unknowns[wlow] += 1
+            if correct:
+                pass
+        return word
 
     def getWords(self):
         return self.words
+    
+    def getUnknowns(self):
+        return sorted(self.unknowns.keys(), 
+                      key=lambda x :self.unknowns[x], reverse=True)
 
 
 class MosesAlignment(AlignedDocs):
@@ -564,7 +581,7 @@ def normalise(line):
 if __name__ == '__main__':
     if len(sys.argv) == 4:
         moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
-        unk1, unk2 = moses.findUnknownWords()
+        unk1, unk2 = moses.spellcheck()
         with open(sys.argv[1]+"."+ sys.argv[2]+"-unk", 'w') as logFile:
             logFile.write("\n".join(unk1))
         with open(sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
