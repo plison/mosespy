@@ -134,8 +134,7 @@ class AlignedDocs(object):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(i, (i*100/len(bitextdoc)), len(bitextdoc)))
           
-        if not correct:              
-            return srcDic.getUnknowns(), trgDic.getUnknowns()
+        return srcDic.getUnknowns(), trgDic.getUnknowns()
     
             
         
