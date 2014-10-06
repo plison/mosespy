@@ -662,10 +662,8 @@ if __name__ == '__main__':
                 srcDic =Dictionary(sys.argv[i+1])
             elif sys.argv[i] =="-t":
                 trgDic =Dictionary(sys.argv[i+1])
-        unk1, unk2 = corpus.spellcheck(srcDic, trgDic)
-        if unk1:
-            with open(baseStem+".unk."+corpus.sourceLang, 'w') as unk1File:
-                unk1File.write("")
+        corpus.spellcheck(srcDic, trgDic)
+ 
         train, tune, devAndTest = corpus.divideData()
         dev, test = devAndTest.splitData()
         
