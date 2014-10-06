@@ -143,10 +143,10 @@ class AlignedDocs(object):
                  sum([trgDic.corrections[i] for i in trgCorrs])))
         if dumpCorrections:
             with open("corrections."+self.sourceLang, 'w') as srcDump:
-                srcCorrsMap = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in srcCorrs]
+                srcCorrsMap = ["%s -> %s"%(p1,p2) for (p1,p2) in srcCorrs]
                 srcDump.write("\n".join(srcCorrsMap))
             with open("corrections."+self.targetLang, 'w') as trgDump:
-                trgCorrsMap = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in trgCorrs]
+                trgCorrsMap = ["%s -> %s"%(p1,p2) for (p1,p2) in trgCorrs]
                 trgDump.write("\n".join(trgCorrsMap))
             
         
