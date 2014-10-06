@@ -135,6 +135,10 @@ class AlignedDocs(object):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(i, (i*100/len(bitextdoc)), len(bitextdoc)))
           
+        srcCorrs = srcDic.getUnknowns
+        trgCorrs = trgDic.getUnknowns
+        print ("Number of spellcheck corrections: %i in source and %i in target"
+               %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
         return srcDic.getUnknowns(), trgDic.getUnknowns()
     
             
