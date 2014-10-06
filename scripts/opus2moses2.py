@@ -142,10 +142,10 @@ class AlignedDocs(object):
                %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
         if dumpCorrections:
             with open("corrections."+self.sourceLang, 'w') as srcDump:
-                sortedCorrs = sorted(srcCorrs, key=lambda x :srcDic.unknowns[x], reverse=True)
+                sortedCorrs = sorted(srcCorrs.keys(), key=lambda x :srcDic.unknowns[x], reverse=True)
                 srcDump.write("\n".join(sortedCorrs))
             with open("corrections."+self.targetLang, 'w') as trgDump:
-                sortedCorrs = sorted(trgCorrs, key=lambda x :trgDic.unknowns[x], reverse=True)
+                sortedCorrs = sorted(trgCorrs.keys(), key=lambda x :trgDic.unknowns[x], reverse=True)
                 trgDump.write("\n".join(sortedCorrs))
     
             
