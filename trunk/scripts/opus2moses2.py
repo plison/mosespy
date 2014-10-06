@@ -120,7 +120,7 @@ class AlignedDocs(object):
                     else:
                         corrected = srcDic.spellcheck(w, correct)
                         newSrcWords.append(corrected)
-                for w in sourceLine.split():
+                for w in targetLine.split():
                     if not w[0].isalpha() or w in sourceLine:
                         newTrgWords.append(w)
                     else:
@@ -237,7 +237,7 @@ class Dictionary():
         isKnown = self.isWord(word)
         correction = self.correct(word) if not isKnown and correct else word
         if not isKnown:
-            self.unknowns[(word.lower(),correction)] += 1
+            self.unknowns[(word,correction)] += 1
         return word
 
     def isWord(self, word):
@@ -302,6 +302,7 @@ class FrenchDictionary(Dictionary):
             no_accent = remove_accents(word)
             if self.no_accents.has_key(no_accent):
                 return self.no_accents[no_accent]
+        return word
 
 
 class EnglishDictionary(Dictionary):
@@ -312,7 +313,8 @@ class EnglishDictionary(Dictionary):
     def correct(self, word):
         word = Dictionary.correct(self, word) 
         if word.endswith("in") and self.isWord(word + "g"):
-            return word + "g"       
+            return word + "g"
+        return word       
         
         
 
