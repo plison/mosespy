@@ -125,7 +125,6 @@ class AlignedDocs(object):
                     if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
-                        print "YEAH"
                         corrected = trgDic.spellcheck(w, correct)
                         newTrgWords.append(corrected)
                         
@@ -656,10 +655,12 @@ if __name__ == '__main__':
         baseStem = xcesFile.replace(".xml", "")
         
         srcDic, trgDic = None, None
+        print str(sys.argv)
         for i in range(2, len(sys.argv)):
             if sys.argv[i]=="-s":
                 srcDic =Dictionary(sys.argv[i+1])
             elif sys.argv[i] =="t":
+                print "GOT IT"
                 trgDic =Dictionary(sys.argv[i+1])
         corpus.spellcheck(srcDic, trgDic)
             
