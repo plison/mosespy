@@ -276,7 +276,8 @@ class Dictionary():
             for i in range(0, len(word)):
                 c = word[i]
                 if c == 'l':
-                    replace = word[:i] + "i" + word[i+1:]
+                    iletter = "i" if word[:i].islower() or word[i+1:].islower() else "I"
+                    replace = word[:i] + iletter + word[i+1:]
                     if self.isWord(replace):
                         replaces.append(replace)
             if replaces:
