@@ -111,17 +111,15 @@ class AlignedDocs(object):
                 sourceLine = bitextdoc[i][0]
                 targetLine = bitextdoc[i][1]
                 for w in sourceLine.split():
-                    if w[0].isalpha() and (w[0].islower() or w not in targetLine):  
-                        w = w.lower()                                         
-                        isWord = srcDic.isWord(w)
-                        if not isWord:
-                            srcUnk[w]  += 1
+                    wlow = w.lower()
+                    if w[0].isalpha() and (w[0].islower() or wlow not in targetLine.lower()):  
+                        if not srcDic.isWord(wlow):
+                            srcUnk[wlow]  += 1
                 for w in targetLine.split():
-                    if w[0].isalpha() and (w[0].islower() or w not in sourceLine): 
-                        w = w.lower()                     
-                        isWord = trgDic.isWord(w)
-                        if not isWord:
-                            trgUnk[w]  += 1
+                    wlow = w.lower()
+                    if w[0].isalpha() and (w[0].islower() or wlow not in sourceLine.lower()): 
+                        if not trgDic.isWord(wlow):
+                            trgUnk[wlow]  += 1
                 if not (i % (len(bitextdoc)/min(100,len(bitextdoc)))):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(i, (i*100/len(bitextdoc)), len(bitextdoc)))
