@@ -207,10 +207,15 @@ class Dictionary():
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
                     self.words.add(l.strip().encode("utf-8"))
+        if lang != "en":
+            self.words.update(Dictionary("en").getWords())
         print "Total number of words in dictionary: %i"%(len(self.words))
     
     def isWord(self, word):
         return word in self.words or re.sub(r"['-]","",word) in self.words
+
+    def getWords(self):
+        return self.words
 
 
 class MosesAlignment(AlignedDocs):
