@@ -125,6 +125,7 @@ class AlignedDocs(object):
                     if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
+                        print "YEAH"
                         corrected = trgDic.spellcheck(w, correct)
                         newTrgWords.append(corrected)
                         
@@ -159,7 +160,7 @@ class AlignedDocs(object):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(pair[0])
-                    trgFile.write(pair[1])
+                    trgFile.write(pair[1][0] if isinstance(pair[1],list) else pair[1])
         
         srcFile.close()
         trgFile.close()
@@ -171,8 +172,8 @@ class AlignedDocs(object):
         the aligned subtitles for these documents.
         
         """     
-   #     if len(self.bitext) < 20:
-   #         raise RuntimeError("not enough data to divide")
+        if len(self.bitext) < 20:
+            raise RuntimeError("not enough data to divide")
         
         extractedBitext = {}
         print "Sorting data by number of duplicates"
@@ -624,11 +625,7 @@ class Dictionary():
             
 
     
-    
 def normalise(line):
-    if isinstance(line, list):
-        return normalise(line[0])
-    else:
         line = line.strip()
         line = re.sub(r"\s+", " ", line)
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
