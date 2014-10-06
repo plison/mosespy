@@ -293,7 +293,7 @@ class FrenchDictionary(Dictionary):
         for w in self.words:
             stripped = remove_accents(w)
             if (not self.no_accents.has_key(stripped) or 
-                self.words[w] > self.no_accents[self.no_accents[stripped]]):
+                self.words[w] > self.words[self.no_accents[stripped]]):
                 self.no_accents[stripped] = w
     
     def correct(self, word):
