@@ -136,8 +136,8 @@ class AlignedDocs(object):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(counter, (counter*100/totalNbLines), totalNbLines))
           
-        srcCorrs = srcDic.getUnknowns if srcDic else {}
-        trgCorrs = trgDic.getUnknowns if trgDic else {}
+        srcCorrs = srcDic.getUnknowns() if srcDic else {}
+        trgCorrs = trgDic.getUnknowns() if trgDic else {}
         print ("Number of spellcheck corrections: %i in source and %i in target"
                %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
         return srcCorrs, trgCorrs
@@ -655,7 +655,6 @@ if __name__ == '__main__':
         baseStem = xcesFile.replace(".xml", "")
         
         srcDic, trgDic = None, None
-        print str(sys.argv)
         for i in range(2, len(sys.argv)):
             if sys.argv[i]=="-s":
                 srcDic =Dictionary(sys.argv[i+1])
