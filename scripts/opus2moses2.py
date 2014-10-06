@@ -101,28 +101,26 @@ class AlignedDocs(object):
         return trainingData, tuneData, testData
         
    
-    def spellcheck(self, correct=False):
-        srcDic = createDictionary(self.sourceLang)
-        trgDic = createDictionary(self.targetLang)
+    def spellcheck(self, srcDic, trgDic, correct=True):
 
         for doc in self.bitext:
             bitextdoc = self.bitext[doc]
             for i in range(0, len(bitextdoc)):
-                sourceLine = bitextdoc[i][0]
-                targetLine = bitextdoc[i][1]
-                if stripAll(sourceLine) == stripAll(targetLine):
+                srcLine = bitextdoc[i][0]
+                trgLine = bitextdoc[i][1]
+                if strip(srcLine) == strip(trgLine):
                     continue
                 
                 newSrcWords = []
                 newTrgWords = []
-                for w in sourceLine.split():
-                    if not w[0].isalpha() or w in targetLine:
+                for w in srcLine.split():
+                    if not w[0].isalpha() or w in trgLine:
                         newSrcWords.append(w)
                     else:
                         corrected = srcDic.spellcheck(w, correct)
                         newSrcWords.append(corrected)
-                for w in targetLine.split():
-                    if not w[0].isalpha() or w in sourceLine:
+                for w in trgLine.split():
+                    if not w[0].isalpha() or w in srcLine:
                         newTrgWords.append(w)
                     else:
                         corrected = trgDic.spellcheck(w, correct)
@@ -525,13 +523,9 @@ class XCESCorpus(AlignedDocs):
        
 class Dictionary():
       
-    def __init__(self, lang):
-        self.lang = lang
-        dicFile = "./data/" + lang + ".dic"
-        if os.path.dirname(__file__):
-            dicFile = os.path.dirname(__file__) + "/" + dicFile
+    def __init__(self, dicFile, correctAccents=False):
         if not os.path.exists(dicFile):
-            raise RuntimeError("Dictionary " + dicFile + " cannot be found")
+            raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
         self.words = collections.defaultdict(int)
         with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
@@ -543,6 +537,14 @@ class Dictionary():
         
         self.unknowns =  collections.defaultdict(int)
         print "Total number of words in dictionary: %i"%(len(self.words))
+        
+        self.no_accents = {}
+        if correctAccents:
+            for w in self.words:
+                stripped = strip(w)
+                if (not self.no_accents.has_key(stripped) or 
+                    self.words[w] > self.words[self.no_accents[stripped]]):
+                    self.no_accents[stripped] = w
       
                
     def spellcheck(self, word, correct=False):
@@ -605,50 +607,16 @@ class Dictionary():
                         replaces.append(replace)
             if replaces:
                 return max(replaces, key= lambda x : self.words[x])
-        return word
+        
+        elif word.endswith("in") and self.isWord(word + "g"):
+            return word + "g"
             
-
-
-class FrenchDictionary(Dictionary):
-    
-    def __init__(self):
-        Dictionary.__init__(self, "fr")
-        self.no_accents = {}
-        for w in self.words:
-            stripped = remove_accents(w)
-            if (not self.no_accents.has_key(stripped) or 
-                self.words[w] > self.words[self.no_accents[stripped]]):
-                self.no_accents[stripped] = w
-    
-    def correct(self, word):
-        word = Dictionary.correct(self, word) 
-        if not self.isWord(word):
-            no_accent = remove_accents(word)
+        elif self.no_accents and not self.isWord(word):
+            no_accent = strip(word)
             if self.no_accents.has_key(no_accent):
                 return self.no_accents[no_accent]
+            
         return word
-
-
-class EnglishDictionary(Dictionary):
-    
-    def __init__(self):
-        Dictionary.__init__(self, "en") 
-        
-    def correct(self, word):
-        word = Dictionary.correct(self, word) 
-        if word.endswith("in") and self.isWord(word + "g"):
-            return word + "g"
-        return word       
-        
-
-def createDictionary(lang):
-    if lang == "fr":
-        return FrenchDictionary()
-    elif lang == "en":
-        return EnglishDictionary()
-    else:
-        return Dictionary(lang)
-    
             
 
     
@@ -666,26 +634,19 @@ def normalise(line):
         line = re.sub(r"\|", "_", line)
         return (line + "\n").encode('utf-8')
                 
-                
-def stripAll(sentence):
-    return sentence.lower().translate(string.maketrans("",""), string.punctuation)
-
-def remove_accents(word):
+        
+def strip(word):
     normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
-    return normalised.encode("ascii", "replace")
+    stripped = normalised.encode("ascii", "replace").lower()
+    stripped= stripped.translate(string.maketrans("",""), string.punctuation)
+    return stripped
    
                  
 if __name__ == '__main__':
-    if len(sys.argv) == 4:
-        moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
-        unk1, unk2 = moses.spellcheck(correct=True)
-        with open(sys.argv[1]+"."+ sys.argv[2]+"-unk", 'w') as logFile:
-            logFile.write("\n".join(["%s -> %s"%(i,j) for (i,j) in unk1]))
-        with open(sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
-            logFile.write("\n".join(["%s -> %s"%(i,j) for (i,j) in unk2]))
   
-    elif len(sys.argv) != 2:
-        print "Usage: opus2moses2.py [path to XCESFile]"
+    if len(sys.argv) < 2:
+        print ("Usage: opus2moses2.py  XCESFile "
+              + "[{file with source unigrams} {file with target unigrams}]")
         
     else:  
         xcesFile = sys.argv[1]
@@ -693,7 +654,11 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         baseStem = xcesFile.replace(".xml", "")
         
-        corpus.spellcheck(True)
+        if len(sys.argv) == 4:
+            srcDic = Dictionary(sys.argv[2])
+            trgDic = Dictionary(sys.argv[3])
+            corpus.spellcheck(srcDic, trgDic)
+            
         train, tune, devAndTest = corpus.divideData()
         dev, test = devAndTest.splitData()
         
