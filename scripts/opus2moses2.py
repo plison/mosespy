@@ -136,18 +136,18 @@ class AlignedDocs(object):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(counter, (counter*100/totalNbLines), totalNbLines))
           
-        srcCorrs = srcDic.unknowns if srcDic else {}
-        trgCorrs = trgDic.unknowns if trgDic else {}
+        srcCorrs = srcDic.getCorrections() if srcDic else []
+        trgCorrs = trgDic.getCorrections() if trgDic else []
         print ("Number of spellcheck corrections: %i in source and %i in target"
-               %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
+               %(sum([srcDic.corrections[i] for i in srcCorrs]), 
+                 sum([trgDic.corrections[i] for i in trgCorrs])))
         if dumpCorrections:
             with open("corrections."+self.sourceLang, 'w') as srcDump:
-                sortedCorrs = sorted(srcCorrs.keys(), key=lambda x :srcDic.unknowns[x], reverse=True)
-                srcDump.write("\n".join(sortedCorrs))
+                srcCorrsMap = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in srcCorrs]
+                srcDump.write("\n".join(srcCorrsMap))
             with open("corrections."+self.targetLang, 'w') as trgDump:
-                sortedCorrs = sorted(trgCorrs.keys(), key=lambda x :trgDic.unknowns[x], reverse=True)
-                trgDump.write("\n".join(sortedCorrs))
-    
+                trgCorrs = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in trgCorrs]
+                trgDump.write("\n".join(trgCorrs))
             
         
     def generateMosesFiles(self, stem):
@@ -545,7 +545,7 @@ class Dictionary():
                     frequency = int(split[1].strip())
                     self.words[word] = frequency
         
-        self.unknowns =  collections.defaultdict(int)
+        self.corrections =  collections.defaultdict(int)
         print "Total number of words in dictionary: %i"%(len(self.words))
         
         self.no_accents = {}
@@ -561,14 +561,17 @@ class Dictionary():
         isKnown = self.isWord(word)
         correction = self.correct(word) if not isKnown and correct else word
         if not isKnown:
-            self.unknowns[(word,correction if correction!= word else "?")] += 1
+            self.corrections[(word,correction if correction!= word else "?")] += 1
         return word
 
     def isWord(self, word):
         wlow = word.lower()
         return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
     
-    
+    def getCorrections(self):
+        return sorted(self.corrections.keys(), key=lambda x :self.corrections[x], 
+                      reverse=True)
+            
     def getWords(self):
         return self.words
     
