@@ -671,7 +671,7 @@ def remove_accents(word):
 if __name__ == '__main__':
     if len(sys.argv) == 4:
         moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
-        unk1, unk2 = moses.spellcheck()
+        unk1, unk2 = moses.spellcheck(correct=True)
         with open(sys.argv[1]+"."+ sys.argv[2]+"-unk", 'w') as logFile:
             logFile.write("\n".join(["%s -> %s"%(i,j) for (i,j) in unk1]))
         with open(sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
