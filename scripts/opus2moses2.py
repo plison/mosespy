@@ -101,7 +101,7 @@ class AlignedDocs(object):
         return trainingData, tuneData, testData
         
    
-    def spellcheck(self, srcDic, trgDic, correct=True):
+    def spellcheck(self, srcDic, trgDic, correct=True, dumpCorrections=True):
 
         totalNbLines = sum([len(self.bitext[d]) for d in self.bitext])
         counter = 0
@@ -140,7 +140,13 @@ class AlignedDocs(object):
         trgCorrs = trgDic.unknowns if trgDic else {}
         print ("Number of spellcheck corrections: %i in source and %i in target"
                %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
-        return srcCorrs, trgCorrs
+        if dumpCorrections:
+            with open("corrections."+self.sourceLang, 'w') as srcDump:
+                sortedCorrs = sorted(srcCorrs, key=lambda x :srcDic.unknowns[x], reverse=True)
+                srcDump.write("\n".join(sortedCorrs))
+            with open("corrections."+self.targetLang, 'w') as trgDump:
+                sortedCorrs = sorted(trgCorrs, key=lambda x :trgDic.unknowns[x], reverse=True)
+                trgDump.write("\n".join(sortedCorrs))
     
             
         
@@ -566,8 +572,7 @@ class Dictionary():
     def getWords(self):
         return self.words
     
-        
-        
+  
     def getNbOccurrences(self, word):
         wlow = word.lower()
         if wlow in self.words:
@@ -657,8 +662,10 @@ if __name__ == '__main__':
                 srcDic =Dictionary(sys.argv[i+1])
             elif sys.argv[i] =="-t":
                 trgDic =Dictionary(sys.argv[i+1])
-        corpus.spellcheck(srcDic, trgDic)
-            
+        unk1, unk2 = corpus.spellcheck(srcDic, trgDic)
+        if unk1:
+            with open(baseStem+".unk."+corpus.sourceLang, 'w') as unk1File:
+                unk1File.write("")
         train, tune, devAndTest = corpus.divideData()
         dev, test = devAndTest.splitData()
         
