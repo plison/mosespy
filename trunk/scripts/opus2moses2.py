@@ -249,8 +249,8 @@ class Dictionary():
         return self.words
     
     def getUnknowns(self):
-        return sorted(self.unknowns.keys(), 
-                      key=lambda x :self.unknowns[x], reverse=True)
+        return sorted(self.unknowns.keys(), key=lambda x :self.unknowns[x], 
+                      reverse=True)
 
 
     def correct(self, word):
@@ -671,6 +671,7 @@ if __name__ == '__main__':
         moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
         unk1, unk2 = moses.spellcheck()
         with open(sys.argv[1]+"."+ sys.argv[2]+"-unk", 'w') as logFile:
+            print unk1
             logFile.write("\n".join(unk1))
         with open(sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
             logFile.write("\n".join(unk2))
