@@ -125,6 +125,7 @@ class AlignedDocs(object):
                     if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
+                        print "YEAH"
                         corrected = trgDic.spellcheck(w, correct)
                         newTrgWords.append(corrected)
                         
