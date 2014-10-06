@@ -104,6 +104,7 @@ class AlignedDocs(object):
     def spellcheck(self, srcDic, trgDic, correct=True):
 
         totalNbLines = sum([len(self.bitext[d]) for d in self.bitext])
+        counter = 0
         for doc in self.bitext:
             bitextdoc = self.bitext[doc]
             for i in range(0, len(bitextdoc)):
@@ -130,15 +131,16 @@ class AlignedDocs(object):
                 bitextdoc[i] = (" ".join(newSrcWords),
                                 " ".join(newTrgWords))
                 
-                if not (i % (totalNbLines/min(100,totalNbLines))):
+                counter += 1
+                if not (counter % (totalNbLines/min(100,totalNbLines))):
                     print ("%i lines already spell-checked (%i %% of %i):"
-                           %(i, (i*100/totalNbLines), totalNbLines))
+                           %(counter, (counter*100/totalNbLines), totalNbLines))
           
         srcCorrs = srcDic.getUnknowns if srcDic else {}
         trgCorrs = trgDic.getUnknowns if trgDic else {}
         print ("Number of spellcheck corrections: %i in source and %i in target"
                %(sum([srcCorrs[i] for i in srcCorrs]), sum([trgCorrs[i] for i in trgCorrs])))
-        return srcDic.getUnknowns(), trgDic.getUnknowns()
+        return srcCorrs, trgCorrs
     
             
         
