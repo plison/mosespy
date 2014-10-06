@@ -636,6 +636,7 @@ def normalise(line):
                 
         
 def strip(word):
+    print word
     normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
     stripped = normalised.encode("ascii", "replace").lower()
     stripped= stripped.translate(string.maketrans("",""), string.punctuation)
