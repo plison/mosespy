@@ -236,7 +236,7 @@ class Dictionary():
         isKnown = self.isWord(word)
         correction = self.correct(word) if not isKnown and correct else word
         if not isKnown:
-            self.unknowns[(word,correction)] += 1
+            self.unknowns[(word,correction if correction!= word else "?")] += 1
         return word
 
     def isWord(self, word):
