@@ -38,7 +38,7 @@ __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
-import  os, math, sys, re, collections, tarfile, gzip, codecs, random
+import  os, math, sys, re, collections, tarfile, gzip, codecs, random, unicodedata, string
 import xml.etree.cElementTree as etree
 
 
@@ -101,13 +101,17 @@ class AlignedDocs(object):
         
    
     def spellcheck(self, correct=False):
-        srcDic = Dictionary(self.sourceLang)
-        trgDic = Dictionary(self.targetLang)
+        srcDic = createDictionary(self.sourceLang)
+        trgDic = createDictionary(self.targetLang)
+
         for doc in self.bitext:
             bitextdoc = self.bitext[doc]
             for i in range(0, len(bitextdoc)):
                 sourceLine = bitextdoc[i][0]
                 targetLine = bitextdoc[i][1]
+                if stripAll(sourceLine) == stripAll(targetLine):
+                    continue
+                
                 newSrcWords = []
                 newTrgWords = []
                 for w in sourceLine.split():
@@ -122,8 +126,9 @@ class AlignedDocs(object):
                     else:
                         corrected = trgDic.spellcheck(w, correct)
                         newTrgWords.append(corrected)
-                bitextdoc[i][0] = " ".join(newSrcWords)
-                bitextdoc[i][1] = " ".join(newTrgWords)
+                        
+                bitextdoc[i] = (" ".join(newSrcWords),
+                                " ".join(newTrgWords))
                 
                 if not (i % (len(bitextdoc)/min(100,len(bitextdoc)))):
                     print ("%i lines already spell-checked (%i %% of %i):"
@@ -198,35 +203,48 @@ def extraction(fullDic, subkeys):
         map(None, subkeys, map(fullDic.get, subkeys)), {})
 
 
+def createDictionary(lang):
+    if lang == "fr":
+        return FrenchDictionary()
+    elif lang == "en":
+        return EnglishDictionary()
+    else:
+        return Dictionary(lang)
     
-
+       
 class Dictionary():
-    
+      
     def __init__(self, lang):
+        self.lang = lang
         dicFile = os.path.dirname(__file__) + "/data/" + lang + ".dic"
         dicFile = dicFile[1:] if dicFile.startswith("/") else dicFile
         if not os.path.exists(dicFile):
             raise RuntimeError("Dictionary " + dicFile + " cannot be found")
-        self.words = set()
+        self.words = {}
         with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
-                    self.words.add(l.strip().encode("utf-8"))
-        if lang != "en":
-            self.words.update(Dictionary("en").getWords())
+                    split = l.split()
+                    word = split[0].strip().encode("utf-8")
+                    frequency = int(split[1].strip())
+                    self.words[word] = frequency
+        
         self.unknowns =  collections.defaultdict(int)
         print "Total number of words in dictionary: %i"%(len(self.words))
-    
-    
+      
+               
     def spellcheck(self, word, correct=False):
-        wlow = word.lower()
-        isKnown = wlow in self.words or re.sub(r"['-]","",wlow) in self.words
+        isKnown = self.isWord(word)
+        correction = self.correct(word) if not isKnown and correct else word
         if not isKnown:
-            self.unknowns[wlow] += 1
-            if correct:
-                pass
+            self.unknowns[(word.lower(),correction)] += 1
         return word
 
+    def isWord(self, word):
+        wlow = word.lower()
+        return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
+    
+    
     def getWords(self):
         return self.words
     
@@ -234,6 +252,69 @@ class Dictionary():
         return sorted(self.unknowns.keys(), 
                       key=lambda x :self.unknowns[x], reverse=True)
 
+
+    def correct(self, word):
+        if "ii" in word:
+            replace = word.replace("ii", "ll")
+            if self.isWord(replace):
+                return replace
+        elif word[0] == "l":
+            replace = "I" + word[1:]
+            if self.isWord(replace):
+                return replace
+        elif "i" in word:
+            replaces = []
+            for i in range(0, len(word)):
+                c = word[i]
+                if c == 'i':
+                    replace = word[:i] + "l" + word[i+1:]
+                    if self.isWord(replace):
+                        replaces.append(replace)
+            if replaces:
+                return max(replaces, key= lambda x : self.words[x])
+        elif "l" in word:
+            replaces = []
+            for i in range(0, len(word)):
+                c = word[i]
+                if c == 'l':
+                    replace = word[:i] + "i" + word[i+1:]
+                    if self.isWord(replace):
+                        replaces.append(replace)
+            if replaces:
+                return max(replaces, key= lambda x : self.words[x])
+            
+
+
+class FrenchDictionary(Dictionary):
+    
+    def __init__(self):
+        Dictionary.__init__(self, "fr")
+        self.no_accents = {}
+        for w in self.words:
+            stripped = remove_accents(w)
+            if (not self.no_accents.has_key(stripped) or 
+                self.words[w] > self.no_accents[self.no_accents[stripped]]):
+                self.no_accents[stripped] = w
+    
+    def correct(self, word):
+        word = Dictionary.correct(self, word) 
+        if not self.isWord(word):
+            no_accent = remove_accents(word)
+            if self.no_accents.has_key(no_accent):
+                return self.no_accents[no_accent]
+
+
+class EnglishDictionary(Dictionary):
+    
+    def __init__(self):
+        Dictionary.__init__(self, "en") 
+        
+    def correct(self, word):
+        word = Dictionary.correct(self, word) 
+        if word.endswith("in") and self.isWord(word + "g"):
+            return word + "g"       
+        
+        
 
 class MosesAlignment(AlignedDocs):
     
@@ -571,13 +652,20 @@ def normalise(line):
         line = re.sub(r"\s+", " ", line)
         line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
         line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
+        line = re.sub(r"\<(S|UNK|\/S)\>", "", line)
         line = re.sub(r"\[\s*and\s*\]", "", line)
         line = re.sub(r"\|", "_", line)
         return (line + "\n").encode('utf-8')
                 
                 
+def stripAll(sentence):
+    return sentence.lower().translate(string.maketrans("",""), string.punctuation)
 
-              
+def remove_accents(word):
+    normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
+    return normalised.encode("ascii", "replace")
+   
+                 
 if __name__ == '__main__':
     if len(sys.argv) == 4:
         moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
