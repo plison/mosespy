@@ -671,10 +671,9 @@ if __name__ == '__main__':
         moses = MosesAlignment(sys.argv[1], sys.argv[2], sys.argv[3])
         unk1, unk2 = moses.spellcheck()
         with open(sys.argv[1]+"."+ sys.argv[2]+"-unk", 'w') as logFile:
-            print unk1
-            logFile.write("\n".join(unk1))
+            logFile.write("\n".join(["%s -> %s"%(i,j) for (i,j) in unk1]))
         with open(sys.argv[1]+"."+ sys.argv[3]+"-unk", 'w') as logFile:
-            logFile.write("\n".join(unk2))
+            logFile.write("\n".join(["%s -> %s"%(i,j) for (i,j) in unk2]))
   
     elif len(sys.argv) != 2:
         print "Usage: opus2moses2.py [path to XCESFile]"
