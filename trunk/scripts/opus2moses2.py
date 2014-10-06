@@ -220,7 +220,7 @@ class Dictionary():
         dicFile = dicFile[1:] if dicFile.startswith("/") else dicFile
         if not os.path.exists(dicFile):
             raise RuntimeError("Dictionary " + dicFile + " cannot be found")
-        self.words = {}
+        self.words = collections.defaultdict(int)
         with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
