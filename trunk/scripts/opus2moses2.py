@@ -155,8 +155,8 @@ class AlignedDocs(object):
         for document in sorted(self.bitext.keys()):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
-                    srcFile.write(normalise(pair[0]))
-                    trgFile.write(normalise(pair[1]))
+                    srcFile.write(pair[0])
+                    trgFile.write(pair[1])
         
         srcFile.close()
         trgFile.close()
@@ -308,7 +308,7 @@ class MultiAlignedDocs(AlignedDocs):
                 if pair[0] and pair[1]:
                     for i in range(0, len(altFiles)):
                         altLine = pair[1][i] if i < len(pair[1]) else ""
-                        altFiles[i].write(normalise(altLine))
+                        altFiles[i].write(altLine)
         
         for altFile in altFiles:
             altFile.close()
@@ -429,7 +429,8 @@ class XCESCorpus(AlignedDocs):
                             continue
                         
                         if sourceLine and targetLine:
-                            alignmentList.append((sourceLine, targetLine))
+                            alignmentList.append((normalise(sourceLine), 
+                                                  normalise(targetLine)))
                 
                 # If the resulting list of alignments is less than two thirds of the
                 # original number of alignments, discard the document
@@ -636,7 +637,6 @@ def normalise(line):
                 
         
 def strip(word):
-    print word
     normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
     stripped = normalised.encode("ascii", "replace").lower()
     stripped= stripped.translate(string.maketrans("",""), string.punctuation)
