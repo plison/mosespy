@@ -659,8 +659,7 @@ if __name__ == '__main__':
         for i in range(2, len(sys.argv)):
             if sys.argv[i]=="-s":
                 srcDic =Dictionary(sys.argv[i+1])
-            elif sys.argv[i] =="t":
-                print "GOT IT"
+            elif sys.argv[i] =="-t":
                 trgDic =Dictionary(sys.argv[i+1])
         corpus.spellcheck(srcDic, trgDic)
             
