@@ -78,7 +78,8 @@ class AlignedDocs(object):
         part2 = extraction(self.bitext, docIds[len(docIds)/2:])
         return (AlignedDocs(part1, self.sourceLang, self.targetLang),
                 AlignedDocs(part2, self.sourceLang, self.targetLang))
-      
+        
+              
       
     def divideData(self, nbTuningFiles=2, nbTestFiles=20):
         """Divides the aligned documents into three subsets that respectively
@@ -149,7 +150,7 @@ class AlignedDocs(object):
         srcFile = open(stem+"." + self.sourceLang, 'w')
         trgFile = open(stem + "." + self.targetLang, 'w')
              
-        for document in sorted(self.bitext.keys(),key=lambda x: docOrder(x)):
+        for document in sorted(self.bitext.keys()):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(normalise(pair[0]))
@@ -200,123 +201,6 @@ class AlignedDocs(object):
 def extraction(fullDic, subkeys):
     return reduce(lambda x, y: x.update({y[0]:y[1]}) or x, 
         map(None, subkeys, map(fullDic.get, subkeys)), {})
-
-
-def createDictionary(lang):
-    if lang == "fr":
-        return FrenchDictionary()
-    elif lang == "en":
-        return EnglishDictionary()
-    else:
-        return Dictionary(lang)
-    
-       
-class Dictionary():
-      
-    def __init__(self, lang):
-        self.lang = lang
-        dicFile = os.path.dirname(__file__) + "/data/" + lang + ".dic"
-        dicFile = dicFile[1:] if dicFile.startswith("/") else dicFile
-        if not os.path.exists(dicFile):
-            raise RuntimeError("Dictionary " + dicFile + " cannot be found")
-        self.words = collections.defaultdict(int)
-        with codecs.open(dicFile, encoding='utf-8') as dico:
-            for l in dico:
-                if not l.startswith("%%") and not l.startswith("#"):
-                    split = l.split()
-                    word = split[0].strip().encode("utf-8")
-                    frequency = int(split[1].strip())
-                    self.words[word] = frequency
-        
-        self.unknowns =  collections.defaultdict(int)
-        print "Total number of words in dictionary: %i"%(len(self.words))
-      
-               
-    def spellcheck(self, word, correct=False):
-        isKnown = self.isWord(word)
-        correction = self.correct(word) if not isKnown and correct else word
-        if not isKnown:
-            self.unknowns[(word,correction if correction!= word else "?")] += 1
-        return word
-
-    def isWord(self, word):
-        wlow = word.lower()
-        return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
-    
-    
-    def getWords(self):
-        return self.words
-    
-    def getUnknowns(self):
-        return sorted(self.unknowns.keys(), key=lambda x :self.unknowns[x], 
-                      reverse=True)
-
-
-    def correct(self, word):
-        if "ii" in word:
-            replace = word.replace("ii", "ll")
-            if self.isWord(replace):
-                return replace
-        elif word[0] == "l":
-            replace = "I" + word[1:]
-            if self.isWord(replace):
-                return replace
-        elif "i" in word:
-            replaces = []
-            for i in range(0, len(word)):
-                c = word[i]
-                if c == 'i':
-                    replace = word[:i] + "l" + word[i+1:]
-                    if self.isWord(replace):
-                        replaces.append(replace)
-            if replaces:
-                return max(replaces, key= lambda x : self.words[x])
-        elif "l" in word:
-            replaces = []
-            for i in range(0, len(word)):
-                c = word[i]
-                if c == 'l':
-                    iletter = "i" if word[:i].islower() or word[i+1:].islower() else "I"
-                    replace = word[:i] + iletter + word[i+1:]
-                    if self.isWord(replace):
-                        replaces.append(replace)
-            if replaces:
-                return max(replaces, key= lambda x : self.words[x])
-        return word
-            
-
-
-class FrenchDictionary(Dictionary):
-    
-    def __init__(self):
-        Dictionary.__init__(self, "fr")
-        self.no_accents = {}
-        for w in self.words:
-            stripped = remove_accents(w)
-            if (not self.no_accents.has_key(stripped) or 
-                self.words[w] > self.words[self.no_accents[stripped]]):
-                self.no_accents[stripped] = w
-    
-    def correct(self, word):
-        word = Dictionary.correct(self, word) 
-        if not self.isWord(word):
-            no_accent = remove_accents(word)
-            if self.no_accents.has_key(no_accent):
-                return self.no_accents[no_accent]
-        return word
-
-
-class EnglishDictionary(Dictionary):
-    
-    def __init__(self):
-        Dictionary.__init__(self, "en") 
-        
-    def correct(self, word):
-        word = Dictionary.correct(self, word) 
-        if word.endswith("in") and self.isWord(word + "g"):
-            return word + "g"
-        return word       
-        
         
 
 class MosesAlignment(AlignedDocs):
@@ -417,7 +301,7 @@ class MultiAlignedDocs(AlignedDocs):
                         for i in range(0, nbTranslations)]
         
    
-        for document in sorted(self.bitext.keys(),key=lambda x: docOrder(x)):
+        for document in sorted(self.bitext.keys()):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     for i in range(0, len(altFiles)):
@@ -577,7 +461,15 @@ class XCESCorpus(AlignedDocs):
             for s in root:
                 if s.tag == 's':
                     lineId = int(s.attrib["id"])
-                    lines[lineId] = getLine(s)
+                    wordList = []
+                    toProcess = s.getchildren()
+                    while len(toProcess) > 0:
+                        w = toProcess.pop()
+                        if w.tag == 'w' and w.text != None:
+                            wordList.append(w.text.strip())
+                        else:
+                            toProcess.update(w.getchildren())      
+                        lines[lineId] = " ".join(wordList)
             tarFile.close()
             linesList = []
             for i in range(1, max(lines.keys())+1):
@@ -626,25 +518,135 @@ class XCESCorpus(AlignedDocs):
             os.remove(tarPath)
         print "Tar files rezipped"
         
-             
-def getLine(xmlChunk):
-    wordList = []
-    for w in xmlChunk:
-        if w.tag == 'w' and w.text != None:
-            wordList.append(w.text.strip())
+       
+class Dictionary():
+      
+    def __init__(self, lang):
+        self.lang = lang
+        dicFile = "./data/" + lang + ".dic"
+        if os.path.dirname(__file__):
+            dicFile = os.path.dirname(__file__) + "/" + dicFile
+        if not os.path.exists(dicFile):
+            raise RuntimeError("Dictionary " + dicFile + " cannot be found")
+        self.words = collections.defaultdict(int)
+        with codecs.open(dicFile, encoding='utf-8') as dico:
+            for l in dico:
+                if not l.startswith("%%") and not l.startswith("#"):
+                    split = l.split()
+                    word = split[0].strip().encode("utf-8")
+                    frequency = int(split[1].strip())
+                    self.words[word] = frequency
+        
+        self.unknowns =  collections.defaultdict(int)
+        print "Total number of words in dictionary: %i"%(len(self.words))
+      
+               
+    def spellcheck(self, word, correct=False):
+        isKnown = self.isWord(word)
+        correction = self.correct(word) if not isKnown and correct else word
+        if not isKnown:
+            self.unknowns[(word,correction if correction!= word else "?")] += 1
+        return word
+
+    def isWord(self, word):
+        wlow = word.lower()
+        return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
+    
+    
+    def getWords(self):
+        return self.words
+    
+    def getUnknowns(self):
+        return sorted(self.unknowns.keys(), key=lambda x :self.unknowns[x], 
+                      reverse=True)
+        
+        
+    def getNbOccurrences(self, word):
+        wlow = word.lower()
+        if wlow in self.words:
+            return self.words[wlow]
+        elif re.sub(r"['-]","",wlow):
+            return self.words[re.sub(r"['-]","",wlow)]
         else:
-            wordList.append(getLine(w))                    
-    return " ".join(wordList)
+            return 0
 
 
-def docOrder(path):
-    year = int(path.split("/")[1])
-    number = path.split("/")[2]
-    result = year*1000000000
-    for i in range(0, min(6,len(number))):
-        result += ord(number[i])*(100000/math.pow(10,i))
-    return result
-   
+    def correct(self, word):
+        if "ii" in word:
+            replace = word.replace("ii", "ll")
+            if self.isWord(replace):
+                return replace
+        elif word[0] == "l":
+            replace = "I" + word[1:]
+            if self.isWord(replace):
+                return replace
+        elif "i" in word:
+            replaces = []
+            for i in range(0, len(word)):
+                c = word[i]
+                if c == 'i':
+                    replace = word[:i] + "l" + word[i+1:]
+                    if self.isWord(replace):
+                        replaces.append(replace)
+            if replaces:
+                return max(replaces, key= lambda x : self.getNbOccurrences(x))
+        elif "l" in word:
+            replaces = []
+            for i in range(0, len(word)):
+                c = word[i]
+                if c == 'l':
+                    iletter = "i" if word[:i].islower() or word[i+1:].islower() else "I"
+                    replace = word[:i] + iletter + word[i+1:]
+                    if self.isWord(replace):
+                        replaces.append(replace)
+            if replaces:
+                return max(replaces, key= lambda x : self.words[x])
+        return word
+            
+
+
+class FrenchDictionary(Dictionary):
+    
+    def __init__(self):
+        Dictionary.__init__(self, "fr")
+        self.no_accents = {}
+        for w in self.words:
+            stripped = remove_accents(w)
+            if (not self.no_accents.has_key(stripped) or 
+                self.words[w] > self.words[self.no_accents[stripped]]):
+                self.no_accents[stripped] = w
+    
+    def correct(self, word):
+        word = Dictionary.correct(self, word) 
+        if not self.isWord(word):
+            no_accent = remove_accents(word)
+            if self.no_accents.has_key(no_accent):
+                return self.no_accents[no_accent]
+        return word
+
+
+class EnglishDictionary(Dictionary):
+    
+    def __init__(self):
+        Dictionary.__init__(self, "en") 
+        
+    def correct(self, word):
+        word = Dictionary.correct(self, word) 
+        if word.endswith("in") and self.isWord(word + "g"):
+            return word + "g"
+        return word       
+        
+
+def createDictionary(lang):
+    if lang == "fr":
+        return FrenchDictionary()
+    elif lang == "en":
+        return EnglishDictionary()
+    else:
+        return Dictionary(lang)
+    
+            
+
     
     
 def normalise(line):
@@ -687,6 +689,7 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         baseStem = xcesFile.replace(".xml", "")
         
+        corpus.spellcheck(True)
         train, tune, devAndTest = corpus.divideData()
         dev, test = devAndTest.splitData()
         
