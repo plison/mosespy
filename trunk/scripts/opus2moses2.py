@@ -114,13 +114,13 @@ class AlignedDocs(object):
                 newSrcWords = []
                 newTrgWords = []
                 for w in srcLine.split():
-                    if not w[0].isalpha() or w in trgLine:
+                    if not w[0].isalpha() or w in trgLine or not srcDic:
                         newSrcWords.append(w)
                     else:
                         corrected = srcDic.spellcheck(w, correct)
                         newSrcWords.append(corrected)
                 for w in trgLine.split():
-                    if not w[0].isalpha() or w in srcLine:
+                    if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
                         corrected = trgDic.spellcheck(w, correct)
@@ -645,8 +645,8 @@ def strip(word):
 if __name__ == '__main__':
   
     if len(sys.argv) < 2:
-        print ("Usage: opus2moses2.py  XCESFile "
-              + "[{file with source unigrams} {file with target unigrams}]")
+        print ("Usage: opus2moses2.py  XCESFile " 
+              + "[-s file_with_source_unigrams] [-t file_with_target_unigrams]")
         
     else:  
         xcesFile = sys.argv[1]
@@ -654,10 +654,13 @@ if __name__ == '__main__':
         corpus = XCESCorpus(xcesFile)
         baseStem = xcesFile.replace(".xml", "")
         
-        if len(sys.argv) == 4:
-            srcDic = Dictionary(sys.argv[2])
-            trgDic = Dictionary(sys.argv[3])
-            corpus.spellcheck(srcDic, trgDic)
+        srcDic, trgDic = None, None
+        for i in range(2, len(sys.argv)):
+            if sys.argv[i]=="-s":
+                srcDic =Dictionary(sys.argv[i+1])
+            elif sys.argv[i] =="t":
+                trgDic =Dictionary(sys.argv[i+1])
+        corpus.spellcheck(srcDic, trgDic)
             
         train, tune, devAndTest = corpus.divideData()
         dev, test = devAndTest.splitData()
