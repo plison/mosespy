@@ -146,8 +146,8 @@ class AlignedDocs(object):
                 srcCorrsMap = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in srcCorrs]
                 srcDump.write("\n".join(srcCorrsMap))
             with open("corrections."+self.targetLang, 'w') as trgDump:
-                trgCorrs = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in trgCorrs]
-                trgDump.write("\n".join(trgCorrs))
+                trgCorrsMap = ["%s -> %s"%(p1,p2 if p1!=p2 else "?") for (p1,p2) in trgCorrs]
+                trgDump.write("\n".join(trgCorrsMap))
             
         
     def generateMosesFiles(self, stem):
