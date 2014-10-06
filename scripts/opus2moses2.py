@@ -282,6 +282,7 @@ class Dictionary():
                         replaces.append(replace)
             if replaces:
                 return max(replaces, key= lambda x : self.words[x])
+        return word
             
 
 
