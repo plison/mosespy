@@ -147,13 +147,13 @@ class AlignedDocs(object):
                     if not w[0].isalpha() or w in trgLine or not srcDic:
                         newSrcWords.append(w)
                     else:
-                        corrected = srcDic.spellcheck(w, correct)
+                        corrected = srcDic.spellcheck(w)
                         newSrcWords.append(corrected if correct else w)
                 for w in trgLine.split():
                     if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
-                        corrected = trgDic.spellcheck(w, correct)
+                        corrected = trgDic.spellcheck(w)
                         newSrcWords.append(corrected if correct else w)
                         
                 bitextdoc[i] = (" ".join(newSrcWords),
