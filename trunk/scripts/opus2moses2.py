@@ -57,11 +57,8 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
-from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata, string, time, threading
-from Queue import Queue
-from threading import Thread
+import codecs, random, unicodedata, string
 import xml.etree.cElementTree as etree
 
 
