@@ -555,7 +555,7 @@ class XCESCorpus(AlignedDocs):
        
 class Dictionary():
       
-    def __init__(self, dicFile, correctAccents=False):
+    def __init__(self, dicFile):
         if not os.path.exists(dicFile):
             raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
         self.words = collections.defaultdict(int)
@@ -571,7 +571,7 @@ class Dictionary():
         print "Total number of words in dictionary: %i"%(len(self.words))
         
         self.no_accents = {}
-        if correctAccents:
+        if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(self.words.keys()[0:100])):
             for w in self.words:
                 stripped = strip(w)
                 if (not self.no_accents.has_key(stripped) or 
