@@ -139,8 +139,8 @@ class AlignedDocs(object):
         srcCorrs = srcDic.getCorrections() if srcDic else []
         trgCorrs = trgDic.getCorrections() if trgDic else []
         print ("Number of spellcheck corrections: %i in source and %i in target"
-               %(sum([srcDic.corrections[i] for i in srcCorrs]), 
-                 sum([trgDic.corrections[i] for i in trgCorrs])))
+               %(sum([srcDic.corrections[(i,j)] for (i,j) in srcCorrs if j!="?"]),
+                 sum([trgDic.corrections[(i,j)] for (i,j) in srcCorrs if j!="?"])))
         if dumpCorrections:
             with open("corrections."+self.sourceLang, 'w') as srcDump:
                 srcCorrsMap = ["%s -> %s"%(p1,p2) for (p1,p2) in srcCorrs]
