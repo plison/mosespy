@@ -770,7 +770,7 @@ if __name__ == '__main__':
                 dic_source =Dictionary(sys.argv[argi+1])
             elif sys.argv[argi] =="-t":
                 dic_target =Dictionary(sys.argv[argi+1])
-        corpus.spellcheck(dic_source, dic_target)
+  #      corpus.spellcheck(dic_source, dic_target)
 
         # STEP 3: divide bitext into training, tuning, dev and test sets
         train, tune, devAndTest = corpus.divideData()
