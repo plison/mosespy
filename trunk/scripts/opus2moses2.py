@@ -24,12 +24,32 @@
 # =================================================================  
 
 
-"""Module for dividing aligned data into several parts, respectively 
-corresponding to the training, tuning, development and testing set.
+"""Scripts to generate Moses-style bitexts from OPUS alignments (in XCES format), 
+and divide the data into training, tuning, development and test sets.  To run the 
+script, simply use:
+    opus2moses2.py XCES_file [-s unigram_file_for_source] [-t unigram_file_for_target]
 
-NB: many functions in this modules are directly tailored (i.e. hacked)
- for the processing of specific data sets, notably the OpenSubtitles
- corpus from the OPUS database.
+To extract the aligned sentence pairs, the corpus files for each language must be present 
+in the same directory as the XCES_file (in .tar or .tar.gz format). The script will 
+automatically open the relevant tar files and extract their content.
+
+The result of the script will be the following collection of files (written in the
+same directory as the XCES_file):
+ - {XCES_file}.train.{source lang} and {XCES_file}.train.{target lang} correspond
+    to the training set.
+- {XCES_file}.tune.{source lang} and {XCES_file}.tune.{target lang} correspond
+    to the tuning set.
+- {XCES_file}.dev.{source lang} and {XCES_file}.dev.{target lang} correspond
+    to the development set.  If alternative translations are available, 
+    they are generated in new files with suffixes 0,1,2,...
+- {XCES_file}.test.{source lang} and {XCES_file}.test.{target lang} correspond
+    to the held-out test set.  If alternative translations are available, 
+    they are generated in new files with suffixes 0,1,2,...    
+
+The script prunes low-quality alignments from the bitexts, and can also perform
+spell-checking to correct OCR errors. For this spellcheck, a file containing the 
+unigrams for the corresponding language must be provided (each line containing
+the word, a tab space, and a frequency number, as in the Google unigrams).
 
 """
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
@@ -43,10 +63,8 @@ import xml.etree.cElementTree as etree
 
 
 class AlignedDocs(object):
-    """Representation of a set of aligned subtitles, which can be divided into
-    subsets (i.e. training, tuning, development and test sets), and converted
-    into Moses bitext format. 
-    
+    """Representation of a set of aligned documents.
+        
     """
     
     def __init__(self, bitext, sourceLang, targetLang):
@@ -72,6 +90,10 @@ class AlignedDocs(object):
     
     
     def splitData(self):
+        """Splits the AlignedDoc into two AlignedDoc objects, each AlignedDoc 
+        containing half the documents.
+        
+        """
         docIds = list(self.bitext.keys())
         random.shuffle(docIds)
         part1 = extraction(self.bitext, docIds[0:len(docIds)/2])
@@ -86,7 +108,7 @@ class AlignedDocs(object):
         corresponds to the training, tuning and test sets. 
         
         For the test set, alternative translations (in the same directory as 
-        the  documents initially selected) are extracted.
+        the documents initially selected) are extracted.
         
         """
         trainingData = AlignedDocs(self.bitext, self.sourceLang, self.targetLang)
@@ -587,19 +609,19 @@ class Dictionary():
 
 
     def correct(self, word):
-        if "ii" in word:
-            replace = word.replace("ii", "ll")
+        if "ii" in word or "II" in word:
+            replace = re.sub("(ii|II)", "ll", word)
             if self.isWord(replace):
                 return replace
         elif word[0] == "l":
             replace = "I" + word[1:]
             if self.isWord(replace):
                 return replace
-        elif "i" in word:
+        elif "i" in word or "I" in word:
             replaces = []
             for i in range(0, len(word)):
                 c = word[i]
-                if c == 'i':
+                if c == 'i' or c == "I":
                     replace = word[:i] + "l" + word[i+1:]
                     if self.isWord(replace):
                         replaces.append(replace)
