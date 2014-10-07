@@ -97,8 +97,8 @@ class AlignedDocs(object):
         """
         docIds = list(self.bitext.keys())
         random.shuffle(docIds)
-        part1 = extraction(self.bitext, docIds[0:len(docIds)/2])
-        part2 = extraction(self.bitext, docIds[len(docIds)/2:])
+        part1 = extraction(self.bitext, docIds[0:int(len(docIds)/2)])
+        part2 = extraction(self.bitext, docIds[int(len(docIds)/2):])
         return (AlignedDocs(part1, self.sourceLang, self.targetLang),
                 AlignedDocs(part2, self.sourceLang, self.targetLang))
         
