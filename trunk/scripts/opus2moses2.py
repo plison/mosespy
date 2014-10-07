@@ -318,7 +318,7 @@ class MultiAlignedDocs(AlignedDocs):
         invertedDict = {}
         flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.bitext:
-            invertedDict[a] = [(flatten,s) for (s,t) in self.bitext[a]]
+            invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
         invertedDoc = AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
         return MultiAlignedDocs(invertedDoc)
     
