@@ -462,22 +462,23 @@ class XCESCorpus(AlignedDocs):
         
         print("Parsing file " + self.xcesFile)
         bitext = {} 
-        root = etree.parse(self.xcesFile).getroot()
-                        
+        root = etree.parse(self.xcesFile).getroot()          
+        nbDocs = len(root)
         count = 0
+        print("Processing %i aligned documents"%(nbDocs))
+        
         for element in root:
             if element.tag == "linkGrp":
                 fromdoc, alignments = self._readGroup(element)
                 
-                # If the resulting list of alignments is less than two thirds of the
-                # original number of alignments, discard the document
-                if len(alignments) > (2*len(root)/3):
+                if len(alignments) > 0:
                     bitext[fromdoc] = alignments
                 
-                count += 1                                      
-                if not (count % (len(root)/min(100,len(root)))):                    
+                count += 1
+                print("processed groups: %i on a total of %i"%(count, nbDocs))                              
+                if not (count % (nbDocs/min(100,nbDocs))):                    
                     print ("%i aligned files processed (%i %% of %i):"
-                           %(count, (count*100/len(root)), len(root))
+                           %(count, (count*100/nbDocs), nbDocs)
                            + " %i stored and %i discarded." 
                            %(len(bitext), count-len(bitext)))   
 
@@ -496,25 +497,31 @@ class XCESCorpus(AlignedDocs):
         toLines =  self._readDocument(linkGrp.attrib["toDoc"])
                    
         alignmentList = []
-        for link in [l for l in linkGrp if l.tag=='link']:
-            split = link.attrib["xtargets"].split(";")
-            srcLineIndices = [int(i) for i in split[0].strip().split() if len(i)>0]
-            trgLineIndices = [int(i) for i in split[1].strip().split() if len(i)>0]
-                          
-            # Pruning out empty or seriously unbalanced alignments   
-            if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
-                or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
-                continue    
-            try:   
-                sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
-                targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
-            except IndexError:
-                print("alignment error with file %s"%(fromDoc))
-                continue
+        for link in linkGrp:
+            if link.tag == "link":
+                split = link.attrib["xtargets"].split(";")
+                srcLineIndices = [int(i) for i in split[0].strip().split() if len(i)>0]
+                trgLineIndices = [int(i) for i in split[1].strip().split() if len(i)>0]
+                              
+                # Pruning out empty or seriously unbalanced alignments   
+                if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
+                    or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
+                    continue    
+                try:   
+                    sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
+                    targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
+                except IndexError:
+                    print("alignment error with file %s"%(fromDoc))
+                    continue
+                
+                if sourceLine and targetLine:
+                    alignmentList.append((normalise(sourceLine), 
+                                          normalise(targetLine)))
             
-            if sourceLine and targetLine:
-                alignmentList.append((normalise(sourceLine), 
-                                      normalise(targetLine)))
+        # If the resulting list of alignments is less than two thirds of the
+        # original number of alignments, discard the document
+        if len(alignmentList) > (2*len(linkGrp)/3):
+            alignmentList = []
         
         return fromDoc, alignmentList
             
