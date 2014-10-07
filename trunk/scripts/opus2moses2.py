@@ -466,10 +466,8 @@ class XCESCorpus(AlignedDocs):
                     time.sleep(0.01)
                     for queue in list(queues):
                         if not queue.empty():
-                            alignment = queue.get()
-                            if alignment:
-                                bitext[linkGrp.attrib['fromDoc']] = alignment
-                                queues.remove(queue)
+                            bitext[linkGrp.attrib['fromDoc']] = queue.get()
+                            queues.remove(queue)
 
                 resultQueue = Queue()
                 t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
@@ -477,10 +475,14 @@ class XCESCorpus(AlignedDocs):
                 queues.append(resultQueue)
                                 
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
+                nbReals = len([d for d in bitext.keys() if bitext[d]])
                 print ("%i aligned files already processed (%i %% of %i):"
-                       %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot))
-                       + " %i stored and %i discarded."%(len(bitext), (l+1)-len(bitext)))
+                       %(len(bitext), (len(bitext*100/len(self.xmlRoot))), len(self.xmlRoot))
+                       + " %i stored and %i discarded."%(nbReals, len(bitext)-nbReals))
           
+        for d in list(bitext.keys()):
+            if not bitext[d]:
+                del bitext[d]
         print ("Percentage of discarded pairs: %i %%"
                %((len(self.xmlRoot)-len(bitext))*100/len(self.xmlRoot)))
         return bitext
@@ -519,7 +521,7 @@ class XCESCorpus(AlignedDocs):
         if len(alignmentList) > (2*len(linkGrp)/3):
             resultQueue.put(alignmentList)
         else:
-            resultQueue.put(False)
+            resultQueue.put(None)
             
  
     def _extractLines(self, doc): 
