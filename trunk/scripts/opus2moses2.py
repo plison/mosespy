@@ -522,8 +522,8 @@ class XCESCorpus(AlignedDocs):
             offset, size = self.subtitles[doc][1:]
             tarFile.seek(offset,0)
             content = tarFile.read(size)
-            zippedFile = gzip.GzipFile(mode='rb', fileobj=BytesIO(content))
-            root = etree.parse(zippedFile).getroot()
+            zippedFile = gzip.GzipFile(fileobj=BytesIO(content),mode='rb')
+            root = etree.fromstring(zippedFile.read())
             lines = {}
             for s in root:
                 if s.tag == 's':
