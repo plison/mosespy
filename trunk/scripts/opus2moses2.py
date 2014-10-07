@@ -520,10 +520,10 @@ class XCESCorpus(AlignedDocs):
         """
         
         if self.subtitles.has_key(doc):
-            tarFile = open(self.subtitles[doc][0])
+            tarFile = open(self.subtitles[doc][0], 'rb')
             offset, size = self.subtitles[doc][1:]
             tarFile.seek(offset,0)
-            gzippedData = tarFile.read(size, 'rb')
+            gzippedData = tarFile.read(size)
             zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
             root = etree.parse(zippedFile).getroot()
             lines = {}
