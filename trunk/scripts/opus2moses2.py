@@ -614,7 +614,7 @@ class Dictionary():
         with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
-                    split = l.split()
+                    split = l.split().encode("utf-8")
                     word = split[0].strip()
                     frequency = int(split[1].strip())
                     self.words[word] = frequency
@@ -624,7 +624,7 @@ class Dictionary():
         
         self.no_accents = {}
         first_words = list(self.words.keys())[0:100]
-        if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(first_words)):
+        if re.search(r"[\xa8\xa9\xa0\xb9]", b" ".join(first_words).decode("utf-8")):
             print("Creating unaccented version of dictionary " + dicFile)
             for w in self.words:
                 stripped = strip(w)
@@ -739,7 +739,7 @@ def strip(word):
     
     normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
     stripped = normalised.encode("ascii", "replace").lower()
-    stripped= re.sub(r"[\.,;':\-!]", "", stripped)
+    stripped= re.sub(r"[\.,;':\-!]", "", stripped.decode("utf-8"))
     return stripped
    
    
