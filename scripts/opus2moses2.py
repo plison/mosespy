@@ -528,7 +528,7 @@ class ParallelReader():
               
         while len(self.toProcess) > 0:
             linkGrp = self.toProcess.pop()    
-            while threading.activeCount() == (nbThreads + 1):
+            while threading.activeCount() == (nbThreads + 2):
                 time.sleep(0.1)            
             resultQueue = Queue()
             t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
