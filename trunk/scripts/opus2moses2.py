@@ -283,7 +283,7 @@ class MultiAlignedDocs(AlignedDocs):
         
         if len(bitext)== 0:
             return bitext
-        elif isinstance(bitext[bitext.keys()[0]][0][1], list):
+        elif isinstance(bitext[list(bitext.keys())[0]][0][1], list):
             return bitext
 
         correlatedAligns = {}
