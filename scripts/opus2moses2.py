@@ -456,17 +456,99 @@ class XCESCorpus(AlignedDocs):
         
         """       
         print "Extracting alignments"
-        
-        
+        bitext = {}        
         linkGrps = [c for c in self.xmlRoot.getchildren() if c.tag == 'linkGrp']
         
-        pr = ParallelReader(linkGrps, self.subtitles)
-        bitext = pr.extractBitext()
+        for l in range(0, len(linkGrps)):
+            linkGrp = linkGrps[l]
+                 
+            fromdoc, alignments = self._readGroup(linkGrp)
+            
+            # If the resulting list of alignments is less than two thirds of the
+            # original number of alignments, discard the document
+            if len(alignments) > (2*len(linkGrp)/3):
+                bitext[fromdoc] = alignments
+                                                     
+            if not (l % (len(linkGrps)/min(100,len(linkGrps)))):                    
+                len([d for d in bitext.keys() if bitext[d]])
+                print ("%i aligned files processed (%i %% of %i):"
+                       %(l, (l*100/len(linkGrps)), len(linkGrps))
+                       + " %i stored and %i discarded." %(len(bitext), len(bitext)-l))   
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
         return bitext
     
+    
+    
+    def _readGroup(self, linkGrp):
+
+        #Extracting the source and target lines
+        fromDoc = linkGrp.attrib["fromDoc"]
+        fromLines = self._extractLines(fromDoc)
+        toLines =  self._extractLines(linkGrp.attrib["toDoc"])
+                   
+        alignmentList = []
+        for link in [l for l in linkGrp if l.tag=='link']:
+            split = link.attrib["xtargets"].split(";")
+            srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
+            trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
+                          
+            # Pruning out empty or seriously unbalanced alignments   
+            if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
+                or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
+                continue    
+            try:   
+                sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
+                targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
+            except IndexError:
+                print "alignment error with file %s"%(fromDoc)
+                continue
+            
+            if sourceLine and targetLine:
+                alignmentList.append((normalise(sourceLine), 
+                                      normalise(targetLine)))
+        
+        return fromDoc, alignmentList
+            
+ 
+    def _extractLines(self, doc): 
+        """Extracts the list of lines from the document.  The list of 
+        subtitle documents must already be generated  in self.subtitles
+        
+        """
+        
+        if self.subtitles.has_key(doc):
+            tarFile = open(self.subtitles[doc][0])
+            offset, size = self.subtitles[doc][1:]
+            tarFile.seek(offset,0)
+            gzippedData = tarFile.read(size)
+            zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
+            root = etree.parse(zippedFile).getroot()
+            lines = {}
+            for s in root:
+                if s.tag == 's':
+                    lineId = int(s.attrib["id"])
+                    wordList = []
+                    toProcess = s.getchildren()
+                    while len(toProcess) > 0:
+                        w = toProcess.pop()
+                        if w.tag == 'w' and w.text != None:
+                            wordList.append(w.text.strip())
+                        else:
+                            toProcess.extend(w.getchildren())      
+                        lines[lineId] = " ".join(wordList)
+            tarFile.close()
+            linesList = []
+            for i in range(1, max(lines.keys())+1):
+                if lines.has_key(i):
+                    linesList.append(lines[i])
+                else:
+                    print "Missing line number %i in %s"%(i,doc)
+                    linesList.append("")
+            return linesList
+                    
+        raise RuntimeError("could not find file " + doc)
 
 
     def _getRelevantTarFiles(self, maxNbLines=10):
@@ -508,135 +590,7 @@ class XCESCorpus(AlignedDocs):
             os.remove(tarPath)
         print "Tar files rezipped"
         
-        
-        
-class ParallelReader():
-    
-    def __init__(self, linkGrps, subtitles):
-
-        self.subtitles = subtitles
-        self.toProcess = list(linkGrps)
-
-        self.queues = []
-        self.bitext = {}
-        
-        self.queueMonitor = Thread(target=self.monitor)
-        self.queueMonitor.start()
-  
-
-    def extractBitext(self, nbThreads = 16):
-              
-        while len(self.toProcess) > 0:
-            linkGrp = self.toProcess.pop()    
-            while threading.activeCount() == (nbThreads + 2):
-                time.sleep(0.1)            
-            resultQueue = Queue()
-            t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
-            t.start()
-            self.queues.append(resultQueue)
-
-        self.queueMonitor.join()
-        return self.bitext
-        
-        
-    def monitor(self):
-        
-        totalGrps = len(self.toProcess)
-        nbProcessed = 0
-        while len(self.toProcess) > 0 or len(self.queues) > 0:
-            finishedQueues = [q for q in self.queues if not q.empty()]
-            for finished in finishedQueues:
-                result = finished.get()
-                if result:
-                    self.bitext[result[0]] = result[1]
-                nbProcessed += 1
-                self.queues.remove(finished)
-                
-                if not (nbProcessed % (totalGrps/min(100,totalGrps))):
-                    print ("%i aligned files processed (%i %% of %i):"
-                           %(nbProcessed, (nbProcessed*100/totalGrps), totalGrps)
-                           + " %i stored and %i discarded."
-                           %(len(self.bitext), nbProcessed-len(self.bitext))) 
-                 
-            time.sleep(0.1)
-        
-    
-    def _readGroup(self, linkGrp, resultQueue):
-
-        #Extracting the source and target lines
-        fromDoc = linkGrp.attrib["fromDoc"]
-        print "start reading " + fromDoc
-        fromLines = self._readDocument(fromDoc)
-        toLines =  self._readDocument(linkGrp.attrib["toDoc"])
-                   
-        alignmentList = []
-        for link in [l for l in linkGrp if l.tag=='link']:
-            split = link.attrib["xtargets"].split(";")
-            srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
-            trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
-                          
-            # Pruning out empty or seriously unbalanced alignments   
-            if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
-                or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
-                continue    
-            try:   
-                sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
-                targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
-            except IndexError:
-                print "alignment error with file %s"%(fromDoc)
-                continue
-            
-            if sourceLine and targetLine:
-                alignmentList.append((normalise(sourceLine), 
-                                      normalise(targetLine)))
-        
-        # If the resulting list of alignments is less than two thirds of the
-        # original number of alignments, discard the document
-        if len(alignmentList) > (2*len(linkGrp)/3):
-            resultQueue.put((fromDoc,alignmentList))
-        else:
-            resultQueue.put(None)
-        print "finished reading " + fromDoc
-            
- 
-    def _readDocument(self, doc): 
-        """Extracts the list of lines from the document.  The list of 
-        subtitle documents must already be generated  in self.subtitles
-        
-        """
-        
-        if self.subtitles.has_key(doc):
-            tarFile = open(self.subtitles[doc][0])
-            offset, size = self.subtitles[doc][1:]
-            tarFile.seek(offset,0)
-            gzippedData = tarFile.read(size)
-            zippedFile = gzip.GzipFile(fileobj=BytesIO(gzippedData))
-            root = etree.parse(zippedFile).getroot()
-            lines = {}
-            for s in root:
-                if s.tag == 's':
-                    lineId = int(s.attrib["id"])
-                    wordList = []
-                    toProcess = s.getchildren()
-                    while len(toProcess) > 0:
-                        w = toProcess.pop()
-                        if w.tag == 'w' and w.text != None:
-                            wordList.append(w.text.strip())
-                        else:
-                            toProcess.extend(w.getchildren())      
-                        lines[lineId] = " ".join(wordList)
-            tarFile.close()
-            linesList = []
-            for i in range(1, max(lines.keys())+1):
-                if lines.has_key(i):
-                    linesList.append(lines[i])
-                else:
-                    print "Missing line number %i in %s"%(i,doc)
-                    linesList.append("")
-            return linesList
-                    
-        raise RuntimeError("could not find file " + doc)
-      
+       
 class Dictionary():
     """Representation of a dictionary containing a list of words for a given 
     language along with their unigram frequencies. The dictionary is used
