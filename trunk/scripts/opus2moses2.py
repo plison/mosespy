@@ -428,7 +428,7 @@ class XCESCorpus(AlignedDocs):
                 os.remove(tarPath)
                 tarPath = unzipped.name
             
-            tarFile = tarfile.open(tarPath, 'rb') 
+            tarFile = tarfile.open(tarPath, 'r') 
             opened = open(tarPath, 'rb')
             mmapped = mmap.mmap(opened.fileno(),0, access=mmap.ACCESS_READ)         
             for tari in tarFile:
