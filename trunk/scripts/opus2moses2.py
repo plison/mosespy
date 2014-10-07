@@ -517,7 +517,7 @@ class XCESCorpus(AlignedDocs):
         
         """
         
-        if self.subtitles.has_key(doc):
+        if doc in self.subtitles:
             tarFile = open(self.subtitles[doc][0], 'rb')
             offset, size = self.subtitles[doc][1:]
             tarFile.seek(offset,0)
@@ -540,7 +540,7 @@ class XCESCorpus(AlignedDocs):
             tarFile.close()
             linesList = []
             for i in range(1, max(lines.keys())+1):
-                if lines.has_key(i):
+                if i in lines:
                     linesList.append(lines[i])
                 else:
                     print("Missing line number %i in %s"%(i,doc))
@@ -622,7 +622,7 @@ class Dictionary():
         if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(self.words.keys()[0:100])):
             for w in self.words:
                 stripped = strip(w)
-                if (not self.no_accents.has_key(stripped) or 
+                if (stripped not in self.no_accents or 
                     self.words[w] > self.words[self.no_accents[stripped]]):
                     self.no_accents[stripped] = w
       
@@ -704,7 +704,7 @@ class Dictionary():
         # Wrong accents
         if self.no_accents and not self.isWord(word):
             no_accent = strip(word)
-            if self.no_accents.has_key(no_accent):
+            if no_accent in self.no_accents:
                 return self.no_accents[no_accent]
         
         # correcting errors such as "entertainin" --> "entertaining"
