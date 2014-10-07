@@ -57,8 +57,9 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
+from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata, string
+import codecs, random, unicodedata, string,mmap
 import xml.etree.cElementTree as etree
 
 
@@ -427,12 +428,13 @@ class XCESCorpus(AlignedDocs):
                 os.remove(tarPath)
                 tarPath = unzipped.name
             
-            tarFile = tarfile.open(tarPath, 'r')          
+            tarFile = tarfile.open(tarPath, 'r') 
+            mmapped = mmap.mmap(open(tarPath), access=mmap.ACCESS_READ)         
             for tari in tarFile:
                 if not tari.issym():
                     tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
                                            tari.name.find("/"+self.targetLang+"/"))+1:]
-                    subtitles[tarkey] = tarPath,tari.offset_data, tari.size
+                    subtitles[tarkey] = mmapped,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
@@ -520,8 +522,8 @@ class XCESCorpus(AlignedDocs):
             tarFile = open(self.subtitles[doc][0], 'rb')
             offset, size = self.subtitles[doc][1:]
             tarFile.seek(offset,0)
-            tarFile.truncate(size)
-            zippedFile = gzip.GzipFile(fileobj=tarFile)
+            content = tarFile.read(size)
+            zippedFile = gzip.GzipFile(fileobj=BytesIO(content))
             root = etree.parse(zippedFile).getroot()
             lines = {}
             for s in root:
