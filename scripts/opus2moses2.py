@@ -612,16 +612,16 @@ class Dictionary():
         
         mappings = [("ii", "ll"), ("II", "ll"), ("l", "I"), ("i", "l"), ("I", "l"), ("l", "i")]
         
+        replaces = []
         for m in mappings:
-            replaces = []
             matches = re.finditer(r"(?=%s)"%(m[0]), word)
             for match in matches:
                 pos = match.start()
                 replace = word[:pos] + m[1] + word[pos+len(m[0]):]
                 if self.isWord(replace):
                     replaces.append(replace)
-            if replaces:
-                return max(replaces, key= lambda x : self.getNbOccurrences(x)) 
+        if replaces:
+            return max(replaces, key= lambda x : self.getNbOccurrences(x)) 
       
         if word.endswith("in") and self.isWord(word + "g"):
             return word + "g"
