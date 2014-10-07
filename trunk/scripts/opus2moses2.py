@@ -537,7 +537,7 @@ class XCESCorpus(AlignedDocs):
                     wordList = []
                     toProcess = s.getchildren()
                     while len(toProcess) > 0:
-                        w = toProcess.pop()
+                        w = toProcess.pop(0)
                         if w.tag == 'w' and w.text != None:
                             wordList.append(w.text.strip())
                         else:
