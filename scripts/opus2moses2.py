@@ -610,7 +610,7 @@ class Dictionary():
             raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
         self.dicFile = dicFile
         self.words = collections.defaultdict(int)
-        with open(dicFile) as dico:
+        with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
                     split = l.split()
@@ -622,8 +622,9 @@ class Dictionary():
         print("Total number of words in dictionary: %i"%(len(self.words)))
         
         self.no_accents = {}
-        print(list(self.words.keys())[0:100])
-        if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(list(self.words.keys())[0:100])):
+        first_words = list(self.words.keys())[0:100]
+        print(first_words)
+        if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(first_words)):
             for w in self.words:
                 stripped = strip(w)
                 if (stripped not in self.no_accents or 
