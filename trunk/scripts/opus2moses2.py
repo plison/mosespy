@@ -469,9 +469,9 @@ class XCESCorpus(AlignedDocs):
                                                      
             if not (l % (len(linkGrps)/min(100,len(linkGrps)))):                    
                 print ("%i aligned files processed (%i %% of %i):"
-                       %(l, (l*100/len(linkGrps)), len(linkGrps))
+                       %((l+1), ((l+1)*100/len(linkGrps)), len(linkGrps))
                        + " %i stored and %i discarded." 
-                       %(len(bitext), l-len(bitext)))   
+                       %(len(bitext), (l+1)-len(bitext)))   
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
@@ -687,7 +687,8 @@ class Dictionary():
         """
         
         # OCR errors
-        mappings = [("ii", "ll"), ("II", "ll"), ("l", "I"), ("i", "l"), ("I", "l"), ("l", "i")]
+        mappings = [("ii", "ll"), ("II", "ll"), ("l", "I"), 
+                    ("i", "l"), ("I", "l"), ("l", "i")]
         
         replaces = []
         for m in mappings:
