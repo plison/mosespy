@@ -468,10 +468,10 @@ class XCESCorpus(AlignedDocs):
             t.start()
             queues.append(resultQueue)
                                            
-            if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
+            if not (l % (len(linkGrps)/min(100,len(linkGrps)))):
                 nbReals = len([d for d in bitext.keys() if bitext[d]])
                 print ("%i aligned files already processed (%i %% of %i):"
-                       %(len(bitext), (len(bitext)*100/len(self.xmlRoot)), len(self.xmlRoot))
+                       %(len(bitext), (len(bitext)*100/len(linkGrps)), len(linkGrps))
                        + " %i stored and %i discarded."%(nbReals, len(bitext)-nbReals))              
 
             while len(queues) == nbThreads:
