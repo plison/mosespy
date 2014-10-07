@@ -665,7 +665,7 @@ class Dictionary():
     
     def dumpCorrections(self):
         """Dumps the corrections to a file named {dictionary file}.corrections."""
-        with open(self.dicFile +".corrections") as dump:
+        with open(self.dicFile +".corrections", 'w') as dump:
             dump.write("\n".join(["%s -> %s"%(p1,p2) for (p1,p2) in self.corrections]))
 
             
