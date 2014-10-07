@@ -611,10 +611,10 @@ class Dictionary():
             raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
         self.dicFile = dicFile
         self.words = collections.defaultdict(int)
-        with codecs.open(dicFile, encoding='utf-8') as dico:
+        with open(dicFile) as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
-                    split = l.split().encode("utf-8")
+                    split = l.split()
                     word = split[0].strip()
                     frequency = int(split[1].strip())
                     self.words[word] = frequency
@@ -624,7 +624,7 @@ class Dictionary():
         
         self.no_accents = {}
         first_words = list(self.words.keys())[0:100]
-        if re.search(r"[\xa8\xa9\xa0\xb9]", b" ".join(first_words).decode("utf-8")):
+        if re.search(r"[\xa8\xa9\xa0\xb9]", b" ".join(first_words)):
             print("Creating unaccented version of dictionary " + dicFile)
             for w in self.words:
                 stripped = strip(w)
@@ -653,7 +653,7 @@ class Dictionary():
         and false otherwise.
         
         """
-        wlow = word.decode("utf-8").lower().encode("utf-8")
+        wlow = word.lower()
         return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
     
 
@@ -676,7 +676,7 @@ class Dictionary():
   
     def getFrequency(self, word):
         """Returns the frequency of the word in the dictionary."""
-        wlow = word.decode("utf-8").lower().encode("utf-8")
+        wlow = word.lower()
         if wlow in self.words:
             return self.words[wlow]
         elif re.sub(r"['-]","",wlow):
@@ -731,15 +731,15 @@ def normalise(line):
     line = re.sub(r"\<(S|UNK|\/S)\>", "", line)
     line = re.sub(r"\[\s*and\s*\]", "", line)
     line = re.sub(r"\|", "_", line)
-    return (line + "\n").encode('utf-8')
+    return (line + "\n")
             
         
 def strip(word):
     """Strips the word of accents and punctuation."""
     
-    normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
+    normalised = unicodedata.normalize('NFKD',word)
     stripped = normalised.encode("ascii", "replace").lower()
-    stripped= re.sub(r"[\.,;':\-!]", "", stripped.decode("utf-8"))
+    stripped= re.sub(r"[\.,;':\-!]", "", stripped)
     return stripped
    
    
