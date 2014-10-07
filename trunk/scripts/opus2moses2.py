@@ -316,19 +316,9 @@ class MultiAlignedDocs(AlignedDocs):
         """Inverts the bitext (source becomes target and vice versa)."""
         
         invertedDict = {}
-        def flatten(x):
-            if isinstance(x,list):
-                if len(x) == 0:
-                    return ""
-                return x[0]
-            else:
-                return x
+        flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.bitext:
-            invertedDict[a] = []
-            for (s,t) in self.bitext[a]:
-                print("Aligned pair: " + str((s,t)))
-                invertedDict[a].append((flatten(t),s))
-            invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
+            invertedDict[a] = [(flatten,s) for (s,t) in self.bitext[a]]
         invertedDoc = AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
         return MultiAlignedDocs(invertedDoc)
     
@@ -780,11 +770,11 @@ if __name__ == '__main__':
                 dic_source =Dictionary(sys.argv[argi+1])
             elif sys.argv[argi] =="-t":
                 dic_target =Dictionary(sys.argv[argi+1])
-        corpus.spellcheck(dic_source, dic_target)
+    #    corpus.spellcheck(dic_source, dic_target)
 
         # STEP 3: divide bitext into training, tuning, dev and test sets
         train, tune, devAndTest = corpus.divideData()
-        dev, test = devAndTest.splitData()
+  #      dev, test = devAndTest.splitData()
         
         # STEP 4: remove existing files
         for inDir in os.listdir(os.path.dirname(baseStem)):
@@ -794,11 +784,11 @@ if __name__ == '__main__':
         # STEP 5: generates Moses-files for each set
         train.generateMosesFiles(baseStem + ".train")
         tune.generateMosesFiles(baseStem + ".tune")
-        dev.generateMosesFiles(baseStem + ".dev")
-        test.generateMosesFiles(baseStem+ ".test")
-        devInv = dev.getInverse()
-        devInv.generateMosesFiles(baseStem + ".dev")
-        testInv = test.getInverse()
-        testInv.generateMosesFiles(baseStem + ".test")
+ #       dev.generateMosesFiles(baseStem + ".dev")
+ #       test.generateMosesFiles(baseStem+ ".test")
+ #       devInv = dev.getInverse()
+ #       devInv.generateMosesFiles(baseStem + ".dev")
+ #       testInv = test.getInverse()
+ #       testInv.generateMosesFiles(baseStem + ".test")
 
 
