@@ -429,7 +429,7 @@ class XCESCorpus(AlignedDocs):
                 tarPath = unzipped.name
             
             tarFile = tarfile.open(tarPath, 'r') 
-            mmapped = mmap.mmap(open(tarPath).fileno(), access=mmap.ACCESS_READ)         
+            mmapped = mmap.mmap(open(tarPath).fileno(),0, access=mmap.ACCESS_READ)         
             for tari in tarFile:
                 if not tari.issym():
                     tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
