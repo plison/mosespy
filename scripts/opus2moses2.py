@@ -610,7 +610,7 @@ class Dictionary():
             raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
         self.dicFile = dicFile
         self.words = collections.defaultdict(int)
-        with codecs.open(dicFile, encoding='utf-8') as dico:
+        with open(dicFile) as dico:
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
                     split = l.split()
