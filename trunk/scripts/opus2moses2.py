@@ -774,7 +774,7 @@ if __name__ == '__main__':
 
         # STEP 3: divide bitext into training, tuning, dev and test sets
         train, tune, devAndTest = corpus.divideData()
-        dev, test = devAndTest.splitData()
+ #       dev, test = devAndTest.splitData()
         
         # STEP 4: remove existing files
         for inDir in os.listdir(os.path.dirname(baseStem)):
