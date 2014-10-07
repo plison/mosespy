@@ -185,8 +185,8 @@ class AlignedDocs(object):
         print ("Generating bitexts %s.%s -> %s.%s"
                %(stem, self.sourceLang, stem, self.targetLang))
         
-        srcFile = open(stem+"." + self.sourceLang, 'w')
-        trgFile = open(stem + "." + self.targetLang, 'w')
+        srcFile = codecs.open(stem+"." + self.sourceLang, 'w', encoding="utf-8")
+        trgFile = codecs.open(stem + "." + self.targetLang, 'w', encoding="utf-8")
              
         for document in sorted(self.bitext.keys()):
             for pair in self.bitext[document]:
@@ -356,22 +356,21 @@ class MultiAlignedDocs(AlignedDocs):
         AlignedDocs.generateMosesFiles(self, stem)
         
         nbTranslations = self.getNbAlternativeTranslations()
+        if nbTranslations == 1:
+            return
+
         print("Generating %i alternative translations"%(nbTranslations))
-  
-        altFiles = []
-        if nbTranslations > 1:      
-            altFiles = [open((stem + "." + self.targetLang + str(i)), 'w')
-                        for i in range(0, nbTranslations)]
+        files = [codecs.open((stem+"."+self.targetLang +str(i)),'w', encoding="utf-8")
+                 for i in range(0, nbTranslations)]
         
-   
         for document in sorted(self.bitext.keys()):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
-                    for i in range(0, len(altFiles)):
+                    for i in range(0, len(files)):
                         altLine = pair[1][i] if i < len(pair[1]) else ""
-                        altFiles[i].write(altLine + "\n")
+                        files[i].write(altLine + "\n")
         
-        for altFile in altFiles:
+        for altFile in files:
             altFile.close()
 
 
