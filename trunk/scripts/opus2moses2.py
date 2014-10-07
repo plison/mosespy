@@ -623,8 +623,8 @@ class Dictionary():
         
         self.no_accents = {}
         first_words = list(self.words.keys())[0:100]
-        print(first_words)
-        if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(first_words)):
+        if re.search(r"[\xa8\xa9\xa0\xb9]", b" ".join(first_words)):
+            print("Creating unaccented version of dictionary " + dicFile)
             for w in self.words:
                 stripped = strip(w)
                 if (stripped not in self.no_accents or 
