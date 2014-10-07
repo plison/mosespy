@@ -58,7 +58,8 @@ __license__ = 'MIT License'
 __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
-import  os, math, sys, re, collections, tarfile, gzip, codecs, random, unicodedata, string
+import  os, math, sys, re, collections, tarfile, gzip
+import codecs, random, unicodedata, string, Queue
 import xml.etree.cElementTree as etree
 
 
@@ -457,38 +458,12 @@ class XCESCorpus(AlignedDocs):
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                todoc = linkGrp.attrib['fromDoc']
-                
-                #Extracting the source and target lines
-                fromLines = self._extractLines(todoc)
-                toLines =  self._extractLines(linkGrp.attrib['toDoc'])
-                           
-                alignmentList = []
-                for link in linkGrp:
-                    if link.tag == 'link':
-                        split = link.attrib["xtargets"].split(";")
-                        srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
-                        trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
-                                      
-                        # Pruning out empty or seriously unbalanced alignments   
-                        if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
-                            or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
-                            continue    
-                        try:   
-                            sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
-                            targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
-                        except IndexError:
-                            print "alignment error with file %s"%(todoc)
-                            continue
-                        
-                        if sourceLine and targetLine:
-                            alignmentList.append((normalise(sourceLine), 
-                                                  normalise(targetLine)))
-                
-                # If the resulting list of alignments is less than two thirds of the
-                # original number of alignments, discard the document
-                if len(alignmentList) > (2*len(linkGrp)/3):
-                    bitext[todoc] = alignmentList
+                fromdoc = linkGrp.attrib['fromDoc']
+                resultQueue = Queue.Queue()
+                self._readGroup(linkGrp, resultQueue)
+                alignment = resultQueue.get()
+                if alignment:
+                    bitext[fromdoc] = alignment
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i):"
@@ -498,7 +473,43 @@ class XCESCorpus(AlignedDocs):
         print ("Percentage of discarded pairs: %i %%"
                %((len(self.xmlRoot)-len(bitext))*100/len(self.xmlRoot)))
         return bitext
+    
+    
+    
+    def _readGroup(self, linkGrp, resultQueue):
 
+        #Extracting the source and target lines
+        fromLines = self._extractLines(linkGrp["fromDoc"])
+        toLines =  self._extractLines(linkGrp["toDoc"])
+                   
+        alignmentList = []
+        for link in [l for l in linkGrp if l.tag=='link']:
+            split = link.attrib["xtargets"].split(";")
+            srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
+            trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
+                          
+            # Pruning out empty or seriously unbalanced alignments   
+            if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
+                or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
+                continue    
+            try:   
+                sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
+                targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
+            except IndexError:
+                print "alignment error with file %s"%(linkGrp["fromDoc"])
+                continue
+            
+            if sourceLine and targetLine:
+                alignmentList.append((normalise(sourceLine), 
+                                      normalise(targetLine)))
+        
+        # If the resulting list of alignments is less than two thirds of the
+        # original number of alignments, discard the document
+        if len(alignmentList) > (2*len(linkGrp)/3):
+            resultQueue.put(alignmentList)
+        else:
+            resultQueue.put(False)
+            
  
     def _extractLines(self, doc): 
         """Extracts the list of lines from the document.  The list of 
