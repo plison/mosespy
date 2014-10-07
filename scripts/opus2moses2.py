@@ -460,25 +460,26 @@ class XCESCorpus(AlignedDocs):
         queues = []
         
         linkGrps = [c for c in self.xmlRoot.getchildren() if c.tag == 'linkGrp']
-        for linkGrp in linkGrps: 
-            
+        
+        for l in range(0, len(linkGrps)):
+            linkGrp = linkGrps[l]
             resultQueue = Queue()
             t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
             t.start()
             queues.append(resultQueue)
-            
+                                           
+            if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
+                nbReals = len([d for d in bitext.keys() if bitext[d]])
+                print ("%i aligned files already processed (%i %% of %i):"
+                       %(len(bitext), (len(bitext)*100/len(self.xmlRoot)), len(self.xmlRoot))
+                       + " %i stored and %i discarded."%(nbReals, len(bitext)-nbReals))              
+
             while len(queues) == nbThreads:
                 for finished in [q for q in queues if not q.empty()]:
                     bitext[linkGrp.attrib['fromDoc']] = finished.get()
                     queues.remove(finished)
                 if len(finished) == 0:
                     time.sleep(0.1)
-                               
-            if not (linkGrp % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
-                nbReals = len([d for d in bitext.keys() if bitext[d]])
-                print ("%i aligned files already processed (%i %% of %i):"
-                       %(len(bitext), (len(bitext)*100/len(self.xmlRoot)), len(self.xmlRoot))
-                       + " %i stored and %i discarded."%(nbReals, len(bitext)-nbReals))              
                            
         while len(queues) > 0:
             for finished in [q for q in queues if not q.empty()]:
