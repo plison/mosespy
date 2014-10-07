@@ -59,7 +59,7 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata, string, time
+import codecs, random, unicodedata, string, time, threading
 from Queue import Queue
 from threading import Thread
 import xml.etree.cElementTree as etree
@@ -467,6 +467,8 @@ class XCESCorpus(AlignedDocs):
             t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
             t.start()
             queues.append(resultQueue)
+            
+            print threading.activeCount()
                            
         while len(queues) > 0:
             for finished in [q for q in queues if not q.empty()]:
