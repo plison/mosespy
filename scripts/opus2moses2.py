@@ -389,15 +389,17 @@ class XCESCorpus(AlignedDocs):
         
         """
         self.xcesFile = xcesFile
-        print("Parsing file " + xcesFile)
-        tree = etree.parse(str(xcesFile))
-        self.xmlRoot = tree.getroot()        
-        for linkGrp in self.xmlRoot:
-            if linkGrp.tag == 'linkGrp':
-                self.sourceLang = linkGrp.attrib['fromDoc'].split("/")[0] 
-                self.targetLang = linkGrp.attrib['toDoc'].split("/")[0] 
-                break     
-           
+        
+        with open(xcesFile, 'r') as content:
+            start = content.read(500)
+            sourceMatch = re.search(r'fromDoc\="(\S+?)/', start)
+            targetMatch = re.search(r'toDoc\="(\S+?)/', start)
+            if sourceMatch and targetMatch:
+                self.sourceLang = sourceMatch.group(1)
+                self.targetLang = targetMatch.group(1)
+            else:
+                raise RuntimeError("XML file not properly formatted")
+                   
         self.subtitles = self._loadTarFiles()
                     
         print("Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang))
@@ -457,28 +459,32 @@ class XCESCorpus(AlignedDocs):
         that the two subtitles refer to different sources).
         
         """       
-        print("Extracting alignments")
-        bitext = {}        
-        linkGrps = [c for c in self.xmlRoot.getchildren() if c.tag == 'linkGrp']
         
-        for l in range(0, len(linkGrps)):
-            linkGrp = linkGrps[l]
-                 
-            fromdoc, alignments = self._readGroup(linkGrp)
+        print("Parsing file " + self.xcesFile)
+        bitext = {} 
+        root = etree.parse(str(self.xcesFile)).getroot()
+                        
+        count = 0
+        for element in root:
             
-            # If the resulting list of alignments is less than two thirds of the
-            # original number of alignments, discard the document
-            if len(alignments) > (2*len(linkGrp)/3):
-                bitext[fromdoc] = alignments
-                                                     
-            if not (l % (len(linkGrps)/min(100,len(linkGrps)))):                    
-                print ("%i aligned files processed (%i %% of %i):"
-                       %((l+1), ((l+1)*100/len(linkGrps)), len(linkGrps))
-                       + " %i stored and %i discarded." 
-                       %(len(bitext), (l+1)-len(bitext)))   
+            if element.tag == "linkGrp":
+                     
+                fromdoc, alignments = self._readGroup(element)
+                
+                # If the resulting list of alignments is less than two thirds of the
+                # original number of alignments, discard the document
+                if len(alignments) > (2*len(root)/3):
+                    bitext[fromdoc] = alignments
+                
+                count += 1                                      
+                if not (count % (len(root)/min(100,len(root)))):                    
+                    print ("%i aligned files processed (%i %% of %i):"
+                           %(count, (count*100/len(root)), len(root))
+                           + " %i stored and %i discarded." 
+                           %(len(bitext), count-len(bitext)))   
 
         print ("Percentage of discarded pairs: %i %%"
-               %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
+               %((len(root)-len(bitext))*100/len(root)))
         return bitext
     
     
@@ -728,13 +734,15 @@ class Dictionary():
 def normalise(line):
     """Normalises the string."""
     
-    line = line.strip()
-    line = re.sub(r"\s+", " ", line)
+#    line = re.sub(r"\s+", " ", line)
     line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
-    line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
-    line = re.sub(r"\<(S|UNK|\/S)\>", "", line)
-    line = re.sub(r"\[\s*and\s*\]", "", line)
-    line = re.sub(r"\|", "_", line)
+    try:
+        line = re.sub(r"[\<\[](s|unk|\/s|\s*and\s*)[\>\]]", "", line, flags=re.IGNORECASE)
+        line = line.translate({ord("|"):"_"})
+    except TypeError:
+        line = re.sub(r"[\<\[](s|unk|\/s|\s*and\s*)[\>\]]", "", line)
+        line = re.sub(r"\<(S|UNK|\/S|\s*AND\s*)\>", "", line)
+        re.sub(r"\|", "_", line)
     return line
             
         
