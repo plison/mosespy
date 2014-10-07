@@ -459,7 +459,7 @@ class XCESCorpus(AlignedDocs):
         bitext = {}
         queues = []
         
-        linkGrps = [c for c in self.xmlRoot.getChildren() if c.tag == 'linkGrp']
+        linkGrps = [c for c in self.xmlRoot.getchildren() if c.tag == 'linkGrp']
         for linkGrp in linkGrps: 
             
             resultQueue = Queue()
