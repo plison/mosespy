@@ -59,7 +59,7 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata, string
+import codecs, random, unicodedata
 import xml.etree.cElementTree as etree
 
 
@@ -738,7 +738,12 @@ def strip(word):
     
     normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
     stripped = normalised.encode("ascii", "replace").lower()
-    stripped= stripped.translate(string.maketrans("",""), string.punctuation)
+    try:
+        maketrans = ''.maketrans
+    except AttributeError:
+        # fallback for Python 2
+        from string import maketrans
+    stripped= stripped.translate(maketrans("",""), string.punctuation)
     return stripped
    
    
