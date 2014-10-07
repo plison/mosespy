@@ -478,14 +478,14 @@ class XCESCorpus(AlignedDocs):
                 for finished in [q for q in queues if not q.empty()]:
                     bitext[linkGrp.attrib['fromDoc']] = finished.get()
                     queues.remove(finished)
-                if len(finished) == 0:
+                if len(queues) == nbThreads:
                     time.sleep(0.1)
                            
         while len(queues) > 0:
             for finished in [q for q in queues if not q.empty()]:
                 bitext[linkGrp.attrib['fromDoc']] = finished.get()
                 queues.remove(finished)
-            if len(finished) == 0:
+            if len(queues) > 0:
                 time.sleep(0.1)
             
           
