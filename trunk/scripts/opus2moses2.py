@@ -609,37 +609,21 @@ class Dictionary():
 
 
     def correct(self, word):
-        if "ii" in word or "II" in word:
-            replace = re.sub("(ii|II)", "ll", word)
-            if self.isWord(replace):
-                return replace
-        elif word[0] == "l":
-            replace = "I" + word[1:]
-            if self.isWord(replace):
-                return replace
-        elif "i" in word or "I" in word:
-            replaces = []
-            for i in range(0, len(word)):
-                c = word[i]
-                if c == 'i' or c == "I":
-                    replace = word[:i] + "l" + word[i+1:]
-                    if self.isWord(replace):
-                        replaces.append(replace)
-            if replaces:
-                return max(replaces, key= lambda x : self.getNbOccurrences(x))
-        elif "l" in word:
-            replaces = []
-            for i in range(0, len(word)):
-                c = word[i]
-                if c == 'l':
-                    iletter = "i" if word[:i].islower() or word[i+1:].islower() else "I"
-                    replace = word[:i] + iletter + word[i+1:]
-                    if self.isWord(replace):
-                        replaces.append(replace)
-            if replaces:
-                return max(replaces, key= lambda x : self.words[x])
         
-        elif word.endswith("in") and self.isWord(word + "g"):
+        mappings = [("ii", "ll"), ("II", "ll"), ("l", "I"), ("i", "l"), ("I", "l"), ("l", "i")]
+        
+        for m in mappings:
+            replaces = []
+            matches = re.finditer(r"(?=%s)"%(m[0]), word)
+            for match in matches:
+                pos = match.start()
+                replace = word[:pos] + m[1] + word[pos+len(m[0]):]
+                if self.isWord(replace):
+                    replaces.append(replace)
+            if replaces:
+                return max(replaces, key= lambda x : self.getNbOccurrences(x)) 
+      
+        if word.endswith("in") and self.isWord(word + "g"):
             return word + "g"
             
         elif self.no_accents and not self.isWord(word):
