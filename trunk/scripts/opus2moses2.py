@@ -519,11 +519,13 @@ class ParallelReader():
         self.subtitles = subtitles
         self.toProcess = list(linkGrps)
 
+        self.queues = []
+        self.bitext = {}
+        
         self.queueMonitor = Thread(target=self.monitor)
         self.queueMonitor.start()
   
-        self.queues = []
-        self.bitext = {}
+
             
     def extractBitext(self, nbThreads = 10):
               
