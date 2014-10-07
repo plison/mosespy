@@ -49,7 +49,7 @@ same directory as the XCES_file):
 The script prunes low-quality alignments from the bitexts, and can also perform
 spell-checking to correct OCR errors. For this spellcheck, a file containing the 
 unigrams for the corresponding language must be provided (each line containing
-the word, a tab space, and a frequency number, as in the Google unigrams).
+the word, a space, and a frequency number, as in the Google unigrams).
 
 """
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
@@ -132,23 +132,29 @@ class AlignedDocs(object):
             for i in range(0, len(bitextdoc)):
                 srcLine = bitextdoc[i][0]
                 trgLine = bitextdoc[i][1]
+                
+                # If the two aligned sentences are identical, skip the corrections
+                # (for e.g. cases where the subtitles are song lyrics)
                 if strip(srcLine) == strip(trgLine):
                     continue
                 
                 newSrcWords = []
                 newTrgWords = []
                 for w in srcLine.split():
+                    
+                    #If the word does not start with a letter or can also
+                    # be found in the aligned sentence, we skip corrections
                     if not w[0].isalpha() or w in trgLine or not srcDic:
                         newSrcWords.append(w)
                     else:
                         corrected = srcDic.spellcheck(w, correct)
-                        newSrcWords.append(corrected)
+                        newSrcWords.append(corrected if correct else w)
                 for w in trgLine.split():
                     if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
                         corrected = trgDic.spellcheck(w, correct)
-                        newTrgWords.append(corrected)
+                        newSrcWords.append(corrected if correct else w)
                         
                 bitextdoc[i] = (" ".join(newSrcWords),
                                 " ".join(newTrgWords))
@@ -158,18 +164,17 @@ class AlignedDocs(object):
                     print ("%i lines already spell-checked (%i %% of %i):"
                            %(counter, (counter*100/totalNbLines), totalNbLines))
           
-        srcCorrs = srcDic.getCorrections() if srcDic else []
-        trgCorrs = trgDic.getCorrections() if trgDic else []
-        print ("Number of spellcheck corrections: %i in source and %i in target"
-               %(sum([srcDic.corrections[(i,j)] for (i,j) in srcCorrs if j!="?"]),
-                 sum([trgDic.corrections[(i,j)] for (i,j) in srcCorrs if j!="?"])))
-        if dumpCorrections:
-            with open("corrections."+self.sourceLang, 'w') as srcDump:
-                srcCorrsMap = ["%s -> %s"%(p1,p2) for (p1,p2) in srcCorrs]
-                srcDump.write("\n".join(srcCorrsMap))
-            with open("corrections."+self.targetLang, 'w') as trgDump:
-                trgCorrsMap = ["%s -> %s"%(p1,p2) for (p1,p2) in trgCorrs]
-                trgDump.write("\n".join(trgCorrsMap))
+        if srcDic:
+            print "Number of corrections in source: %i"%(srcDic.getNbCorrections())
+            if dumpCorrections:
+                srcDic.dumpCorrections()
+        if trgDic:
+            print "Number of corrections in target: %i"%(trgDic.getNbCorrections())
+            if dumpCorrections:
+                trgDic.dumpCorrections()
+
+
+                       
             
         
     def generateMosesFiles(self, stem):
@@ -232,11 +237,14 @@ class AlignedDocs(object):
  
 
 def extraction(fullDic, subkeys):
+    """Extracts a new dictionary that only contains the provided keys"""
     return reduce(lambda x, y: x.update({y[0]:y[1]}) or x, 
         map(None, subkeys, map(fullDic.get, subkeys)), {})
         
 
+
 class MosesAlignment(AlignedDocs):
+    """Representation of a Moses-style bitext."""
     
     def __init__(self, stem, sourceLang, targetLang):
         bitext = {}
@@ -253,14 +261,23 @@ class MosesAlignment(AlignedDocs):
 
 
 class MultiAlignedDocs(AlignedDocs):
+    """Representation of a 'multi-alignment', where each source sentence
+    can be aligned to multiple alternative translations for the target.
+    
+    Such multi-alignments are useful to provide alternative translations
+    for the calculation of BLEU scores.
+    
+    """
     
     def __init__(self, docs):
+        """Creates a new multi-alignment."""
         bitext = self._getMultiBitext(docs.bitext)
         AlignedDocs.__init__(self, bitext, docs.sourceLang, docs.targetLang)
     
         
     def _getMultiBitext(self, bitext):
-
+        """Extracts the alternative translations from the set of aligned documents."""
+        
         if len(bitext)== 0:
             return bitext
         elif isinstance(bitext[bitext.keys()[0]][0][1], list):
@@ -294,11 +311,15 @@ class MultiAlignedDocs(AlignedDocs):
        
  
     def getInverse(self):
+        """Inverts the bitext (source becomes target and vice versa)."""
+        
         basicInv = AlignedDocs.getInverse(self)
         return MultiAlignedDocs(basicInv)
 
    
     def splitData(self):
+        """Splits the bitext in two parts of equal size."""
+        
         split1, split2 = AlignedDocs.splitData(self)
         return MultiAlignedDocs(split1), MultiAlignedDocs(split2)
         
@@ -319,7 +340,9 @@ class MultiAlignedDocs(AlignedDocs):
     
     def generateMosesFiles(self, stem):
         """Generates the moses files from the aligned documents. The 
-        generated files will be stem.{sourceLang} and stem.{targetLang}.
+        generated files will be stem.{sourceLang} and stem.{targetLang},
+        with  suffixes 0, 1, 2,... when alternative translations
+        are available.
         
         """
         
@@ -414,7 +437,6 @@ class XCESCorpus(AlignedDocs):
             tarFile.close()
         return subtitles
   
-  
                                        
     def getBitext(self):
         """Extracts the bitext from the XCES corpus.  The bitext is a set of aligned
@@ -424,7 +446,7 @@ class XCESCorpus(AlignedDocs):
         In order to work, the corresponding corpus files (in .tar or .tar.gz format) 
         must be present in the same directory as the XCES file.
         
-        The method prunes the following alignments: (1) empty or seriously unbalanced
+        The method prunes the following alignments: (1) empty or greatly unbalanced
         aligned pairs (2) documents for which the resulting alignment list is less than 
         two third of the original alignments in the XCES file (which often indicates
         that the two subtitles refer to different sources).
@@ -518,6 +540,10 @@ class XCESCorpus(AlignedDocs):
 
 
     def _getRelevantTarFiles(self, maxNbLines=10):
+        """Returns the tar files that are relevant for the bitext (i.e. that 
+        contains some of the documents referred to in the XCES file).
+        
+        """
         rootDir = os.path.dirname(self.xcesFile) + "/"
         tarFiles = [rootDir + f for f in os.listdir(rootDir) 
                     if (f.endswith(".tar") or f.endswith(".tar.gz"))]
@@ -554,10 +580,21 @@ class XCESCorpus(AlignedDocs):
         
        
 class Dictionary():
-      
+    """Representation of a dictionary containing a list of words for a given 
+    language along with their unigram frequencies. The dictionary is used
+    to perform spell-checking of the documents, and correct common errors
+    (such as OCR errors and wrong accents).
+    
+    """
     def __init__(self, dicFile):
+        """Creates a new dictionary from a given file.  Each line in the file 
+        must contain a word followed by a space or tab and an integer 
+        representing the frequency of the word.
+        
+        """
         if not os.path.exists(dicFile):
             raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
+        self.dicFile = dicFile
         self.words = collections.defaultdict(int)
         with codecs.open(dicFile, encoding='utf-8') as dico:
             for l in dico:
@@ -579,26 +616,49 @@ class Dictionary():
                     self.no_accents[stripped] = w
       
                
-    def spellcheck(self, word, correct=False):
+    def spellcheck(self, word):
+        """Spell-check the word.  The method first checks if the word is in the
+        dictionary.  If yes, the word is returned.  Else, the method search for
+        a possible correction, and returns it.  If no correction could be found,
+        the initial word is returned.  The word and its correction are recorded
+        in the object self.corrections.
+        
+        """        
         isKnown = self.isWord(word)
-        correction = self.correct(word) if not isKnown and correct else word
+        correction = self.correct(word) if not isKnown else word
         if not isKnown:
             self.corrections[(word,correction if correction!= word else "?")] += 1
         return word
 
+
     def isWord(self, word):
+        """Returns true if the (lowercased) word can be found in the dictionary,
+        and false otherwise.
+        
+        """
         wlow = word.decode("utf-8").lower().encode("utf-8")
         return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
     
-    def getCorrections(self):
-        return sorted(self.corrections.keys(), key=lambda x :self.corrections[x], 
-                      reverse=True)
+
+    def getNbCorrections(self):
+        """Returns the number of corrections recorded so far by the dictionary.
+        
+        """
+        return sum([self.corrections[(i,j)] for (i,j) in self.corrections if j!="?"])
+    
+    def dumpCorrections(self):
+        """Dumps the corrections to a file named {dictionary file}.corrections."""
+        with open(self.dicFile +".corrections") as dump:
+            dump.write("\n".join(["%s -> %s"%(p1,p2) for (p1,p2) in self.corrections]))
+
             
     def getWords(self):
+        """Returns the (word,frequency) pairs in the dictionary."""
         return self.words
     
   
-    def getNbOccurrences(self, word):
+    def getFrequency(self, word):
+        """Returns the frequency of the word in the dictionary."""
         wlow = word.decode("utf-8").lower().encode("utf-8")
         if wlow in self.words:
             return self.words[wlow]
@@ -609,7 +669,13 @@ class Dictionary():
 
 
     def correct(self, word):
+        """Finds the best correction for the word, if one can be found.  The
+        method tries to correct common OCR errors, wrong accents, and a few 
+        other heuristics.
         
+        """
+        
+        # OCR errors
         mappings = [("ii", "ll"), ("II", "ll"), ("l", "I"), ("i", "l"), ("I", "l"), ("l", "i")]
         
         replaces = []
@@ -621,36 +687,43 @@ class Dictionary():
                 if self.isWord(replace):
                     replaces.append(replace)
         if replaces:
-            return max(replaces, key= lambda x : self.getNbOccurrences(x)) 
-      
-        if word.endswith("in") and self.isWord(word + "g"):
-            return word + "g"
-            
-        elif self.no_accents and not self.isWord(word):
+            return max(replaces, key=self.getFrequency) 
+  
+        # Wrong accents
+        if self.no_accents and not self.isWord(word):
             no_accent = strip(word)
             if self.no_accents.has_key(no_accent):
                 return self.no_accents[no_accent]
-            
+        
+        # correcting errors such as "entertainin" --> "entertaining"
+        if word.endswith("in") and self.isWord(word + "g"):
+            return word + "g"
+                  
         return word
-            
-
+    
+    
     
 def normalise(line):
-        line = line.strip()
-        line = re.sub(r"\s+", " ", line)
-        line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
-        line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
-        line = re.sub(r"\<(S|UNK|\/S)\>", "", line)
-        line = re.sub(r"\[\s*and\s*\]", "", line)
-        line = re.sub(r"\|", "_", line)
-        return (line + "\n").encode('utf-8')
-                
+    """Normalises the string and its encoding."""
+    
+    line = line.strip()
+    line = re.sub(r"\s+", " ", line)
+    line = re.sub(r"[\x00-\x1f\x7f\n]", " ", line)
+    line = re.sub(r"\<(s|unk|\/s|\s*and\s*|)\>", "", line)
+    line = re.sub(r"\<(S|UNK|\/S)\>", "", line)
+    line = re.sub(r"\[\s*and\s*\]", "", line)
+    line = re.sub(r"\|", "_", line)
+    return (line + "\n").encode('utf-8')
+            
         
 def strip(word):
+    """Strips the word of accents and punctuation."""
+    
     normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))
     stripped = normalised.encode("ascii", "replace").lower()
     stripped= stripped.translate(string.maketrans("",""), string.punctuation)
     return stripped
+   
    
                  
 if __name__ == '__main__':
@@ -660,34 +733,37 @@ if __name__ == '__main__':
               + "[-s file_with_source_unigrams] [-t file_with_target_unigrams]")
         
     else:  
-        xcesFile = sys.argv[1]
         
-        corpus = XCESCorpus(xcesFile)
-        baseStem = xcesFile.replace(".xml", "")
+        # STEP 1: process XCES file
+        xmlFile = sys.argv[1]
+        corpus = XCESCorpus(xmlFile)
+        baseStem = xmlFile.replace(".xml", "")
         
-        srcDic, trgDic = None, None
-        for i in range(2, len(sys.argv)):
-            if sys.argv[i]=="-s":
-                srcDic =Dictionary(sys.argv[i+1])
-            elif sys.argv[i] =="-t":
-                trgDic =Dictionary(sys.argv[i+1])
-        corpus.spellcheck(srcDic, trgDic)
- 
+        # STEP 2: spell-check the bitext
+        dic_source, dic_target = None, None
+        for argi in range(2, len(sys.argv)):
+            if sys.argv[argi]=="-s":
+                dic_source =Dictionary(sys.argv[argi+1])
+            elif sys.argv[argi] =="-t":
+                dic_target =Dictionary(sys.argv[argi+1])
+        corpus.spellcheck(dic_source, dic_target)
+
+        # STEP 3: divide bitext into training, tuning, dev and test sets
         train, tune, devAndTest = corpus.divideData()
         dev, test = devAndTest.splitData()
         
+        # STEP 4: remove existing files
         for inDir in os.listdir(os.path.dirname(baseStem)):
-            if any([(baseStem + "." + f) in inDir for f in ["train","tune","dev","test"]]):
+            if any([(baseStem+"."+part) in inDir for part in ["train","tune","dev","test"]]):
                 os.remove(inDir)
         
+        # STEP 5: generates Moses-files for each set
         train.generateMosesFiles(baseStem + ".train")
         tune.generateMosesFiles(baseStem + ".tune")
         dev.generateMosesFiles(baseStem + ".dev")
         test.generateMosesFiles(baseStem+ ".test")
-        
         devInv = dev.getInverse()
         devInv.generateMosesFiles(baseStem + ".dev")
-        
         testInv = test.getInverse()
         testInv.generateMosesFiles(baseStem + ".test")
 
