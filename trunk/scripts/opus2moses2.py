@@ -478,8 +478,8 @@ class XCESCorpus(AlignedDocs):
     def _readGroup(self, linkGrp, resultQueue):
 
         #Extracting the source and target lines
-        fromLines = self._extractLines(linkGrp["fromDoc"])
-        toLines =  self._extractLines(linkGrp["toDoc"])
+        fromLines = self._extractLines(linkGrp.attrib["fromDoc"])
+        toLines =  self._extractLines(linkGrp.attrib["toDoc"])
                    
         alignmentList = []
         for link in [l for l in linkGrp if l.tag=='link']:
@@ -495,7 +495,7 @@ class XCESCorpus(AlignedDocs):
                 sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
                 targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
             except IndexError:
-                print "alignment error with file %s"%(linkGrp["fromDoc"])
+                print "alignment error with file %s"%(linkGrp.attrib["fromDoc"])
                 continue
             
             if sourceLine and targetLine:
