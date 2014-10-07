@@ -461,16 +461,15 @@ class XCESCorpus(AlignedDocs):
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                
-                for queue in list(queues):
-                    if not queue.empty():
-                        alignment = queue.get()
-                        if alignment:
-                            bitext[linkGrp.attrib['fromDoc']] = alignment
-                            queues.remove(queue)
        
                 while len(queues) == nbThreads:
                     time.sleep(0.01)
+                    for queue in list(queues):
+                        if not queue.empty():
+                            alignment = queue.get()
+                            if alignment:
+                                bitext[linkGrp.attrib['fromDoc']] = alignment
+                                queues.remove(queue)
 
                 resultQueue = Queue()
                 t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
