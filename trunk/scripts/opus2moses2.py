@@ -565,8 +565,9 @@ class ParallelReader():
 
         #Extracting the source and target lines
         fromDoc = linkGrp.attrib["fromDoc"]
-        fromLines = self._extractLines(fromDoc)
-        toLines =  self._extractLines(linkGrp.attrib["toDoc"])
+        print "start reading " + fromDoc
+        fromLines = self._readDocument(fromDoc)
+        toLines =  self._readDocument(linkGrp.attrib["toDoc"])
                    
         alignmentList = []
         for link in [l for l in linkGrp if l.tag=='link']:
@@ -595,9 +596,10 @@ class ParallelReader():
             resultQueue.put((fromDoc,alignmentList))
         else:
             resultQueue.put(None)
+        print "finished reading " + fromDoc
             
  
-    def _extractLines(self, doc): 
+    def _readDocument(self, doc): 
         """Extracts the list of lines from the document.  The list of 
         subtitle documents must already be generated  in self.subtitles
         
