@@ -318,7 +318,8 @@ class MultiAlignedDocs(AlignedDocs):
         invertedDict = {}
         def flatten(x):
             if isinstance(x,list):
-                print("target: " + x)
+                if len(x) == 0:
+                    print("target: " + str(x))
                 return x[0]
             else:
                 return x
