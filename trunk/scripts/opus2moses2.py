@@ -84,9 +84,8 @@ class AlignedDocs(object):
         
         """
         invertedDict = {}
-        flatten = lambda x : x[0] if isinstance(x,list) else x
         for a in self.bitext:
-            invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
+            invertedDict[a] = [(t,s) for (s,t) in self.bitext[a]]
         return AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
     
     
@@ -316,8 +315,12 @@ class MultiAlignedDocs(AlignedDocs):
     def getInverse(self):
         """Inverts the bitext (source becomes target and vice versa)."""
         
-        basicInv = AlignedDocs.getInverse(self)
-        return MultiAlignedDocs(basicInv)
+        invertedDict = {}
+        for a in self.bitext:
+            invertedDict[a] = [(t[0],s) for (s,t) in self.bitext[a]]
+        invertedDoc = AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
+        return MultiAlignedDocs(invertedDoc)
+    
 
    
     def splitData(self):
