@@ -466,9 +466,7 @@ class XCESCorpus(AlignedDocs):
                         
         count = 0
         for element in root:
-            print("-")
             if element.tag == "linkGrp":
-                print("yes")
                 fromdoc, alignments = self._readGroup(element)
                 
                 # If the resulting list of alignments is less than two thirds of the
