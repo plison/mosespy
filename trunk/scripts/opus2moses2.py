@@ -239,10 +239,12 @@ class AlignedDocs(object):
 
 def extraction(fullDic, subkeys):
     """Extracts a new dictionary that only contains the provided keys"""
-    return reduce(lambda x, y: x.update({y[0]:y[1]}) or x, 
-        map(None, subkeys, map(fullDic.get, subkeys)), {})
+    
+    subDic = {}
+    for subkey in subkeys:
+        subDic[subkey] = fullDic[subkey]
+    return subDic
         
-
 
 class MosesAlignment(AlignedDocs):
     """Representation of a Moses-style bitext."""
