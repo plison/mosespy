@@ -770,11 +770,11 @@ if __name__ == '__main__':
                 dic_source =Dictionary(sys.argv[argi+1])
             elif sys.argv[argi] =="-t":
                 dic_target =Dictionary(sys.argv[argi+1])
-  #      corpus.spellcheck(dic_source, dic_target)
+        corpus.spellcheck(dic_source, dic_target)
 
         # STEP 3: divide bitext into training, tuning, dev and test sets
         train, tune, devAndTest = corpus.divideData()
- #       dev, test = devAndTest.splitData()
+        dev, test = devAndTest.splitData()
         
         # STEP 4: remove existing files
         for inDir in os.listdir(os.path.dirname(baseStem)):
@@ -784,11 +784,11 @@ if __name__ == '__main__':
         # STEP 5: generates Moses-files for each set
         train.generateMosesFiles(baseStem + ".train")
         tune.generateMosesFiles(baseStem + ".tune")
- #       dev.generateMosesFiles(baseStem + ".dev")
- #       test.generateMosesFiles(baseStem+ ".test")
- #       devInv = dev.getInverse()
- #       devInv.generateMosesFiles(baseStem + ".dev")
- #       testInv = test.getInverse()
- #       testInv.generateMosesFiles(baseStem + ".test")
+        dev.generateMosesFiles(baseStem + ".dev")
+        test.generateMosesFiles(baseStem+ ".test")
+        devInv = dev.getInverse()
+        devInv.generateMosesFiles(baseStem + ".dev")
+        testInv = test.getInverse()
+        testInv.generateMosesFiles(baseStem + ".test")
 
 
