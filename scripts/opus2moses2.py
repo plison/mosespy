@@ -219,7 +219,7 @@ class AlignedDocs(object):
             testDir = directories.pop()
             print("Extracting best alignments for " + testDir)
             subset = extraction(self.bitext, [x for x in self.bitext if testDir in x])
-            alignedDocs= subset.keys()
+            alignedDocs= list(subset.keys())
             alignedDocs.sort(key=lambda x: max([len(y) for y in subset[x]]))
             bestAlignment = extraction(self.bitext, [alignedDocs[-1]])
             extractedBitext.update(bestAlignment)
