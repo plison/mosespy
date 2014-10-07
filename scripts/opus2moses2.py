@@ -319,12 +319,15 @@ class MultiAlignedDocs(AlignedDocs):
         def flatten(x):
             if isinstance(x,list):
                 if len(x) == 0:
-                    print ("Emtpy!!!")
                     return ""
                 return x[0]
             else:
                 return x
         for a in self.bitext:
+            invertedDict[a] = []
+            for (s,t) in self.bitext[a]:
+                print("Aligned pair: " + str((s,t)))
+                invertedDict[a].append((flatten(t),s))
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
         invertedDoc = AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
         return MultiAlignedDocs(invertedDoc)
