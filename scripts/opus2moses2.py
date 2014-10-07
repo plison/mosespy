@@ -470,10 +470,10 @@ class XCESCorpus(AlignedDocs):
                 bitext[fromdoc] = alignments
                                                      
             if not (l % (len(linkGrps)/min(100,len(linkGrps)))):                    
-                len([d for d in bitext.keys() if bitext[d]])
                 print ("%i aligned files processed (%i %% of %i):"
                        %(l, (l*100/len(linkGrps)), len(linkGrps))
-                       + " %i stored and %i discarded." %(len(bitext), len(bitext)-l))   
+                       + " %i stored and %i discarded." 
+                       %(len(bitext), l-len(bitext)))   
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
@@ -482,11 +482,12 @@ class XCESCorpus(AlignedDocs):
     
     
     def _readGroup(self, linkGrp):
-
+        """Reads the XML group 'link' containing the alignments."""
+        
         #Extracting the source and target lines
         fromDoc = linkGrp.attrib["fromDoc"]
-        fromLines = self._extractLines(fromDoc)
-        toLines =  self._extractLines(linkGrp.attrib["toDoc"])
+        fromLines = self._readDocument(fromDoc)
+        toLines =  self._readDocument(linkGrp.attrib["toDoc"])
                    
         alignmentList = []
         for link in [l for l in linkGrp if l.tag=='link']:
@@ -512,7 +513,7 @@ class XCESCorpus(AlignedDocs):
         return fromDoc, alignmentList
             
  
-    def _extractLines(self, doc): 
+    def _readDocument(self, doc): 
         """Extracts the list of lines from the document.  The list of 
         subtitle documents must already be generated  in self.subtitles
         
