@@ -475,8 +475,7 @@ class XCESCorpus(AlignedDocs):
                     bitext[fromdoc] = alignments
                 
                 count += 1
-                print("processed groups: %i on a total of %i"%(count, nbDocs))                              
-                if not (count % (nbDocs/min(100,nbDocs))):                    
+                if not (count % int(nbDocs/min(100,nbDocs))):                    
                     print ("%i aligned files processed (%i %% of %i):"
                            %(count, (count*100/nbDocs), nbDocs)
                            + " %i stored and %i discarded." 
@@ -520,7 +519,7 @@ class XCESCorpus(AlignedDocs):
             
         # If the resulting list of alignments is less than two thirds of the
         # original number of alignments, discard the document
-        if len(alignmentList) > (2*len(linkGrp)/3):
+        if len(alignmentList) < (2*len(linkGrp)/3):
             alignmentList = []
         
         return fromDoc, alignmentList
