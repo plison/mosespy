@@ -59,7 +59,7 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata
+import codecs, random, unicodedata, string
 import xml.etree.cElementTree as etree
 
 
@@ -606,6 +606,7 @@ class Dictionary():
         representing the frequency of the word.
         
         """
+        print("Building dictionary from " + dicFile)
         if not os.path.exists(dicFile):
             raise RuntimeError("Unigrams file " + dicFile + " cannot be found")
         self.dicFile = dicFile
