@@ -476,24 +476,25 @@ class XCESCorpus(AlignedDocs):
 
             while len(queues) == nbThreads:
                 for finished in [q for q in queues if not q.empty()]:
-                    bitext[linkGrp.attrib['fromDoc']] = finished.get()
+                    result = finished.get()
+                    if result:
+                        bitext[result[0]] = result[1]
                     queues.remove(finished)
                 if len(queues) == nbThreads:
                     time.sleep(0.1)
                            
         while len(queues) > 0:
             for finished in [q for q in queues if not q.empty()]:
-                bitext[linkGrp.attrib['fromDoc']] = finished.get()
+                result = finished.get()
+                if result:
+                    bitext[result[0]] = result[1]
                 queues.remove(finished)
             if len(queues) > 0:
                 time.sleep(0.1)
             
-          
-        for d in list(bitext.keys()):
-            if not bitext[d]:
-                del bitext[d]
+
         print ("Percentage of discarded pairs: %i %%"
-               %((len(self.xmlRoot)-len(bitext))*100/len(self.xmlRoot)))
+               %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
         return bitext
     
     
@@ -501,7 +502,8 @@ class XCESCorpus(AlignedDocs):
     def _readGroup(self, linkGrp, resultQueue):
 
         #Extracting the source and target lines
-        fromLines = self._extractLines(linkGrp.attrib["fromDoc"])
+        fromDoc = linkGrp.attrib["fromDoc"]
+        fromLines = self._extractLines(fromDoc)
         toLines =  self._extractLines(linkGrp.attrib["toDoc"])
                    
         alignmentList = []
@@ -518,7 +520,7 @@ class XCESCorpus(AlignedDocs):
                 sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
                 targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
             except IndexError:
-                print "alignment error with file %s"%(linkGrp.attrib["fromDoc"])
+                print "alignment error with file %s"%(fromDoc)
                 continue
             
             if sourceLine and targetLine:
@@ -528,7 +530,7 @@ class XCESCorpus(AlignedDocs):
         # If the resulting list of alignments is less than two thirds of the
         # original number of alignments, discard the document
         if len(alignmentList) > (2*len(linkGrp)/3):
-            resultQueue.put(alignmentList)
+            resultQueue.put((fromDoc,alignmentList))
         else:
             resultQueue.put(None)
             
