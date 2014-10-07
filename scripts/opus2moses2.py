@@ -561,7 +561,7 @@ class XCESCorpus(AlignedDocs):
         tarFiles.sort()
         relevantTars = []
         for tarFile in tarFiles:
-            f = gzip.open(tarFile, 'rb') if tarFile.endswith(".gz") else open(tarFile, 'rb',encoding="utf-16")
+            f = gzip.open(tarFile, 'rb') if tarFile.endswith(".gz") else open(tarFile, 'rb',encoding="iso-8859-15")
             nbLines = 0
             for l in f:
                 if re.search("/("+self.sourceLang+"|"+self.targetLang+")/", l):
