@@ -59,7 +59,7 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata, string,mmap
+import codecs, random, unicodedata, string
 import xml.etree.cElementTree as etree
 
 
@@ -428,14 +428,12 @@ class XCESCorpus(AlignedDocs):
                 os.remove(tarPath)
                 tarPath = unzipped.name
             
-            tarFile = tarfile.open(tarPath, 'r') 
-            opened = open(tarPath, 'rb')
-            mmapped = mmap.mmap(opened.fileno(),0, access=mmap.ACCESS_READ)         
+            tarFile = tarfile.open(tarPath, 'r')          
             for tari in tarFile:
                 if not tari.issym():
                     tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
                                            tari.name.find("/"+self.targetLang+"/"))+1:]
-                    subtitles[tarkey] = mmapped,tari.offset_data, tari.size
+                    subtitles[tarkey] = tarPath,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
@@ -471,9 +469,9 @@ class XCESCorpus(AlignedDocs):
                                                      
             if not (l % (len(linkGrps)/min(100,len(linkGrps)))):                    
                 print ("%i aligned files processed (%i %% of %i):"
-                       %(l+1, ((l+1)*100/len(linkGrps)), len(linkGrps))
+                       %(l, (l*100/len(linkGrps)), len(linkGrps))
                        + " %i stored and %i discarded." 
-                       %(len(bitext), (l+1)-len(bitext)))   
+                       %(len(bitext), l-len(bitext)))   
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
@@ -520,10 +518,10 @@ class XCESCorpus(AlignedDocs):
         """
         
         if self.subtitles.has_key(doc):
-            mmapped = self.subtitles[doc][0]
+            tarFile = open(self.subtitles[doc][0], 'rb')
             offset, size = self.subtitles[doc][1:]
-            mmapped.seek(offset,0)
-            content = mmapped.read(size)
+            tarFile.seek(offset,0)
+            content = tarFile.read(size)
             zippedFile = gzip.GzipFile(fileobj=BytesIO(content))
             root = etree.parse(zippedFile).getroot()
             lines = {}
@@ -539,6 +537,7 @@ class XCESCorpus(AlignedDocs):
                         else:
                             toProcess.extend(w.getchildren())      
                         lines[lineId] = " ".join(wordList)
+            tarFile.close()
             linesList = []
             for i in range(1, max(lines.keys())+1):
                 if lines.has_key(i):
