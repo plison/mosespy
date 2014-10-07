@@ -154,12 +154,10 @@ class AlignedDocs(object):
                         newTrgWords.append(w)
                     else:
                         corrected = trgDic.spellcheck(w)
-                        newSrcWords.append(corrected if correct else w)
+                        newTrgWords.append(corrected if correct else w)
                  
-                print("Old state: " + str(bitextdoc[i]))    
                 bitextdoc[i] = (" ".join(newSrcWords),
                                 " ".join(newTrgWords))
-                print("New state: " + str(bitextdoc[i]))    
                 
                 counter += 1
                 if not (counter % (totalNbLines/min(100,totalNbLines))):
