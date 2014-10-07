@@ -435,7 +435,7 @@ class XCESCorpus(AlignedDocs):
                 if not tari.issym():
                     tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
                                            tari.name.find("/"+self.targetLang+"/"))+1:]
-                    subtitles[tarkey] = tarPath,tari.offset_data, tari.size
+                    subtitles[tarkey] = mmapped,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
@@ -471,9 +471,9 @@ class XCESCorpus(AlignedDocs):
                                                      
             if not (l % (len(linkGrps)/min(100,len(linkGrps)))):                    
                 print ("%i aligned files processed (%i %% of %i):"
-                       %(l, (l*100/len(linkGrps)), len(linkGrps))
+                       %(l+1, ((l+1)*100/len(linkGrps)), len(linkGrps))
                        + " %i stored and %i discarded." 
-                       %(len(bitext), l-len(bitext)))   
+                       %(len(bitext), (l+1)-len(bitext)))   
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
@@ -520,10 +520,10 @@ class XCESCorpus(AlignedDocs):
         """
         
         if self.subtitles.has_key(doc):
-            tarFile = open(self.subtitles[doc][0], 'rb')
+            mmapped = self.subtitles[doc][0]
             offset, size = self.subtitles[doc][1:]
-            tarFile.seek(offset,0)
-            content = tarFile.read(size)
+            mmapped.seek(offset,0)
+            content = mmapped.read(size)
             zippedFile = gzip.GzipFile(fileobj=BytesIO(content))
             root = etree.parse(zippedFile).getroot()
             lines = {}
@@ -539,7 +539,6 @@ class XCESCorpus(AlignedDocs):
                         else:
                             toProcess.extend(w.getchildren())      
                         lines[lineId] = " ".join(wordList)
-            tarFile.close()
             linesList = []
             for i in range(1, max(lines.keys())+1):
                 if lines.has_key(i):
