@@ -784,8 +784,8 @@ if __name__ == '__main__':
         # STEP 5: generates Moses-files for each set
         train.generateMosesFiles(baseStem + ".train")
         tune.generateMosesFiles(baseStem + ".tune")
-        dev.generateMosesFiles(baseStem + ".dev")
-        test.generateMosesFiles(baseStem+ ".test")
+ #       dev.generateMosesFiles(baseStem + ".dev")
+ #       test.generateMosesFiles(baseStem+ ".test")
  #       devInv = dev.getInverse()
  #       devInv.generateMosesFiles(baseStem + ".dev")
  #       testInv = test.getInverse()
