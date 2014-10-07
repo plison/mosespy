@@ -316,12 +316,10 @@ class MultiAlignedDocs(AlignedDocs):
         """Inverts the bitext (source becomes target and vice versa)."""
         
         invertedDict = {}
-        global incr
-        incr = 0
         def flatten(x):
             if isinstance(x,list):
                 if len(x) == 0:
-                    incr += 1
+                    print ("Emtpy!!!")
                     return ""
                 return x[0]
             else:
@@ -329,7 +327,6 @@ class MultiAlignedDocs(AlignedDocs):
         for a in self.bitext:
             invertedDict[a] = [(flatten(t),s) for (s,t) in self.bitext[a]]
         invertedDoc = AlignedDocs(invertedDict, self.targetLang, self.sourceLang)
-        print("Number of empty: " + str(incr))
         return MultiAlignedDocs(invertedDoc)
     
 
