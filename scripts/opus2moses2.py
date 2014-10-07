@@ -191,8 +191,8 @@ class AlignedDocs(object):
         for document in sorted(self.bitext.keys()):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
-                    srcFile.write(pair[0])
-                    trgFile.write(pair[1][0] if isinstance(pair[1],list) else pair[1])
+                    srcFile.write(pair[0] +"\n")
+                    trgFile.write(pair[1][0] if isinstance(pair[1],list) else pair[1] +"\n")
         
         srcFile.close()
         trgFile.close()
@@ -369,7 +369,7 @@ class MultiAlignedDocs(AlignedDocs):
                 if pair[0] and pair[1]:
                     for i in range(0, len(altFiles)):
                         altLine = pair[1][i] if i < len(pair[1]) else ""
-                        altFiles[i].write(altLine)
+                        altFiles[i].write(altLine + "\n")
         
         for altFile in altFiles:
             altFile.close()
@@ -728,7 +728,7 @@ class Dictionary():
     
     
 def normalise(line):
-    """Normalises the string and its encoding."""
+    """Normalises the string."""
     
     line = line.strip()
     line = re.sub(r"\s+", " ", line)
@@ -737,7 +737,7 @@ def normalise(line):
     line = re.sub(r"\<(S|UNK|\/S)\>", "", line)
     line = re.sub(r"\[\s*and\s*\]", "", line)
     line = re.sub(r"\|", "_", line)
-    return (line + "\n")
+    return line
             
         
 def strip(word):
