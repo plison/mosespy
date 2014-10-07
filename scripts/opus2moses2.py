@@ -615,7 +615,7 @@ class Dictionary():
             for l in dico:
                 if not l.startswith("%%") and not l.startswith("#"):
                     split = l.split()
-                    word = split[0].strip()
+                    word = split[0].strip().decode("utf-8")
                     frequency = int(split[1].strip())
                     self.words[word] = frequency
         
