@@ -458,12 +458,11 @@ class XCESCorpus(AlignedDocs):
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                fromdoc = linkGrp.attrib['fromDoc']
                 resultQueue = Queue.Queue()
                 self._readGroup(linkGrp, resultQueue)
                 alignment = resultQueue.get()
                 if alignment:
-                    bitext[fromdoc] = alignment
+                    bitext[linkGrp.attrib['fromDoc']] = alignment
                     
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i):"
