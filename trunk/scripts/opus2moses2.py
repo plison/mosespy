@@ -114,11 +114,11 @@ class AlignedDocs(object):
         """
         trainingData = AlignedDocs(self.bitext, self.sourceLang, self.targetLang)
         
-        print "Extracting test data"
+        print("Extracting test data")
         testData = trainingData.extractData(nbTestFiles)        
         testData = MultiAlignedDocs(testData)      
      
-        print "Extracting tuning data"
+        print("Extracting tuning data")
         tuneData = trainingData.extractData(nbTuningFiles)
         
         return trainingData, tuneData, testData
@@ -166,11 +166,11 @@ class AlignedDocs(object):
                            %(counter, (counter*100/totalNbLines), totalNbLines))
           
         if srcDic:
-            print "Number of corrections in source: %i"%(srcDic.getNbCorrections())
+            print("Number of corrections in source: %i"%(srcDic.getNbCorrections()))
             if dumpCorrections:
                 srcDic.dumpCorrections()
         if trgDic:
-            print "Number of corrections in target: %i"%(trgDic.getNbCorrections())
+            print("Number of corrections in target: %i"%(trgDic.getNbCorrections()))
             if dumpCorrections:
                 trgDic.dumpCorrections()
 
@@ -209,7 +209,7 @@ class AlignedDocs(object):
             raise RuntimeError("not enough data to divide")
         
         extractedBitext = {}
-        print "Sorting data by number of duplicates"
+        print("Sorting data by number of duplicates")
         nbEntries = collections.defaultdict(int)
         for a in self.bitext.keys():
             nbEntries[os.path.dirname(a)] += 1
@@ -217,7 +217,7 @@ class AlignedDocs(object):
               
         while len(extractedBitext) < nbDirs and len(directories)>0:
             testDir = directories.pop()
-            print "Extracting best alignments for " + testDir
+            print("Extracting best alignments for " + testDir)
             subset = extraction(self.bitext, [x for x in self.bitext if testDir in x])
             alignedDocs= subset.keys()
             alignedDocs.sort(key=lambda x: max([len(y) for y in subset[x]]))
@@ -258,7 +258,7 @@ class MosesAlignment(AlignedDocs):
             pair = (sourceLines[i].strip(), targetLines[i].strip())
             bitext[stem].append(pair)
         AlignedDocs.__init__(self, bitext, sourceLang, targetLang)
-        print "finished creating moses alignment"
+        print("finished creating moses alignment")
 
 
 class MultiAlignedDocs(AlignedDocs):
@@ -286,7 +286,7 @@ class MultiAlignedDocs(AlignedDocs):
 
         correlatedAligns = {}
         for fromdoc in bitext:
-            print "Search correlated sources for " + fromdoc
+            print("Search correlated sources for " + fromdoc)
             initAligns = bitext[fromdoc]
             correlatedAligns[fromdoc] = [(s,set([t] if t else [])) for (s,t) in initAligns]
             
@@ -350,7 +350,7 @@ class MultiAlignedDocs(AlignedDocs):
         AlignedDocs.generateMosesFiles(self, stem)
         
         nbTranslations = self.getNbAlternativeTranslations()
-        print "Generating %i alternative translations"%(nbTranslations)
+        print("Generating %i alternative translations"%(nbTranslations))
   
         altFiles = []
         if nbTranslations > 1:      
@@ -385,7 +385,7 @@ class XCESCorpus(AlignedDocs):
         
         """
         self.xcesFile = xcesFile
-        print "Parsing file " + xcesFile
+        print("Parsing file " + xcesFile)
         tree = etree.parse(str(xcesFile))
         self.xmlRoot = tree.getroot()        
         for linkGrp in self.xmlRoot:
@@ -396,10 +396,10 @@ class XCESCorpus(AlignedDocs):
            
         self.subtitles = self._loadTarFiles()
                     
-        print "Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang)
+        print("Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang))
         bitext = self.getBitext()
         AlignedDocs.__init__(self, bitext, self.sourceLang, self.targetLang)
-        print "Finished parsing file " + xcesFile
+        print("Finished parsing file " + xcesFile)
         
         if rezipFiles:
             self._rezipTarFiles()
@@ -415,11 +415,11 @@ class XCESCorpus(AlignedDocs):
         subtitles = {}
         tarPaths = self._getRelevantTarFiles()
         
-        print "Opening tarred files in same directory..."
+        print("Opening tarred files in same directory...")
         for tarPath in tarPaths: 
             
             if tarPath.endswith(".tar.gz"):
-                print "Decompressing file " + tarPath               
+                print("Decompressing file " + tarPath)               
                 zipped = gzip.open(tarPath, 'rb')
                 unzipped = open(tarPath.replace(".gz", ""), 'wb')
                 unzipped.write(zipped.read())
@@ -434,7 +434,7 @@ class XCESCorpus(AlignedDocs):
                     tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
                                            tari.name.find("/"+self.targetLang+"/"))+1:]
                     subtitles[tarkey] = tarPath,tari.offset_data, tari.size
-            print "Finished processing file " + tarPath
+            print("Finished processing file " + tarPath)
             tarFile.close()
         return subtitles
   
@@ -453,7 +453,7 @@ class XCESCorpus(AlignedDocs):
         that the two subtitles refer to different sources).
         
         """       
-        print "Extracting alignments"
+        print("Extracting alignments")
         bitext = {}        
         linkGrps = [c for c in self.xmlRoot.getchildren() if c.tag == 'linkGrp']
         
@@ -501,7 +501,7 @@ class XCESCorpus(AlignedDocs):
                 sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
                 targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
             except IndexError:
-                print "alignment error with file %s"%(fromDoc)
+                print("alignment error with file %s"%(fromDoc))
                 continue
             
             if sourceLine and targetLine:
@@ -543,7 +543,7 @@ class XCESCorpus(AlignedDocs):
                 if lines.has_key(i):
                     linesList.append(lines[i])
                 else:
-                    print "Missing line number %i in %s"%(i,doc)
+                    print("Missing line number %i in %s"%(i,doc))
                     linesList.append("")
             return linesList
                     
@@ -578,7 +578,7 @@ class XCESCorpus(AlignedDocs):
         unzippedFiles = set()
         for (tarPath,_,_) in self.subtitles.values():
             unzippedFiles.add(tarPath)
-        print "Rezipping the tar files: %s"%(str(unzippedFiles))
+        print("Rezipping the tar files: %s"%(str(unzippedFiles)))
             
         for tarPath in unzippedFiles:
             f_in = open(tarPath, 'rb')
@@ -587,7 +587,7 @@ class XCESCorpus(AlignedDocs):
             f_out.close()
             f_in.close()
             os.remove(tarPath)
-        print "Tar files rezipped"
+        print("Tar files rezipped")
         
        
 class Dictionary():
@@ -616,7 +616,7 @@ class Dictionary():
                     self.words[word] = frequency
         
         self.corrections =  collections.defaultdict(int)
-        print "Total number of words in dictionary: %i"%(len(self.words))
+        print("Total number of words in dictionary: %i"%(len(self.words)))
         
         self.no_accents = {}
         if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(self.words.keys()[0:100])):
