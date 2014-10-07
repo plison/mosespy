@@ -523,7 +523,7 @@ class XCESCorpus(AlignedDocs):
             tarFile.seek(offset,0)
             content = tarFile.read(size)
             zippedFile = gzip.GzipFile(fileobj=BytesIO(content),mode='rb')
-            root = etree.fromstring(zippedFile.read())
+            root = etree.parse(zippedFile).getroot()
             lines = {}
             for s in root:
                 if s.tag == 's':
