@@ -59,7 +59,9 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata, string, Queue
+import codecs, random, unicodedata, string, time
+from Queue import Queue
+from threading import Thread
 import xml.etree.cElementTree as etree
 
 
@@ -439,7 +441,7 @@ class XCESCorpus(AlignedDocs):
         return subtitles
   
                                        
-    def getBitext(self):
+    def getBitext(self, nbThreads = 16):
         """Extracts the bitext from the XCES corpus.  The bitext is a set of aligned
         documents, each document being composed of a list of aligned pairs
         (sourceLine, targetLine).
@@ -455,15 +457,26 @@ class XCESCorpus(AlignedDocs):
         """       
         print "Extracting alignments"
         bitext = {}
+        queues = []
         for l in range(0, len(self.xmlRoot)):
             linkGrp = self.xmlRoot[l]
             if linkGrp.tag == 'linkGrp':
-                resultQueue = Queue.Queue()
-                self._readGroup(linkGrp, resultQueue)
-                alignment = resultQueue.get()
-                if alignment:
-                    bitext[linkGrp.attrib['fromDoc']] = alignment
-                    
+                
+                for queue in list(queues):
+                    if not queue.empty():
+                        alignment = queue.get()
+                        if alignment:
+                            bitext[linkGrp.attrib['fromDoc']] = alignment
+                            queues.remove(queue)
+       
+                while len(queues) == nbThreads:
+                    time.sleep(0.01)
+
+                resultQueue = Queue()
+                t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
+                t.start()
+                queues.append(resultQueue)
+                                
             if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 print ("%i aligned files already processed (%i %% of %i):"
                        %(l+1, (l*100/len(self.xmlRoot)), len(self.xmlRoot))
