@@ -139,9 +139,7 @@ class AlignedDocs(object):
                     continue
                 
                 newSrcWords = []
-                newTrgWords = []
-                for w in srcLine.split():
-                    
+                for w in srcLine.split():                    
                     #If the word does not start with a letter or can also
                     # be found in the aligned sentence, we skip corrections
                     if not w[0].isalpha() or w in trgLine or not srcDic:
@@ -149,15 +147,19 @@ class AlignedDocs(object):
                     else:
                         corrected = srcDic.spellcheck(w)
                         newSrcWords.append(corrected if correct else w)
+                        
+                newTrgWords = []
                 for w in trgLine.split():
                     if not w[0].isalpha() or w in srcLine or not trgDic:
                         newTrgWords.append(w)
                     else:
                         corrected = trgDic.spellcheck(w)
                         newSrcWords.append(corrected if correct else w)
-                        
+                 
+                print("Old state: " + str(bitextdoc[i]))    
                 bitextdoc[i] = (" ".join(newSrcWords),
                                 " ".join(newTrgWords))
+                print("New state: " + str(bitextdoc[i]))    
                 
                 counter += 1
                 if not (counter % (totalNbLines/min(100,totalNbLines))):
