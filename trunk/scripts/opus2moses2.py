@@ -622,6 +622,7 @@ class Dictionary():
         print("Total number of words in dictionary: %i"%(len(self.words)))
         
         self.no_accents = {}
+        print(list(self.words.keys())[0:100])
         if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(list(self.words.keys())[0:100])):
             for w in self.words:
                 stripped = strip(w)
