@@ -456,35 +456,111 @@ class XCESCorpus(AlignedDocs):
         
         """       
         print "Extracting alignments"
-        bitext = {}
-        queues = []
+        
         
         linkGrps = [c for c in self.xmlRoot.getchildren() if c.tag == 'linkGrp']
         
-        for l in range(0, len(linkGrps)):
-            linkGrp = linkGrps[l]
-            resultQueue = Queue()
-            t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
-            t.start()
-            queues.append(resultQueue)
-            
-            print threading.activeCount()
-                           
-        while len(queues) > 0:
-            for finished in [q for q in queues if not q.empty()]:
-                result = finished.get()
-                if result:
-                    bitext[result[0]] = result[1]
-                queues.remove(finished)
-            if len(queues) > 0:
-                time.sleep(0.1)
-            
+        pr = ParallelReader(linkGrps, self.subtitles)
+        bitext = pr.extractBitext()
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(linkGrps)-len(bitext))*100/len(linkGrps)))
         return bitext
     
+
+
+    def _getRelevantTarFiles(self, maxNbLines=10):
+        """Returns the tar files that are relevant for the bitext (i.e. that 
+        contains some of the documents referred to in the XCES file).
+        
+        """
+        rootDir = os.path.dirname(self.xcesFile) + "/"
+        tarFiles = [rootDir + f for f in os.listdir(rootDir) 
+                    if (f.endswith(".tar") or f.endswith(".tar.gz"))]
+        tarFiles.sort()
+        relevantTars = []
+        for tarFile in tarFiles:
+            f = gzip.open(tarFile) if tarFile.endswith(".gz") else open(tarFile)
+            nbLines = 0
+            for l in f:
+                if re.search("/("+self.sourceLang+"|"+self.targetLang+")/", l):
+                    relevantTars.append(tarFile)
+                nbLines += 1
+                if nbLines == maxNbLines:
+                    break
+        return relevantTars
+
+     
+    def _rezipTarFiles(self):
+        """Rezips the tar files."""
+        
+        unzippedFiles = set()
+        for (tarPath,_,_) in self.subtitles.values():
+            unzippedFiles.add(tarPath)
+        print "Rezipping the tar files: %s"%(str(unzippedFiles))
+            
+        for tarPath in unzippedFiles:
+            f_in = open(tarPath, 'rb')
+            f_out = gzip.open(tarPath + ".gz", 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+            os.remove(tarPath)
+        print "Tar files rezipped"
+        
+ 
+ 
+        
+        
+class ParallelReader():
     
+    def __init__(self, linkGrps, subtitles):
+
+        self.subtitles = subtitles
+        self.toProcess = list(linkGrps)
+
+        self.queueMonitor = Thread(target=self.monitor)
+        self.queueMonitor.start()
+  
+        self.queues = []
+        self.bitext = {}
+            
+    def extractBitext(self, nbThreads = 10):
+              
+        while len(self.toProcess) > 0:
+            linkGrp = self.toProcess.pop()    
+            while threading.activeCount() == nbThreads:
+                time.sleep(0.1)            
+            resultQueue = Queue()
+            t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
+            t.start()
+            self.queues.append(resultQueue)
+
+        self.queueMonitor.join()
+        return self.bitext
+        
+        
+    def monitor(self):
+        
+        totalGrps = len(self.toProcess)
+        nbProcessed = 0
+        while len(self.toProcess) > 0 or len(self.queues) > 0:
+            finishedQueues = [q for q in self.queues if not q.empty()]
+            for finished in finishedQueues:
+                result = finished.get()
+                if result:
+                    self.bitext[result[0]] = result[1]
+                nbProcessed += 1
+                self.queues.remove(finished)
+                
+                if not (nbProcessed % (totalGrps/min(100,totalGrps))):
+                    print ("%i aligned files processed (%i %% of %i):"
+                           %(nbProcessed, (nbProcessed*100/totalGrps), totalGrps)
+                           + " %i stored and %i discarded."
+                           %(len(self.bitext), nbProcessed-len(self.bitext))) 
+                 
+            time.sleep(0.1)
+        
     
     def _readGroup(self, linkGrp, resultQueue):
 
@@ -559,48 +635,7 @@ class XCESCorpus(AlignedDocs):
             return linesList
                     
         raise RuntimeError("could not find file " + doc)
-
-
-    def _getRelevantTarFiles(self, maxNbLines=10):
-        """Returns the tar files that are relevant for the bitext (i.e. that 
-        contains some of the documents referred to in the XCES file).
-        
-        """
-        rootDir = os.path.dirname(self.xcesFile) + "/"
-        tarFiles = [rootDir + f for f in os.listdir(rootDir) 
-                    if (f.endswith(".tar") or f.endswith(".tar.gz"))]
-        tarFiles.sort()
-        relevantTars = []
-        for tarFile in tarFiles:
-            f = gzip.open(tarFile) if tarFile.endswith(".gz") else open(tarFile)
-            nbLines = 0
-            for l in f:
-                if re.search("/("+self.sourceLang+"|"+self.targetLang+")/", l):
-                    relevantTars.append(tarFile)
-                nbLines += 1
-                if nbLines == maxNbLines:
-                    break
-        return relevantTars
-
-     
-    def _rezipTarFiles(self):
-        """Rezips the tar files."""
-        
-        unzippedFiles = set()
-        for (tarPath,_,_) in self.subtitles.values():
-            unzippedFiles.add(tarPath)
-        print "Rezipping the tar files: %s"%(str(unzippedFiles))
-            
-        for tarPath in unzippedFiles:
-            f_in = open(tarPath, 'rb')
-            f_out = gzip.open(tarPath + ".gz", 'wb')
-            f_out.writelines(f_in)
-            f_out.close()
-            f_in.close()
-            os.remove(tarPath)
-        print "Tar files rezipped"
-        
-       
+      
 class Dictionary():
     """Representation of a dictionary containing a list of words for a given 
     language along with their unigram frequencies. The dictionary is used
