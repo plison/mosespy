@@ -524,7 +524,7 @@ class ParallelReader():
         self.queueMonitor.start()
   
 
-    def extractBitext(self, nbThreads = 1):
+    def extractBitext(self, nbThreads = 16):
               
         while len(self.toProcess) > 0:
             linkGrp = self.toProcess.pop()    
