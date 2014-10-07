@@ -524,11 +524,11 @@ class ParallelReader():
         self.queueMonitor.start()
   
 
-    def extractBitext(self, nbThreads = 16):
+    def extractBitext(self, nbThreads = 1):
               
         while len(self.toProcess) > 0:
             linkGrp = self.toProcess.pop()    
-            while threading.activeCount() == nbThreads:
+            while threading.activeCount() == (nbThreads + 1):
                 time.sleep(0.1)            
             resultQueue = Queue()
             t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
