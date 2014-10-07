@@ -508,8 +508,6 @@ class XCESCorpus(AlignedDocs):
             os.remove(tarPath)
         print "Tar files rezipped"
         
- 
- 
         
         
 class ParallelReader():
@@ -526,8 +524,7 @@ class ParallelReader():
         self.queueMonitor.start()
   
 
-            
-    def extractBitext(self, nbThreads = 10):
+    def extractBitext(self, nbThreads = 1):
               
         while len(self.toProcess) > 0:
             linkGrp = self.toProcess.pop()    
