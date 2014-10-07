@@ -565,7 +565,7 @@ class Dictionary():
         return word
 
     def isWord(self, word):
-        wlow = word.lower()
+        wlow = word.decode("utf-8").lower().encode("utf-8")
         return wlow in self.words or re.sub(r"['-]","",wlow) in self.words
     
     def getCorrections(self):
@@ -577,7 +577,7 @@ class Dictionary():
     
   
     def getNbOccurrences(self, word):
-        wlow = word.lower()
+        wlow = word.decode("utf-8").lower().encode("utf-8")
         if wlow in self.words:
             return self.words[wlow]
         elif re.sub(r"['-]","",wlow):
