@@ -435,7 +435,7 @@ class XCESCorpus(AlignedDocs):
                 if not tari.issym():
                     tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
                                            tari.name.find("/"+self.targetLang+"/"))+1:]
-                    subtitles[tarkey] = mmapped,tari.offset_data, tari.size
+                    subtitles[tarkey] = tarPath,tari.offset_data, tari.size
             print "Finished processing file " + tarPath
             tarFile.close()
         return subtitles
