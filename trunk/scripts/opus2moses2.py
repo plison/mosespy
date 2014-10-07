@@ -462,13 +462,13 @@ class XCESCorpus(AlignedDocs):
         
         print("Parsing file " + self.xcesFile)
         bitext = {} 
-        root = etree.parse(str(self.xcesFile)).getroot()
+        root = etree.parse(self.xcesFile).getroot()
                         
         count = 0
         for element in root:
-            
+            print("-")
             if element.tag == "linkGrp":
-                     
+                print("yes")
                 fromdoc, alignments = self._readGroup(element)
                 
                 # If the resulting list of alignments is less than two thirds of the
@@ -500,8 +500,8 @@ class XCESCorpus(AlignedDocs):
         alignmentList = []
         for link in [l for l in linkGrp if l.tag=='link']:
             split = link.attrib["xtargets"].split(";")
-            srcLineIndices = [int(i) for i in split[0].strip().split(" ") if len(i)>0]
-            trgLineIndices = [int(i) for i in split[1].strip().split(" ") if len(i)>0]
+            srcLineIndices = [int(i) for i in split[0].strip().split() if len(i)>0]
+            trgLineIndices = [int(i) for i in split[1].strip().split() if len(i)>0]
                           
             # Pruning out empty or seriously unbalanced alignments   
             if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
