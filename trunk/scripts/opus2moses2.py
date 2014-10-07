@@ -458,27 +458,35 @@ class XCESCorpus(AlignedDocs):
         print "Extracting alignments"
         bitext = {}
         queues = []
-        for l in range(0, len(self.xmlRoot)):
-            linkGrp = self.xmlRoot[l]
-            if linkGrp.tag == 'linkGrp':
-       
-                while len(queues) == nbThreads:
-                    time.sleep(0.01)
-                    for queue in list(queues):
-                        if not queue.empty():
-                            bitext[linkGrp.attrib['fromDoc']] = queue.get()
-                            queues.remove(queue)
-
-                resultQueue = Queue()
-                t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
-                t.start()
-                queues.append(resultQueue)
-                                
-            if not (l % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
+        
+        linkGrps = [c for c in self.xmlRoot.getChildren() if c.tag == 'linkGrp']
+        for linkGrp in linkGrps: 
+            
+            resultQueue = Queue()
+            t = Thread(target=self._readGroup, args= ((linkGrp, resultQueue)))
+            t.start()
+            queues.append(resultQueue)
+            
+            while len(queues) == nbThreads:
+                for finished in [q for q in queues if not q.empty()]:
+                    bitext[linkGrp.attrib['fromDoc']] = finished.get()
+                    queues.remove(finished)
+                if len(finished) == 0:
+                    time.sleep(0.1)
+                               
+            if not (linkGrp % (len(self.xmlRoot)/min(100,len(self.xmlRoot)))):
                 nbReals = len([d for d in bitext.keys() if bitext[d]])
                 print ("%i aligned files already processed (%i %% of %i):"
                        %(len(bitext), (len(bitext)*100/len(self.xmlRoot)), len(self.xmlRoot))
-                       + " %i stored and %i discarded."%(nbReals, len(bitext)-nbReals))
+                       + " %i stored and %i discarded."%(nbReals, len(bitext)-nbReals))              
+                           
+        while len(queues) > 0:
+            for finished in [q for q in queues if not q.empty()]:
+                bitext[linkGrp.attrib['fromDoc']] = finished.get()
+                queues.remove(finished)
+            if len(finished) == 0:
+                time.sleep(0.1)
+            
           
         for d in list(bitext.keys()):
             if not bitext[d]:
