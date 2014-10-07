@@ -743,7 +743,10 @@ def normalise(line):
 def strip(word):
     """Strips the word of accents and punctuation."""
     
-    normalised = unicodedata.normalize('NFKD',word)
+    try:
+        normalised = unicodedata.normalize('NFKD',word)
+    except TypeError:
+        normalised = unicodedata.normalize('NFKD',word.decode("utf-8"))        
     stripped = normalised.encode("ascii", "ignore").lower().decode("ascii")
     stripped= re.sub(r"[\.,;':\-!]", "", stripped)
     return stripped
