@@ -192,7 +192,7 @@ class AlignedDocs(object):
             for pair in self.bitext[document]:
                 if pair[0] and pair[1]:
                     srcFile.write(pair[0] +"\n")
-                    trgFile.write(pair[1][0] if isinstance(pair[1],list) else pair[1] +"\n")
+                    trgFile.write((pair[1][0] if isinstance(pair[1],list) else pair[1]) +"\n")
         
         srcFile.close()
         trgFile.close()
@@ -638,7 +638,7 @@ class Dictionary():
         
         self.no_accents = {}
         first_words = list(self.words.keys())[0:100]
-        if re.search(r"[\xa8\xa9\xa0\xb9]", " ".join(first_words)):
+        if re.search(r"[\xe9\xa8\xa9\xa0\xb9]", " ".join(first_words)):
             print("Creating unaccented version of dictionary " + dicFile)
             for w in self.words:
                 stripped = strip(w)
