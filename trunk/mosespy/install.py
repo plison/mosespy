@@ -46,7 +46,6 @@ import mosespy.system as system
 from mosespy.system import Path
 
 rootPath = Path(__file__).getAbsolute().getUp().getUp()
-print rootPath
 expDir = rootPath + "/experiments/"
 moses_root = Path(rootPath + "/moses")
 mgizapp_root = Path(rootPath + "/mgizapp")
