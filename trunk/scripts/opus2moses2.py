@@ -378,13 +378,13 @@ class XCESCorpus(AlignedDocs):
         
         for element in root:
             if element.tag == "linkGrp":
-                fromDoc, toDoc, alignments = self._readGroup(element)
+                fromDoc, alignments = self._readGroup(element)
                 
                 # If the resulting list of alignments is less than two thirds of the
                 # original number of alignments, discard the document
                 if len(alignments) > (2*len(element)/3):
-                    bitext[(fromDoc,toDoc)] = alignments
-                    scores[(fromDoc,toDoc)] = float(len(alignments))/len(element)
+                    bitext[fromDoc] = alignments
+                    scores[fromDoc] = float(len(alignments))/len(element)
                 
                 count += 1
                 if not (count % int(nbDocs/min(100,nbDocs))):                    
@@ -497,7 +497,7 @@ class XCESCorpus(AlignedDocs):
                     alignmentList.append((normalise(sourceLine), 
                                           normalise(targetLine)))
         
-        return fromDoc, toDoc, alignmentList
+        return fromDoc, alignmentList
             
  
     def _readDocument(self, doc): 
