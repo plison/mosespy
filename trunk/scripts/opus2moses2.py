@@ -68,7 +68,7 @@ class AlignedDocs(object):
         
     """
     
-    def __init__(self, bitext, sourceLang, targetLang, scores=None):
+    def __init__(self, bitext, sourceLang, targetLang):
         """Creates a new set of aligned documents with the bitext content
         as well as the source and target language codes.
         
@@ -76,12 +76,6 @@ class AlignedDocs(object):
         self.bitext = bitext
         self.sourceLang = sourceLang
         self.targetLang = targetLang
-        if scores:
-            self.scores = scores
-        else:
-            for key in self.bitext:
-                self.scores[key] = 1.0
-    
       
     def getInverse(self):
         """Reverts the direction of the alignment (source becomes target and
@@ -351,15 +345,15 @@ class XCESCorpus(AlignedDocs):
         self.documents = self._loadTarFiles()
                     
         print("Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang))
-        bitext, scores = self.getBitext()
-        AlignedDocs.__init__(self, bitext, self.sourceLang, self.targetLang, scores)
+        bitext, self.scores = self.getBitext()
+        AlignedDocs.__init__(self, bitext, self.sourceLang, self.targetLang)
         print("Finished parsing file " + xcesFile)
         
         if rezipFiles:
             self._rezipTarFiles()
      
                                          
-    def getBitext(self, nbThreads = 16):
+    def getBitext(self):
         """Extracts the bitext from the XCES corpus.  The bitext is a set of aligned
         documents, each document being composed of a list of aligned pairs
         (sourceLine, targetLine).
@@ -391,7 +385,6 @@ class XCESCorpus(AlignedDocs):
                 if len(alignments) > (2*len(element)/3):
                     bitext[(fromDoc,toDoc)] = alignments
                     scores[(fromDoc,toDoc)] = float(len(alignments))/len(element)
-                    print("Scores: "+ str(scores[(fromDoc,toDoc)]))
                 
                 count += 1
                 if not (count % int(nbDocs/min(100,nbDocs))):                    
@@ -478,7 +471,7 @@ class XCESCorpus(AlignedDocs):
         
         #Extracting the source and target lines
         fromDoc = linkGrp.attrib["fromDoc"]
-        toDoc = linkGrp.attrib["fromDoc"]
+        toDoc = linkGrp.attrib["toDoc"]
         fromLines = self._readDocument(fromDoc)
         toLines =  self._readDocument(toDoc)
                    
