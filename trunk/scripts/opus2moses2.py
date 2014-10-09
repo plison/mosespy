@@ -481,17 +481,17 @@ class XCESCorpus(AlignedDocs):
                 split = link.attrib["xtargets"].split(";")
                 srcLineIndices = [int(i) for i in split[0].strip().split() if len(i)>0]
                 trgLineIndices = [int(i) for i in split[1].strip().split() if len(i)>0]
-                              
+                                             
                 # Pruning out empty or seriously unbalanced alignments   
                 if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
                     or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
-                    continue    
-                try:   
-                    sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
-                    targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
-                except IndexError:
-                    print("alignment error with file %s"%(fromDoc))
                     continue
+                elif srcLineIndices[-1] > len(fromLines) or trgLineIndices[-1] > len(toLines):
+                    print("Skipping out-of-range alignment for doc " + fromDoc)
+                    break
+                    
+                sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
+                targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
                 
                 if sourceLine and targetLine:
                     alignmentList.append((normalise(sourceLine), 
