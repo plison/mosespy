@@ -59,7 +59,7 @@ __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
 __version__ = "$Date::                      $"
 
-import json,  re
+import json,  re, copy
 import mosespy.system as system
 import mosespy.install as install
 from mosespy.system import Path
@@ -530,17 +530,16 @@ class Experiment(object):
             newExpName (str): the new name for the copied experiment.
         
         """
-        newexp = Experiment(nexExpName, self.sourceLang, self.targetLang)
-        newexp.lm = self.lm
-        newexp.tm = self.tm
-        newexp.nbThreads = self.nbThreads
-        newexp.iniFile = self.iniFile
-        newexp.sourceLang = self.sourceLang
-        newexp.targetLang = self.targetLang
-        newexp.results = self.results
+        newexp = Experiment(str(nexExpName), self.sourceLang, self.targetLang)
+        newexp.lm = copy.deepcopy(self.lm)
+        newexp.tm = Path(self.tm)
+        newexp.nbThreads = int(self.nbThreads)
+        newexp.iniFile = Path(self.iniFile)
+        newexp.sourceLang = str(self.sourceLang)
+        newexp.targetLang = str(self.targetLang)
+        newexp.results = copy.deepcopy(self.results)
         newexp.processor = self.processor
         return newexp
- 
  
     
     def _estimateLanguageModel(self, corpusFile, ngram_order, outputFile, continuous=False):

@@ -45,6 +45,7 @@ __version__ = "$Date:: 2014-08-26 08:44:16 #$"
 import mosespy.system as system
 from mosespy.system import Path
 
+print "HERE: " + str(__file__)
 rootPath = Path(__file__).getUp().getUp()
 expDir = rootPath + "/experiments/"
 moses_root = Path(rootPath + "/moses")
