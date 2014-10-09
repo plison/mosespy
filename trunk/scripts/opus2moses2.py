@@ -59,7 +59,7 @@ __version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 from io import BytesIO
 import  os, math, sys, re, collections, tarfile, gzip
-import codecs, random, unicodedata
+import codecs, random, unicodedata, copy
 import xml.etree.cElementTree as etree
 
 
@@ -68,14 +68,19 @@ class AlignedDocs(object):
         
     """
     
-    def __init__(self, bitext, sourceLang, targetLang):
-        """Creates a new set of aligned subtitles with the bitext content
+    def __init__(self, bitext, sourceLang, targetLang, scores=None):
+        """Creates a new set of aligned documents with the bitext content
         as well as the source and target language codes.
         
         """
         self.bitext = bitext
         self.sourceLang = sourceLang
         self.targetLang = targetLang
+        if scores:
+            self.scores = scores
+        else:
+            for key in self.bitext:
+                self.scores[key] = 1.0
     
       
     def getInverse(self):
@@ -101,26 +106,7 @@ class AlignedDocs(object):
         return (AlignedDocs(part1, self.sourceLang, self.targetLang),
                 AlignedDocs(part2, self.sourceLang, self.targetLang))
         
-              
-      
-    def divideData(self, nbTuningFiles=2, nbTestFiles=20):
-        """Divides the aligned documents into three subsets that respectively
-        corresponds to the training, tuning and test sets. 
         
-        For the test set, alternative translations (in the same directory as 
-        the documents initially selected) are extracted.
-        
-        """
-        trainingData = AlignedDocs(self.bitext, self.sourceLang, self.targetLang)
-        
-        print("Extracting test data")
-        testData = trainingData.extractData(nbTestFiles)        
-        testData = MultiAlignedDocs(testData)      
-     
-        print("Extracting tuning data")
-        tuneData = trainingData.extractData(nbTuningFiles)
-        
-        return trainingData, tuneData, testData
         
    
     def spellcheck(self, srcDic, trgDic, correct=True, dumpCorrections=True):
@@ -134,7 +120,7 @@ class AlignedDocs(object):
                 trgLine = bitextdoc[i][1]
                 
                 # If the two aligned sentences are identical, skip the corrections
-                # (for e.g. cases where the subtitles are song lyrics)
+                # (for e.g. cases where the lines are song lyrics)
                 if strip(srcLine) == strip(trgLine):
                     continue
                 
@@ -196,45 +182,7 @@ class AlignedDocs(object):
         
         srcFile.close()
         trgFile.close()
-            
-    
-    def extractData(self, nbDirs):
-        """Extracts aligned documents from a number of directories (the directories
-        with the largest number of documents being selected first) and returns
-        the aligned subtitles for these documents.
-        
-        """     
-        if len(self.bitext) < 20:
-            raise RuntimeError("not enough data to divide")
-        
-        extractedBitext = {}
-        print("Sorting data by number of duplicates")
-        nbEntries = collections.defaultdict(int)
-        for a in self.bitext.keys():
-            nbEntries[os.path.dirname(a)] += 1
-        directories = sorted(list(nbEntries.keys()), key=lambda x : nbEntries[x])
-              
-        while len(extractedBitext) < nbDirs and len(directories)>0:
-            testDir = directories.pop()
-            print("Extracting best alignments for " + testDir)
-            subset = extraction(self.bitext, [x for x in self.bitext if testDir in x])
-            alignedDocs= list(subset.keys())
-            alignedDocs.sort(key=lambda x: max([len(y) for y in subset[x]]))
-            bestAlignment = extraction(self.bitext, [alignedDocs[-1]])
-            extractedBitext.update(bestAlignment)
-            self._removeDirs([testDir])
 
-        return AlignedDocs(extractedBitext, self.sourceLang, self.targetLang)   
-    
-  
-    def _removeDirs(self, dirsToRemove):
-        """Removes a set of directories from the aligned subtitles"""
-        newAligns = {}
-        for a in self.bitext:
-            if os.path.dirname(a) not in dirsToRemove:
-                newAligns[a] = self.bitext[a]
-        self.bitext = newAligns
- 
 
 def extraction(fullDic, subkeys):
     """Extracts a new dictionary that only contains the provided keys"""
@@ -333,7 +281,7 @@ class MultiAlignedDocs(AlignedDocs):
         
     def getNbAlternativeTranslations(self):
         """Returns the maximum number of alternative translations for the 
-        aligned subtitles.
+        aligned documents.
         
         """
         nbTranslations = 1
@@ -400,51 +348,17 @@ class XCESCorpus(AlignedDocs):
             else:
                 raise RuntimeError("XML file not properly formatted")
                    
-        self.subtitles = self._loadTarFiles()
+        self.documents = self._loadTarFiles()
                     
         print("Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang))
-        bitext = self.getBitext()
-        AlignedDocs.__init__(self, bitext, self.sourceLang, self.targetLang)
+        bitext, scores = self.getBitext()
+        AlignedDocs.__init__(self, bitext, self.sourceLang, self.targetLang, scores)
         print("Finished parsing file " + xcesFile)
         
         if rezipFiles:
             self._rezipTarFiles()
      
-                    
-    def _loadTarFiles(self):
-        """Loads the tar files that correspond to the corpus files for the
-        XCES alignments.  The files can be in .tar or .tar.gz format (in which
-        case they are uncompressed).  A list of subtitle documents (with the
-        detailed location in each tar file) is generated from these files.
-        
-        """
-        subtitles = {}
-        tarPaths = self._getRelevantTarFiles()
-        
-        print("Opening tarred files in same directory...")
-        for tarPath in tarPaths: 
-            
-            if tarPath.endswith(".tar.gz"):
-                print("Decompressing file " + tarPath)               
-                zipped = gzip.open(tarPath, 'rb')
-                unzipped = open(tarPath.replace(".gz", ""), 'wb')
-                unzipped.write(zipped.read())
-                zipped.close()
-                unzipped.close()
-                os.remove(tarPath)
-                tarPath = unzipped.name
-            
-            tarFile = tarfile.open(tarPath, 'r')          
-            for tari in tarFile:
-                if not tari.issym():
-                    tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
-                                           tari.name.find("/"+self.targetLang+"/"))+1:]
-                    subtitles[tarkey] = tarPath,tari.offset_data, tari.size
-            print("Finished processing file " + tarPath)
-            tarFile.close()
-        return subtitles
-  
-                                       
+                                         
     def getBitext(self, nbThreads = 16):
         """Extracts the bitext from the XCES corpus.  The bitext is a set of aligned
         documents, each document being composed of a list of aligned pairs
@@ -456,12 +370,13 @@ class XCESCorpus(AlignedDocs):
         The method prunes the following alignments: (1) empty or greatly unbalanced
         aligned pairs (2) documents for which the resulting alignment list is less than 
         two third of the original alignments in the XCES file (which often indicates
-        that the two subtitles refer to different sources).
+        that the two documents refer to different sources).
         
         """       
         
         print("Parsing file " + self.xcesFile)
-        bitext = {} 
+        bitext = {}
+        scores = {}
         root = etree.parse(self.xcesFile).getroot()          
         nbDocs = len(root)
         count = 0
@@ -469,10 +384,14 @@ class XCESCorpus(AlignedDocs):
         
         for element in root:
             if element.tag == "linkGrp":
-                fromdoc, alignments = self._readGroup(element)
+                fromDoc, toDoc, alignments = self._readGroup(element)
                 
-                if len(alignments) > 0:
-                    bitext[fromdoc] = alignments
+                # If the resulting list of alignments is less than two thirds of the
+                # original number of alignments, discard the document
+                if len(alignments) > (2*len(element)/3):
+                    bitext[(fromDoc,toDoc)] = alignments
+                    scores[(fromDoc,toDoc)] = float(len(alignments))/len(element)
+                    print("Scores: "+ str(scores[(fromDoc,toDoc)]))
                 
                 count += 1
                 if not (count % int(nbDocs/min(100,nbDocs))):                    
@@ -483,17 +402,85 @@ class XCESCorpus(AlignedDocs):
 
         print ("Percentage of discarded pairs: %i %%"
                %((len(root)-len(bitext))*100/len(root)))
-        return bitext
+        
+        return bitext, scores
     
+ 
+    def copy(self):
+        cp = XCESCorpus.__new__(XCESCorpus)
+        cp.sourceLang = str(self.sourceLang)
+        cp.targetLang = str(self.targetLang)
+        cp.bitext = copy.deepcopy(self.bitext)
+        cp.scores = copy.deepcopy(self.scores)
+        cp.documents =  copy.deepcopy(self.documents)
+        return cp
+        
+      
+    def divideData(self, nbTuningFiles=2, nbTestFiles=20):
+        """Divides the aligned documents into three subsets that respectively
+        corresponds to the training, tuning and test sets. 
+        
+        For the test set, alternative translations (in the same directory as 
+        the documents initially selected) are extracted.
+        
+        """
+        trainingData =self.copy()
+        
+        print("Extracting test data")
+        testData = trainingData._extractData(nbTestFiles)        
+        testData = MultiAlignedDocs(testData)      
+     
+        print("Extracting tuning data")
+        tuneData = trainingData._extractData(nbTuningFiles)
+        
+        return trainingData, tuneData, testData 
     
+            
+    
+                  
+    def _loadTarFiles(self):
+        """Loads the tar files that correspond to the corpus files for the
+        XCES alignments.  The files can be in .tar or .tar.gz format (in which
+        case they are uncompressed).  A list of documents (with the detailed location 
+        in each tar file) is generated from these files.
+        
+        """
+        documents = {}
+        tarPaths = self._getRelevantTarFiles()
+        
+        print("Opening tarred files in same directory...")
+        for tarPath in tarPaths: 
+            
+            if tarPath.endswith(".tar.gz"):
+                print("Decompressing file " + tarPath)               
+                zipped = gzip.open(tarPath, 'rb')
+                unzipped = open(tarPath.replace(".gz", ""), 'wb')
+                for zippedLine in zipped:
+                    unzipped.write(zippedLine)
+                zipped.close()
+                unzipped.close()
+                os.remove(tarPath)
+                tarPath = unzipped.name
+            
+            tarFile = tarfile.open(tarPath, 'r')          
+            for tari in tarFile:
+                if not tari.issym():
+                    tarkey = tari.name[max(tari.name.find("/"+self.sourceLang+"/"), 
+                                           tari.name.find("/"+self.targetLang+"/"))+1:]
+                    documents[tarkey] = tarPath,tari.offset_data, tari.size
+            print("Finished processing file " + tarPath)
+            tarFile.close()
+        return documents
+  
     
     def _readGroup(self, linkGrp):
         """Reads the XML group 'link' containing the alignments."""
         
         #Extracting the source and target lines
         fromDoc = linkGrp.attrib["fromDoc"]
+        toDoc = linkGrp.attrib["fromDoc"]
         fromLines = self._readDocument(fromDoc)
-        toLines =  self._readDocument(linkGrp.attrib["toDoc"])
+        toLines =  self._readDocument(toDoc)
                    
         alignmentList = []
         for link in linkGrp:
@@ -516,24 +503,19 @@ class XCESCorpus(AlignedDocs):
                 if sourceLine and targetLine:
                     alignmentList.append((normalise(sourceLine), 
                                           normalise(targetLine)))
-            
-        # If the resulting list of alignments is less than two thirds of the
-        # original number of alignments, discard the document
-        if len(alignmentList) < (2*len(linkGrp)/3):
-            alignmentList = []
         
-        return fromDoc, alignmentList
+        return fromDoc, toDoc, alignmentList
             
  
     def _readDocument(self, doc): 
         """Extracts the list of lines from the document.  The list of 
-        subtitle documents must already be generated  in self.subtitles
+        documents must already be generated  in self.documents
         
         """
         
-        if doc in self.subtitles:
-            tarFile = open(self.subtitles[doc][0], 'rb')
-            offset, size = self.subtitles[doc][1:]
+        if doc in self.documents:
+            tarFile = open(self.documents[doc][0], 'rb')
+            offset, size = self.documents[doc][1:]
             tarFile.seek(offset,0)
             content = tarFile.read(size)
             zippedFile = gzip.GzipFile(fileobj=BytesIO(content),mode='rb')
@@ -593,7 +575,7 @@ class XCESCorpus(AlignedDocs):
         """Rezips the tar files."""
         
         unzippedFiles = set()
-        for (tarPath,_,_) in self.subtitles.values():
+        for (tarPath,_,_) in self.documents.values():
             unzippedFiles.add(tarPath)
         print("Rezipping the tar files: %s"%(str(unzippedFiles)))
             
@@ -606,7 +588,45 @@ class XCESCorpus(AlignedDocs):
             os.remove(tarPath)
         print("Tar files rezipped")
         
-       
+     
+    def _extractData(self, nbDirs):
+        """Extracts aligned documents from a number of directories (the directories
+        with the largest number of documents being selected first) and returns
+        the sentence alignments for the documents.
+        
+        """     
+        if len(self.bitext) < 20:
+            raise RuntimeError("not enough data to divide")
+        
+        print("Sorting data by number of duplicates")
+        
+        nbEntries = collections.defaultdict(int)
+        for a in self.bitext.keys():
+            nbEntries[os.path.dirname(a)] += 1
+        directories = sorted(list(nbEntries.keys()), key=lambda x : nbEntries[x])
+              
+        extractedBitext = {}
+        while len(extractedBitext) < nbDirs and len(directories)>0:
+            testDir = directories.pop()
+            print("Extracting optimal alignments for " + testDir)
+            subset = extraction(self.bitext, [x for x in self.bitext if testDir in x])
+            bestAlignedDoc = max(subset.keys(), key=lambda x : self.scores[x])
+            bestAlignment = extraction(self.bitext, [bestAlignedDoc])
+            extractedBitext.update(bestAlignment)
+            self._removeDirs([testDir])
+
+        return AlignedDocs(extractedBitext, self.sourceLang, self.targetLang)   
+    
+  
+    def _removeDirs(self, dirsToRemove):
+        """Removes a set of directories from the aligned documents"""
+        newAligns = {}
+        for a in self.bitext:
+            if os.path.dirname(a) not in dirsToRemove:
+                newAligns[a] = self.bitext[a]
+        self.bitext = newAligns
+ 
+          
 class Dictionary():
     """Representation of a dictionary containing a list of words for a given 
     language along with their unigram frequencies. The dictionary is used
