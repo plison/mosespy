@@ -342,7 +342,7 @@ class XCESCorpus(AlignedDocs):
             else:
                 raise RuntimeError("XML file not properly formatted")
                    
-        self.documents = self._loadTarFiles()
+   #     self.documents = self._loadTarFiles()
                     
         print("Source lang: %s, target lang: %s"%(self.sourceLang, self.targetLang))
         bitext, self.scores = self.getBitext()
