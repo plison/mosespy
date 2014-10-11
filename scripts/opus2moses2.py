@@ -385,6 +385,8 @@ class XCESCorpus(AlignedDocs):
                 if len(alignments) > (2*len(element)/3):
                     bitext[fromDoc] = alignments
                     scores[fromDoc] = float(len(alignments))/len(element)
+                elif len(alignments) < len(element)/2:
+                    print "bad alignment: " + fromDoc + " (" + (len(alignments)*100.0)/len(element) + ")"
                 
                 count += 1
                 if not (count % int(nbDocs/min(100,nbDocs))):                    
@@ -693,7 +695,8 @@ class Dictionary():
     def dumpCorrections(self):
         """Dumps the corrections to a file named {dictionary file}.corrections."""
         with codecs.open(self.dicFile +".corrections", 'w', encoding="utf-8") as dump:
-            dump.write("\n".join(["%s -> %s"%(p1,p2) for (p1,p2) in self.corrections]))
+            for (p1,p2) in self.corrections:
+                dump.write("%s -> %s"%(p1,p2) + "\n")
 
             
     def getWords(self):
