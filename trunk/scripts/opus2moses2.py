@@ -386,7 +386,7 @@ class XCESCorpus(AlignedDocs):
                     bitext[fromDoc] = alignments
                     scores[fromDoc] = float(len(alignments))/len(element)
                 elif len(alignments) < len(element)/2:
-                    print "bad alignment: " + fromDoc + " (" + (len(alignments)*100.0)/len(element) + ")"
+                    print "bad alignment: " + fromDoc + " (" + str((len(alignments)*100.0)/len(element)) + ")"
                 
                 count += 1
                 if not (count % int(nbDocs/min(100,nbDocs))):                    
