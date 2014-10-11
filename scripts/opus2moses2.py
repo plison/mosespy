@@ -474,8 +474,8 @@ class XCESCorpus(AlignedDocs):
         #Extracting the source and target lines
         fromDoc = linkGrp.attrib["fromDoc"]
         toDoc = linkGrp.attrib["toDoc"]
-        fromLines = self._readDocument(fromDoc)
-        toLines =  self._readDocument(toDoc)
+    #    fromLines = self._readDocument(fromDoc)
+    #    toLines =  self._readDocument(toDoc)
                    
         alignmentList = []
         for link in linkGrp:
@@ -488,16 +488,16 @@ class XCESCorpus(AlignedDocs):
                 if (len(srcLineIndices) == 0 or len(trgLineIndices)==0 
                     or len(srcLineIndices) >2 or len(trgLineIndices) > 2):
                     continue
-                elif srcLineIndices[-1] > len(fromLines) or trgLineIndices[-1] > len(toLines):
-                    print("Skipping out-of-range alignment for doc " + fromDoc)
-                    break
+         #       elif srcLineIndices[-1] > len(fromLines) or trgLineIndices[-1] > len(toLines):
+         #           print("Skipping out-of-range alignment for doc " + fromDoc)
+         #           break
                     
-                sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
-                targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
+         #       sourceLine = " ".join([fromLines[j-1].strip() for j in srcLineIndices])
+         #       targetLine = " ".join([toLines[j-1].strip() for j in trgLineIndices])
                 
-                if sourceLine and targetLine:
-                    alignmentList.append((normalise(sourceLine), 
-                                          normalise(targetLine)))
+                if True:
+                    alignmentList.append((srcLineIndices, 
+                                          trgLineIndices))
         
         return fromDoc, alignmentList
             
