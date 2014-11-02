@@ -30,6 +30,7 @@
 #include "math.h"
 #include "lmContainer.h"
 
+#define MAX_N   100
 /********************************/
 using namespace std;
 using namespace irstlm;
@@ -170,10 +171,10 @@ int main(int argc, char **argv)
 
   std::cerr << "dub: " << dub<< std::endl;
 
-  lmContainer *lmt[100], *start_lmt[100]; //interpolated language models
-  std::string lmf[100]; //lm filenames
+  lmContainer *lmt[MAX_N], *start_lmt[MAX_N]; //interpolated language models
+  std::string lmf[MAX_N]; //lm filenames
 
-  float w[100]; //interpolation weights
+  float w[MAX_N]; //interpolation weights
   int N;
 
 
@@ -194,8 +195,8 @@ int main(int argc, char **argv)
 
   N=atoi(words[1]);
   std::cerr << "Number of LMs: " << N << "..." << std::endl;
-  if(N > 100) {
-		exit_error(IRSTLM_ERROR_DATA,"Can't interpolate more than 100 language models");
+  if(N > MAX_N) {
+		exit_error(IRSTLM_ERROR_DATA,"Can't interpolate more than MAX_N language models");
 		
   }
 
@@ -229,9 +230,8 @@ int main(int argc, char **argv)
 
   //Learning mixture weights
   if (learn) {
-
-    std::vector<float> p[100]; //LM probabilities
-    float c[100]; //expected counts
+    std::vector<float> *p = new std::vector<float>[N]; //LM probabilities
+    float c[N]; //expected counts
     float den,norm; //inner denominator, normalization term
     float variation=1.0; // global variation between new old params
 
@@ -255,6 +255,7 @@ int main(int argc, char **argv)
         lstream >> token >> id >> newlm;
         if(id <= 0 || id > N) {
           std::cerr << "LM id out of range." << std::endl;
+	  delete[] p;
           return 1;
         }
         id--; // count from 0 now
@@ -317,6 +318,7 @@ int main(int argc, char **argv)
     outtxt << "LMINTERPOLATION " << N << "\n";
     for (int i=0; i<N; i++) outtxt << w[i] << " " << lmf[i] << "\n";
     outtxt.close();
+    delete[] p;
   }
 
   for(int i = 0; i < N; i++)
