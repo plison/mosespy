@@ -2,9 +2,11 @@
 # have all needed files, that a GNU package needs
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = src scripts 
+SUBDIRS = src scripts doc 
 
 EXTRA_DIST = README RELEASE Copyright
 
 ACLOCAL_AMFLAGS = -I m4
 
+dist-hook:
+	rm -rf `find $(distdir)/doc -type d -name .svn`
