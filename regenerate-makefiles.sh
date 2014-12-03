@@ -29,6 +29,11 @@ then
     AUTOMAKE=`which automake`
 fi
 
+if [ -z "$AUTORECONF" ]
+then
+    AUTORECONF=`which autoreconf`
+fi
+
 if [ -z "$AUTOCONF" ]
 then
     AUTOCONF=`which autoconf`
@@ -44,15 +49,17 @@ then
     fi
 fi
 
+echo "Calling $AUTORECONF"
+$AUTORECONF
 
-echo "Calling $LIBTOOLIZE $force"
-$LIBTOOLIZE $force || die "libtoolize failed"
+#echo "Calling $LIBTOOLIZE $force"
+#$LIBTOOLIZE $force || die "libtoolize failed"
 
-echo "Calling $ACLOCAL..."
-$ACLOCAL -I m4 || die "aclocal failed"
+#echo "Calling $ACLOCAL..."
+#$ACLOCAL -I m4 || die "aclocal failed"
 
-echo "Calling $AUTOCONF..."
-$AUTOCONF || die "autoconf failed"
+#echo "Calling $AUTOCONF..."
+#$AUTOCONF || die "autoconf failed"
 
-echo "Calling $AUTOMAKE --add-missing..."
-$AUTOMAKE --add-missing || die "automake failed"
+#echo "Calling $AUTOMAKE --add-missing..."
+#$AUTOMAKE --add-missing || die "automake failed"
