@@ -1,0 +1,51 @@
+{\IRSTLM} supports three output formats of LMs. These formats have the
+purpose of permitting  the use of LMs by  external programs.
+\COMMENT{External
+programs could in principle estimate the LM from an $n$-gram table before
+using it, but this would take much more time and memory! So the best thing
+to do is to first  estimate the LM, and then compile it into a binary format   
+that is more compact and that can be quickly loaded and queried by the 
+external program.
+}
+
+\subsection{ARPA Format}
+This format was  introduced in DARPA ASR evaluations  to exchange LMs.
+ARPA format  is  supported by most third party LM toolkit, like SRILM and KenLM.
+It is  a text format which is rather costly in terms of memory. There is no limit to
+the size $n$ of $n$-grams.
+
+\subsection{qARPA Format}
+This extends the ARPA format by including codebooks that quantize 
+probabilities and back-off weights of each $n$-gram level. This format
+is created through the command {\tt quantize-lm}.
+
+The header {\tt qARPA} identifies this type of LM format.
+
+\subsection{iARPA Format}
+This is an {\em intermediate} ARPA format in the sense that each entry of the file
+does not contain in the first position the full $n$-gram probability, but just its
+smoothed frequency, i.e.:\\
+\noindent
+{\tt ...\\
+f(z|x y) x y z bow(x y)\\
+...
+}
+
+The header {\tt iARPA} identifies this type of LM format.
+
+\noindent
+Nevertheless, iARPA format is properly managed by the {\tt compile-lm} command
+in order to generate a binary version or a standard ARPA version.
+
+
+\subsection{Binary Formats}
+Both ARPA and qARPA formats can be converted into a binary format 
+that allows for space savings on disk and a much quicker upload of
+the LM file.  Binary versions can be created with the command 
+{\tt compile-lm}, that produces files with  headers {\tt blmt} or {\tt Qblmt}.
+
+\noindent
+Moreover, for an even faster access you can store the ngrams in an inverted
+order (see Section~\ref{sec:inverted-lm});
+the files with inverted-ordered ngrams have headers  {\tt blmtI} or {\tt QblmtI}.
+

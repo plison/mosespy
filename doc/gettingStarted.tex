@@ -1,0 +1,76 @@
+After a successful installation, you are ready to use {\IRSTLM}.
+
+\noindent
+Data sets used in the following usage examples can be found in an archive you can download from the official website of {\IRSTLM}.
+
+
+\IMPORTANT{All programs assume that the environment variable {\bf IRSTLM} is correctly set to {\tt /path/to/install/doc}, and that that environment variable {\bf PATH} includes the command directory {\tt /path/to/install/bin}. see above}
+
+
+\paragraph{Preparation of Training Data}
+In order to estimate a Language Model, you first need to prepare your training corpus. The corpus just consists of a text.
+We assume that the text is already preprocessed according to the user needs; this means that lowercasing, uppercasing, tokenization, and any other text transformation has to be performed beforehand with other tools.
+
+\noindent
+You can only decide whether you are interested that {\IRSTLM} is aware
+of sentence boundaries, i.e. where a sentence starts and ends. Otherwise,
+the toolkit considers the corpus as a continuous stream of text, and does
+not identify sentence splits.  The following script adds start and end
+symbols ({\tt <s>} and {\tt </s>}, respectively) to all lines in your training corpus.
+\begin{verbatim}
+$> add-start-end.sh < your-text-file 
+\end{verbatim}
+
+\IMPORTANT{{\IRSTLM} assumes that each line corresponds to a sentence, regardless the presence of punctuation inside or at the end of the line.}
+\IMPORTANT{Start and end symbols ({\tt <s>} and {\tt </s>}) should be considered reserved symbols, and used only as sentence boundaries.}
+
+\noindent
+{\IRSTLM} does not compute probabilities for cross-sentence $n$-grams, i.e. $n$-grams including the pair {\tt </s>  <s>}.
+
+
+\paragraph{Training our first LM}
+\noindent
+We  are now ready to estimate a  3-gram (trigram)  LM by  running the command:
+
+\begin{verbatim}
+$> tlm -tr="gunzip -c train.gz" -n=3 -lm=wb -te=test
+\end{verbatim}
+\noindent
+which produces the output:
+\begin{verbatim}
+n=49984 LP=301734.5406 PP=418.4772517 OOVRate=0.05007602433
+\end{verbatim}
+\noindent
+The output shows the number of  words in the test set, the LM log-probability, the LM perplexity  
+and the out-of-vocabulary rate  of the test set.
+
+\noindent
+If you need  to train and test different language  models on the same data, a  more efficient 
+way to  proceed is to first  create an $n$-gram table of the training data:
+\begin{verbatim}
+$> ngt -i="gunzip -c train.gz" -n=3 -o=train.www -b=yes
+\end{verbatim}
+\noindent
+The command {\tt ngt} reads an  input text file, creates an  $n$-gram table of specified size ({\tt -n=3}), and 
+saves it in binary format ({\tt -b=yes}) into a specified output file.
+
+\noindent
+Now,  the  LM can  be  estimated and evaluated more quickly:
+\begin{verbatim}
+$> tlm -tr=train.www -n=3 -lm=wb -te=test
+\end{verbatim}
+
+\noindent
+Once  estimated, a  LM can  be also saved in the standard ARPA text format:
+\begin{verbatim}
+$> tlm -tr=train.www -n=3 -lm=wb  -o=train.lm
+\end{verbatim}
+or in a binary format 
+\begin{verbatim}
+$> tlm -tr=train.www -n=3 -lm=wb  -obin=train.blm
+\end{verbatim}
+
+\noindent
+(Remark: the  binary format formerly used by the IRST speech recognizer is still available, through the option
+{\tt -oasr <filename>}, but is no more supported.)
+
