@@ -6,22 +6,48 @@ AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_CHECK_TOOL(PDFLATEX,pdflatex,"no")
-AC_CHECK_TOOL(BIBTEX,bibtex,"no")
+#AC_CHECK_TOOL(PDFLATEX,pdflatex,"no")
+#AC_CHECK_TOOL(BIBTEX,bibtex,"no")
 
 AC_ARG_ENABLE([doc],
-    AS_HELP_STRING([--enable-doc], [enable creation of documentation]))
+   [AC_HELP_STRING([--enable-doc|--disable-doc], [Enable or Disable (default) creation of documentation])])
+
+AC_ARG_ENABLE([trace],
+   [AC_HELP_STRING([--enable-trace|--disable-trace], [Enable (default) or Disable trace info at run-time])])
+
+AC_ARG_ENABLE([debugging],
+   [AC_HELP_STRING([--enable-debugging|--disable-debugging], [Enable or Disable (default) debugging info ("-g -O2")])])
+
+AC_ARG_ENABLE(profiling,
+   [AC_HELP_STRING([--enable-profiling|--disable-profiling], [Enable or Disable (default) profiling info ("-pg")])])
+
+AC_ARG_ENABLE(caching,
+   [AC_HELP_STRING([--enable-caching|--disable-caching], [Enable or Disable (default) internal caches to store probs and other info])])
+
+AC_ARG_ENABLE(interpolatedsearch,
+   [AC_HELP_STRING([--enable-interpolatedsearch|--disable-interpolatedsearch], [Enable or Disable (default) interpolated search for n-grams])])
+
+AC_ARG_ENABLE(optimization,
+   [AC_HELP_STRING([--enable-optimization|--disable-optimization], [Enable or Disable (default) optimization info ("-O3")])])
+
+
+AC_ARG_WITH(zlib,
+            [AC_HELP_STRING([--with-zlib=PATH], [(optional) path to zlib])],
+            [with_zlib=$withval],
+            [with_zlib=no]
+           )
 
 AM_CONDITIONAL([DOC_COMPILATION],false)
 if test "x$enable_doc" = 'xyes'
 then
-    AM_CONDITIONAL([DOC_COMPILATION],true)
+    AC_CHECK_TOOL(PDFLATEX,pdflatex,"no")
+    AC_CHECK_TOOL(BIBTEX,bibtex,"no")
     if test "x$PDFLATEX" != "xno" && test "x$BIBTEX" != "xno"
     then
-        AC_MSG_NOTICE([pdflatex is available])
+        AM_CONDITIONAL([DOC_COMPILATION],true)
+        AC_MSG_NOTICE([pdflatex and bibtex are available])
         AC_MSG_NOTICE([documentation will be created])
     else
-        AM_CONDITIONAL([DOC_COMPILATION],false)
         AC_MSG_NOTICE([either pdflatex or bibtex is not available])
         AC_MSG_NOTICE([documentation will not be created (default); get it through the website $WEBSITE])
     fi
@@ -29,6 +55,72 @@ else
     AC_MSG_NOTICE([documentation will not be created (default); get it through the website $WEBSITE])
 fi
 
+
+#### Use this if you want that the default is yes
+#### if test "x$enable_foo" != 'xno'
+#### Use this if you want that the default is no
+#### if test "x$enable_foo" = 'xyes'
+
+
+if test "x$enable_trace" != 'xno'
+then
+    AC_MSG_NOTICE([trace enabled (default)])
+    CPPFLAGS="$CPPFLAGS -DTRACE_ENABLE=1" 
+else
+    AC_MSG_NOTICE([trace disabled, most regression tests will fail])
+fi
+
+if test "x$enable_debugging" = 'xyes'
+then
+    AC_MSG_NOTICE([generation of debugging symbols enabled, compilation with "-g -O2"])
+    CPPFLAGS="$CPPFLAGS -g -O2"
+else
+    AC_MSG_NOTICE([generation of debugging symbols disabled (default), compilation without "-g", only "-O2"])
+fi
+
+if test "x$enable_profiling" = 'xyes'
+then
+    AC_MSG_NOTICE([profiling enabled, compilation with "-pg"])
+    CPPFLAGS="$CPPFLAGS -pg"
+    LDFLAGS="$LDFLAGS -pg"
+else
+    AC_MSG_NOTICE([profiling disabled (default)])
+fi
+
+if test "x$enable_caching" = 'xyes'
+then
+    AC_MSG_NOTICE([caching enabled])
+    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE=1 -DMDIADAPTLM_CACHE_ENABLE=1";
+    LDFLAGS="$LDFLAGS"
+else
+    AC_MSG_NOTICE([caching disabled (default)])
+fi
+
+if test "x$enable_interpolatedsearch" = 'xyes'
+then
+    AC_MSG_NOTICE([interpolated search enabled])
+    CPPFLAGS="$CPPFLAGS -DINTERP_SEARCH=1";
+    LDFLAGS="$LDFLAGS"
+else
+    AC_MSG_NOTICE([interpolated search disabled (default)])
+fi
+
+if test "x$enable_optimization" = 'xyes'
+then
+    AC_MSG_NOTICE([optimization enabled, compilation with "-O3"])
+    CPPFLAGS="$CPPFLAGS -O3";
+    LDFLAGS="$LDFLAGS -O3"
+else
+    AC_MSG_NOTICE([optimization disabled (default)])
+fi
+
+if test "x$with_zlib" != 'xno'
+then
+  CPPFLAGS="$CPPFLAGS -I${with_zlib}/include"
+  LDFLAGS="$LDFLAGS -L${with_zlib}/lib"
+fi
+
+LIBS="$LIBS -lz"
 
 AC_CONFIG_FILES([
 Makefile
