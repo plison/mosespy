@@ -94,7 +94,7 @@ class dictionary
 	float        load_factor; //!< dictionary loading factor
 	char* oov_str;    //!< oov string
 	
-	void test(float* testOOV, int curvesize, const char *filename, int listflag=0);	// prepare into testOOV the OOV statistics computed on test set
+	void test(int* OOVchart, int* NwTest, int curvesize, const char *filename, int listflag=0);	// prepare into testOOV the OOV statistics computed on test set
 	
 public:
 	
@@ -224,8 +224,8 @@ public:
 	const char *decode(int c) const;
 	void stat() const;
 	
-	void print_curve(int curvesize, float* testOOV=NULL) const;
-	void print_curve(int curvesize, const char *filename, int listflag=0);
+	void print_curve_growth(int curvesize) const;
+	void print_curve_oov(int curvesize, const char *filename, int listflag=0);
 	
 	void cleanfreq() {
 		for (int i=0; i<n; ++i){ tb[i].freq=0; };

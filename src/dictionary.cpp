@@ -147,119 +147,116 @@ void dictionary::augment(dictionary *d)
 }
 
 
-
-
-// print_curve: show statistics on dictionary growth and (optionally) on
-// OOV rates computed on test corpus
-
-void dictionary::print_curve(int curvesize, const char *filename, int listflag)
+// print_curve: show statistics on dictionary growth
+void dictionary::print_curve_growth(int curvesize) const
 {
-	float *OOVrates=new float[curvesize];
-	
-	test(OOVrates, curvesize, filename, listflag);
-	print_curve(curvesize, OOVrates);
-	
-	delete []OOVrates;
+        int* curve = new int[curvesize];
+        for (int i=0; i<curvesize; i++) curve[i]=0;
+
+        // filling the curve
+        for (int i=0; i<n; i++) {
+                if(tb[i].freq > curvesize-1)
+                        curve[curvesize-1]++;
+                else
+                        curve[tb[i].freq-1]++;
+        }
+
+        //cumulating results
+        for (int i=curvesize-2; i>=0; i--) {
+                curve[i] = curve[i] + curve[i+1];
+        }
+
+        cout.setf(ios::fixed);
+        cout << "Dict size: " << n << "\n";
+        cout << "**************** DICTIONARY GROWTH CURVE ****************\n";
+        cout << "Freq\tEntries\tPercent";
+        cout << "\n";
+
+        for (int i=0; i<curvesize; i++) {
+                cout << ">" << i << "\t" << curve[i] << "\t" << setprecision(2) << (float)curve[i]/n * 100.0 << "%";
+                cout << "\n";
+        }
+        cout << "*********************************************************\n";
+        delete []curve;
 }
 
-void dictionary::print_curve(int curvesize, float* testOOV) const
+// print_curve_oov: show OOV amount and OOV rates computed on test corpus
+void dictionary::print_curve_oov(int curvesize, const char *filename, int listflag)
 {
-	
-	int* curve = new int[curvesize];
-	for (int i=0; i<curvesize; i++) curve[i]=0;
-	
-	// filling the curve
-	for (int i=0; i<n; i++) {
-		if(tb[i].freq > curvesize-1)
-			curve[curvesize-1]++;
-		else
-			curve[tb[i].freq-1]++;
-	}
-	
-	//cumulating results
-	for (int i=curvesize-2; i>=0; i--) {
-		curve[i] = curve[i] + curve[i+1];
-	}
-	
+        int *OOVchart=new int[curvesize];
+	int NwTest;
+
+        test(OOVchart, &NwTest, curvesize, filename, listflag);
+
 	cout.setf(ios::fixed);
-	cout << "Dict size: " << n << "\n";
-	cout << "**************** DICTIONARY GROWTH CURVE ****************\n";
-	cout << "Freq\tEntries\tPercent";
-	if(testOOV!=NULL)
-		cout << "\t\tFreq\tOOV onTest";
-	cout << "\n";
-	
-	for (int i=0; i<curvesize; i++) {
-		
-		cout << ">" << i << "\t" << curve[i] << "\t" << setprecision(2) << (float)curve[i]/n * 100.0 << "%";
-		
-		// display OOV rates on test
-		if(testOOV!=NULL)
-			cout << "\t\t<" << i+1<< "\t" << testOOV[i] << "%";
-		cout << "\n";
-	}
-	cout << "*********************************************************\n";
-	delete []curve;
+        cout << "Dict size: " << n << "\n";
+        cout << "Words of test: " << NwTest << "\n";
+        cout << "**************** OOV RATE STATISTICS ****************\n";
+        cout << "Freq\tOOV_Entries\tOOV_Rate";
+        cout << "\n";
+
+        for (int i=0; i<curvesize; i++) {
+
+                // display OOV iamount and OOV rates on test
+                cout << "<" << i+1 << "\t" << OOVchart[i] << "\t" << setprecision(2) << (float)OOVchart[i]/NwTest * 100.0 << "%";
+                cout << "\n";
+        }
+        cout << "*********************************************************\n";
+        delete []OOVchart;
 }
 
 //
-//	test : compute OOV rates on test corpus using dictionaries of different sizes
+//      test : compute OOV rates on test corpus using dictionaries of different sizes
 //
-void dictionary::test(float* OOVrates, int curvesize, const char *filename, int listflag)
+void dictionary::test(int* OOVchart, int* NwTest, int curvesize, const char *filename, int listflag)
 {
-	assert(OOVrates!=NULL);
-	
-	int NwTest=0;
-	int* OOVchart = new int[curvesize];
-	for (int j=0; j<curvesize; j++) OOVchart[j]=0;
-	char buffer[MAX_WORD];
-	
-	const char* bos = BoS();
-	
-	int k;
-	mfstream inp(filename,ios::in);
-	
-	if (!inp) {
-		std::stringstream ss_msg;
-		ss_msg << "cannot open " << filename << "\n";
-		exit_error(IRSTLM_ERROR_IO, ss_msg.str());
-	}
-	cerr << "test:";
-	
-	k=0;
-	while (getword(inp,buffer)) {
-		
-		// skip 'beginning of sentence' symbol
-		if (strcmp(buffer,bos)==0)
-			continue;
-		
-		int freq = 0;
-		int wCode = getcode(buffer);
-		if(wCode!=-1) freq = tb[wCode].freq;
-		
-		if(freq==0) {
-			OOVchart[0]++;
-			if(listflag) {
-				cerr << "<OOV>" << buffer << "</OOV>\n";
-			}
-		} else {
-			if(freq < curvesize) OOVchart[freq]++;
-		}
-		NwTest++;
-		if (!(++k % 1000000)) cerr << ".";
-	}
-	cerr << "\n";
-	inp.close();
-	cout << "nb words of test: " << NwTest << "\n";
-	
-	// cumulating results
-	for (int i=1; i<curvesize; i++)
-		OOVchart[i] = OOVchart[i] + OOVchart[i-1];
-	
-	// computing percentages from word numbers
-	for (int i=0; i<curvesize; i++)
-		OOVrates[i] = (float)OOVchart[i]/NwTest * 100.0;
-	delete []OOVchart;
+        assert(OOVchart!=NULL);
+
+        int m_NwTest=0;
+        for (int j=0; j<curvesize; j++) OOVchart[j]=0;
+        char buffer[MAX_WORD];
+
+        const char* bos = BoS();
+
+        mfstream inp(filename,ios::in);
+
+        if (!inp) {
+                std::stringstream ss_msg;
+                ss_msg << "cannot open " << filename << "\n";
+                exit_error(IRSTLM_ERROR_IO, ss_msg.str());
+        }
+        cerr << "test:";
+
+        int k = 0;
+        while (getword(inp,buffer)) {
+
+                // skip 'beginning of sentence' symbol
+                if (strcmp(buffer,bos)==0)
+                        continue;
+
+                int freq = 0;
+                int wCode = getcode(buffer);
+                if(wCode!=-1) freq = tb[wCode].freq;
+
+                if(freq==0) {
+                        OOVchart[0]++;
+                        if(listflag) {
+                                cerr << "<OOV>" << buffer << "</OOV>\n";
+                        }
+                } else {
+                        if(freq < curvesize) OOVchart[freq]++;
+                }
+                m_NwTest++;
+                if (!(++k % 1000000)) cerr << ".";
+        }
+        cerr << "\n";
+        inp.close();
+
+        // cumulating results
+        for (int i=1; i<curvesize; i++){
+                OOVchart[i] = OOVchart[i] + OOVchart[i-1];
+        }
+        *NwTest=m_NwTest;
 }
 
 void dictionary::load(char* filename)
