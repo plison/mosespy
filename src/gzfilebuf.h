@@ -3,6 +3,7 @@
 #ifndef _GZFILEBUF_H_
 #define _GZFILEBUF_H_
 
+#include <cstdio>
 #include <streambuf>
 #include <cstring>
 #include <zlib.h>
