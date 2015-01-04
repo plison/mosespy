@@ -31,7 +31,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #endif
-
+#include "gzfilebuf.h"
 #include "timer.h"
 #include "util.h"
 
