@@ -126,6 +126,22 @@ public:
     return 0.0;
   };
 
+
+  virtual const char *cmaxsuffptr(ngram ng, unsigned int* statesize=NULL)
+  {
+    UNUSED(ng);
+    UNUSED(statesize);
+    return NULL;
+  }
+
+  virtual const char *cmaxsuffptr(int* ng, int ngsize, unsigned int* statesize=NULL)
+  {
+    UNUSED(ng);
+    UNUSED(ngsize);
+    UNUSED(statesize);
+    return NULL;
+  }
+
   virtual void used_caches() {};
   virtual void init_caches(int uptolev) {
     UNUSED(uptolev);

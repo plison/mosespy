@@ -342,6 +342,7 @@ public:
 	
 	virtual const char *maxsuffptr(ngram ong, unsigned int* size=NULL);
 	virtual const char *cmaxsuffptr(ngram ong, unsigned int* size=NULL);
+        virtual const char *cmaxsuffptr(int* codes, int sz, unsigned int* size=NULL);
 	
 	inline void putmem(char* ptr,int value,int offs,int size) {
 		assert(ptr!=NULL);

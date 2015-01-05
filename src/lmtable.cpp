@@ -2206,46 +2206,95 @@ const char *lmtable::maxsuffptr(ngram ong, unsigned int* size)
 
 const char *lmtable::cmaxsuffptr(ngram ong, unsigned int* size)
 {
-	//cerr << "lmtable::CMAXsuffptr\n";
-	//cerr << "ong: " << ong
-	//	<< " -> ong.size: " << ong.size << "\n";
-	
-	if (size!=NULL) *size=ong.size; //will return the largest found ong.size
-	if (ong.size==0) return (char*) NULL;
-	
+        //cerr << "lmtable::CMAXsuffptr\n";
+        //cerr << "ong: " << ong
+        //      << " -> ong.size: " << ong.size << "\n";
+        
+        if (size!=NULL) *size=ong.size; //will return the largest found ong.size
+        if (ong.size==0) return (char*) NULL;
+        
+        char* found;
+        unsigned int isize; //internal state size variable
+        
+#ifdef PS_CACHE_ENABLE
+        prob_and_state_t pst;
+        
+        size_t orisize=ong.size;
+        if (ong.size>=maxlev) ong.size=maxlev-1;
+        
+        //cache hit
+        if (prob_and_state_cache && (ong.size==maxlev-1) && prob_and_state_cache->get(ong.wordp(maxlev-1),pst)) {
+                *size=pst.statesize;
+                return pst.state;
+        }
+        ong.size = orisize;
+#endif
+
+        //cache miss
+        found=(char *)maxsuffptr(ong,&isize);
+
+#ifdef PS_CACHE_ENABLE
+        //cache insert
+        if (ong.size>=maxlev) ong.size=maxlev-1;
+        if (prob_and_state_cache && ong.size==maxlev-1) {
+                pst.state=found;
+                pst.statesize=isize;
+                prob_and_state_cache->add(ong.wordp(maxlev-1),pst);
+        }
+#endif
+
+        if (size!=NULL) *size=isize;
+
+        return found;
+}
+
+
+//this functions simulates the cmaxsuffptr(ngram, ...) but it takes as input an array of codes instead of the ngram
+const char *lmtable::cmaxsuffptr(int* codes, int sz, unsigned int* size)
+{
+        if (sz==0) {
+                if (size!=NULL) *size=0;
+                return (char*) NULL;
+        }
+        
+        if (sz>maxlev) sz=maxlev; //adjust n-gram level to table size
+        
 	char* found;
 	unsigned int isize; //internal state size variable
 	
 #ifdef PS_CACHE_ENABLE
-	prob_and_state_t pst;
-	
-	size_t orisize=ong.size;
-	if (ong.size>=maxlev) ong.size=maxlev-1;
-	
+        //cache hit
+        prob_and_state_t pst_get;
+        
 	//cache hit
-	if (prob_and_state_cache && (ong.size==maxlev-1) && prob_and_state_cache->get(ong.wordp(maxlev-1),pst)) {
-		*size=pst.statesize;
-		return pst.state;
-	}
-	ong.size = orisize;
+        if (prob_and_state_cache && sz==maxlev && prob_and_state_cache->get(codes,pst_get)) {
+                if (size) *size = pst_get.statesize;
+                return pst_get.state;
+        }
+
 #endif
 	
+        //create the actual ngram
+        ngram ong(dict);
+        ong.pushc(codes,sz);
+        assert (ong.size == sz);
+        
 	//cache miss
 	found=(char *)maxsuffptr(ong,&isize);
-	
+
 #ifdef PS_CACHE_ENABLE
-	//cache insert
-	if (ong.size>=maxlev) ong.size=maxlev-1;
-	if (prob_and_state_cache && ong.size==maxlev-1) {
-		pst.state=found;
-		pst.statesize=isize;
-		prob_and_state_cache->add(ong.wordp(maxlev-1),pst);
-	}
+        //cache insert
+        if (ong.size>=maxlev) ong.size=maxlev-1;
+        if (prob_and_state_cache && ong.size==maxlev-1) {
+                pst.state=found;
+                pst.statesize=isize;
+                prob_and_state_cache->add(ong.wordp(maxlev-1),pst);
+        }
 #endif
-	
-	if (size!=NULL) *size=isize;
-	
-	return found;
+
+        if (size!=NULL) *size=isize;
+
+        return found;
 }
 
 
