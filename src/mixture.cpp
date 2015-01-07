@@ -116,6 +116,8 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
             int slmtype;
             bool subprunesingletons;
             bool subprunetopsingletons;
+            char *subprune_thr_str=NULL;
+
             int subprunefreq;
             
             DeclareParams((char*)
@@ -129,6 +131,8 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
                           "sps",CMDBOOLTYPE|CMDMSG, &subprunesingletons, "boolean flag for pruning of singletons of the sub LM (default is true)",
                           "sPruneTopSingletons",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",
                           "spts",CMDBOOLTYPE|CMDMSG, &subprunetopsingletons, "boolean flag for pruning of singletons at the top level of the sub LM (default is false)",
+                          "sPruneFrequencyThreshold",CMDSTRINGTYPE|CMDMSG, &subprune_thr_str, "pruning frequency threshold for each level of the sub LM; comma-separated list of values; (default is \"0 0 ... 0\", for all levels)",
+                          "spft",CMDSTRINGTYPE|CMDMSG, &subprune_thr_str, "pruning frequency threshold for each level of the sub LM; comma-separated list of values; (default is \"0 0 ... 0\", for all levels)",
                           (char *)NULL  );
             
             subtrainfile=NULL;
@@ -190,6 +194,9 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
             if (subprunetopsingletons==true)
                 //apply most specific pruning method
                 sublm[i]->prunesingletons(false);
+
+            if (subprune_thr_str)
+                sublm[i]->set_prune_ngram(subprune_thr_str);
             
             
             cerr << "eventually generate OOV code of sub lm[" << i << "]\n";

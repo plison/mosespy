@@ -75,7 +75,6 @@ double interplm::unigr(ngram ng)
 
 }
 
-
 interplm::interplm(char *ngtfile,int depth,TABLETYPE tabtype):
   ngramtable(ngtfile,depth,NULL,NULL,NULL,0,0,NULL,0,tabtype)
 {
@@ -91,6 +90,9 @@ interplm::interplm(char *ngtfile,int depth,TABLETYPE tabtype):
   prune_singletons=0;
   prune_top_singletons=0;
 
+  init_prune_ngram(lms);
+  print_prune_ngram();
+
   //doing something nasty: change counter of <s>
 
   int BoS=dict->encode(dict->BoS());
@@ -103,6 +105,86 @@ interplm::interplm(char *ngtfile,int depth,TABLETYPE tabtype):
 
 };
 
+interplm::~interplm()
+{
+  delete_prune_ngram();
+}
+
+void interplm::delete_prune_ngram()
+{
+  delete []prune_freq_threshold;
+}
+
+void interplm::init_prune_ngram(int sz)
+{
+  prune_freq_threshold = new int[sz+1];
+  for (int i=0; i<=sz; ++i)
+  {
+    prune_freq_threshold[i] = 0;
+  }
+}
+
+void interplm::print_prune_ngram()
+{
+  for (int i=1; i<=lms; ++i)
+    VERBOSE(0,"level " << i << " prune_freq_threshold[" << i << "]=" << prune_freq_threshold[i] << "\n");
+}
+
+void interplm::set_prune_ngram(char* values)
+{
+  char *s=strdup(values);
+  char *tk;
+
+  prune_freq_threshold[0]=0;
+  int i=1;
+  tk=strtok(s, ",");
+  while (tk)
+  {
+    if (i<=lms)
+    {
+      prune_freq_threshold[i]=atoi(tk);
+      VERBOSE(2,"prune_freq_threshold[" << i << "]=" << prune_freq_threshold[i] << "\n");
+      tk=strtok(NULL, ",");
+    } 
+    else
+    {
+      VERBOSE(2,"too many pruning frequency threshold values; kept the first values and skipped the others\n");
+      break;
+    }
+    ++i;
+  }
+  
+  for (int i=1; i<=lms; ++i)
+  {
+    if (prune_freq_threshold[i]<prune_freq_threshold[i-1])
+    {
+      prune_freq_threshold[i]=prune_freq_threshold[i-1];
+      VERBOSE(2,"the value of the pruning frequency threshold for level " << i << " has been adjusted to value " << prune_freq_threshold[i] << "\n");
+    }
+  }
+  print_prune_ngram();
+  free(s);
+}
+
+
+void interplm::set_prune_ngram(int lev, int val)
+{
+  if (lev <= lms)
+  {
+    if (val > 0)
+    {
+      prune_freq_threshold[lev] = val;
+    }
+    else
+    {
+      VERBOSE(2,"Value (" << val << ") must be larger than 0\n");
+    }
+  }
+  else
+  {
+    VERBOSE(2,"lev (" << lev << ") is larger than the lm order (" << lms<< ")\n");
+  }
+}
 
 void interplm::gensuccstat()
 {

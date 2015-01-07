@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	
 	char *BINfile=NULL;
 	char *ARPAfile=NULL;
-  bool SavePerLevel=true; //save-per-level or save-for-word
+        bool SavePerLevel=true; //save-per-level or save-for-word
 	
 	char *ASRfile=NULL;
 	
@@ -130,6 +130,7 @@ int main(int argc, char **argv)
 	int prunefreq=0;
 	bool prunesingletons=true;
 	bool prunetopsingletons=false;
+	char *prune_thr_str=NULL;
 	
 	double beta=-1;
 	
@@ -212,7 +213,10 @@ int main(int argc, char **argv)
 								
 		"PruneTopSingletons",CMDBOOLTYPE|CMDMSG, &prunetopsingletons, "boolean flag for pruning of singletons at the top level (default is false)",
 		"pts",CMDBOOLTYPE|CMDMSG, &prunetopsingletons, "boolean flag for pruning of singletons at the top level (default is false)",
-							
+
+                "PruneFrequencyThreshold",CMDSTRINGTYPE|CMDMSG, &prune_thr_str, "pruning frequency threshold for each level; comma-separated list of values; (default is \"0 0 ... 0\", for all levels)",
+                "pft",CMDSTRINGTYPE|CMDMSG, &prune_thr_str, "pruning frequency threshold for each level; comma-separated list of values; (default is \"0 0 ... 0\", for all levels)",
+
 		"ComputeLMSize",CMDBOOLTYPE|CMDMSG, &compsize, "boolean flag for output the LM size (default is false)",
 		"sz",CMDBOOLTYPE|CMDMSG, &compsize, "boolean flag for output the LM size (default is false)",
 								
@@ -351,6 +355,7 @@ int main(int argc, char **argv)
 			lm->prunesingletons(false);
 		}
 	}
+	if (prune_thr_str) lm->set_prune_ngram(prune_thr_str);
 	
 	if (adaptoov) lm->dict->incflag(1);
 	

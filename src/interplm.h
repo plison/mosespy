@@ -41,14 +41,15 @@ class interplm:public ngramtable
   int unismooth; //0 Bayes, 1 Witten Bell
 
   int prune_singletons;
-
   int prune_top_singletons;
+  int* prune_freq_threshold;
 
 public:
 
   int backoff; //0 interpolation, 1 Back-off
 
   interplm(char* ngtfile,int depth=0,TABLETYPE tt=FULL);
+  virtual ~interplm();
 
   int prunesingletons(int flag=-1) {
     return (flag==-1?prune_singletons:prune_singletons=flag);
@@ -57,6 +58,17 @@ public:
   int prunetopsingletons(int flag=-1) {
     return (flag==-1?prune_top_singletons:prune_top_singletons=flag);
   }
+
+  inline bool prune_ngram(int lev, int freq)
+  {
+    return (freq > prune_freq_threshold[lev])?false:true;
+  }
+
+  void init_prune_ngram(int sz);
+  void delete_prune_ngram();
+  void set_prune_ngram(int lev, int val);
+  void set_prune_ngram(char* values);
+  void print_prune_ngram();
 
   void gencorrcounts();
 
@@ -129,8 +141,6 @@ public:
   void lmstat(int level) {
     stat(level);
   }
-
-  virtual ~interplm() {}
 
 
 };

@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "interplm.h"
 #include "mdiadapt.h"
 #include "linearlm.h"
+#include "util.h"
 	
 namespace irstlm {
 //
@@ -82,7 +83,10 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
       // apply history pruning on trigrams only
 
 
-      if (get(ng,size,size) && (!prunesingletons() || ng.freq>1 || size<3)) {
+//      if (get(ng,size,size) && (!prunesingletons() || ng.freq>1 || size<3)) {
+      if (get(ng,size,size) && (!prune_ngram(size,ng.freq))) {
+
+        VERBOSE(0, "ng.freq:|" << ng.freq << "| size:|" << size << "| prune_ngram(size,ng.freq):|" << prune_ngram(size,ng.freq) << "|" << "\n");
 
         // apply frequency pruning on trigrams only
 
@@ -94,7 +98,8 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
 
           lambda=(double)history.succ/(double)(history.freq -cv + history.succ);
 
-          if (size>=3 && prunesingletons())  // correction due to frequency pruning
+//          if (size>=3 && prunesingletons())  // correction due to frequency pruning
+          if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
             lambda+=(double)succ1(history.link)/(double)(history.freq -cv + history.succ);
 
           // succ1(history.link) is not affected when ng.freq > cv
@@ -106,8 +111,8 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
           lambda=(double)(history.succ-1)/  // remove cv n-grams from data
                  (double)(history.freq - cv + history.succ - 1);
 
-          if (size>=3 && prunesingletons())  // correction due to frequency pruning
-
+//          if (size>=3 && prunesingletons())  // correction due to frequency pruning
+          if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
             lambda+=(double)succ1(history.link)-(cv==1 && ng.freq==1?1:0)/(double)(history.freq -cv + history.succ -1);
 
         }
@@ -117,7 +122,8 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
 
         lambda=(double)history.succ/(double)(history.freq + history.succ);
 
-        if (size>=3 && prunesingletons())  // correction due to frequency pruning
+//        if (size>=3 && prunesingletons())  // correction due to frequency pruning
+        if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
           lambda+=(double)succ1(history.link)/(double)(history.freq + history.succ);
       }
 
@@ -131,7 +137,8 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
         assert(lambda<=1 && lambda>0);
       } else { // add f*(oov|...) to lambda
         *ng.wordp(1)=dict->oovcode();
-        if (get(ng,size,size) && (!prunesingletons() || ng.freq>1 || size<3))
+//        if (get(ng,size,size) && (!prunesingletons() || ng.freq>1 || size<3))
+        if (get(ng,size,size) && (!prune_ngram(size,ng.freq)))
           lambda+=(double)ng.freq/(double)(history.freq - cv + history.succ);
       }
     } else {
