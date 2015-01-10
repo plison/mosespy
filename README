@@ -14,7 +14,7 @@ DOCUMENTATION
 A User Manual is available under https://sourceforge.net/projects/irstlm
 The data for the examples described in the User Manual are available under http://sourceforge.net/projects/irstlm/files/irstlm/sampledata/
 
-HOW TO INSTALL
+HOW TO INSTALL WITH AUTOMAKE
 
 step 0: sh regenerate-makefiles.sh [--force]
 # set parameter force to the value "--force" if you want to recreate all links to the autotools
@@ -29,6 +29,11 @@ step 3: make install
 These steps will generate the irstlm library and commands, respectively,
 under the specified path where to install.
 
+HOW TO INSTALL WITH CMAKE
+
+step 0: cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="/path/where/to/install"
+step 2: make
+step 3: make install
 
 HOW TO CONTRIBUTE
 
