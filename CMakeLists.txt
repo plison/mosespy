@@ -1,3 +1,6 @@
+#CMake 2.6+ is recommended to an improved Boost module
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6.0 FATAL_ERROR)
+
 PROJECT (irstlm)
 
 SET(IRSTLM_VERSION_MAJOR "5")
@@ -8,8 +11,6 @@ MATH(EXPR IRSTLM_INT_VERSION "(${IRSTLM_VERSION_MAJOR} * 10000) + (${IRSTLM_VERS
 
 SET(IRSTLM_VERSION "${IRSTLM_VERSION_MAJOR}.${IRSTLM_VERSION_MINOR}.${IRSTLM_VERSION_PATCH}")
 
-#CMake 2.6+ is recommended to an improved Boost module
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6.0 FATAL_ERROR)
 
 IF(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
@@ -17,9 +18,9 @@ ENDIF(COMMAND cmake_policy)
 
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     SET(CMAKE_INSTALL_PREFIX
-        "inst" CACHE PATH "IRSTLM install prefix" FORCE
+        "${CMAKE_SOURCE_DIR}/inst" CACHE PATH "IRSTLM install prefix" FORCE
         )
-    MESSAGE(STATUS "You have not set the install dir, default to './inst', if
+    MESSAGE(STATUS "You have not set the install dir, default to ${CMAKE_INSTALL_PREFIX}, if
     you want to set it, use cmake -DCMAKE_INSTALL_PREFIX to do so")
 ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
@@ -35,7 +36,7 @@ SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 ADD_SUBDIRECTORY (src)
 ADD_SUBDIRECTORY (scripts)
-ADD_SUBDIRECTORY (doc)
+#ADD_SUBDIRECTORY (doc)
 
 IF (WIN32)
 MESSAGE( STATUS "-------------------------------------------------------------------------------" )
