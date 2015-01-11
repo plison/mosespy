@@ -7,9 +7,8 @@
 \usepackage{version}
 \usepackage[usenames,dvipsnames]{color}
 
-
-\usepackage{mdframed}
-
+%\usepackage{mdframed}
+\usepackage{framed}
 
 \newcommand{\IRSTLM}{{\bf IRSTLM Toolkit}}
 
@@ -17,8 +16,8 @@
 \newcommand*{\MyPath}{../}
 \newcommand{\versionnumber}{\input{\MyPath/RELEASE}}
 
-%\versionnumber}{5.60.01}
-\newcommand{\IMPORTANT}[1]{\begin{mdframed}[linecolor=red]\noindent #1\end{mdframed}}
+%\newcommand{\IMPORTANT}[1]{\begin{mdframed}[linecolor=red]\noindent #1\end{mdframed}}
+\newcommand{\IMPORTANT}[1]{\begin{framed}\noindent #1\end{framed}}
 \newcommand{\WARNING}[1]{\paragraph{Warning:} #1}
 \newcommand{\NOTE}[1]{\textcolor{red}{\bf Note}: #1}
 \newcommand{\COMMENT}[1]{}
