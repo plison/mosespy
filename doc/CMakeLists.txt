@@ -3,8 +3,7 @@ include(FindLATEX)
 if (PDFLATEX_COMPILER)
 message("PDFLATEX_COMPILER exists (${PDFLATEX_COMPILER})")
 
-#include(UseLATEX)
-INCLUDE(UseLATEX.cmake)
+INCLUDE(UseLATEX)
 
 SET(LATEX_OUTPUT_PATH build)
 
