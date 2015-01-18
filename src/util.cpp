@@ -316,7 +316,7 @@ void exit_error(int err, const std::string &msg){
 	else{
 		switch(err){
 			case IRSTLM_NO_ERROR:
-				VERBOSE(0,"No error\n");
+				VERBOSE(0,"Everything OK\n");
 				break;
 			case IRSTLM_ERROR_GENERIC:
 				VERBOSE(0,"Generic error\n");
