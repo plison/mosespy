@@ -214,8 +214,8 @@ int main(int argc, char **argv)
 		"PruneTopSingletons",CMDBOOLTYPE|CMDMSG, &prunetopsingletons, "boolean flag for pruning of singletons at the top level (default is false)",
 		"pts",CMDBOOLTYPE|CMDMSG, &prunetopsingletons, "boolean flag for pruning of singletons at the top level (default is false)",
 
-                "PruneFrequencyThreshold",CMDSTRINGTYPE|CMDMSG, &prune_thr_str, "pruning frequency threshold for each level; comma-separated list of values; (default is \"0 0 ... 0\", for all levels)",
-                "pft",CMDSTRINGTYPE|CMDMSG, &prune_thr_str, "pruning frequency threshold for each level; comma-separated list of values; (default is \"0 0 ... 0\", for all levels)",
+                "PruneFrequencyThreshold",CMDSTRINGTYPE|CMDMSG, &prune_thr_str, "pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)",
+                "pft",CMDSTRINGTYPE|CMDMSG, &prune_thr_str, "pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)",
 
 		"ComputeLMSize",CMDBOOLTYPE|CMDMSG, &compsize, "boolean flag for output the LM size (default is false)",
 		"sz",CMDBOOLTYPE|CMDMSG, &compsize, "boolean flag for output the LM size (default is false)",
