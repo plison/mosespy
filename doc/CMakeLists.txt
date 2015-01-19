@@ -10,7 +10,7 @@ SET(LATEX_OUTPUT_PATH build)
 PROJECT(irstlm-manual NONE)
 cmake_minimum_required(VERSION 2.8)
 
-SET(IRSTLM_INPUT_TEX ClassAndChunkLMs.tex LMFileFormats.tex LMFiltering.tex LMInterface.tex LMInterpolation.tex LMPruning.tex LMQuantization.tex LMadaptation.tex LMcompilation.tex LMprune.tex LMsmoothing.tex compileLM.tex dict.tex gettingStarted.tex giganticLM.tex installation.tex interpolateLM.tex interpolatedLM.tex introduction.tex mixtureLM.tex ngt.tex parallelComputation.tex pruneLM.tex quantizeLM.tex referenceMaterial.tex regressionTests.tex releaseNotes.tex tlm.tex )
+SET(IRSTLM_INPUT_TEX ClassAndChunkLMs.tex LMFileFormats.tex LMFiltering.tex LMInterface.tex LMInterpolation.tex LMPruning.tex LMQuantization.tex LMAdaptation.tex LMCompilation.tex LMPrune.tex LMSmoothing.tex compileLM.tex dict.tex gettingStarted.tex giganticLM.tex installation.tex interpolateLM.tex interpolatedLM.tex introduction.tex mixtureLM.tex ngt.tex parallelComputation.tex pruneLM.tex quantizeLM.tex referenceMaterial.tex regressionTests.tex releaseNotes.tex tlm.tex )
 
 ADD_LATEX_DOCUMENT(
     ./irstlm-manual.tex
