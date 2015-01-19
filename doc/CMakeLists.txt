@@ -1,9 +1,9 @@
-include(FindLATEX)
+# include specific modules
+INCLUDE(FindLATEX)
+INCLUDE(UseLATEX)
 
 if (PDFLATEX_COMPILER)
 message("PDFLATEX_COMPILER exists (${PDFLATEX_COMPILER})")
-
-INCLUDE(UseLATEX)
 
 SET(LATEX_OUTPUT_PATH build)
 
