@@ -61,10 +61,9 @@ ret=$?
 
 if [ $ret -ne 0 ] ; then
 echo "autoreconf FAILED"
-echo "trying '$AUTOMAKE --missing ; $AUTORECONF'"
-
-$AUTOMAKE  --add-missing
+echo "trying '$LIBTOOLIZE --force; $AUTOMAKE --add-missing ; $AUTORECONF'"
 $LIBTOOLIZE --force
+$AUTOMAKE  --add-missing
 $AUTORECONF
 fi
 
