@@ -56,7 +56,7 @@ parts=3
 inpfile="";
 outfile=""
 verbose="";
-smoothing="--witten-bell";
+smoothing="witten-bell";
 prune="";
 prune_thr_str="";
 boundaries="";
@@ -120,11 +120,11 @@ improved-kneser-ney)
 ## improved-kneser-ney still accepted for back-compatibility, but mapped into approx-improved-kneser-ney
 smoothing="--approx-improved-kneser-ney"; 
 ;;
-approx_improved-kneser-ney)
+approx-improved-kneser-ney)
 smoothing="--approx-improved-kneser-ney";
 ;;
 *) 
-echo "wrong smoothing setting";
+echo "wrong smoothing setting; '$smoothing' does not exist";
 exit 4
 esac
 			 
@@ -181,6 +181,7 @@ if [ $smoothing = "--kneser-ney" -o $smoothing = "--approx-improved-kneser-ney" 
 $bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
 else
 $bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary >> $logfile 2>&1 &
+fi
 done
 
 # Wait for all parallel jobs to finish
