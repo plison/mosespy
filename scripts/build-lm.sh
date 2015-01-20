@@ -20,6 +20,7 @@ OPTIONS:
        -n        Order of language model (default 3)
        -t        Directory for temporary files (default ./stat_PID)
        -p        Prune singleton n-grams (default false)
+       -f        Pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)
        -u        Use uniform word frequency for dictionary splitting (default false)
        -s        Smoothing methods: witten-bell (default), kneser-ney, improved-kneser-ney
        -b        Include sentence boundary n-grams (optional)
@@ -56,11 +57,12 @@ outfile=""
 verbose="";
 smoothing="--witten-bell";
 prune="";
+prune_thr_str="";
 boundaries="";
 dictionary="";
 uniform="-f=y";
 
-while getopts "hvi:o:n:k:t:s:pbl:d:u" OPTION
+while getopts "hvi:o:n:k:t:s:pbl:d:uf:" OPTION
 do
      case $OPTION in
          h)
@@ -74,13 +76,11 @@ do
              inpfile=$OPTARG
              ;;
          d)
-             dictionary="-sd=$OPTARG"
+             dictionary="-sd=$OPTARG";
              ;;
-
          u)
              uniform=" "
              ;;
-
          o)
              outfile=$OPTARG
              ;;
@@ -97,13 +97,13 @@ do
              smoothing=$OPTARG
 	     case $smoothing in
 	     witten-bell) 
-		     smoothing="--witten-bell"
+		     smoothing="--witten-bell";
 		     ;; 
 	     kneser-ney)
-		     smoothing="--kneser-ney"
+		     smoothing="--kneser-ney";
 		     ;;
 	     improved-kneser-ney)
-		     smoothing="--improved-kneser-ney"
+		     smoothing="--improved-kneser-ney";
 		     ;;
 	     *) 
 		 echo "wrong smoothing setting";
@@ -113,6 +113,9 @@ do
          p)
              prune='--prune-singletons';
              ;;
+	f)
+	 prune_thr_str="--PruneFrequencyThreshold=$OPTARG";
+	 ;;
          b)
              boundaries='--cross-sentence';
              ;;
@@ -128,7 +131,7 @@ done
 
 
 if [ $verbose ];then
-echo inpfile=\"$inpfile\" outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose
+echo inpfile=\"$inpfile\" outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose prune_thr_str=$prune_thr_str
 fi
 
 if [ ! "$inpfile" -o ! "$outfile" ]; then
@@ -187,9 +190,9 @@ sdict=`basename $sdict`
 echo $sdict;
 
 if [ $smoothing = "--kneser-ney" -o $smoothing = "--improved-kneser-ney" ]; then
-$scr/build-sublm.pl $verbose $prune $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile 2>&1 &
+$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
 else
-$scr/build-sublm.pl $verbose $prune $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict  >> $logfile 2>&1 &
+$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
 fi
 
 done
