@@ -60,8 +60,30 @@ public:
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 };
 
-
-class mshiftbeta: public mdiadaptlm
+	
+	class mshiftbeta: public mdiadaptlm
+	{
+	protected:
+		int prunethresh;
+		double beta[3][MAX_NGRAM];
+		ngramtable* tb[MAX_NGRAM];
+		
+		double oovsum;
+		
+	public:
+		mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=MSHIFTBETA_B);
+		int train();
+		int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
+		
+		~mshiftbeta() {}
+		
+		int mfreq(ngram& ng,int l) {
+			return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);
+		}
+		
+	};
+	
+class approx_mshiftbeta: public mdiadaptlm
 {
 protected:
   int prunethresh;
@@ -71,11 +93,11 @@ protected:
   double oovsum;
 
 public:
-  mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=MSHIFTBETA_B);
+  approx_mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=APPROX_MSHIFTBETA_B);
   int train();
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 
-  ~mshiftbeta() {}
+  ~approx_mshiftbeta() {}
 
   int mfreq(ngram& ng,int l) {
     return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);

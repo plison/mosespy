@@ -303,7 +303,7 @@ int main(int argc, char **argv)
 			}
 			break;
 			
-		case APPROXMOD_SHIFT_BETA:
+		case APPROX_MOD_SHIFT_BETA:
 			if (size>1)
 				lm=new approx_mshiftbeta(trainfile,size,prunefreq,(backoff?APPROX_MSHIFTBETA_B:APPROX_MSHIFTBETA_I));
 			else {

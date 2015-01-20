@@ -536,7 +536,246 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
   return 1;
 }
 
-
+	
+	//
+	//Approximated Modified Shiftbeta language model
+	//
+	
+	approx_mshiftbeta::approx_mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
+  mdiadaptlm(ngtfile,depth,tt)
+	{
+		cerr << "Creating LM with Modified ShiftBeta smoothing\n";
+		
+		prunethresh=prunefreq;
+		cerr << "PruneThresh: " << prunethresh << "\n";
+		
+		beta[1][0]=0.0;
+		beta[1][1]=0.0;
+		beta[1][2]=0.0;
+		
+	};
+	
+	
+	int approx_mshiftbeta::train()
+	{
+		
+		trainunigr();
+		
+		gensuccstat();
+		
+		ngram ng(dict);
+		int n1,n2,n3,n4;
+		int unover3=0;
+		
+		oovsum=0;
+		
+		for (int l=1; l<=lmsize(); l++) {
+			
+			cerr << "level " << l << "\n";
+			
+			cerr << "computing statistics\n";
+			
+			n1=0;
+			n2=0;
+			n3=0,n4=0;
+			
+			scan(ng,INIT,l);
+			
+			while(scan(ng,CONT,l)) {
+				
+				//skip ngrams containing _OOV
+				if (l>1 && ng.containsWord(dict->OOV(),l)) {
+					continue;
+				}
+				
+				//skip n-grams containing </s> in context
+				if (l>1 && ng.containsWord(dict->EoS(),l-1)) {
+					continue;
+				}
+				
+				//skip 1-grams containing <s>
+				if (l==1 && ng.containsWord(dict->BoS(),l)) {
+					continue;
+				}
+				
+				ng.freq=mfreq(ng,l);
+				
+				if (ng.freq==1) n1++;
+				else if (ng.freq==2) n2++;
+				else if (ng.freq==3) n3++;
+				else if (ng.freq==4) n4++;
+				if (l==1 && ng.freq >=3) unover3++;
+				
+			}
+			
+			if (l==1) {
+				cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << " unover3: " << unover3 << "\n";
+			} else {
+				cerr << " n1: " << n1 << " n2: " << n2 << " n3: " << n3 << " n4: " << n4 << "\n";
+			}
+			
+			if (n1 == 0 || n2 == 0 ||  n1 <= n2) {
+				std::stringstream ss_msg;
+				ss_msg << "Error: lower order count-of-counts cannot be estimated properly\n";
+				ss_msg << "Hint: use another smoothing method with this corpus.\n";
+				exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
+			}
+			
+			double Y=(double)n1/(double)(n1 + 2 * n2);
+			beta[0][l] = Y; //equivalent to  1 - 2 * Y * n2 / n1
+			
+			if (n3 == 0 || n4 == 0 || n2 <= n3 || n3 <= n4 ){
+				cerr << "Warning: higher order count-of-counts cannot be estimated properly\n";
+				cerr << "Fixing this problem by resorting only on the lower order count-of-counts\n";
+				
+				beta[1][l] = Y;
+				beta[2][l] = Y;			
+			}
+			else{ 	  
+				beta[1][l] = 2 - 3 * Y * n3 / n2; 
+				beta[2][l] = 3 - 4 * Y * n4 / n3;  
+			}
+			
+			if (beta[1][l] < 0){
+				cerr << "Warning: discount coefficient is negative \n";
+				cerr << "Fixing this problem by setting beta to 0 \n";			
+				beta[1][l] = 0;
+				
+			}		
+			
+			
+			if (beta[2][l] < 0){
+				cerr << "Warning: discount coefficient is negative \n";
+				cerr << "Fixing this problem by setting beta to 0 \n";			
+				beta[2][l] = 0;
+				
+			}
+			
+			
+			if (l==1)
+				oovsum=beta[0][l] * (double) n1 + beta[1][l] * (double)n2 + beta[2][l] * (double)unover3;
+			
+			cerr << beta[0][l] << " " << beta[1][l] << " " << beta[2][l] << "\n";
+		}
+		
+		return 1;
+	};
+	
+	
+	
+	int approx_mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
+	{
+		ngram ng(dict);
+		ng.trans(ng_);
+		
+		//cout << "size :" << size << " " << ng <<"\n";
+		
+		if (size > 1) {
+			
+			ngram history=ng;
+			
+			//singleton pruning only on real counts!!
+			if (ng.ckhisto(size) && get(history,size,size-1) && (history.freq > cv) &&
+					((size < 3) || ((history.freq-cv) > prunethresh ))) { // no history pruning with corrected counts!
+				
+				int suc[3];
+				suc[0]=succ1(history.link);
+				suc[1]=succ2(history.link);
+				suc[2]=history.succ-suc[0]-suc[1];
+				
+				
+				if (get(ng,size,size) &&
+						(!prunesingletons() || mfreq(ng,size)>1 || size<3) &&
+						(!prunetopsingletons() || mfreq(ng,size)>1 || size<maxlevel())) {
+					
+					ng.freq=mfreq(ng,size);
+					
+					cv=(cv>ng.freq)?ng.freq:cv;
+					
+					if (ng.freq>cv) {
+						
+						double b=(ng.freq-cv>=3?beta[2][size]:beta[ng.freq-cv-1][size]);
+						
+						fstar=(double)((double)(ng.freq - cv) - b)/(double)(history.freq-cv);
+						
+						lambda=(beta[0][size] * suc[0] + beta[1][size] * suc[1] + beta[2][size] * suc[2])
+						/
+						(double)(history.freq-cv);
+						
+						if ((size>=3 && prunesingletons()) ||
+								(size==maxlevel() && prunetopsingletons())) // correction due to frequency pruning
+							
+							lambda+=(double)(suc[0] * (1-beta[0][size])) / (double)(history.freq-cv);
+						
+					} else {
+						// ng.freq==cv
+						
+						ng.freq>=3?suc[2]--:suc[ng.freq-1]--; //update successor stat
+						
+						fstar=0.0;
+						lambda=(beta[0][size] * suc[0] + beta[1][size] * suc[1] + beta[2][size] * suc[2])
+						/
+						(double)(history.freq-cv);
+						
+						if ((size>=3 && prunesingletons()) ||
+								(size==maxlevel() && prunetopsingletons())) // correction due to frequency pruning
+							lambda+=(double)(suc[0] * (1-beta[0][size])) / (double)(history.freq-cv);
+						
+						ng.freq>=3?suc[2]++:suc[ng.freq-1]++; //resume successor stat
+					}
+				} else {
+					fstar=0.0;
+					lambda=(beta[0][size] * suc[0] + beta[1][size] * suc[1] + beta[2][size] * suc[2])
+					/
+					(double)(history.freq-cv);
+					
+					if ((size>=3 && prunesingletons()) ||
+							(size==maxlevel() && prunetopsingletons())) // correction due to frequency pruning
+						lambda+=(double)(suc[0] * (1-beta[0][size])) / (double)(history.freq-cv);
+					
+				}
+				
+				//cerr << "ngram :" << ng << "\n";
+				
+				
+				if (*ng.wordp(1)==dict->oovcode()) {
+					lambda+=fstar;
+					fstar=0.0;
+				} else {
+					*ng.wordp(1)=dict->oovcode();
+					if (get(ng,size,size)) {
+						ng.freq=mfreq(ng,size);
+						if ((!prunesingletons() || ng.freq>1 || size<3) &&
+								(!prunetopsingletons() || ng.freq>1 || size<maxlevel())) {
+							double b=(ng.freq>=3?beta[2][size]:beta[ng.freq-1][size]);
+							lambda+=(double)(ng.freq - b)/(double)(history.freq-cv);
+						}
+					}
+				}
+			} else {
+				fstar=0;
+				lambda=1;
+			}
+		} else { // unigram case, no cross-validation
+			
+			lambda=0.0;
+			
+			int unigrtotfreq=(size<lmsize()?btotfreq():totfreq());
+			
+			
+			
+			if (get(ng,size,size))
+				fstar=(double) mfreq(ng,size)/(double)unigrtotfreq;
+			else {
+				std::stringstream ss_msg;
+				ss_msg << "Missing probability for word: " << dict->decode(*ng.wordp(1));
+				exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
+			}
+		}
+		
+		return 1;
+	}
+	
 //Symmetric Shiftbeta
 int symshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int /* unused parameter: cv */)
 {
