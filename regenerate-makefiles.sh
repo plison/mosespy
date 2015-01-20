@@ -49,8 +49,24 @@ then
     fi
 fi
 
+if [ ! -d m4 ] ;
+then
+mkdir m4
+fi
+
 echo "Calling $AUTORECONF"
 $AUTORECONF
+
+ret=$?
+
+if [ $ret -ne 0 ] ; then
+echo "autoreconf FAILED"
+echo "trying '$AUTOMAKE --missing ; $AUTORECONF'"
+
+$AUTOMAKE  --add-missing
+$LIBTOOLIZE --force
+$AUTORECONF
+fi
 
 #echo "Calling $LIBTOOLIZE $force"
 #$LIBTOOLIZE $force || die "libtoolize failed"
