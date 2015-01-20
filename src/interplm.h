@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define LINEAR_GT    6
 #define MIXTURE      7
 #define MOD_SHIFT_BETA   8
+#define APPROX_MOD_SHIFT_BETA   9
 
 class interplm:public ngramtable
 {

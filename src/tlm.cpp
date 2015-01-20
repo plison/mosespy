@@ -51,6 +51,8 @@ using namespace irstlm;
 #define TEXT 5
 
 static Enum_T LmTypeEnum [] = {
+  {    (char*)"ApproximatedModifiedShiftBeta",  APPROX_MOD_SHIFT_BETA },
+  {    (char*)"amsb",  APPROX_MOD_SHIFT_BETA },
   {    (char*)"ModifiedShiftBeta",  MOD_SHIFT_BETA },
   {    (char*)"msb",                MOD_SHIFT_BETA },
   {    (char*)"InterpShiftBeta",    SHIFT_BETA },
@@ -299,9 +301,16 @@ int main(int argc, char **argv)
 			else {
 				exit_error(IRSTLM_ERROR_DATA,"Modified Shift Beta requires size > 1");
 			}
-			
 			break;
 			
+		case APPROXMOD_SHIFT_BETA:
+			if (size>1)
+				lm=new approx_mshiftbeta(trainfile,size,prunefreq,(backoff?APPROX_MSHIFTBETA_B:APPROX_MSHIFTBETA_I));
+			else {
+				exit_error(IRSTLM_ERROR_DATA,"Approximated Modified Shift Beta requires size > 1");
+			}
+			break;
+	
 		case SHIFT_ONE:
 			lm=new shiftone(trainfile,size,prunefreq,(backoff?SIMPLE_B:SIMPLE_I));
 			break;

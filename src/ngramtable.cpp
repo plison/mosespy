@@ -72,6 +72,7 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
 
     case FULL:
     case MSHIFTBETA_B:
+    case APPROX_MSHIFTBETA_B:
       SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
       SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
       BOFF_OFFS  =SUCC2_OFFS+CODESIZE;
@@ -84,6 +85,7 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
       break;
 
     case MSHIFTBETA_I:
+    case APPROX_MSHIFTBETA_I:
       SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
       SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
       BOFF_OFFS  =0;
