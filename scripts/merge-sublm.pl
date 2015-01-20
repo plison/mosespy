@@ -93,7 +93,7 @@ for (my $n=1;$n<=$size;$n++){
     }
   }else{
     for (my $j=0;$j<scalar(@files);$j++){
-      safesystem("$gunzip -c $files[$j] | wc -l > wc$$") or die;
+      safesystem("$gunzip -c $files[$j] | grep -v '10000.000' | wc -l > wc$$") or die;
       open(INP,"wc$$") || die "cannot open wc$$\n";
       my $wc = <INP>;
       chomp($wc);
@@ -172,7 +172,7 @@ for (my $n=1;$n<=$size;$n++){
     printf LM "\\$n-grams:\n";
     close(LM);
     for (my $j=0;$j<scalar(@files);$j++){
-      safesystem("$gunzip -c $files[$j] | gzip -c >> $lm") or die;
+      safesystem("$gunzip -c $files[$j] | grep -v '10000.000' | gzip -c >> $lm") or die;
     }
   }
 
