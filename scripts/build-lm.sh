@@ -18,7 +18,7 @@ OPTIONS:
        -k|--Parts              Number of splits (default 5)
        -n|--NgramSize          Order of language model (default 3)
        -d|--Dictionary         Define subdictionary for n-grams (optional, default is without any subdictionary)
-       -s|--LanguageModelType  Smoothing methods: witten-bell (default), kneser-ney, improved-kneser-ney
+       -s|--LanguageModelType  Smoothing methods: witten-bell (default), kneser-ney, approx-improved-kneser-ney; improved-kneser-ney still accepted for back-compatibility, but mapped into approx-improved-kneser-ney
        -p|--PruneSingletons    Prune singleton n-grams (default false)
        -f|--PruneFrequencyThreshold      Pruning frequency threshold for each level; comma-separated list of values; (default is '0,0,...,0', for all levels)
        -t|--TmpDir             Directory for temporary files (default ./stat_PID)
@@ -117,7 +117,11 @@ kneser-ney)
 smoothing="--kneser-ney";
 ;;
 improved-kneser-ney)
-smoothing="--improved-kneser-ney";
+## improved-kneser-ney still accepted for back-compatibility, but mapped into approx-improved-kneser-ney
+smoothing="--approx-improved-kneser-ney"; 
+;;
+approx_improved-kneser-ney)
+smoothing="--approx-improved-kneser-ney";
 ;;
 *) 
 echo "wrong smoothing setting";
@@ -173,7 +177,10 @@ echo "used to generate n-gram blocks,  so that sub language model blocks results
 for sdict in $tmpdir/dict.*;do
 sdict=`basename $sdict`
 echo "Extracting n-gram statistics for $sdict"
-$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary  -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
+if [ $smoothing = "--kneser-ney" -o $smoothing = "--approx-improved-kneser-ney" ]; then
+$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
+else
+$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary >> $logfile 2>&1 &
 done
 
 # Wait for all parallel jobs to finish
@@ -184,7 +191,7 @@ for sdict in `ls $tmpdir/dict.*` ; do
 sdict=`basename $sdict`
 echo "Estimating language models for $sdict"
 
-if [ $smoothing = "--kneser-ney" -o $smoothing = "--improved-kneser-ney" ]; then
+if [ $smoothing = "--kneser-ney" -o $smoothing = "--approx-improved-kneser-ney" ]; then
 $scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
 else
 $scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &

@@ -47,8 +47,8 @@ my $cutoffvalue=39;   #cut-off threshold for Google 1T-ngram cut-offs
 
 #set defaults for optional parameters
 my ($verbose,$size,$ngrams,$sublm)=(0, 0, undef, undef);
-my ($witten_bell,$good_turing,$kneser_ney,$improved_kneser_ney)=(0, 0, "", "");
-my ($witten_bell_flag,$good_turing_flag,$kneser_ney_flag,$improved_kneser_ney_flag)=(0, 0, 0, 0);
+my ($witten_bell,$good_turing,$kneser_ney,$approx_improved_kneser_ney)=(0, 0, "", "");
+my ($witten_bell_flag,$good_turing_flag,$kneser_ney_flag,$approx_improved_kneser_ney_flag)=(0, 0, 0, 0);
 my ($freqshift,$prune_singletons,$prune_thr_str,$cross_sentence)=(0, 0, "", 0);
 
 my $help = 0;
@@ -60,7 +60,7 @@ $help = 1 unless
 'witten-bell' => \$witten_bell,
 'good-turing' => \$good_turing,
 'kneser-ney=s' => \$kneser_ney,
-'improved-kneser-ney=s' => \$improved_kneser_ney,
+'approx-improved-kneser-ney=s' => \$approx_improved_kneser_ney,
 'prune-singletons' => \$prune_singletons,
 'pft|PruneFrequencyThreshold=s' => \$prune_thr_str,
 'cross-sentence' => \$cross_sentence,
@@ -78,9 +78,9 @@ if ($help || !$size || !$ngrams || !$sublm) {
 	"       --ngrams <string>     input file or command to read the ngram table\n",
 	"       --sublm <string>      output file prefix to write the sublm statistics \n",
 	"       --freq-shift <int>    (optional) value to be subtracted from all frequencies\n",
-	"       --witten-bell         (optional) use witten bell linear smoothing (default)\n",
+	"       --witten-bell         (optional) use witten bell linear smoothing (default) \n",
 	"       --kneser-ney <string> (optional) use kneser-ney smoothing with statistics in <string> \n",
-	"       --improved-kneser-ney <string> (optional) use improved kneser-ney smoothing with statistics in <string> \n",
+	"       --approx-improved-kneser-ney <string> (optional) use approximated improved kneser-ney smoothing with statistics in <string> \n",
 	"       --good-turing         (optional) use good-turing linear smoothing\n",
 	"       --prune-singletons    (optional) remove n-grams occurring once, for n=3,4,5,... (disabled by default)\n",
 	"       -pft, --PruneFrequencyThreshold <string>	(optional) pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)\n",
@@ -97,13 +97,13 @@ die "build-sublm: This LM is no more supported\n\n" if ($good_turing_flag==1);
 
 $witten_bell_flag = 1 if ($witten_bell);
 $kneser_ney_flag = 1 if ($kneser_ney);
-$improved_kneser_ney_flag = 1 if ($improved_kneser_ney);
-$witten_bell = $witten_bell_flag = 1 if ($witten_bell_flag + $kneser_ney_flag + $improved_kneser_ney_flag) == 0;
+$approx_improved_kneser_ney_flag = 1 if ($approx_improved_kneser_ney);
+$witten_bell = $witten_bell_flag = 1 if ($witten_bell_flag + $kneser_ney_flag + $approx_improved_kneser_ney_flag) == 0;
 
-print STDERR  "build-sublm: size $size ngrams $ngrams sublm $sublm witten-bell $witten_bell kneser-ney $kneser_ney improved-kneser-ney $improved_kneser_ney prune-singletons $prune_singletons cross-sentence $cross_sentence\n" if $verbose;
+print STDERR  "build-sublm: size $size ngrams $ngrams sublm $sublm witten-bell $witten_bell kneser-ney $kneser_ney approx-improved-kneser-ney $approx_improved_kneser_ney prune-singletons $prune_singletons cross-sentence $cross_sentence\n" if $verbose;
 
 
-die "build-sublm: choose only one smoothing method\n" if ($witten_bell_flag + $kneser_ney_flag + $improved_kneser_ney_flag) > 1;
+die "build-sublm: choose only one smoothing method\n" if ($witten_bell_flag + $kneser_ney_flag + $approx_improved_kneser_ney_flag) > 1;
 
 die "build-sublm: value of --size must be larger than 0\n" if $size<1;
 
@@ -185,9 +185,9 @@ my (@n1,@n2,@n3,@n4,@uno3);  #IKN: n-grams occurring once or twice ...
 my (@beta,$beta);	     #IKN: n-grams occurring once or twice ...
 my $locfreq;
 
-#collect global statistics for (Improved) Kneser-Ney smoothing
-if ($kneser_ney || $improved_kneser_ney) {
-  my $statfile=$kneser_ney || $improved_kneser_ney;
+#collect global statistics for (Approximated Improved) Kneser-Ney smoothing
+if ($kneser_ney || $approx_improved_kneser_ney) {
+  my $statfile=$kneser_ney || $approx_improved_kneser_ney;
   print STDERR  "load \& merge IKN statistics from $statfile \n" if $verbose;
   open(IKN,"$statfile") || open(IKN,"$statfile|")  || die "cannot open $statfile\n";
   while (<IKN>) {
@@ -222,7 +222,7 @@ foreach ($n=2;$n<=$size;$n++) {
     }
   }
 	
-  if ($improved_kneser_ney) {
+  if ($approx_improved_kneser_ney) {
 		
     my $Y=$n1[$n]/($n1[$n] + 2 * $n2[$n]);
 		
@@ -339,7 +339,7 @@ foreach ($n=2;$n<=$size;$n++) {
 		
 #XX#		print STDERR "after while --- totcnt=$totcnt --- diff=$diff --- singlediff=$singlediff\n";	
 		
-    if ($improved_kneser_ney) { 
+    if ($approx_improved_kneser_ney) { 
       for (my $c=0;$c<=$code;$c++) {
 				$diff1++ if $cnt[$c]==1;
 				$diff2++ if $cnt[$c]==2;
@@ -363,7 +363,7 @@ foreach ($n=2;$n<=$size;$n++) {
 				
 				if ($kneser_ney && $beta>0) {
 					$prob=($cnt[$c]-$beta)/$totcnt;
-				} elsif ($improved_kneser_ney) {
+				} elsif ($approx_improved_kneser_ney) {
 					my $b=($cnt[$c]>= 3? $beta[3]:$beta[$cnt[$c]]);
 					$prob=($cnt[$c] - $b)/$totcnt;
 				} elsif ($good_turing && $singlediff>0) {
@@ -448,7 +448,7 @@ foreach ($n=2;$n<=$size;$n++) {
 			print STDERR "case 1 if\n";
 			if ($kneser_ney && $beta>0) { # correction due to singleton pruning
 				$boprob_correction += (1.0-$beta) * $singlediff / $totcnt;
-			} elsif ($improved_kneser_ney) { # correction due to singleton pruning
+			} elsif ($approx_improved_kneser_ney) { # correction due to singleton pruning
 				$boprob_correction += 0;
 				$boprob_correction += (1-$beta[1]) * $singlediff / $totcnt;
 			} elsif ($good_turing && $singlediff>0) { # correction due to singleton pruning
@@ -484,7 +484,7 @@ foreach ($n=2;$n<=$size;$n++) {
       my $lambda=$beta * $diff/$totcnt; 	
       my $logp=log($boprob+$lambda)/$log10;
       printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
-    } elsif ($improved_kneser_ney) {
+    } elsif ($approx_improved_kneser_ney) {
 #XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
       my $lambda=($beta[1] * $diff1 + $beta[2] * $diff2 + $beta[3] * $diff3)/$totcnt; 	  
       my $logp=log($boprob+$lambda)/$log10;
