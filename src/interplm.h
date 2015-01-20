@@ -70,8 +70,9 @@ public:
   void set_prune_ngram(int lev, int val);
   void set_prune_ngram(char* values);
   void print_prune_ngram();
-
+	
   void gencorrcounts();
+	void gencounts();
 
   void gensuccstat();
 

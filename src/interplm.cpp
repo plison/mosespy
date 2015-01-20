@@ -209,8 +209,6 @@ void interplm::gensuccstat()
 
       succscan(hg,ng,INIT,l);
       while(succscan(hg,ng,CONT,l)) {
-        //	cerr << ng << "\n";
-
         if (corrcounts && l<lms) //use corrected counts!!!
           ng.freq=getfreq(ng.link,ng.pinfo,1);
 
@@ -227,7 +225,6 @@ void interplm::gensuccstat()
 
 void interplm::gencorrcounts()
 {
-
   cerr << "Generating corrected n-gram tables\n";
 
   for (int l=lms-1; l>=1; l--) {
@@ -333,8 +330,64 @@ void interplm::gencorrcounts()
   btotfreq(totf);
 
   corrcounts=1;
+}
 
-
+void interplm::gencounts()
+{
+	
+  cerr << "Updating counts in the tables with the number of successors\n";
+	
+  for (int l=lms-1; l>=1; l--) {
+		
+    cerr << "level " << l << "\n";
+		
+    ngram ng(dict);
+    int count=0;
+		
+    //now update counts
+    scan(ng,INIT,l);
+    while(scan(ng,CONT,l)) {
+      if (get(ng,ng.size,ng.size)) {
+				setfreq(ng.link,ng.pinfo,ng.succ,1);
+			}
+    }
+  }
+	  cerr << "Adding unigram of OOV word if missing\n";
+  ngram ng(dict,maxlevel());
+  for (int i=1; i<=maxlevel(); i++)
+    *ng.wordp(i)=dict->oovcode();
+	
+  if (!get(ng,lms,1)) {
+    // oov is missing in the ngram-table
+    // f(oov) = dictionary size (Witten Bell)
+    ng.freq=dict->size();
+    cerr << "adding oov unigram " << ng << "\n";
+    put(ng);
+    get(ng,lms,1);
+    setfreq(ng.link,ng.pinfo,ng.freq,1);
+  }
+	
+  cerr << "Replacing unigram of BoS \n";
+  if (dict->encode(dict->BoS()) != dict->oovcode()) {
+    ngram ng(dict,1);
+    *ng.wordp(1)=dict->encode(dict->BoS());
+		
+    if (get(ng,1,1)) {
+      ng.freq=1;  //putting Pr(<s>)=0 would create problems!!
+      setfreq(ng.link,ng.pinfo,ng.freq,1);
+    }
+  }
+	
+  cerr << "compute unigram totfreq \n";
+  int totf=0;
+  scan(ng,INIT,1);
+  while(scan(ng,CONT,1)) {
+    totf+=getfreq(ng.link,ng.pinfo,1);
+  }
+	
+  btotfreq(totf);
+	
+  corrcounts=0;
 }
 
 

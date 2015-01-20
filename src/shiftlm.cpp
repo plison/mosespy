@@ -365,7 +365,6 @@ int mshiftbeta::train()
 			else if (ng.freq==3) n3++;
 			else if (ng.freq==4) n4++;
 			if (l==1 && ng.freq >=3) unover3++;
-			
 		}
 		
 		if (l==1) {
@@ -544,7 +543,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	approx_mshiftbeta::approx_mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
   mdiadaptlm(ngtfile,depth,tt)
 	{
-		cerr << "Creating LM with Modified ShiftBeta smoothing\n";
+		cerr << "Creating LM with Approximated Modified ShiftBeta smoothing\n";
 		
 		prunethresh=prunefreq;
 		cerr << "PruneThresh: " << prunethresh << "\n";
@@ -560,6 +559,8 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	{
 		
 		trainunigr();
+		
+		gencounts();
 		
 		gensuccstat();
 		
@@ -605,7 +606,6 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 				else if (ng.freq==3) n3++;
 				else if (ng.freq==4) n4++;
 				if (l==1 && ng.freq >=3) unover3++;
-				
 			}
 			
 			if (l==1) {
