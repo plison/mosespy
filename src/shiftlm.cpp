@@ -237,8 +237,7 @@ int shiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
       // apply history pruning on trigrams only
 
 
-//      if (get(ng,size,size) && (!prunesingletons() || ng.freq >1 || size<3)) {
-      if (get(ng,size,size) && (!prune_ngram(size,ng.freq))) {
+      if (get(ng,size,size) && (!prunesingletons() || ng.freq >1 || size<3)) {
         cv=(cv>ng.freq)?ng.freq:cv;
 
         if (ng.freq>cv) {
@@ -247,8 +246,7 @@ int shiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
 
           lambda=beta[size]*((double)history.succ/(double)(history.freq-cv));
 
-//          if (size>=3 && prunesingletons())  // correction due to frequency pruning
-          if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
+          if (size>=3 && prunesingletons())  // correction due to frequency pruning
 
             lambda+=(1.0-beta[size]) * (double)succ1(history.link)/(double)(history.freq-cv);
 
@@ -261,8 +259,7 @@ int shiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
           lambda=beta[size]*((double)(history.succ-1)/ //e` sparito il successore
                              (double)(history.freq-cv));
 
-//          if (size>=3 && prunesingletons()) //take into acccount single event pruning
-          if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
+          if (size>=3 && prunesingletons()) //take into account single event pruning
             lambda+=(1.0-beta[size]) * (double)(succ1(history.link)-(cv==1 && ng.freq==1?1:0))
                     /(double)(history.freq-cv);
         }
@@ -271,8 +268,7 @@ int shiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
         fstar=0.0;
         lambda=beta[size]*(double)history.succ/(double)history.freq;
 
-//        if (size>=3 && prunesingletons()) // correction due to frequency pruning
-        if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
+        if (size>=3 && prunesingletons()) // correction due to frequency pruning
           lambda+=(1.0-beta[size]) * (double)succ1(history.link)/(double)history.freq;
 
       }
@@ -284,8 +280,7 @@ int shiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
         fstar=0.0;
       } else {
         *ng.wordp(1)=dict->oovcode();
-//        if (get(ng,size,size) && (!prunesingletons() || ng.freq >1 || size<3))
-        if (get(ng,size,size) && (!prune_ngram(size,ng.freq)))
+        if (get(ng,size,size) && (!prunesingletons() || ng.freq >1 || size<3))
           lambda+=(double)((double)ng.freq - beta[size])/(double)(history.freq-cv);
       }
 
@@ -350,19 +345,16 @@ int mshiftbeta::train()
 			
 			//skip ngrams containing _OOV
 			if (l>1 && ng.containsWord(dict->OOV(),l)) {
-				//cerr << "skp ngram" << ng << "\n";
 				continue;
 			}
 			
 			//skip n-grams containing </s> in context
 			if (l>1 && ng.containsWord(dict->EoS(),l-1)) {
-				//cerr << "skp ngram" << ng << "\n";
 				continue;
 			}
 			
 			//skip 1-grams containing <s>
 			if (l==1 && ng.containsWord(dict->BoS(),l)) {
-				//cerr << "skp ngram" << ng << "\n";
 				continue;
 			}
 			
@@ -392,7 +384,7 @@ int mshiftbeta::train()
 		double Y=(double)n1/(double)(n1 + 2 * n2);
 		beta[0][l] = Y; //equivalent to  1 - 2 * Y * n2 / n1
 		
-		if (n3 ==0 || n4 == 0 || n2 <= n3 || n3 <= n4 ){
+		if (n3 == 0 || n4 == 0 || n2 <= n3 || n3 <= n4 ){
 			cerr << "Warning: higher order count-of-counts cannot be estimated properly\n";
 			cerr << "Fixing this problem by resorting only on the lower order count-of-counts\n";
 			
@@ -452,11 +444,9 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
       suc[2]=history.succ-suc[0]-suc[1];
 
 
-//      if (get(ng,size,size) &&
-//          (!prunesingletons() || mfreq(ng,size)>1 || size<3) &&
-//          (!prunetopsingletons() || mfreq(ng,size)>1 || size<maxlevel())) {
-
-      if (get(ng,size,size) && (!prune_ngram(size,mfreq(ng,size)))) {
+      if (get(ng,size,size) &&
+          (!prunesingletons() || mfreq(ng,size)>1 || size<3) &&
+          (!prunetopsingletons() || mfreq(ng,size)>1 || size<maxlevel())) {
 
         ng.freq=mfreq(ng,size);
 
@@ -472,10 +462,9 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
                  /
                  (double)(history.freq-cv);
 
-//          if ((size>=3 && prunesingletons()) ||
-//              (size==maxlevel() && prunetopsingletons()))
-            //correction
-          if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
+          if ((size>=3 && prunesingletons()) ||
+              (size==maxlevel() && prunetopsingletons())) // correction due to frequency pruning
+
             lambda+=(double)(suc[0] * (1-beta[0][size])) / (double)(history.freq-cv);
 
         } else {
@@ -488,10 +477,8 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
                  /
                  (double)(history.freq-cv);
 
-//          if ((size>=3 && prunesingletons()) ||
-//              (size==maxlevel() && prunetopsingletons())) //correction
-          if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
-            //correction
+          if ((size>=3 && prunesingletons()) ||
+              (size==maxlevel() && prunetopsingletons())) // correction due to frequency pruning
             lambda+=(double)(suc[0] * (1-beta[0][size])) / (double)(history.freq-cv);
 
           ng.freq>=3?suc[2]++:suc[ng.freq-1]++; //resume successor stat
@@ -502,9 +489,8 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
                /
                (double)(history.freq-cv);
 
-//        if ((size>=3 && prunesingletons()) ||
-//            (size==maxlevel() && prunetopsingletons())) //correction
-        if (prune_ngram(size,ng.freq))  // correction due to frequency pruning
+        if ((size>=3 && prunesingletons()) ||
+            (size==maxlevel() && prunetopsingletons())) // correction due to frequency pruning
           lambda+=(double)(suc[0] * (1-beta[0][size])) / (double)(history.freq-cv);
 
       }
@@ -519,9 +505,8 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
         *ng.wordp(1)=dict->oovcode();
         if (get(ng,size,size)) {
           ng.freq=mfreq(ng,size);
-//          if ((!prunesingletons() || ng.freq>1 || size<3) &&
-//              (!prunetopsingletons() || ng.freq>1 || size<maxlevel())) {
-          if (!prune_ngram(size,ng.freq)) {
+          if ((!prunesingletons() || ng.freq>1 || size<3) &&
+              (!prunetopsingletons() || ng.freq>1 || size<maxlevel())) {
             double b=(ng.freq>=3?beta[2][size]:beta[ng.freq-1][size]);
             lambda+=(double)(ng.freq - b)/(double)(history.freq-cv);
           }
