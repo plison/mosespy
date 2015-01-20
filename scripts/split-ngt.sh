@@ -29,11 +29,14 @@ while getopts h OPT; do
             usage >&2;
             exit 0;
             ;;
+        * ) usage;
+            exit 1;
+						;;
     esac
 done
 
 #usage:
-#ngt-split.sh <input> <output> <size> <parts>
+#ngt-split.sh [options] <input> <output> <size> <parts>
 #It creates <parts> files (named <output.000>, ... <output.999>)
 #containing ngram statistics (of <order> length) in Google format
 #These files are a partition of the whole set of ngrams
@@ -57,18 +60,30 @@ parts=${par[3]}
 
 dictfile=dict$$
 
+
+echo "Extracting dictionary from training corpus"
 $bindir/dict -i="$inputfile" -o=$dictfile -f=y -sort=n
 
+echo "Splitting dictionary into $parts lists"
 $scriptdir/split-dict.pl --input $dictfile --output ${dictfile}. --parts $parts
 
 rm $dictfile
 
+
+echo "Extracting n-gram statistics for each word list"
+echo "Important: dictionary must be ordered according to order of appearance of words in data"
+echo "used to generate n-gram blocks,  so that sub language model blocks results ordered too"
+
 for d in `ls ${dictfile}.*` ; do
 w=`echo $d | perl -pe 's/.+(\.[0-9]+)$/$1/i'`
 w="$outputfile$w"
+
+sdict=`basename $sdict`
+echo "Extracting n-gram statistics for $sdict"
+
 echo "$bindir/ngt -i="$inputfile"  -n=$order -gooout=y -o=$w -fd=$d  > /dev/null"
 $bindir/ngt -n=$order -gooout=y -o=$w -fd=$d -i="$inputfile"  > /dev/null
 rm $d
 done
 
-exit
+exit 0
