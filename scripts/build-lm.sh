@@ -7,25 +7,26 @@ function usage()
     cmnd=$(basename $0);
     cat<<EOF
 
-$cmnd - estimates a language model file
+$cmnd - estimates a language model file and saves it in intermediate ARPA format
 
 USAGE:
        $cmnd [options]
 
 OPTIONS:
-       -h        Show this message
-       -i        Input training file e.g. 'gunzip -c train.gz'
-       -o        Output gzipped LM, e.g. lm.gz
-       -k        Number of splits (default 5)
-       -n        Order of language model (default 3)
-       -t        Directory for temporary files (default ./stat_PID)
-       -p        Prune singleton n-grams (default false)
-       -f        Pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)
-       -u        Use uniform word frequency for dictionary splitting (default false)
-       -s        Smoothing methods: witten-bell (default), kneser-ney, improved-kneser-ney
-       -b        Include sentence boundary n-grams (optional)
-       -d        Define subdictionary for n-grams (optional)
-       -v        Verbose
+       -i|--InputFile          Input training file e.g. 'gunzip -c train.gz'
+       -o|--OutputFile         Output gzipped LM, e.g. lm.gz
+       -k|--Parts              Number of splits (default 5)
+       -n|--NgramSize          Order of language model (default 3)
+       -d|--Dictionary         Define subdictionary for n-grams (optional, default is without any subdictionary)
+       -s|--LanguageModelType  Smoothing methods: witten-bell (default), kneser-ney, improved-kneser-ney
+       -p|--PruneSingletons    Prune singleton n-grams (default false)
+       -f|--PruneFrequencyThreshold      Pruning frequency threshold for each level; comma-separated list of values; (default is '0,0,...,0', for all levels)
+       -t|--TmpDir             Directory for temporary files (default ./stat_PID)
+       -l|--LogFile            File to store logging info (default /dev/null)
+       -u|--uniform            Use uniform word frequency for dictionary splitting (default false)
+       -b|--boundaries         Include sentence boundary n-grams (optional, default false)
+       -v|--verbose            Verbose
+       -h|-?|--help            Show this message
 
 EOF
 }
@@ -62,79 +63,73 @@ boundaries="";
 dictionary="";
 uniform="-f=y";
 
-while getopts "hvi:o:n:k:t:s:pbl:d:uf:" OPTION
-do
-     case $OPTION in
-         h)
-             usage
-             exit 0
-             ;;
-         v)
-             verbose="--verbose";
-             ;;
-         i)
-             inpfile=$OPTARG
-             ;;
-         d)
-             dictionary="-sd=$OPTARG";
-             ;;
-         u)
-             uniform=" "
-             ;;
-         o)
-             outfile=$OPTARG
-             ;;
-         n)
-             order=$OPTARG
-             ;;
-         k)
-             parts=$OPTARG
-             ;;
-         t)
-             tmpdir=$OPTARG
-             ;;
-         s)
-             smoothing=$OPTARG
-	     case $smoothing in
-	     witten-bell) 
-		     smoothing="--witten-bell";
-		     ;; 
-	     kneser-ney)
-		     smoothing="--kneser-ney";
-		     ;;
-	     improved-kneser-ney)
-		     smoothing="--improved-kneser-ney";
-		     ;;
-	     *) 
-		 echo "wrong smoothing setting";
-		 exit 4
-	     esac
-             ;;
-         p)
-             prune='--prune-singletons';
-             ;;
-	f)
-	 prune_thr_str="--PruneFrequencyThreshold=$OPTARG";
-	 ;;
-         b)
-             boundaries='--cross-sentence';
-             ;;
-	 l)
-             logfile=$OPTARG
-             ;;
-         ?)
-             usage
-             exit 1
-             ;;
-     esac
+while [ "$1" != "" ]; do
+    case $1 in
+        -i | --InputFile )          shift;
+																inpfile=$1;
+																;;
+        -o | --OutputFile )         shift;
+																outfile=$1;
+                                ;;
+        -n | --NgramSize )           shift;
+																order=$1;
+                                ;;
+        -k | --Parts )          shift;
+																parts=$1;
+                                ;;
+        -d | --Dictionary )     shift;
+                                dictionary="-sd=$1";
+                                ;;
+        -s | --LanguageModelType )        shift;
+																				  smoothing=$1;
+                                          ;;
+        -f | --PruneFrequencyThreshold )  shift;
+																          prune_thr_str="--PruneFrequencyThreshold=$1";
+                                          ;;
+        -p | --PruneSingletons )     prune='--prune-singletons';
+																			;;
+        -l | --LogFile )        shift;
+																logfile=$1;
+                                ;;
+        -t | --TmpDir )         shift;
+																tmpdir=$1;
+                                ;;
+        -u | --uniform )        uniform=' ';
+                                ;;
+        -b | --boundaries )     boundaries='--cross-sentence';
+																;;
+        -v | --verbose )        verbose='--verbose';
+                                ;;
+        -h | -? | --help )      usage;
+                                exit 0;
+                                ;;
+        * )                     usage;
+                                exit 1;
+    esac
+    shift
 done
 
+case $smoothing in
+witten-bell) 
+smoothing="--witten-bell";
+;; 
+kneser-ney)
+smoothing="--kneser-ney";
+;;
+improved-kneser-ney)
+smoothing="--improved-kneser-ney";
+;;
+*) 
+echo "wrong smoothing setting";
+exit 4
+esac
+			 
 
-if [ $verbose ];then
-echo inpfile=\"$inpfile\" outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose prune_thr_str=$prune_thr_str
+if [ $verbose ] ; then
+echo inpfile='"'$inpfile'"' outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose prune_thr_str=$prune_thr_str
 fi
 
-if [ ! "$inpfile" -o ! "$outfile" ]; then
+if [ ! "$inpfile" -o ! "$outfile" ] ; then
     usage
     exit 5
 fi
@@ -177,7 +172,7 @@ echo "used to generate n-gram blocks,  so that sub language model blocks results
 
 for sdict in $tmpdir/dict.*;do
 sdict=`basename $sdict`
-echo $sdict;
+echo "Extracting n-gram statistics for $sdict"
 $bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary  -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
 done
 
@@ -187,7 +182,7 @@ while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 echo "Estimating language models for each word list"
 for sdict in `ls $tmpdir/dict.*` ; do
 sdict=`basename $sdict`
-echo $sdict;
+echo "Estimating language models for $sdict"
 
 if [ $smoothing = "--kneser-ney" -o $smoothing = "--improved-kneser-ney" ]; then
 $scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
