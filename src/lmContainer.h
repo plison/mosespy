@@ -60,7 +60,7 @@ public:
     UNUSED(mmap);
   };
 	
-	virtual void savetxt(const char *filename) {
+  virtual void savetxt(const char *filename) {
     UNUSED(filename);
   };
   virtual void savebin(const char *filename) {
