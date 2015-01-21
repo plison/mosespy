@@ -84,8 +84,8 @@ typedef enum {COUNT,       //!< table: only counters
               SHIFTBETA_B, //!< table: backoff shiftbeta
               MSHIFTBETA_I,//!< table: interp modified shiftbeta
               MSHIFTBETA_B,//!< table: backoff modified shiftbeta
-              APPROX_MSHIFTBETA_I,//!< table: interp approximated modified shiftbeta
-              APPROX_MSHIFTBETA_B,//!< table: interp approximated modified shiftbeta
+              QUASI_MSHIFTBETA_I,//!< table: interp quasi modified shiftbeta
+              QUASI_MSHIFTBETA_B,//!< table: interp quasi modified shiftbeta
               FULL,        //!< table: full fledged table
 
              } TABLETYPE;

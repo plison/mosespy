@@ -85,7 +85,7 @@ public:
 		inline double unigr(ngram ng){ return unigrMSB(ng); };		
 	};
 	
-class approx_mshiftbeta: public mdiadaptlm
+class quasi_mshiftbeta: public mdiadaptlm
 {
 protected:
   int prunethresh;
@@ -95,11 +95,11 @@ protected:
   double oovsum;
 
 public:
-  approx_mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=APPROX_MSHIFTBETA_B);
+  quasi_mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=QUASI_MSHIFTBETA_B);
   int train();
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 
-  ~approx_mshiftbeta() {}
+  ~quasi_mshiftbeta() {}
 
   inline int mfreq(ngram& ng,int /*NOT_USED l*/) { return ng.freq; }
 

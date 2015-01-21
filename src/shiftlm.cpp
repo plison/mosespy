@@ -539,13 +539,13 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	}
 	
 	//
-	//Approximated Modified Shiftbeta language model
+	//Quasi Modified Shiftbeta language model (without corrected counts)
 	//
 	
-	approx_mshiftbeta::approx_mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
+	quasi_mshiftbeta::quasi_mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
   mdiadaptlm(ngtfile,depth,tt)
 	{
-		cerr << "Creating LM with Approximated Modified ShiftBeta smoothing\n";
+		cerr << "Creating LM with Quasi Modified ShiftBeta smoothing\n";
 		
 		prunethresh=prunefreq;
 		cerr << "PruneThresh: " << prunethresh << "\n";
@@ -557,7 +557,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	};
 	
 	
-	int approx_mshiftbeta::train()
+	int quasi_mshiftbeta::train()
 	{
 		
 		trainunigr();
@@ -663,7 +663,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	
 	
 	
-	int approx_mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
+	int quasi_mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
 	{
 		ngram ng(dict);
 		ng.trans(ng_);
