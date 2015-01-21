@@ -86,11 +86,13 @@ for (my $n=1;$n<=$size;$n++){
       $tot1gr+=$words[0];
     }
     close(INP);
+		print STDERR "before correction for WB --- tot1gr:$tot1gr size:$size[1]\n";
     if ($unk==0){
       warn "implicitely add <unk> word to counters\n";
       $tot1gr+=$size[$n]; #equivalent to WB smoothing
       $size[$n]++; 
     }
+		print STDERR "after correction for WB --- tot1gr:$tot1gr size:$size[1]\n";
   }else{
     for (my $j=0;$j<scalar(@files);$j++){
       safesystem("$gunzip -c $files[$j] | grep -v '10000.000' | wc -l > wc$$") or die;
@@ -152,6 +154,7 @@ for (my $n=1;$n<=$size;$n++){
 	  	
       #apply witten-bell smoothing on 1-grams
       $pr=(log($words[0]+1)-log($tot1gr+$size[1]))/log(10.0);
+			print STDERR "tot1gr:$tot1gr size:$size[1] denominator:",($tot1gr+$size[1]),"\n";
       shift @words;
       printf LM "%f %s\n",$pr,join(" ",@words);
     }

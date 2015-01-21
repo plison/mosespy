@@ -193,10 +193,12 @@ if ($kneser_ney || $approx_improved_kneser_ney) {
   while (<IKN>) {
     my($lev,$n1,$n2,$n3,$n4,$uno3)=$_=~/level: (\d+)  n1: (\d+) n2: (\d+) n3: (\d+) n4: (\d+) unover3: (\d+)/;
     $n1[$lev]+=$n1;$n2[$lev]+=$n2;$n3[$lev]+=$n3;$n4[$lev]+=$n4;$uno3[$lev]+=$uno3;
+		print STDERR  "from $statfile level $lev: n1:$n1 n2:$n2 n3:$n3 n4:$n4 uno3:$uno3\n";
+		print STDERR  "level $lev: n1[$lev]:$n1[$lev] n3[$lev]:$n2[$lev]  n3[$lev]:$n3[$lev] n4[$lev]:$n4[$lev] uno3[$lev]:$uno3[$lev]\n";
   }
 	if ($verbose){
 		for (my $lev=1;$lev<=$#n1;$lev++) {
-			print STDERR  "level $lev: $n1[$lev] $n2[$lev]  $n3[$lev] $n4[$lev] $uno3[$lev]\n";
+			print STDERR  "level $lev: n1[$lev]:$n1[$lev] n3[$lev]:$n2[$lev]  n3[$lev]:$n3[$lev] n4[$lev]:$n4[$lev] uno3[$lev]:$uno3[$lev]\n";
 		}
 	}
   close(IKN);
@@ -237,6 +239,7 @@ foreach ($n=2;$n<=$size;$n++) {
       $beta[2] = 2 - 3 * $Y * $n3[$n] / $n2[$n];
       $beta[3] = 3 - 4 * $Y * $n4[$n] / $n3[$n];
     }
+		print STDERR  "level:$n beta[1]:$beta[1] beta[2]:$beta[2] beta[3]:$beta[3]\n" if $verbose; 
   }
 	print STDERR "\n\n\n\ N=$n\n\n\n";
 	
