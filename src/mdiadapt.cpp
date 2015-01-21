@@ -568,7 +568,7 @@ namespace irstlm {
 			}
 		}
 		
-		VERBOSE(2,"mdiadaptlm::bodiscount --> ng: |" << ng << "| backoff:" << backoff << " fstar:" << fstar << " lambda:" << lambda << " bo: " << bo << "\n");
+		VERBOSE(3,"mdiadaptlm::bodiscount --> ng: |" << ng << "| backoff:" << backoff << " fstar:" << fstar << " lambda:" << lambda << " bo: " << bo << "\n");
 		
 		return 1;
 	}
@@ -1541,7 +1541,7 @@ namespace irstlm {
 						//cerr << ng2 << "\n";
 						
 						mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-						VERBOSE(2,"ng2: |" << ng2 << "| fstar:" << fstar << " lambda:" << lambda << " bo:" << bo << "\n");
+						VERBOSE(3,"ng2: |" << ng2 << "| fstar:" << fstar << " lambda:" << lambda << " bo:" << bo << "\n");
 						
 						assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1));
 						
@@ -1604,11 +1604,11 @@ namespace irstlm {
 						
 						mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
 						
-						VERBOSE(2,"ng2: |" << ng2 << "| lambda:" << lambda << " bo:" << bo << "\n");
+						VERBOSE(3,"ng2: |" << ng2 << "| lambda:" << lambda << " bo:" << bo << "\n");
 						
 						if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
 							ibow=log10(lambda) - log10(bo);
-							VERBOSE(2,"ng: |" << ng << "| pr:" << pr << " ibow:" << ibow << "\n");
+							VERBOSE(3,"ng: |" << ng << "| pr:" << pr << " ibow:" << ibow << "\n");
 							lmt->add(ng,(float)log10(pr),(float)ibow);
 						}
 					} else {
@@ -2018,10 +2018,10 @@ namespace irstlm {
 						
 						mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
 						
-						VERBOSE(2,"ng2: |" << ng2 << "| lambda:" << lambda << " bo:" << bo << "\n");
+						VERBOSE(3,"ng2: |" << ng2 << "| lambda:" << lambda << " bo:" << bo << "\n");
 						
 						if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
-							VERBOSE(2,"ng: |" << ng << "| backoff:" << backoff << " log10(pr):" << log10(pr) << " log10(bo):" << log10(bo) << " log10(lambda):" << log10(lambda) << "\n");
+							VERBOSE(3,"ng: |" << ng << "| backoff:" << backoff << " log10(pr):" << log10(pr) << " log10(bo):" << log10(bo) << " log10(lambda):" << log10(lambda) << "\n");
 							out << (float) log10(pr);
 							out << "\t" << (char *)dict->decode(*ng.wordp(i));
 							for (int j=i-1; j>0; j--)
@@ -2037,7 +2037,7 @@ namespace irstlm {
 							num[i]++;
 						}
 					} else {
-						VERBOSE(2,"ng: |" << ng << "| log10(pr):" << log10(pr) << " ibow: XXXXX\n");
+						VERBOSE(3,"ng: |" << ng << "| log10(pr):" << log10(pr) << " ibow: not used because of highest level\n");
 						if (fstar>=UPPER_SINGLE_PRECISION_OF_0) {
 							out << (float) log10(pr);
 							out << "\t" << (char *)dict->decode(*ng.wordp(i));

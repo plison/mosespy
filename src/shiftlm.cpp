@@ -67,7 +67,7 @@ int shiftone::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
   ngram ng(dict);
   ng.trans(ng_);
 
-  // cout << "size :" << size << " " << ng <<"\n";
+  //cerr << "size:" << size << " ng:|" << ng <<"|\n";
 
   if (size > 1) {
 
@@ -427,7 +427,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
   ngram ng(dict);
   ng.trans(ng_);
 
-  //cout << "size :" << size << " " << ng <<"\n";
+  //cerr << "size:" << size << " ng:|" << ng <<"|\n";
 
   if (size > 1) {
 
@@ -517,24 +517,26 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
     }
   } else { // unigram case, no cross-validation
 
+		fstar=unigrMSB(ng);
     lambda=0.0;
-
-    int unigrtotfreq=(size<lmsize()?btotfreq():totfreq());
-
-	
-	
-    if (get(ng,size,size))
-      fstar=(double) mfreq(ng,size)/(double)unigrtotfreq;
-    else {
-			std::stringstream ss_msg;
-			ss_msg << "Missing probability for word: " << dict->decode(*ng.wordp(1));
-			exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
-		 }
   }
 
   return 1;
 }
-
+	
+	double mshiftbeta::unigrMSB(ngram ng)
+	{ 
+		int unigrtotfreq=(lmsize()>1)?btotfreq():totfreq();
+		double fstar;
+		if (get(ng,1,1))
+			fstar=(double) mfreq(ng,1)/(double)unigrtotfreq;
+		else {
+			std::stringstream ss_msg;
+			ss_msg << "Missing probability for word: " << dict->decode(*ng.wordp(1));
+			exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
+		}
+		return fstar;
+	}
 	
 	//
 	//Approximated Modified Shiftbeta language model
@@ -559,8 +561,6 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	{
 		
 		trainunigr();
-		
-		gencounts();
 		
 		gensuccstat();
 		
@@ -668,7 +668,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 		ngram ng(dict);
 		ng.trans(ng_);
 		
-		//cout << "size :" << size << " " << ng <<"\n";
+		//cerr << "size:" << size << " ng:|" << ng <<"|\n";
 		
 		if (size > 1) {
 			
@@ -757,20 +757,8 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 				lambda=1;
 			}
 		} else { // unigram case, no cross-validation
-			
-			lambda=0.0;
-			
-			int unigrtotfreq=(size<lmsize()?btotfreq():totfreq());
-			
-			
-			
-			if (get(ng,size,size))
-				fstar=(double) mfreq(ng,size)/(double)unigrtotfreq;
-			else {
-				std::stringstream ss_msg;
-				ss_msg << "Missing probability for word: " << dict->decode(*ng.wordp(1));
-				exit_error(IRSTLM_ERROR_DATA,ss_msg.str());
-			}
+			fstar=unigr(ng);
+			lambda=0;
 		}
 		
 		return 1;
@@ -782,7 +770,7 @@ int symshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int 
   ngram ng(dict);
   ng.trans(ng_);
 
-  //  cout << "size :" << size << " " << ng <<"\n";
+  //cerr << "size:" << size << " ng:|" << ng <<"|\n";
 
   // Pr(x/y)= max{(c([x,y])-beta)/(N Pr(y)),0} + lambda Pr(x)
   // lambda=#bigrams/N

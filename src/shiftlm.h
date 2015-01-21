@@ -81,6 +81,8 @@ public:
 			return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);
 		}
 		
+		double unigrMSB(ngram ng);
+		inline double unigr(ngram ng){ return unigrMSB(ng); };		
 	};
 	
 class approx_mshiftbeta: public mdiadaptlm
@@ -99,9 +101,7 @@ public:
 
   ~approx_mshiftbeta() {}
 
-  int mfreq(ngram& ng,int l) {
-    return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);
-  }
+  inline int mfreq(ngram& ng,int /*NOT_USED l*/) { return ng.freq; }
 
 };
 	

@@ -65,14 +65,11 @@ void interplm::trainunigr()
   }
 }
 
-
-double interplm::unigr(ngram ng)
+double interplm::unigrWB(ngram ng)
 {
-
   return
-    ((double)(dict->freq(*ng.wordp(1))+epsilon))/
-    ((double)dict->totfreq() + (double) dict->size() * epsilon);
-
+	((double)(dict->freq(*ng.wordp(1))+epsilon))/
+	((double)dict->totfreq() + (double) dict->size() * epsilon);
 }
 
 interplm::interplm(char *ngtfile,int depth,TABLETYPE tabtype):
@@ -300,9 +297,9 @@ void interplm::gencorrcounts()
 
   if (!get(ng,lms,1)) {
     // oov is missing in the ngram-table
-    // f(oov) = dictionary size (Witten Bell)
-    ng.freq=dict->size();
-    cerr << "adding oov unigram " << ng << "\n";
+    // f(oov) = dictionary size (Witten Bell) (excluding oov itself)
+    ng.freq=dict->size()-1;
+    cerr << "adding oov unigram |" << ng << "| with frequency " << ng.freq << "\n";
     put(ng);
     get(ng,lms,1);
     setfreq(ng.link,ng.pinfo,ng.freq,1);
@@ -319,7 +316,6 @@ void interplm::gencorrcounts()
     }
   }
 
-
   cerr << "compute unigram totfreq \n";
   int totf=0;
   scan(ng,INIT,1);
@@ -328,131 +324,10 @@ void interplm::gencorrcounts()
   }
 
   btotfreq(totf);
+  cerr << "compute unigram btotfreq(totf):" << btotfreq() << "\n";
 
   corrcounts=1;
 }
-
-void interplm::gencounts()
-{
-	
-  cerr << "Updating counts in the tables with the number of successors\n";
-	
-  for (int l=lms-1; l>=1; l--) {
-		
-    cerr << "level " << l << "\n";
-		
-    ngram ng(dict);
-    int count=0;
-		
-    //now update counts
-    scan(ng,INIT,l);
-    while(scan(ng,CONT,l)) {
-      if (get(ng,ng.size,ng.size)) {
-				setfreq(ng.link,ng.pinfo,ng.succ,1);
-			}
-    }
-  }
-	  cerr << "Adding unigram of OOV word if missing\n";
-  ngram ng(dict,maxlevel());
-  for (int i=1; i<=maxlevel(); i++)
-    *ng.wordp(i)=dict->oovcode();
-	
-  if (!get(ng,lms,1)) {
-    // oov is missing in the ngram-table
-    // f(oov) = dictionary size (Witten Bell)
-    ng.freq=dict->size();
-    cerr << "adding oov unigram " << ng << "\n";
-    put(ng);
-    get(ng,lms,1);
-    setfreq(ng.link,ng.pinfo,ng.freq,1);
-  }
-	
-  cerr << "Replacing unigram of BoS \n";
-  if (dict->encode(dict->BoS()) != dict->oovcode()) {
-    ngram ng(dict,1);
-    *ng.wordp(1)=dict->encode(dict->BoS());
-		
-    if (get(ng,1,1)) {
-      ng.freq=1;  //putting Pr(<s>)=0 would create problems!!
-      setfreq(ng.link,ng.pinfo,ng.freq,1);
-    }
-  }
-	
-  cerr << "compute unigram totfreq \n";
-  int totf=0;
-  scan(ng,INIT,1);
-  while(scan(ng,CONT,1)) {
-    totf+=getfreq(ng.link,ng.pinfo,1);
-  }
-	
-  btotfreq(totf);
-	
-  corrcounts=0;
-}
-
-
-/*
-void gencorrcounts2(){
-
-  cerr << "Generating corrected n-gram tables\n";
-
-  for (int l=lms-1;l>=1;l--){
-
-    cerr << "level " << l << "\n";
-
-    // tb[l]=new ngramtable(NULL,l,NULL,NULL);
-    // tb[l]->dict=dict; //dict must be the same
-
-    ngram ng(dict);
-    int count=0;
-
-    tb[l+1]->scan(ng,INIT,l+1);
-    while(tb[l+1]->scan(ng,CONT,l+1)){
-
-      count++;
-
-      //generate tables according to Chen & Goodman, 1998
-
-      // cerr << ng << "\n";
-
-      ng.size--;
-
-      if (!ng.containsWord(dict->BoS(),1)) ng.freq=1;
-      //tb[l]->put(ng);
-      //cerr << ng << "\n";
-      //tb[l]->update(ng);
-
-      ngram ng2=ng;
-
-      if (tb[l]->get(ng2,ng2.size,ng2.size)){
-      tb[l]->freq(ng2.link,ng2.info,0);
-      }
-      else{
-				std:stringstream ss_msg;
-				ss_msg << "cannot find " << ng2 << "count " << count << "\n";
-				exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
-      }
-
-      ng.size++;
-    }
-
-    //add unigram of OOV word if missing
-    if (l==1){
-      ngram oovw(dict,1);
-      *oovw.wordp(1)=dict->oovcode();
-      if (!tb[1]->get(oovw,1,1)){
-	oovw.freq=dict->freq(dict->oovcode());
-	cerr << "adding oov unigram " << oovw << "\n";
-	tb[1]->put(oovw);
-      }
-    }
-  }
-
-  exit_error(IRSTLM_NO_ERROR);
-
-}
-*/
-
 
 double interplm::zerofreq(int lev)
 {

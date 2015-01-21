@@ -72,7 +72,6 @@ public:
   void print_prune_ngram();
 	
   void gencorrcounts();
-	void gencounts();
 
   void gensuccstat();
 
@@ -95,8 +94,9 @@ public:
   ngramtable *unitbl;
 
   void trainunigr();
-
-  double unigr(ngram ng);
+	
+  double unigrWB(ngram ng);
+  virtual double unigr(ngram ng){ return unigrWB(ng); };
 
   double zerofreq(int lev);
 
