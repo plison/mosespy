@@ -47,8 +47,8 @@ my $cutoffvalue=39;   #cut-off threshold for Google 1T-ngram cut-offs
 
 #set defaults for optional parameters
 my ($verbose,$size,$ngrams,$sublm)=(0, 0, undef, undef);
-my ($witten_bell,$good_turing,$quasi_kneser_ney,$quasi_improved_kneser_ney)=(0, 0, "", "");
-my ($witten_bell_flag,$good_turing_flag,$quasi_kneser_ney_flag,$quasi_improved_kneser_ney_flag)=(0, 0, 0, 0);
+my ($witten_bell,$good_turing,$shift_beta,$improved_shift_beta)=(0, 0, "", "");
+my ($witten_bell_flag,$good_turing_flag,$shift_beta_flag,$improved_shift_beta_flag)=(0, 0, 0, 0);
 my ($freqshift,$prune_singletons,$prune_thr_str,$cross_sentence)=(0, 0, "", 0);
 
 my $help = 0;
@@ -59,8 +59,8 @@ $help = 1 unless
 'sublm=s' => \$sublm,
 'witten-bell' => \$witten_bell,
 'good-turing' => \$good_turing,
-'quasi-kneser-ney=s' => \$quasi_kneser_ney,
-'quasi-improved-kneser-ney=s' => \$quasi_improved_kneser_ney,
+'shift-beta=s' => \$shift_beta,
+'improved-shift-beta=s' => \$improved_shift_beta,
 'prune-singletons' => \$prune_singletons,
 'pft|PruneFrequencyThreshold=s' => \$prune_thr_str,
 'cross-sentence' => \$cross_sentence,
@@ -78,10 +78,10 @@ if ($help || !$size || !$ngrams || !$sublm) {
 	"       --ngrams <string>     input file or command to read the ngram table\n",
 	"       --sublm <string>      output file prefix to write the sublm statistics \n",
 	"       --freq-shift <int>    (optional) value to be subtracted from all frequencies\n",
-	"       --witten-bell         (optional) use witten bell linear smoothing (default) \n",
-	"       --quasi-kneser-ney <string> (optional) use quasi kneser-ney smoothing with statistics in <string> (no corrected counts)\n",
-	"       --quasi-improved-kneser-ney <string> (optional) use quasi improved kneser-ney smoothing with statistics in <string> (no corrected counts) \n",
-	"       --good-turing         (optional) use good-turing linear smoothing\n",
+	"       --witten-bell         (optional) use Witten-Bell linear smoothing (default) \n",
+	"       --shift-beta <string> (optional) use Shift-Beta smoothing with statistics in <string>\n",
+	"       --improved-shift-beta <string> (optional) use Improved Shift-Beta smoothing with statistics in <string>, similar to Improved Kneser Ney but without corrected counts\n",
+	"       --good-turing         (optional) use Good-Turing linear smoothing\n",
 	"       --prune-singletons    (optional) remove n-grams occurring once, for n=3,4,5,... (disabled by default)\n",
 	"       -pft, --PruneFrequencyThreshold <string>	(optional) pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)\n",
 	"       --cross-sentence      (optional) include cross-sentence bounds (disabled by default)\n",
@@ -96,14 +96,14 @@ $good_turing_flag = 1 if ($good_turing);
 die "build-sublm: This LM is no more supported\n\n" if ($good_turing_flag==1);
 
 $witten_bell_flag = 1 if ($witten_bell);
-$quasi_kneser_ney_flag = 1 if ($quasi_kneser_ney);
-$quasi_improved_kneser_ney_flag = 1 if ($quasi_improved_kneser_ney);
-$witten_bell = $witten_bell_flag = 1 if ($witten_bell_flag + $quasi_kneser_ney_flag + $quasi_improved_kneser_ney_flag) == 0;
+$shift_beta_flag = 1 if ($shift_beta);
+$improved_shift_beta_flag = 1 if ($improved_shift_beta);
+$witten_bell = $witten_bell_flag = 1 if ($witten_bell_flag + $shift_beta_flag + $improved_shift_beta_flag) == 0;
 
-print STDERR  "build-sublm: size $size ngrams $ngrams sublm $sublm witten-bell $witten_bell quasi-kneser-ney quasi-kneser_ney quasi-improved-kneser-ney $quasi_improved_kneser_ney prune-singletons $prune_singletons cross-sentence $cross_sentence\n" if $verbose;
+print STDERR  "build-sublm: size=$size ngrams=$ngrams sublm=$sublm witten-bell=$witten_bell shift-beta=$shift_beta improved-shift-beta=$improved_shift_beta prune-singletons=$prune_singletons cross-sentence=$cross_sentence PruneFrequencyThreshold=$prune_thr_str\n" if $verbose;
 
 
-die "build-sublm: choose only one smoothing method\n" if ($witten_bell_flag + $quasi_kneser_ney_flag + $quasi_improved_kneser_ney_flag) > 1;
+die "build-sublm: choose only one smoothing method\n" if ($witten_bell_flag + $shift_beta_flag + $improved_shift_beta_flag) > 1;
 
 die "build-sublm: value of --size must be larger than 0\n" if $size<1;
 
@@ -166,7 +166,7 @@ while ($ng=<INP>) {
 	
   if ($oldwrd ne $ng[0]) {
 		#    warn "$totcnt,$oldwrd,$ng[0]\n" if $oldwrd ne '';
-    printf (GR "%s %s\n",$totcnt,$oldwrd) if $oldwrd ne '';
+    printf (GR "%s\t%s\n",$totcnt,$oldwrd) if $oldwrd ne '';
     $totcnt=0;$oldwrd=$ng[0];
   }
   
@@ -174,7 +174,7 @@ while ($ng=<INP>) {
   $totcnt+=$ngcnt;
 }
 
-printf GR "%s %s\n",$totcnt,$oldwrd;
+printf GR "%s\t%s\n",$totcnt,$oldwrd;
 close(INP);
 close(GR);
 
@@ -185,9 +185,9 @@ my (@n1,@n2,@n3,@n4,@uno3);  #IKN: n-grams occurring once or twice ...
 my (@beta,$beta);	     #IKN: n-grams occurring once or twice ...
 my $locfreq;
 
-#collect global statistics for Quasi Improved) Kneser-Ney smoothing
-if ($quasi_kneser_ney || $quasi_improved_kneser_ney) {
-  my $statfile=$quasi_kneser_ney || $quasi_improved_kneser_ney;
+#collect global statistics for (Improved) Shift-Beta smoothing
+if ($shift_beta_flag || $improved_shift_beta_flag) {
+  my $statfile=$shift_beta || $improved_shift_beta;
   print STDERR  "load \& merge IKN statistics from $statfile \n" if $verbose;
   open(IKN,"$statfile") || open(IKN,"$statfile|")  || die "cannot open $statfile\n";
   while (<IKN>) {
@@ -214,9 +214,9 @@ foreach ($n=2;$n<=$size;$n++) {
   #compute smothing statistics         
   my (@beta,$beta);               
 	
-  if ($quasi_kneser_ney) {
+  if ($shift_beta_flag) {
     if ($n1[$n]==0 || $n2[$n]==0) {
-      print STDERR  "Error in Kneser-Ney smoothing statistics: resorting to Witten-Bell\n" if $verbose;  
+      print STDERR  "Error in Shift-Beta smoothing statistics: resorting to Witten-Bell\n" if $verbose;  
       $beta=0;  
     } else {
       $beta=$n1[$n]/($n1[$n] + 2 * $n2[$n]); 
@@ -224,7 +224,7 @@ foreach ($n=2;$n<=$size;$n++) {
     }
   }
 	
-  if ($quasi_improved_kneser_ney) {
+  if ($improved_shift_beta_flag) {
 		
     my $Y=$n1[$n]/($n1[$n] + 2 * $n2[$n]);
 		
@@ -252,7 +252,7 @@ foreach ($n=2;$n<=$size;$n++) {
   my ($reduced_h, $reduced_ng) = ("", "");
 	
   $ng=<INP>; chomp($ng); @ng=split(/[ \t]+/,$ng); $ngcnt=(pop @ng) - $freqshift;
-  $h=<HGR>; chomp($h); @h=split(/ +/,$h); $hpr=shift @h;
+  $h=<HGR>; chomp($h); @h=split(/[ \t]+/,$h); $hpr=shift @h;
   $reduced_ng=join(" ",@ng[0..$n-2]);
   $reduced_h=join(" ",@h[0..$n-2]);
 	
@@ -308,7 +308,7 @@ foreach ($n=2;$n<=$size;$n++) {
 				chomp($ng);
 				@ng=split(/[ \t]+/,$ng);$ngcnt=(pop @ng) - $freqshift;  
 				$reduced_ng=join(" ",@ng[0..$n-2]);
-				print STDERR "ng=|$ng| --- reduced_ng:|$reduced_ng|\n";
+#XX#				print STDERR "ng=|$ng| --- reduced_ng:|$reduced_ng|\n";
 			}
 			else{
 #XX#				print STDERR "ngram undefined --> hence last\n";
@@ -342,7 +342,7 @@ foreach ($n=2;$n<=$size;$n++) {
 		
 #XX#		print STDERR "after while --- totcnt=$totcnt --- diff=$diff --- singlediff=$singlediff\n";	
 		
-    if ($quasi_improved_kneser_ney) { 
+    if ($improved_shift_beta) { 
       for (my $c=0;$c<=$code;$c++) {
 				$diff1++ if $cnt[$c]==1;
 				$diff2++ if $cnt[$c]==2;
@@ -364,13 +364,11 @@ foreach ($n=2;$n<=$size;$n++) {
 #XX#				print STDERR "working on $ngram -- c:$c -- cnt[c]:$cnt[$c] -- ngcnt:$ngcnt -- ps:$prune_singletons -- n:$n\n";
 #XX#				print STDERR "totcnt:$totcnt diff:$diff singlediff:$singlediff\n" if $totcnt+$diff+$singlediff==0;
 				
-				if ($quasi_kneser_ney && $beta>0) {
+				if ($shift_beta && $beta>0) {
 					$prob=($cnt[$c]-$beta)/$totcnt;
-				} elsif ($quasi_improved_kneser_ney) {
+				} elsif ($improved_shift_beta) {
 					my $b=($cnt[$c]>= 3? $beta[3]:$beta[$cnt[$c]]);
 					$prob=($cnt[$c] - $b)/$totcnt;
-				} elsif ($good_turing && $singlediff>0) {
-					$prob=$cnt[$c]/($totcnt+$singlediff);
 				} else {
 					$prob=$cnt[$c]/($totcnt+$diff);
 				}
@@ -424,7 +422,7 @@ foreach ($n=2;$n<=$size;$n++) {
 					print STDERR "pruned $ngram --- $reduced_h -- $dict[$c] --- $totcnt diff:$diff |n:$n size:$size | ${sublm}.${n}gr.gz\n";
 					
 					if ($n<$size) {	#output this anyway because it will be an history for n+1 
-						printf GR "%f %s %s\n",-10000,$reduced_h,$dict[$c];
+						printf GR "%f\t%s %s\n",-10000,$reduced_h,$dict[$c];
 						print STDERR "writing possible next history |-10000|$reduced_h -- $dict[$c] | ${sublm}.${n}gr.gz\n";
 					}
 				} else {
@@ -433,12 +431,12 @@ foreach ($n=2;$n<=$size;$n++) {
 						# print unpruned n-1 gram
 						my $logp=log($prob)/$log10;
 						print STDERR "printed $ngram --- $reduced_h -- $dict[$c] --- $totcnt $diff | ${sublm}.${n}gr.gz\n";
-						printf(GR "%f %s %s\n",($logp>0?0:$logp),$reduced_h,$dict[$c]);
+						printf(GR "%f\t%s %s\n",($logp>0?0:$logp),$reduced_h,$dict[$c]);
 					}else{
 						if ($cnt[$c] > $pruneFreqThr[$n] ){ print STDERR "case 6 else\n"; }
 						print STDERR "pruned $ngram --- $reduced_h -- $dict[$c] --- $totcnt $diff | ${sublm}.${n}gr.gz\n";
 						if ($n<$size) {	#output this anyway because it will be an history for n+1 
-							printf GR "%f %s %s\n",-10000,$reduced_h,$dict[$c];
+							printf GR "%f\t%s %s\n",-10000,$reduced_h,$dict[$c];
 						}
 					}
 				}
@@ -449,12 +447,10 @@ foreach ($n=2;$n<=$size;$n++) {
 		
 		if (($prune_singletons && $n>=3)){
 			print STDERR "case 1 if\n";
-			if ($quasi_kneser_ney && $beta>0) { # correction due to singleton pruning
+			if ($shift_beta && $beta>0) { # correction due to singleton pruning
 				$boprob_correction += (1.0-$beta) * $singlediff / $totcnt;
-			} elsif ($quasi_improved_kneser_ney) { # correction due to singleton pruning
+			} elsif ($improved_shift_beta) { # correction due to singleton pruning
 				$boprob_correction += (1-$beta[1]) * $singlediff / $totcnt;
-			} elsif ($good_turing && $singlediff>0) { # correction due to singleton pruning
-				$boprob_correction += 0;
 			} else { # correction due to singleton pruning
 				$boprob_correction += $singlediff/($totcnt+$diff);
 			} 
@@ -481,26 +477,21 @@ foreach ($n=2;$n<=$size;$n++) {
     #check if history has to be pruned out
     if ($hpr==-10000) {
       #skip this history
-    } elsif ($quasi_kneser_ney && $beta>0) {
+    } elsif ($shift_beta && $beta>0) {
 #XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
       my $lambda=$beta * $diff/$totcnt; 	
       my $logp=log($boprob+$lambda)/$log10;
-      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
-    } elsif ($quasi_improved_kneser_ney) {
+      printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
+    } elsif ($improved_shift_beta) {
 #XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
       my $lambda=($beta[1] * $diff1 + $beta[2] * $diff2 + $beta[3] * $diff3)/$totcnt; 	  
       my $logp=log($boprob+$lambda)/$log10;
-      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
-    } elsif ($good_turing && $singlediff>0) {
-#XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt singlediff:$singlediff -- denumerator:",($totcnt+$singlediff),"\n" if $totcnt+$singlediff==0;
-      my $lambda=$singlediff/($totcnt+$singlediff); 
-      my $logp=log($boprob+$lambda)/$log10;
-      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
+      printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
     } else {
 #XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt diff:$diff -- denumerator:",($totcnt+$diff),"\n" if $totcnt+$diff==0;
       my $lambda=$diff/($totcnt+$diff); 
       my $logp=log($boprob+$lambda)/$log10;
-      printf NHGR "%s %f\n",$h,($logp>0?0:$logp);
+      printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
 #XX#			print STDERR "writing into NHGR(${sublm}.".($n-1)."ngr.gz) -- $h -- logp:$logp -- boprob:$boprob -- diff:$diff -- totcnt:$totcnt -- ".$log10."\n";
     }     
 		
@@ -512,7 +503,7 @@ foreach ($n=2;$n<=$size;$n++) {
 #XX#		print STDERR "read from HGR h:$h";
 		
     if (defined($h)){
-      chomp($h); @h=split(/ +/,$h); $hpr=shift @h;
+      chomp($h); @h=split(/[ \t]+/,$h); $hpr=shift @h;
       $reduced_h=join(" ",@h[0..$n-2]);
 #XX#			print STDERR "h=|$h| --- reduced_h:|$reduced_h|\n";
     }else{

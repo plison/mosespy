@@ -18,7 +18,7 @@ OPTIONS:
        -k|--Parts              Number of splits (default 5)
        -n|--NgramSize          Order of language model (default 3)
        -d|--Dictionary         Define subdictionary for n-grams (optional, default is without any subdictionary)
-       -s|--LanguageModelType  Smoothing methods: witten-bell (default), quasi-kneser-ney, quasi-improved-kneser-ney; kneser-ney and improved-kneser-ney still accepted for back-compatibility, but mapped into quasi-kneser-ney and quasi-improved-kneser-ney, respectively
+       -s|--LanguageModelType  Smoothing methods: witten-bell (default), shift-beta, improved-shift-beta; kneser-ney and improved-kneser-ney still accepted for back-compatibility, but mapped into shift-beta and improved-shift-beta, respectively
        -p|--PruneSingletons    Prune singleton n-grams (default false)
        -f|--PruneFrequencyThreshold      Pruning frequency threshold for each level; comma-separated list of values; (default is '0,0,...,0', for all levels)
        -t|--TmpDir             Directory for temporary files (default ./stat_PID)
@@ -114,18 +114,18 @@ witten-bell)
 smoothing="--witten-bell";
 ;; 
 kneser-ney)
-## kneser-ney still accepted for back-compatibility, but mapped into quasi-kneser-ney
-smoothing="--quasi-kneser-ney";
+## kneser-ney still accepted for back-compatibility, but mapped into shift-beta
+smoothing="--shift-beta";
 ;;
-improved-kneser-ney)
-## improved-kneser-ney still accepted for back-compatibility, but mapped into quasi-improved-kneser-ney
-smoothing="--quasi-improved-kneser-ney"; 
+improved-shift-beta)
+## improved-kneser-ney still accepted for back-compatibility, but mapped into improved-shift-beta
+smoothing="--improved-shift-beta"; 
 ;;
-quasi-kneser-ney)
-smoothing="--quasi-kneser-ney";
+shift-beta)
+smoothing="--shift-beta";
 ;;
-quasi-improved-kneser-ney)
-smoothing="--quasi-improved-kneser-ney";
+improved-shift-beta)
+smoothing="--improved-shift-beta";
 ;;
 *) 
 echo "wrong smoothing setting; '$smoothing' does not exist";
@@ -181,7 +181,7 @@ echo "used to generate n-gram blocks,  so that sub language model blocks results
 for sdict in $tmpdir/dict.*;do
 sdict=`basename $sdict`
 echo "Extracting n-gram statistics for $sdict"
-if [ $smoothing = "--quasi-kneser-ney" -o $smoothing = "--quasi-improved-kneser-ney" ]; then
+if [ $smoothing = "--shift-beta" -o $smoothing = "--improved-shift-beta" ]; then
 $bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
 else
 $bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary >> $logfile 2>&1 &
@@ -196,7 +196,7 @@ for sdict in `ls $tmpdir/dict.*` ; do
 sdict=`basename $sdict`
 echo "Estimating language models for $sdict"
 
-if [ $smoothing = "--quasi-kneser-ney" -o $smoothing = "--quasi-improved-kneser-ney" ]; then
+if [ $smoothing = "--shift-beta" -o $smoothing = "--improved-shift-beta" ]; then
 $scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
 else
 $scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &

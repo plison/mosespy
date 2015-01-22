@@ -76,7 +76,7 @@ for (my $n=1;$n<=$size;$n++){
       $size[$n]++;
       chomp($line);
       warn "there is an empty line in any of these files ($files); this should not happen\n" if $line =~ /^$/;
-      my @words = split(/ +/,$line);
+      my @words = split(/[ \t]+/,$line);
       #cut down counts for sentence initial
       $words[0]=1 if $words[1]=~/<s>/;
       #there could be more independent <unk> words
@@ -115,13 +115,13 @@ $lm.=".gz" if $lm!~/.gz$/;
 open(LM,"|$gzip -c > $lm") || die "Cannot open $lm\n";
 
 warn "Write LM Header\n";
-printf LM "iARPA\n";
+printf LM "iARPA\n\n";
 
-printf LM "\n\\data\\\n";
+printf LM "\\data\\\n";
 for (my $n=1;$n<=$size;$n++){
-    printf LM "ngram $n= $size[$n]\n";
+    printf LM "ngram $n=\t$size[$n]\n";
 }
-printf LM "\n\n";
+printf LM "\n";
 close(LM);
 
 warn "Writing LM Tables\n";
@@ -144,7 +144,7 @@ for (my $n=1;$n<=$size;$n++){
       $line=~s/<\/S>/<\/s>/g;
       $line=~s/<UNK>/<unk>/g;
 
-      my @words = split(/ +/,$line);
+      my @words = split(/[ \t]+/,$line);
 
       #always print unk a the eqnd
       next if $words[1]=~/<unk>/i;
@@ -156,7 +156,7 @@ for (my $n=1;$n<=$size;$n++){
       $pr=(log($words[0]+1)-log($tot1gr+$size[1]))/log(10.0);
 			print STDERR "tot1gr:$tot1gr size:$size[1] denominator:",($tot1gr+$size[1]),"\n";
       shift @words;
-      printf LM "%f %s\n",$pr,join(" ",@words);
+      printf LM "%f\t%s\n",$pr,join(" ",@words);
     }
     close(INP);
 
