@@ -148,7 +148,7 @@ using namespace std;
 			out << dict->decode(i) << " " << dict->freq(i);
 			double totW=0;
 			for (int t=0; t<topics; t++) totW+=W[i][t];
-			out <<"totPr: " << totW << " :";
+			out <<" totPr: " << totW << " :";
 			for (int t=0; t<topics; t++)
 				out << " " << W[i][t];
 			out << "\n";
