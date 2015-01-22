@@ -119,7 +119,7 @@ using namespace std;
         return 1;
     }
 	
-    int plsa::initH(double noise,int n){
+    int plsa::initH(double /*NOT_USED noise*/,int n){
         
         FILE *f;
         if ((f=fopen(hinfname,"r"))==NULL) {

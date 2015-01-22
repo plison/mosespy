@@ -527,7 +527,7 @@ int improvedkneserney::discount(ngram ng_,int size,double& fstar,double& lambda,
 	double improvedkneserney::unigrIKN(ngram ng)
 	{ 
 		int unigrtotfreq=(lmsize()>1)?btotfreq():totfreq();
-		double fstar;
+		double fstar=0.0;
 		if (get(ng,1,1))
 			fstar=(double) mfreq(ng,1)/(double)unigrtotfreq;
 		else {

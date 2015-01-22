@@ -2286,9 +2286,9 @@ const char *lmtable::cmaxsuffptr(int* codes, int sz, unsigned int* size)
         //cache insert
         if (ong.size>=maxlev) ong.size=maxlev-1;
         if (prob_and_state_cache && ong.size==maxlev-1) {
-                pst.state=found;
-                pst.statesize=isize;
-                prob_and_state_cache->add(ong.wordp(maxlev-1),pst);
+                pst_get.state=found;
+                pst_get.statesize=isize;
+                prob_and_state_cache->add(ong.wordp(maxlev-1),pst_get);
         }
 #endif
 
