@@ -117,7 +117,7 @@ kneser-ney)
 ## kneser-ney still accepted for back-compatibility, but mapped into shift-beta
 smoothing="--shift-beta";
 ;;
-improved-shift-beta)
+improved-kneser-ney)
 ## improved-kneser-ney still accepted for back-compatibility, but mapped into improved-shift-beta
 smoothing="--improved-shift-beta"; 
 ;;
