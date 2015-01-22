@@ -51,10 +51,14 @@ using namespace irstlm;
 #define TEXT 5
 
 static Enum_T LmTypeEnum [] = {
-  {    (char*)"QuasiModifiedShiftBeta",  QUASI_MOD_SHIFT_BETA },
-  {    (char*)"qmsb",                    QUASI_MOD_SHIFT_BETA },
+  {    (char*)"ImprovedKneserNey",  IMPROVED_KNESER_NEY },
+  {    (char*)"ikn",                IMPROVED_KNESER_NEY },
+  {    (char*)"KneserNey",          KNESER_NEY },
+  {    (char*)"kn",                 KNESER_NEY },
   {    (char*)"ModifiedShiftBeta",  MOD_SHIFT_BETA },
   {    (char*)"msb",                MOD_SHIFT_BETA },
+  {    (char*)"ImprovedShiftBeta",  IMPROVED_SHIFT_BETA },
+  {    (char*)"isb",                IMPROVED_SHIFT_BETA },
   {    (char*)"InterpShiftBeta",    SHIFT_BETA },
   {    (char*)"ShiftBeta",          SHIFT_BETA },
   {    (char*)"sb",                 SHIFT_BETA },
@@ -247,8 +251,8 @@ int main(int argc, char **argv)
 		"SetOovRate", CMDDOUBLETYPE|CMDMSG, &oovrate, "rate for computing the OOV frequency (=oovrate*totfreq if oovrate>0) (default is 0)",
 		"or", CMDDOUBLETYPE|CMDMSG, &oovrate, "rate for computing the OOV frequency (=oovrate*totfreq if oovrate>0) (default is 0)",
 								
-		"Beta", CMDDOUBLETYPE|CMDMSG, &beta, "beta value for Shift Beta LM (default is -1, i.e. automatic estimation)",
-		"beta", CMDDOUBLETYPE|CMDMSG, &beta, "beta value for Shift Beta LM (default is -1, i.e. automatic estimation)",
+		"Beta", CMDDOUBLETYPE|CMDMSG, &beta, "beta value for Shift-Beta and Kneser-Ney LMs (default is -1, i.e. automatic estimation)",
+		"beta", CMDDOUBLETYPE|CMDMSG, &beta, "beta value for Shift-Beta and Kneser-Ney LMs (default is -1, i.e. automatic estimation)",
 								
 		"Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
 		"h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
@@ -288,27 +292,37 @@ int main(int argc, char **argv)
 	switch (lmtype) {
 			
 		case SHIFT_BETA:
-			if (beta==-1 || (beta<1.0 && beta>0))
+			if (beta==-1 || (beta<1.0 && beta>0)){
 				lm=new shiftbeta(trainfile,size,prunefreq,beta,(backoff?SHIFTBETA_B:SHIFTBETA_I));
-			else {
+			}	else {
 				exit_error(IRSTLM_ERROR_DATA,"ShiftBeta: beta must be >0 and <1");
 			}
 			break;
 			
+		case KNESER_NEY:
+			if (size>1){
+				if (beta==-1 || (beta<1.0 && beta>0)){
+//					lm=new kneserney(trainfile,size,prunefreq,beta,(backoff?KNESERNEY_B:KNESERNEY_I));
+				}	else {
+					exit_error(IRSTLM_ERROR_DATA,"Kneser-Ney: beta must be >0 and <1");
+				}
+			}	else {
+				exit_error(IRSTLM_ERROR_DATA,"Kneser-Ney requires size >1");
+			}
+			break;
+
 		case MOD_SHIFT_BETA:
-			if (size>1)
-				lm=new mshiftbeta(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
-			else {
-				exit_error(IRSTLM_ERROR_DATA,"Modified Shift Beta requires size > 1");
+			cerr << "ModifiedShiftBeta (msb) is the old name for ImprovedKneserNey (ikn); this name is not supported anymore, but it is mapped into ImprovedKneserNey for back-compatibility";
+		case IMPROVED_KNESER_NEY:
+			if (size>1){
+				lm=new improvedkneserney(trainfile,size,prunefreq,(backoff?IMPROVEDKNESERNEY_B:IMPROVEDKNESERNEY_I));
+			}	else {
+				exit_error(IRSTLM_ERROR_DATA,"Improved Kneser-Ney requires size >1");
 			}
 			break;
 			
-		case QUASI_MOD_SHIFT_BETA:
-			if (size>1)
-				lm=new quasi_mshiftbeta(trainfile,size,prunefreq,(backoff?QUASI_MSHIFTBETA_B:QUASI_MSHIFTBETA_I));
-			else {
-				exit_error(IRSTLM_ERROR_DATA,"Quasi Modified Shift Beta requires size > 1");
-			}
+		case IMPROVED_SHIFT_BETA:
+			lm=new improvedshiftbeta(trainfile,size,prunefreq,(backoff?IMPROVEDSHIFTBETA_B:IMPROVEDSHIFTBETA_I));
 			break;
 	
 		case SHIFT_ONE:
@@ -316,7 +330,7 @@ int main(int argc, char **argv)
 			break;
 			
 		case LINEAR_WB:
-			lm=new linearwb(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
+			lm=new linearwb(trainfile,size,prunefreq,(backoff?IMPROVEDSHIFTBETA_B:IMPROVEDSHIFTBETA_I));
 			break;
 			
 		case LINEAR_GT:

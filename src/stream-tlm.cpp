@@ -67,8 +67,14 @@ static Enum_T BooleanEnum [] = {
 };
 
 static Enum_T LmTypeEnum [] = {
+  {    "ImprovedKneserNey",  IMPROVED_KNESER_NEY },
+  {    "ikn",                IMPROVED_KNESER_NEY },
+  {    "KneserNey",          KNESER_NEY },
+  {    "kn",                 KNESER_NEY },
   {    "ModifiedShiftBeta",  MOD_SHIFT_BETA },
   {    "msb",                MOD_SHIFT_BETA },
+  {    "ImprovedShiftBeta",  IMPROVED_SHIFT_BETA },
+  {    "isb",                IMPROVED_SHIFT_BETA },
   {    "InterpShiftBeta",    SHIFT_BETA },
   {    "ShiftBeta",          SHIFT_BETA },
   {    "sb",                 SHIFT_BETA },
@@ -485,14 +491,31 @@ int init(mdiadaptlm** lm, int lmtype, char *trainfile, int size, int prunefreq, 
     }
     break;
 
-  case MOD_SHIFT_BETA:
-    if (size>1)
-      *lm=new mshiftbeta(trainfile,size,prunefreq,(backoff?MSHIFTBETA_B:MSHIFTBETA_I));
-    else {
-      cerr << "Modified Shift Beta requires size > 1!\n";
-      exit(1);
+  case KNESER_NEY:
+    if (size>1){
+      if (beta==-1 || (beta<1.0 && beta>0)){
+//	lm=new kneserney(trainfile,size,prunefreq,beta,(backoff?KNESERNEY_B:KNESERNEY_I));
+      } else {
+        exit_error(IRSTLM_ERROR_DATA,"ShiftBeta: beta must be >0 and <1");
+      }
+    } else {
+      exit_error(IRSTLM_ERROR_DATA,"Kneser-Ney requires size >1");
     }
-    break;
+  break;
+
+  case MOD_SHIFT_BETA:
+    cerr << "ModifiedShiftBeta (msb) is the old name for ImprovedKneserNey (ikn); this name is not supported anymore, but it is mapped into ImprovedKneserNey for back-compatibility";
+  case IMPROVED_KNESER_NEY:
+    if (size>1){
+      lm=new improvedkneserney(trainfile,size,prunefreq,(backoff?IMPROVEDKNESERNEY_B:IMPROVEDKNESERNEY_I));
+    } else {
+      exit_error(IRSTLM_ERROR_DATA,"Improved Kneser-Ney requires size >1");
+    }
+  break;
+
+  case IMPROVED_SHIFT_BETA:
+    lm=new improvedshiftbeta(trainfile,size,prunefreq,(backoff?IMPROVEDSHIFTBETA_B:IMPROVEDSHIFTBETA_I));
+  break;
 
   case SHIFT_ONE:
     *lm=new shiftone(trainfile,size,prunefreq,(backoff?SIMPLE_B:SIMPLE_I));

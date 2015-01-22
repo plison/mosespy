@@ -61,7 +61,7 @@ public:
 };
 
 	
-	class mshiftbeta: public mdiadaptlm
+	class improvedkneserney: public mdiadaptlm
 	{
 	protected:
 		int prunethresh;
@@ -71,21 +71,21 @@ public:
 		double oovsum;
 		
 	public:
-		mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=MSHIFTBETA_B);
+		improvedkneserney(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=IMPROVEDKNESERNEY_B);
 		int train();
 		int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 		
-		~mshiftbeta() {}
+		~improvedkneserney() {}
 		
 		int mfreq(ngram& ng,int l) {
 			return (l<lmsize()?getfreq(ng.link,ng.pinfo,1):ng.freq);
 		}
 		
-		double unigrMSB(ngram ng);
-		inline double unigr(ngram ng){ return unigrMSB(ng); };		
+		double unigrIKN(ngram ng);
+		inline double unigr(ngram ng){ return unigrIKN(ng); };		
 	};
 	
-class quasi_mshiftbeta: public mdiadaptlm
+class improvedshiftbeta: public mdiadaptlm
 {
 protected:
   int prunethresh;
@@ -95,11 +95,11 @@ protected:
   double oovsum;
 
 public:
-  quasi_mshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=QUASI_MSHIFTBETA_B);
+  improvedshiftbeta(char* ngtfile,int depth=0,int prunefreq=0,TABLETYPE tt=IMPROVEDSHIFTBETA_B);
   int train();
   int discount(ngram ng,int size,double& fstar,double& lambda,int cv=0);
 
-  ~quasi_mshiftbeta() {}
+  ~improvedshiftbeta() {}
 
   inline int mfreq(ngram& ng,int /*NOT_USED l*/) { return ng.freq; }
 

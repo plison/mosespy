@@ -82,10 +82,12 @@ typedef enum {COUNT,       //!< table: only counters
               SIMPLE_B,    //!< table: simple backoff LM
               SHIFTBETA_I, //!< table: interpolated shiftbeta
               SHIFTBETA_B, //!< table: backoff shiftbeta
-              MSHIFTBETA_I,//!< table: interp modified shiftbeta
-              MSHIFTBETA_B,//!< table: backoff modified shiftbeta
-              QUASI_MSHIFTBETA_I,//!< table: interp quasi modified shiftbeta
-              QUASI_MSHIFTBETA_B,//!< table: interp quasi modified shiftbeta
+              IMPROVEDSHIFTBETA_I,//!< table: interp improved shiftbeta
+              IMPROVEDSHIFTBETA_B,//!< table: interp improved shiftbeta
+              KNESERNEY_I,//!< table: interp kneser-ney
+              KNESERNEY_B,//!< table: backoff kneser-ney
+              IMPROVEDKNESERNEY_I,//!< table: interp improved kneser-ney
+              IMPROVEDKNESERNEY_B,//!< table: backoff improved kneser-ney
               FULL,        //!< table: full fledged table
 
              } TABLETYPE;

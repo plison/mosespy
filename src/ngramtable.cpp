@@ -71,8 +71,8 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
       break;
 
     case FULL:
-    case MSHIFTBETA_B:
-    case QUASI_MSHIFTBETA_B:
+    case IMPROVEDKNESERNEY_B:
+    case IMPROVEDSHIFTBETA_B:
       SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
       SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
       BOFF_OFFS  =SUCC2_OFFS+CODESIZE;
@@ -84,8 +84,8 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
       ttype=tt;
       break;
 
-    case MSHIFTBETA_I:
-    case QUASI_MSHIFTBETA_I:
+    case IMPROVEDKNESERNEY_I:
+    case IMPROVEDSHIFTBETA_I:
       SUCC1_OFFS =FLAGS_OFFS+CHARSIZE;
       SUCC2_OFFS =SUCC1_OFFS+CODESIZE;
       BOFF_OFFS  =0;
@@ -110,7 +110,6 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
       break;
 
     case SIMPLE_B:
-
       SUCC1_OFFS  = 0;
       SUCC2_OFFS  = 0;
       BOFF_OFFS   = FLAGS_OFFS+CHARSIZE;
@@ -121,8 +120,9 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
 
       ttype=tt;
       break;
-
-    case SHIFTBETA_I:
+				
+		case KNESERNEY_I:
+		case SHIFTBETA_I:
       SUCC1_OFFS = FLAGS_OFFS+CHARSIZE;
       SUCC2_OFFS = 0;
       BOFF_OFFS  = 0;
@@ -134,8 +134,8 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
       ttype=tt;
       break;
 
+		case KNESERNEY_B:
     case SHIFTBETA_B:
-
       SUCC1_OFFS  = FLAGS_OFFS+CHARSIZE;
       SUCC2_OFFS  = 0;
       BOFF_OFFS   = SUCC1_OFFS+CODESIZE;

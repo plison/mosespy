@@ -44,11 +44,19 @@ namespace irstlm {
 //
 	
 static Enum_T SLmTypeEnum [] = {
+	{    (char*)"ImprovedKneserNey",  IMPROVED_KNESER_NEY },
+  {    (char*)"ikn",                IMPROVED_KNESER_NEY },
+  {    (char*)"KneserNey",          KNESER_NEY },
+  {    (char*)"kn",                 KNESER_NEY },
   {    (char*)"ModifiedShiftBeta",  MOD_SHIFT_BETA },
   {    (char*)"msb",                MOD_SHIFT_BETA },
+  {    (char*)"ImprovedShiftBeta",  IMPROVED_SHIFT_BETA },
+  {    (char*)"isb",                IMPROVED_SHIFT_BETA },
   {    (char*)"InterpShiftBeta",    SHIFT_BETA },
+  {    (char*)"ShiftBeta",          SHIFT_BETA },
   {    (char*)"sb",                 SHIFT_BETA },
   {    (char*)"InterpShiftOne",     SHIFT_ONE },
+  {    (char*)"ShiftOne",           SHIFT_ONE },
   {    (char*)"s1",                 SHIFT_ONE },
   {    (char*)"InterpShiftZero",    SHIFT_ZERO },
   {    (char*)"s0",                 SHIFT_ZERO },
@@ -162,31 +170,41 @@ mixture::mixture(bool fulltable,char* sublminfo,int depth,int prunefreq,char* ip
                 exit_error(IRSTLM_ERROR_DATA, ss_msg.str());
             }
             
-            switch (slmtype) {
-                    
-                case LINEAR_WB:
-                    sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-                    break;
-                    
-                case SHIFT_BETA:
-                    sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
-                    break;
-                    
-                case SHIFT_ONE:
-                    sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,SIMPLE_I);
-                    break;
-                    
-                case MOD_SHIFT_BETA:
-                    sublm[i]=new mshiftbeta(subtrainfile,depth,subprunefreq,MSHIFTBETA_I);
-                    break;
-                    
-                case MIXTURE:
-                    sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
-                    break;
-                    
-                default:
-                    exit_error(IRSTLM_ERROR_DATA, "not implemented yet");
-            };
+					switch (slmtype) {
+							
+						case LINEAR_WB:
+							sublm[i]=new linearwb(subtrainfile,depth,subprunefreq,IMPROVEDSHIFTBETA_I);
+							break;
+							
+						case SHIFT_BETA:
+							sublm[i]=new shiftbeta(subtrainfile,depth,subprunefreq,-1,SHIFTBETA_I);
+							break;
+							
+						case KNESER_NEY:
+							//					lm=new kneserney(subtrainfile,depth,subprunefreq,-1,KNESERNEY_I);
+
+							break;
+							
+						case MOD_SHIFT_BETA:
+						case IMPROVED_KNESER_NEY:
+							sublm[i]=new improvedkneserney(subtrainfile,depth,subprunefreq,IMPROVEDKNESERNEY_I);
+							break;
+							
+						case IMPROVED_SHIFT_BETA:
+							sublm[i]=new improvedshiftbeta(subtrainfile,depth,subprunefreq,IMPROVEDSHIFTBETA_I);
+							break;
+							
+						case SHIFT_ONE:
+							sublm[i]=new shiftone(subtrainfile,depth,subprunefreq,SIMPLE_I);
+							break;
+							
+						case MIXTURE:
+							sublm[i]=new mixture(usefulltable,subtrainfile,depth,subprunefreq);
+							break;
+							
+						default:
+							exit_error(IRSTLM_ERROR_DATA, "not implemented yet");
+					};
             
             sublm[i]->prunesingletons(subprunesingletons==true);
             sublm[i]->prunetopsingletons(subprunetopsingletons==true);

@@ -25,12 +25,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define SHIFT_BETA   1
 #define SHIFT_ONE    2
 #define SHIFT_ZERO   3
-#define SHIFT_ONE_BETA   4
 #define LINEAR_WB    5
 #define LINEAR_GT    6
 #define MIXTURE      7
-#define MOD_SHIFT_BETA   8
-#define QUASI_MOD_SHIFT_BETA   9
+#define MOD_SHIFT_BETA         8
+#define IMPROVED_SHIFT_BETA    9
+#define KNESER_NEY            10
+#define IMPROVED_KNESER_NEY   11
 
 class interplm:public ngramtable
 {

@@ -297,13 +297,13 @@ int shiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
 }
 
 //
-//Modified Shiftbeta language model
+//Improved Kneser-Ney language model (previously ModifiedShiftBeta)
 //
 
-mshiftbeta::mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
+improvedkneserney::improvedkneserney(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
   mdiadaptlm(ngtfile,depth,tt)
 {
-  cerr << "Creating LM with Modified ShiftBeta smoothing\n";
+  cerr << "Creating LM with Improved Kneser-Ney smoothing\n";
 
   prunethresh=prunefreq;
   cerr << "PruneThresh: " << prunethresh << "\n";
@@ -315,7 +315,7 @@ mshiftbeta::mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
 };
 
 
-int mshiftbeta::train()
+int improvedkneserney::train()
 {
 	
 	trainunigr();
@@ -422,7 +422,7 @@ int mshiftbeta::train()
 
 
 
-int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
+int improvedkneserney::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
 {
   ngram ng(dict);
   ng.trans(ng_);
@@ -517,14 +517,14 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
     }
   } else { // unigram case, no cross-validation
 
-		fstar=unigrMSB(ng);
+		fstar=unigrIKN(ng);
     lambda=0.0;
   }
 
   return 1;
 }
 	
-	double mshiftbeta::unigrMSB(ngram ng)
+	double improvedkneserney::unigrIKN(ngram ng)
 	{ 
 		int unigrtotfreq=(lmsize()>1)?btotfreq():totfreq();
 		double fstar;
@@ -539,13 +539,13 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	}
 	
 	//
-	//Quasi Modified Shiftbeta language model (without corrected counts)
+	//Improved Shiftbeta language model (similar to Improved Kneser-Ney without corrected counts)
 	//
 	
-	quasi_mshiftbeta::quasi_mshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
+	improvedshiftbeta::improvedshiftbeta(char* ngtfile,int depth,int prunefreq,TABLETYPE tt):
   mdiadaptlm(ngtfile,depth,tt)
 	{
-		cerr << "Creating LM with Quasi Modified ShiftBeta smoothing\n";
+		cerr << "Creating LM with Improved ShiftBeta smoothing\n";
 		
 		prunethresh=prunefreq;
 		cerr << "PruneThresh: " << prunethresh << "\n";
@@ -557,7 +557,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	};
 	
 	
-	int quasi_mshiftbeta::train()
+	int improvedshiftbeta::train()
 	{
 		
 		trainunigr();
@@ -663,7 +663,7 @@ int mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv
 	
 	
 	
-	int quasi_mshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
+	int improvedshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int cv)
 	{
 		ngram ng(dict);
 		ng.trans(ng_);
