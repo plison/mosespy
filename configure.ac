@@ -90,7 +90,7 @@ fi
 if test "x$enable_caching" = 'xyes'
 then
     AC_MSG_NOTICE([caching enabled])
-    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE=1 -DMDIADAPTLM_CACHE_ENABLE=1";
+    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE=1 -DLMT_CACHE_ENABLE=1 -DMDIADAPTLM_CACHE_ENABLE=1";
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([caching disabled (default)])
