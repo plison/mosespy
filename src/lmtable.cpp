@@ -254,12 +254,15 @@ void lmtable::reset_lmtcaches()
 {
 #ifdef LMT_CACHE_ENABLE
 	for (int i=2; i<=max_cache_lev; i++)
+	{
 		lmtcache[i]->reset(MAX(lmtcache[i]->cursize(),lmtcache[i]->maxsize()));
+	}
 #endif
 }
 
 void lmtable::reset_caches()
 {
+        VERBOSE(2,"void lmtable::reset_caches()" << std::endl);
 	reset_prob_and_state_cache();
 	reset_lmtcaches();
 }
@@ -2169,7 +2172,7 @@ const char *lmtable::maxsuffptr(ngram ong, unsigned int* size)
 	}
 	
 	if (isInverted) {
-		if (ong.size>maxlev) ong.size=maxlev; //if larger mthan maxlen reduce size
+		if (ong.size>maxlev) ong.size=maxlev; //if larger than maxlen reduce size
 		ngram ing=ong; //inverted ngram
 		
 		ing.invert(ong);
@@ -2206,52 +2209,55 @@ const char *lmtable::maxsuffptr(ngram ong, unsigned int* size)
 
 const char *lmtable::cmaxsuffptr(ngram ong, unsigned int* size)
 {
-        //cerr << "lmtable::CMAXsuffptr\n";
-        //cerr << "ong: " << ong
-        //      << " -> ong.size: " << ong.size << "\n";
-        
+	VERBOSE(3,"const char *lmtable::cmaxsuffptr(ngram ong, unsigned int* size) ong:|" << ong  << "|\n");
+
+        if (ong.size==0) {
+                if (size!=NULL) *size=0;
+                return (char*) NULL;
+        }
+
         if (size!=NULL) *size=ong.size; //will return the largest found ong.size
-        if (ong.size==0) return (char*) NULL;
-        
-        char* found;
-        unsigned int isize; //internal state size variable
         
 #ifdef PS_CACHE_ENABLE
         prob_and_state_t pst;
         
         size_t orisize=ong.size;
-        if (ong.size>=maxlev) ong.size=maxlev-1;
+        if (ong.size>=maxlev) ong.size=maxlev;
         
         //cache hit
-        if (prob_and_state_cache && (ong.size==maxlev-1) && prob_and_state_cache->get(ong.wordp(maxlev-1),pst)) {
+        if (prob_and_state_cache && ong.size==maxlev && prob_and_state_cache->get(ong.wordp(maxlev),pst)) {
                 *size=pst.statesize;
                 return pst.state;
         }
         ong.size = orisize;
-#endif
 
         //cache miss
-        found=(char *)maxsuffptr(ong,&isize);
+        unsigned int isize; //internal state size variable
+        char* found=(char *)maxsuffptr(ong,&isize);
 
-#ifdef PS_CACHE_ENABLE
         //cache insert
-        if (ong.size>=maxlev) ong.size=maxlev-1;
-        if (prob_and_state_cache && ong.size==maxlev-1) {
+	//IMPORTANT: this function updates only two fields (state, statesize) of the entry of the cache; the reminaing fields (logpr, bow, bol, extendible) are undefined; hence, it should not be used before the corresponding clprob()
+
+        if (ong.size>=maxlev) ong.size=maxlev;
+        if (prob_and_state_cache && ong.size==maxlev) {
                 pst.state=found;
                 pst.statesize=isize;
-                prob_and_state_cache->add(ong.wordp(maxlev-1),pst);
+                prob_and_state_cache->add(ong.wordp(maxlev),pst);
         }
+        if (size!=NULL) *size=isize;
+        return found;
+#else
+        return (char *)maxsuffptr(ong,size);
 #endif
 
-        if (size!=NULL) *size=isize;
 
-        return found;
 }
 
 
-//this functions simulates the cmaxsuffptr(ngram, ...) but it takes as input an array of codes instead of the ngram
+//this function simulates the cmaxsuffptr(ngram, ...) but it takes as input an array of codes instead of the ngram
 const char *lmtable::cmaxsuffptr(int* codes, int sz, unsigned int* size)
 {
+	VERBOSE(3,"const char *lmtable::cmaxsuffptr(int* codes, unsigned int* size)\n");
         if (sz==0) {
                 if (size!=NULL) *size=0;
                 return (char*) NULL;
@@ -2259,20 +2265,15 @@ const char *lmtable::cmaxsuffptr(int* codes, int sz, unsigned int* size)
         
         if (sz>maxlev) sz=maxlev; //adjust n-gram level to table size
         
-	char* found;
-	unsigned int isize; //internal state size variable
-	
 #ifdef PS_CACHE_ENABLE
         //cache hit
-        prob_and_state_t pst_get;
+        prob_and_state_t pst;
         
 	//cache hit
-        if (prob_and_state_cache && sz==maxlev && prob_and_state_cache->get(codes,pst_get)) {
-                if (size) *size = pst_get.statesize;
-                return pst_get.state;
+        if (prob_and_state_cache && sz==maxlev && prob_and_state_cache->get(codes,pst)) {
+                if (size) *size = pst.statesize;
+                return pst.state;
         }
-
-#endif
 	
         //create the actual ngram
         ngram ong(dict);
@@ -2280,21 +2281,27 @@ const char *lmtable::cmaxsuffptr(int* codes, int sz, unsigned int* size)
         assert (ong.size == sz);
         
 	//cache miss
-	found=(char *)maxsuffptr(ong,&isize);
+	unsigned int isize; //internal state size variable
+	char* found=(char *)maxsuffptr(ong,&isize);
 
-#ifdef PS_CACHE_ENABLE
         //cache insert
-        if (ong.size>=maxlev) ong.size=maxlev-1;
-        if (prob_and_state_cache && ong.size==maxlev-1) {
-                pst_get.state=found;
-                pst_get.statesize=isize;
-                prob_and_state_cache->add(ong.wordp(maxlev-1),pst_get);
+	//IMPORTANT: this function updates only two fields (state, statesize) of the entry of the cache; the reminaing fields (logpr, bow, bol, extendible) are undefined; hence, it should not be used before the corresponding clprob()
+        if (ong.size>=maxlev) ong.size=maxlev;
+        if (prob_and_state_cache && ong.size==maxlev) {
+                pst.state=found;
+                pst.statesize=isize;
+                prob_and_state_cache->add(ong.wordp(maxlev),pst);
         }
-#endif
-
         if (size!=NULL) *size=isize;
-
         return found;
+#else
+        //create the actual ngram
+        ngram ong(dict);
+        ong.pushc(codes,sz);
+        assert (ong.size == sz);
+
+        return (char *)maxsuffptr(ong,size);
+#endif
 }
 
 
@@ -2416,7 +2423,7 @@ double lmtable::lprob(ngram ong,double* bow, int* bol, char** maxsuffptr,unsigne
 //return log10 probsL use cache memory
 double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible)
 {
-	VERBOSE(3," lmtable::clprob(ngram), parameter = <" <<  ong << ">\n");
+	VERBOSE(3,"double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible) ong:|" << ong  << "|\n");
 	
 #ifdef TRACE_CACHELM
 	if (probcache && ong.size==maxlev && sentence_id>0) {
@@ -2473,7 +2480,7 @@ double lmtable::clprob(ngram ong,double* bow, int* bol, char** state,unsigned in
 
 
 //return log10 probsL use cache memory
-//this functions simulates the clprob(ngram, ...) but it takes as input an array of codes instead of the ngram
+//this function simulates the clprob(ngram, ...) but it takes as input an array of codes instead of the ngram
 double lmtable::clprob(int* codes, int sz, double* bow, int* bol, char** state,unsigned int* statesize,bool* extendible)
 {
 	VERBOSE(3," lmmacro::clprob(int*, int,...)\n");
