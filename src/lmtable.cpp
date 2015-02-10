@@ -2501,16 +2501,13 @@ namespace irstlm {
 			if (statesize) *statesize = pst_get.statesize;
 			if (extendible) *extendible = pst_get.extendible;
 			
-			VERBOSE(3,"here 1 ong:|" << ong  << "|\n");
 			return logpr;
 		}
-		VERBOSE(3,"here 2 ong:|" << ong  << "|\n");			return logpr;
 		
 		//cache miss
 		
 		prob_and_state_t pst_add;
 		logpr = pst_add.logpr = lmtable::lprob(ong, &(pst_add.bow), &(pst_add.bol), &(pst_add.state), &(pst_add.statesize), &(pst_add.extendible));
-		VERBOSE(3,"here 3 ong:|" << ong  << "|\n");			return logpr;
 		
 		
 		if (bow) *bow = pst_add.bow;
@@ -2524,7 +2521,6 @@ namespace irstlm {
 		//			prob_and_state_cache->add(ong.wordp(maxlev),pst_add);
 		//    }
 		if (prob_and_state_cache[ong.size]) {
-			VERBOSE(3,"here 4 ong:|" << ong  << "|\n");			return logpr;
 			prob_and_state_cache[ong.size]->add(ong.wordp(ong.size),pst_add);
 		}
 		return logpr;
