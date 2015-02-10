@@ -292,7 +292,7 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 	howmany = parseWords(line, words, Order + 3);
 	
 	if (!(howmany == (Order+ 1) || howmany == (Order + 2)))
-		assert(howmany == (Order+ 1) || howmany == (Order + 2));
+		MY_ASSERT(howmany == (Order+ 1) || howmany == (Order + 2));
 	
 	//read words
 	ng.size=0;
@@ -300,9 +300,9 @@ int parseline(istream& inp, int Order,ngram& ng,float& prob,float& bow)
 		ng.pushw(strcmp(words[i],"<unk>")?words[i]:ng.dict->OOV());
 	
 	//read logprob/code and logbow/code
-	assert(sscanf(words[0],"%f",&prob));
+	MY_ASSERT(sscanf(words[0],"%f",&prob));
 	if (howmany==(Order+2))
-		assert(sscanf(words[Order+1],"%f",&bow));
+		MY_ASSERT(sscanf(words[Order+1],"%f",&bow));
 	else
 		bow=0.0; //this is log10prob=0 for implicit backoff
 	

@@ -131,12 +131,14 @@ htable<T>::~htable()
 template <class T>
 T htable<T>::find(T key)
 {
+//	std::cerr << "T htable<T>::find(T key) size:" << size << std::endl;
 	address    h;
 	entry<T>  *q,**p;
 	
 	accesses++;
 	
 	h = Hash(key);
+//	std::cerr << "T htable<T>::find(T key) h:" << h << std::endl;
 	
 	p=&table[h%size];
 	q=*p;

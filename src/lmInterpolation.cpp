@@ -25,9 +25,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <cassert>
 #include "lmContainer.h"
 #include "lmInterpolation.h"
+#include "util.h"
 
 using namespace std;
 	
@@ -222,14 +222,14 @@ double lmInterpolation::clprob(int* codes, int sz, double* bow,int* bol,char** m
   //create the actual ngram
   ngram ong(dict);
   ong.pushc(codes,sz);
-  assert (ong.size == sz);
+  MY_ASSERT (ong.size == sz);
 	
   return clprob(ong, bow, bol, maxsuffptr, statesize, extendible);
 }
 
 double lmInterpolation::setlogOOVpenalty(int dub)
 {
-  assert(dub > dict->size());
+  MY_ASSERT(dub > dict->size());
   double _logpr;
   double OOVpenalty=0.0;
   for (int i=0; i<m_number_lm; i++) {

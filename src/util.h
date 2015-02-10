@@ -5,6 +5,7 @@
 
 #include <string>
 #include <fstream>
+#include <assert.h>
 #include "gzfilebuf.h"
 #include "n_gram.h"
 
@@ -13,6 +14,14 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 #define UNUSED(x) { (void) x; }
+
+//#define MY_ASSERT_FLAG 1
+
+#ifdef MY_ASSERT_FLAG
+#define MY_ASSERT(x) do { assert(x); } while (0)
+#else
+#define MY_ASSERT(x) 0
+#endif
 
 
 /** trace macros **/
@@ -32,12 +41,7 @@
 #endif
 */
 
-
-#ifdef TRACE_LEVEL
 #define _DEBUG_LEVEL TRACE_LEVEL
-#else
-#define _DEBUG_LEVEL 1
-#endif
 
 #define TRACE_ERR(str) { std::cerr << str; }
 #define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL > level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
@@ -67,6 +71,8 @@
 #define	IRSTLM_ERROR_DATA	4
 #define	IRSTLM_ERROR_MODEL	5
 
+
+class ngram;
 
 std::string gettempfolder();
 std::string createtempName();

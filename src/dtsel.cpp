@@ -62,7 +62,7 @@ void usage(const char *msg = 0)
 }
 
 double prob(ngramtable* ngt,ngram ng,int size,int cv){
-	assert(size<=ngt->maxlevel() && size<=ng.size);	
+	MY_ASSERT(size<=ngt->maxlevel() && size<=ng.size);	
 	if (size>1){				
 		ngram history=ng;
 		if (ngt->get(history,size,size-1) && history.freq>cv){

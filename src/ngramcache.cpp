@@ -22,7 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
-#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstring>
@@ -32,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "mempool.h"
 #include "htable.h"
 #include "lmtable.h"
+#include "util.h"
 
 #include "ngramcache.h"
 
@@ -61,8 +61,6 @@ ngramcache::ngramcache(int n,int size,int maxentries,float lf)
 
 ngramcache::~ngramcache()
 {
-  //ht->stat();
-  //mp->stat();
   delete ht;
   delete mp;
 };
@@ -111,11 +109,11 @@ char* ngramcache::get(const int* ngp,prob_and_state_t& info)
   char *found;
 
   accesses++;
-  if ((found=(char*) ht->find((int *)ngp))) {
+  if ((found=(char*) ht->find((int *)ngp)))
+	{
     memcpy(&info,found+ngsize*sizeof(int),infosize);
     hits++;
-  };
-
+  }
   return found;
 };
 
@@ -125,7 +123,7 @@ int ngramcache::add(const int* ngp,const char*& info)
   memcpy(entry,(char*) ngp,sizeof(int) * ngsize);
   memcpy(entry + ngsize * sizeof(int),&info,infosize);
   char* found=(char*)ht->insert((int *)entry);
-  assert(found == entry); //false if key is already inside
+  MY_ASSERT(found == entry); //false if key is already inside
   entries++;
   return 1;
 };
@@ -136,7 +134,7 @@ int ngramcache::add(const int* ngp,const double& info)
   memcpy(entry,(char*) ngp,sizeof(int) * ngsize);
   memcpy(entry + ngsize * sizeof(int),&info,infosize);
   char *found=(char*) ht->insert((int *)entry);
-  assert(found == entry); //false if key is already inside
+  MY_ASSERT(found == entry); //false if key is already inside
   entries++;
   return 1;
 };
@@ -147,7 +145,7 @@ int ngramcache::add(const int* ngp,const prob_and_state_t& info)
   memcpy(entry,(char*) ngp,sizeof(int) * ngsize);
   memcpy(entry + ngsize * sizeof(int),&info,infosize);
   char *found=(char*) ht->insert((int *)entry);
-  assert(found == entry); //false if key is already inside
+  MY_ASSERT(found == entry); //false if key is already inside
   entries++;
   return 1;
 };

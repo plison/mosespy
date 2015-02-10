@@ -499,7 +499,7 @@ int mixture::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unu
   fstar=0.0;
   lambda=0.0;
   int p=pmap(ng,size);
-  assert(p <= pmax);
+  MY_ASSERT(p <= pmax);
   double lsum=0;
 
 
@@ -526,7 +526,7 @@ int mixture::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unu
       fstar*=(double)(dict->dub() - dict->size()+1);
     }
 	
-  assert((lsum>LOWER_DOUBLE_PRECISION_OF_1) && (lsum<=UPPER_DOUBLE_PRECISION_OF_1));
+  MY_ASSERT((lsum>LOWER_DOUBLE_PRECISION_OF_1) && (lsum<=UPPER_DOUBLE_PRECISION_OF_1));
   return 1;
 }
 

@@ -184,7 +184,7 @@ int main(int argc, char **argv)
       cerr << "with hit rate " << filter_hit_rate << "\n";
 
       //order of filter table must be smaller than that of input n-grams
-      assert(ngt.maxlevel() <= ngsz);
+      MY_ASSERT(ngt.maxlevel() <= ngsz);
 
       //read input googletable of ngrams of size ngsz
       //output entries made of at least X% n-grams contained in filtertable

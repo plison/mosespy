@@ -27,7 +27,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <vector>
 #include <string>
 #include <stdlib.h>
-#include <assert.h>
 #include "cmd.h"
 #include "math.h"
 #include "util.h"
@@ -274,7 +273,7 @@ int main(int argc, char **argv)
       *out << "\n";
       *out << line << "\n";
       cerr << "-- Start processing of " << Order << "-grams\n";
-      assert(Order <= MAXLEV);
+      MY_ASSERT(Order <= MAXLEV);
 
       unsigned int N=numNgrams[Order];
 
@@ -297,7 +296,7 @@ int main(int argc, char **argv)
 					exit_error(IRSTLM_ERROR_IO, ss_msg.str());
         }
         int howmany = parseWords(line, words, Order + 3);
-        assert(howmany == Order+2 || howmany == Order+1);
+        MY_ASSERT(howmany == Order+2 || howmany == Order+1);
         sscanf(words[0],"%f",&logprob);
         dataPts[nPts].pt=logprob; //exp(logprob * logten);
         dataPts[nPts].idx=nPts;
@@ -472,7 +471,7 @@ int ComputeCluster(int centers,double* ctrs,unsigned int N,DataItem* bintable)
 
     population[bintable[i].code]++;
 
-    assert(bintable[i].code < centers);
+    MY_ASSERT(bintable[i].code < centers);
 
     ctrs[bintable[i].code]=ctrs[bintable[i].code]+exp(bintable[i].pt * log10);
 

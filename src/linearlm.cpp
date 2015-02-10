@@ -22,7 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include "mfstream.h"
 #include "mempool.h"
 #include "htable.h"
@@ -123,7 +122,7 @@ int linearwb::discount(ngram ng_,int size,double& fstar,double& lambda,int cv)
       if (*ng.wordp(1)==dict->oovcode()) {
         lambda+=fstar;
         fstar=0.0;
-        assert(lambda<=1 && lambda>0);
+        MY_ASSERT(lambda<=1 && lambda>0);
       } else { // add f*(oov|...) to lambda
         *ng.wordp(1)=dict->oovcode();
         if (get(ng,size,size) && (!prunesingletons() || ng.freq>1 || size<3)){

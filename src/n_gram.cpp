@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <stdlib.h>
 #include <iomanip>
-#include <cassert>
 #include <sstream>
 #include "util.h"
 #include "mempool.h"
@@ -64,6 +63,19 @@ ngram::ngram(ngram& ng)
   memcpy(word,ng.word,sizeof(int)*MAX_NGRAM);
   memcpy(midx,ng.word,sizeof(int)*MAX_NGRAM);
 	
+}
+
+
+int ngram::containsWord(const char* s,int lev) {
+	
+	int c=dict->encode(s);
+	if (c == -1) return 0;
+	
+	MY_ASSERT(lev <= size);
+	for (int i=0; i<lev; i++) {
+		if (*wordp(size-i)== c) return 1;
+	}
+	return 0;
 }
 
 void ngram::trans (const ngram& ng)
@@ -143,7 +155,7 @@ ifstream& operator>> ( ifstream& fi , ngram& ng)
 int ngram::pushw(const char* w)
 {
 	
-  assert(dict!=NULL);
+  MY_ASSERT(dict!=NULL);
 	
   int c=dict->encode(w);
 	
@@ -183,7 +195,7 @@ int ngram::pushc(int* codes, int codes_len)
 {
 	//copy the first codes_len elements from codes into the actual ngram; sz must be smaller than MAX_NGRAM
 	//shift codes_len elements of the ngram backwards
-  assert (codes_len <= MAX_NGRAM);
+  MY_ASSERT (codes_len <= MAX_NGRAM);
 	
   size+=codes_len;
 	
@@ -217,7 +229,7 @@ istream& operator>> ( istream& fi , ngram& ng)
   memset(w,0,MAX_WORD);
   w[0]='\0';
 	
-  assert(ng.dict != NULL);
+  MY_ASSERT(ng.dict != NULL);
 	
   if (!(fi >> setw(MAX_WORD) >> w))
     return fi;
@@ -240,7 +252,7 @@ istream& operator>> ( istream& fi , ngram& ng)
 ofstream& operator<< (ofstream& fo,ngram& ng)
 {
 	
-  assert(ng.dict != NULL);
+  MY_ASSERT(ng.dict != NULL);
 	
   for (int i=ng.size; i>0; i--)
     fo << ng.dict->decode(ng.word[MAX_NGRAM-i]) << (i>1?" ":"");
@@ -251,7 +263,7 @@ ofstream& operator<< (ofstream& fo,ngram& ng)
 ostream& operator<< (ostream& fo,ngram& ng)
 {
 	
-  assert(ng.dict != NULL);
+  MY_ASSERT(ng.dict != NULL);
 	
   for (int i=ng.size; i>0; i--)
     fo << ng.dict->decode(ng.word[MAX_NGRAM-i]) << (i>1?" ":"");

@@ -24,9 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
-#include <cassert>
 #include "mempool.h"
 #include "htable.h"
+#include "util.h"
 
 using namespace std;
 
@@ -84,7 +84,7 @@ address htable<char *>::Hash(char* key)
 template <>
 int htable<int*>::Comp(int *key1, int *key2) const
 {
-  assert(key1 && key2);
+  MY_ASSERT(key1 && key2);
 
   register int i;
 
@@ -96,12 +96,12 @@ int htable<int*>::Comp(int *key1, int *key2) const
 template <>
 int htable<char*>::Comp(char *key1, char *key2) const
 {
-  assert(key1 && key2);
+  MY_ASSERT(key1 && key2);
 
   char *Key1 = *(char**)key1;
   char *Key2 = *(char**)key2;
 
-  assert(Key1 && Key2);
+  MY_ASSERT(Key1 && Key2);
 
   return (strcmp(Key1,Key2));
 }

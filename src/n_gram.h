@@ -28,9 +28,9 @@
 #define MF_NGRAM_H
 
 #include <fstream>
-#include <cassert>
+#include "util.h"
 #include "dictionary.h"
-	
+
 #ifdef MYMAXNGRAM
 #define MAX_NGRAM MYMAXNGRAM
 #else
@@ -66,32 +66,20 @@ public:
   ngram(dictionary* d,int sz=0);
   ngram(ngram& ng);
 
-  int *wordp() { // n-gram pointer
+  inline int *wordp() { // n-gram pointer
     return wordp(size);
   }
-  int *wordp(int k) { // n-gram pointer
+  inline int *wordp(int k) { // n-gram pointer
     return size>=k?&word[MAX_NGRAM-k]:0;
   }
-  const int *wordp() const { // n-gram pointer
+  inline const int *wordp() const { // n-gram pointer
     return wordp(size);
   }
-  const int *wordp(int k) const { // n-gram pointer
+  inline const int *wordp(int k) const { // n-gram pointer
     return size>=k?&word[MAX_NGRAM-k]:0;
   }
 
-
-  int containsWord(const char* s,int lev) {
-
-    int c=dict->encode(s);
-    if (c == -1) return 0;
-
-    assert(lev <= size);
-    for (int i=0; i<lev; i++) {
-      if (*wordp(size-i)== c) return 1;
-    }
-    return 0;
-  }
-
+  int containsWord(const char* s,int lev);
 
   void trans(const ngram& ng);
   void invert (const ngram& ng);

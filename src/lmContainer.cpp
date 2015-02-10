@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <stdexcept>
 #include <string>
 #include <sstream>
-#include <cassert>
 #include "util.h"
 #include "lmContainer.h"
 #include "lmtable.h"

@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <ostream>
-#include <cassert>
 #include "util.h"
 #include "mempool.h"
 
@@ -114,7 +113,7 @@ char * mempool::allocate()
 		blocknum++;
 	}
 	
-	assert(free_list);
+	MY_ASSERT(free_list);
 	
 	ptr = free_list;
 	
@@ -430,7 +429,7 @@ char *storage::reallocate(char *oldptr,int oldsize,int newsize)
 	
 	char *newptr;
 	
-	assert(newsize>oldsize);
+	MY_ASSERT(newsize>oldsize);
 	
 	if (oldsize<=setsize) {
 		if (newsize<=setsize) {

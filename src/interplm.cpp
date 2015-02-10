@@ -247,7 +247,7 @@ void interplm::gencorrcounts()
           //setfreq(ng2.link,ng2.pinfo,ng2.freq+getfreq(ng2.link,ng2.pinfo,1),1);
           setfreq(ng2.link,ng2.pinfo,ng2.freq,1);
       } else {
-        assert(lms==l+1);
+        MY_ASSERT(lms==l+1);
         cerr << "cannot find2 " << ng2 << "count " << count << "\n";
         cerr << "inserting ngram and starting from scratch\n";
         ng2.pushw(dict->BoS());

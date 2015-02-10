@@ -44,7 +44,7 @@ using namespace std;
 		
 		topics=top;
 		
-		assert (topics>0);
+		MY_ASSERT (topics>0);
 		
 		W=new double* [dict->size()];
 		for (int i=0; i<dict->size(); i++){
@@ -192,7 +192,7 @@ using namespace std;
         cerr << "Loading T table from: " << fname << "\n";
         mfstream tin(fname,ios::in);
         tin.read((char *)&to,sizeof(int));
-        assert(to==topics);
+        MY_ASSERT(to==topics);
         
 //        while(!tin.eof()) { does not work properly!e
         while(tin.read((char *)&w,sizeof(int))){

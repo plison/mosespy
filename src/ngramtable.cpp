@@ -193,7 +193,7 @@ tabletype::tabletype(TABLETYPE tt,int codesize) {
       break;
 
     default:
-      assert(tt==COUNT);
+      MY_ASSERT(tt==COUNT);
     }
 
     L_FREQ_OFFS=CODESIZE;
@@ -1397,7 +1397,7 @@ int ngramtable::get(ngram& ng,int n,int lev)
   char *found;
   NODETYPE ndt;
 
-  assert(lev <= n && lev <= maxlev && ng.size >= n);
+  MY_ASSERT(lev <= n && lev <= maxlev && ng.size >= n);
 
   if ((I_FREQ_NUM==0) && (lev < maxlev)) {
 		exit_error(IRSTLM_ERROR_DATA,"ngramtable::get for this type of table ngram cannot be smaller than table size");
@@ -1450,7 +1450,7 @@ int ngramtable::get(ngram& ng,int n,int lev)
 int ngramtable::scan(node nd,NODETYPE /* unused parameter: ndt */,int lev,ngram& ng,ACTION action,int maxl)
 {
 
-  assert(lev<=maxlev);
+  MY_ASSERT(lev<=maxlev);
 
   if ((I_FREQ_NUM==0) && (maxl < maxlev)) {
 		exit_error(IRSTLM_ERROR_MODEL,"ngramtable::scan ngram cannot be smaller than LEAFPROB table");
@@ -1591,7 +1591,7 @@ double ngramtable::prob(ngram ong)
   if (ong.size==0) return 0.0;
   if (ong.size>maxlev) ong.size=maxlev;
 
-  assert(tbtype()==LEAFPROB && ong.size<=maxlev);
+  MY_ASSERT(tbtype()==LEAFPROB && ong.size<=maxlev);
 
   ngram ng(dict);
   ng.trans(ong);
@@ -1674,14 +1674,14 @@ void ngramtable::resetngramtable() {
 }
 
 int ngramtable::putmem(char* ptr,int value,int offs,int size) {
-    assert(ptr!=NULL);
+    MY_ASSERT(ptr!=NULL);
     for (int i=0; i<size; i++)
       ptr[offs+i]=(value >> (8 * i)) & 0xff;
     return value;
 }
 
 int ngramtable::getmem(char* ptr,int* value,int offs,int size) {
-    assert(ptr!=NULL);
+    MY_ASSERT(ptr!=NULL);
     *value=ptr[offs] & 0xff;
     for (int i=1; i<size; i++)
       *value= *value | ( ( ptr[offs+i] & 0xff ) << (8 *i));
@@ -1689,14 +1689,14 @@ int ngramtable::getmem(char* ptr,int* value,int offs,int size) {
 }
 
 long ngramtable::putmem(char* ptr,long long value,int offs,int size) {
-    assert(ptr!=NULL);
+    MY_ASSERT(ptr!=NULL);
     for (int i=0; i<size; i++)
       ptr[offs+i]=(value >> (8 * i)) & 0xffLL;
     return value;
 }
 
 long ngramtable::getmem(char* ptr,long long* value,int offs,int size) {
-    assert(ptr!=NULL);
+    MY_ASSERT(ptr!=NULL);
     *value=ptr[offs] & 0xff;
     for (int i=1; i<size; i++)
       *value= *value | ( ( ptr[offs+i] & 0xffLL ) << (8 *i));

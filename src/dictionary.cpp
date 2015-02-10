@@ -210,7 +210,7 @@ void dictionary::print_curve_oov(int curvesize, const char *filename, int listfl
 //
 void dictionary::test(int* OOVchart, int* NwTest, int curvesize, const char *filename, int listflag)
 {
-        assert(OOVchart!=NULL);
+        MY_ASSERT(OOVchart!=NULL);
 
         int m_NwTest=0;
         for (int j=0; j<curvesize; j++) OOVchart[j]=0;
@@ -376,7 +376,7 @@ int cmpdictentry(const void *a,const void *b)
 
 dictionary::dictionary(dictionary* d,bool prune, int prunethresh)
 {
-	assert(d!=NULL);
+	MY_ASSERT(d!=NULL);
 	//transfer values
 	n=0;        //total entries
 	N=0;        //total frequency

@@ -20,7 +20,6 @@
 
 #include <cmath>
 #include <string>
-#include <assert.h>
 #include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
@@ -107,8 +106,8 @@ namespace irstlm {
 	
 	void mdiadaptlm::init_caches(int level)
 	{
-		assert(probcache[level]==NULL);
-		assert(backoffcache[level]==NULL);
+		MY_ASSERT(probcache[level]==NULL);
+		MY_ASSERT(backoffcache[level]==NULL);
 		probcache[level]=new NGRAMCACHE_t(level,sizeof(double),400000);
 		backoffcache[level]=new NGRAMCACHE_t(level,sizeof(double),400000);
 	};
@@ -301,7 +300,7 @@ namespace irstlm {
 	double mdiadaptlm::zeta(ngram ng,int size)
 	{
 		
-		assert(size>=1);
+		MY_ASSERT(size>=1);
 		
 		double z=0; // compute normalization term
 		
@@ -438,7 +437,7 @@ namespace irstlm {
 					}
 				}
 				
-				assert(pr>0 && pr<=1);
+				MY_ASSERT(pr>0 && pr<=1);
 				
 				boff(hg.link,pr);
 			}
@@ -512,7 +511,7 @@ namespace irstlm {
 					if (lambda<1){
 						pr = lambda/bo * prob(ng,size-1);
 					}else {
-						assert(lambda<UPPER_SINGLE_PRECISION_OF_1);
+						MY_ASSERT(lambda<UPPER_SINGLE_PRECISION_OF_1);
 						pr = prob(ng,size-1);
 					}
 				}
@@ -557,7 +556,7 @@ namespace irstlm {
 				if (! get(hg,size,size-1)){
 					cerr << "ERROR: int mdiadaptlm::bodiscount(ngram ng_,int size,double& fstar,double& lambda,double& bo)   -> get(hg,size,size-1) returns NULL\n";
 				}
-				assert(get(hg,size,size-1));
+				MY_ASSERT(get(hg,size,size-1));
 				
 				bo=boff(hg.link);
 				
@@ -833,7 +832,7 @@ namespace irstlm {
 			
 			if (hg1.containsWord(dict->OOV(),1)) continue;
 			
-			assert((*hg1.wordp(1))<dict->size());
+			MY_ASSERT((*hg1.wordp(1))<dict->size());
 			
 			*ng.wordp(2)=*hg1.wordp(1);
 			*ng.wordp(1)=0;
@@ -924,7 +923,7 @@ namespace irstlm {
 			sng.trans(ng);
 			if (sng.containsWord(dict->OOV(),1)) continue;
 			
-			assert((*sng.wordp(3))<subdictsz);
+			MY_ASSERT((*sng.wordp(3))<subdictsz);
 			
 			h1=*sng.wordp(3);
 			fwritex((char *)&h1,sizeof(code),1,f);
@@ -1129,7 +1128,7 @@ namespace irstlm {
 					ngram ng2=ng;
 					ng2.pushc(0); //extend by one
 					mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
-					assert(!backoff || (lambda ==1 || bo<1 ));
+					MY_ASSERT(!backoff || (lambda ==1 || bo<1 ));
 					
 					sng.pushc(bo_code);
 					sng.size=lmsize();
@@ -1183,7 +1182,7 @@ namespace irstlm {
 		char tmpfilename[BUFSIZ];
 		
 		//create temporary output file stream to store single levels for all terms
-		assert(strlen(filename)<1000);
+		MY_ASSERT(strlen(filename)<1000);
 		char tfilename[LMTMAXLEV+1][1000];
 		mfstream *tout[LMTMAXLEV+1];
 		
@@ -1260,7 +1259,7 @@ namespace irstlm {
 				mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
 				ung.shift();//shrink by one
 				
-				assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
+				MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 				
 				if (backoff){
 					ibow=log10(lambda) - log10(bo);
@@ -1321,7 +1320,7 @@ namespace irstlm {
 						
 						if (!(pr<=1.0 && pr > 1e-10)) {
 							cerr << ng << " " << pr << "\n";
-							assert(pr<=1.0);
+							MY_ASSERT(pr<=1.0);
 							cerr << "prob modified to 1e-10\n";
 							pr=1e-10;
 						}
@@ -1543,7 +1542,7 @@ namespace irstlm {
 						mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
 						VERBOSE(3,"ng2: |" << ng2 << "| fstar:" << fstar << " lambda:" << lambda << " bo:" << bo << "\n");
 						
-						assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1));
+						MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1));
 						
 						if (backoff){
 							ibow = log10(lambda) - log10(bo);
@@ -1593,7 +1592,7 @@ namespace irstlm {
 					
 					if (!(pr<=1.0 && pr > 1e-10)) {
 						cerr << ng << " " << pr << "\n";
-						assert(pr<=1.0);
+						MY_ASSERT(pr<=1.0);
 						cerr << "prob modified to 1e-10\n";
 						pr=1e-10;
 					}
@@ -1670,7 +1669,7 @@ namespace irstlm {
 		
 		int maxlev=lmsize();
 		//create temporary output file stream
-		assert(strlen(filename)<1000);
+		MY_ASSERT(strlen(filename)<1000);
 		char tfilename[LMTMAXLEV+1][1000];
 		mfstream *tout[LMTMAXLEV+1];
 		
@@ -1739,7 +1738,7 @@ namespace irstlm {
 				mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
 				ung.shift();//shrink by one
 				
-				assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
+				MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 				
 				if (backoff){
 					*tout[1] << "\t" << (float) (log10(lambda) - log10(bo));
@@ -1789,7 +1788,7 @@ namespace irstlm {
 						
 						if (!(pr<=1.0 && pr > 1e-10)) {
 							cerr << ng << " " << pr << "\n";
-							assert(pr<=1.0);
+							MY_ASSERT(pr<=1.0);
 							cerr << "prob modified to 1e-10\n";
 							pr=1e-10;
 						}
@@ -1961,7 +1960,7 @@ namespace irstlm {
 						
 						mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
 						
-						assert(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
+						MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
 						
 						if (backoff){
 							out << "\t" << (float) (log10(lambda) - log10(bo));
@@ -2007,7 +2006,7 @@ namespace irstlm {
 					
 					if (!(pr<=1.0 && pr > 1e-10)) {
 						cerr << ng << " " << pr << "\n";
-						assert(pr<=1.0);
+						MY_ASSERT(pr<=1.0);
 						cerr << "prob modified to 1e-10\n";
 						pr=1e-10;
 					}

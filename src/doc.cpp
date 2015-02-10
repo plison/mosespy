@@ -20,7 +20,6 @@
 
 
 #include <math.h>
-#include <assert.h>
 #include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
@@ -135,7 +134,7 @@ int doc::read()
 int doc::savernd(char* fname,int num)
 {
 
-  assert((df!=NULL) && (cd==-1));
+  MY_ASSERT((df!=NULL) && (cd==-1));
 
   srand(100);
 
@@ -184,7 +183,7 @@ int doc::savernd(char* fname,int num)
 int doc::save(char* fname)
 {
 
-  assert((df!=NULL) && (cd==-1));
+  MY_ASSERT((df!=NULL) && (cd==-1));
 
   mfstream out(fname,ios::out);
   out << "DoC "<< n << "\n";
@@ -204,7 +203,7 @@ int doc::save(char* fname)
 int doc::save(char* fname, int nbins)
 {
 
-  assert((df!=NULL) && (cd==-1));
+  MY_ASSERT((df!=NULL) && (cd==-1));
   //compute size of bin
   int bsz=(int)ceil((double)n / (double)nbins);
   char name[100];

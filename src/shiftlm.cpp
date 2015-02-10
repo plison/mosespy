@@ -21,7 +21,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <math.h>
 #include <sstream>
 #include "util.h"
@@ -775,7 +774,7 @@ int symshiftbeta::discount(ngram ng_,int size,double& fstar,double& lambda, int 
   // Pr(x/y)= max{(c([x,y])-beta)/(N Pr(y)),0} + lambda Pr(x)
   // lambda=#bigrams/N
 
-  assert(size<=2); // only works with bigrams //
+  MY_ASSERT(size<=2); // only works with bigrams //
 
   if (size == 3) {
 
