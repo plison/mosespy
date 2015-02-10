@@ -15,6 +15,9 @@ AC_ARG_ENABLE([doc],
 AC_ARG_ENABLE([trace],
    [AC_HELP_STRING([--enable-trace|--disable-trace], [Enable (default) or Disable trace info at run-time])])
 
+AC_ARG_ENABLE([assert],
+   [AC_HELP_STRING([--enable-assert|--disable-assert], [Enable (default) or Disable assert calls at run-time])])
+
 AC_ARG_ENABLE([debugging],
    [AC_HELP_STRING([--enable-debugging|--disable-debugging], [Enable or Disable (default) debugging info ("-g -O2")])])
 
@@ -35,6 +38,12 @@ AC_ARG_WITH(zlib,
             [AC_HELP_STRING([--with-zlib=PATH], [(optional) path to zlib])],
             [with_zlib=$withval],
             [with_zlib=no]
+           )
+
+AC_ARG_WITH(tracelevel,
+            [AC_HELP_STRING([--with-tracelevel=VAL], [(optional) level of tracing; default 0, tracing disabled])],
+            [with_tracelevel=$withval],
+            [with_tracelevel=0]
            )
 
 AM_CONDITIONAL([DOC_COMPILATION],false)
@@ -62,12 +71,35 @@ fi
 #### if test "x$enable_foo" = 'xyes'
 
 
+if test "x$with_tracelevel" != 'x0'
+then
 if test "x$enable_trace" != 'xno'
 then
-    AC_MSG_NOTICE([trace enabled (default)])
-    CPPFLAGS="$CPPFLAGS -DTRACE_ENABLE=1" 
+    TRACELEVEL=${with_tracelevel}
+    AC_MSG_NOTICE([trace enabled (default); trace level is $TRACELEVEL])
 else
-    AC_MSG_NOTICE([trace disabled, most regression tests will fail])
+    TRACELEVEL=0
+    AC_MSG_NOTICE([trace disabled; trace level is overwritten to $TRACELEVEL; most regression tests will fail])
+fi
+else
+if test "x$enable_trace" != 'xno'
+then
+    TRACELEVEL=1
+    AC_MSG_NOTICE([trace enabled (default); trace level is overwritten to default value $TRACELEVEL])
+else
+    TRACELEVEL=0
+    AC_MSG_NOTICE([trace disabled; trace level is $TRACELEVEL; most regression tests will fail])
+fi
+fi
+CPPFLAGS="$CPPFLAGS -DTRACE_LEVEL=$TRACELEVEL"
+
+if test "x$enable_assert" != 'xno'
+then
+    AC_MSG_NOTICE([assert enabled (default)])
+    CPPFLAGS="$CPPFLAGS -DMY_ASSERT_FLAG=1" 
+else
+    AC_MSG_NOTICE([assert disabled])
+    CPPFLAGS="$CPPFLAGS -DMY_ASSERT_FLAG=0" 
 fi
 
 if test "x$enable_debugging" = 'xyes'
