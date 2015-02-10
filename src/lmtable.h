@@ -137,7 +137,8 @@ protected:
 	//improve access speed
 	int max_cache_lev;
 	
-	NGRAMCACHE_t* prob_and_state_cache;
+//	NGRAMCACHE_t* prob_and_state_cache;
+	NGRAMCACHE_t* prob_and_state_cache[LMTMAXLEV+1];
 	NGRAMCACHE_t* lmtcache[LMTMAXLEV+1];
 	float ngramcache_load_factor;
 	float dictionary_load_factor;
@@ -181,7 +182,8 @@ public:
 		init_prob_and_state_cache();
 	}; //kept for back compatibility
 	void init_statecache() {}; //kept for back compatibility
-	void init_lmtcaches(int uptolev);
+	void init_lmtcaches();
+//	void init_lmtcaches(int uptolev);
 	void init_caches(int uptolev);
 	
 	void used_prob_and_state_cache() const;
@@ -244,7 +246,7 @@ public:
 	}
 	
 	inline double setlogOOVpenalty(int dub) {
-		assert(dub > dict->size());
+		MY_ASSERT(dub > dict->size());
 		dictionary_upperbound = dub;
 		return logOOVpenalty=log((double)(dictionary_upperbound - dict->size()))/M_LN10;
 	}
@@ -342,16 +344,16 @@ public:
 	
 	virtual const char *maxsuffptr(ngram ong, unsigned int* size=NULL);
 	virtual const char *cmaxsuffptr(ngram ong, unsigned int* size=NULL);
-        virtual const char *cmaxsuffptr(int* codes, int sz, unsigned int* size=NULL);
+  virtual const char *cmaxsuffptr(int* codes, int sz, unsigned int* size=NULL);
 	
 	inline void putmem(char* ptr,int value,int offs,int size) {
-		assert(ptr!=NULL);
+		MY_ASSERT(ptr!=NULL);
 		for (int i=0; i<size; i++)
 			ptr[offs+i]=(value >> (8 * i)) & 0xff;
 	};
 	
 	inline void getmem(char* ptr,int* value,int offs,int size) {
-		assert(ptr!=NULL);
+		MY_ASSERT(ptr!=NULL);
 		*value=ptr[offs] & 0xff;
 		for (int i=1; i<size; i++){
 			*value= *value | ( ( ptr[offs+i] & 0xff ) << (8 *i));
@@ -360,13 +362,13 @@ public:
 	
 	template<typename T>
 	inline void putmem(char* ptr,T value,int offs) {
-		assert(ptr!=NULL);
+		MY_ASSERT(ptr!=NULL);
 		memcpy(ptr+offs, &value, sizeof(T));
 	};
 	
 	template<typename T>
 	inline void getmem(char* ptr,T* value,int offs) {
-		assert(ptr!=NULL);
+		MY_ASSERT(ptr!=NULL);
 		memcpy((void*)value, ptr+offs, sizeof(T));
 	};
 	
@@ -382,7 +384,7 @@ public:
 			case QLEAF:
 				return LMTCODESIZE + QPROBSIZE;
 			default:
-				assert(0);
+				MY_ASSERT(0);
 				return 0;
 		}
 	}
@@ -432,7 +434,7 @@ public:
 				getmem(nd,&cv,offs);
 				return (float) cv;
 			default:
-				assert(0);
+				MY_ASSERT(0);
 				return 0;
 		}
 	};
@@ -455,7 +457,7 @@ public:
 				putmem(nd,(unsigned char) value,offs);
 				break;
 			default:
-				assert(0);
+				MY_ASSERT(0);
 				return (T) 0;
 		}
 		
@@ -482,7 +484,7 @@ public:
 				getmem(nd,&cv,offs);
 				return (float) cv;
 			default:
-				assert(0);
+				MY_ASSERT(0);
 				return 0;
 		}
 	};
@@ -505,7 +507,7 @@ public:
 				putmem(nd,(unsigned char) value,offs);
 				break;
 			default:
-				assert(0);
+				MY_ASSERT(0);
 				return 0;
 		}
 		
