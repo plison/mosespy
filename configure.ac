@@ -96,10 +96,10 @@ CPPFLAGS="$CPPFLAGS -DTRACE_LEVEL=$TRACELEVEL"
 if test "x$enable_assert" != 'xno'
 then
     AC_MSG_NOTICE([assert enabled (default)])
-    CPPFLAGS="$CPPFLAGS -DMY_ASSERT_FLAG=1" 
+    CPPFLAGS="$CPPFLAGS -DMY_ASSERT_FLAG" 
 else
     AC_MSG_NOTICE([assert disabled])
-    CPPFLAGS="$CPPFLAGS -DMY_ASSERT_FLAG=0" 
+    CPPFLAGS="$CPPFLAGS -UMY_ASSERT_FLAG" 
 fi
 
 if test "x$enable_debugging" = 'xyes'
@@ -122,7 +122,7 @@ fi
 if test "x$enable_caching" = 'xyes'
 then
     AC_MSG_NOTICE([caching enabled])
-    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE=1 -DLMT_CACHE_ENABLE=1 -DMDIADAPTLM_CACHE_ENABLE=1";
+    CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE -DLMT_CACHE_ENABLE -DMDIADAPTLM_CACHE_ENABLE";
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([caching disabled (default)])
@@ -131,7 +131,7 @@ fi
 if test "x$enable_interpolatedsearch" = 'xyes'
 then
     AC_MSG_NOTICE([interpolated search enabled])
-    CPPFLAGS="$CPPFLAGS -DINTERP_SEARCH=1";
+    CPPFLAGS="$CPPFLAGS -DINTERP_SEARCH";
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([interpolated search disabled (default)])
