@@ -167,8 +167,12 @@ namespace irstlm {
 	void lmtable::init_caches(int uptolev)
 	{
 		max_cache_lev=uptolev;
+#ifdef PS_CACHE_ENABLE
 		init_prob_and_state_cache();
+#endif
+#ifdef LMT_CACHE_ENABLE
 		init_lmtcaches();
+#endif
 	}
 	
 	void lmtable::delete_prob_and_state_cache()
@@ -181,8 +185,8 @@ namespace irstlm {
 				delete prob_and_state_cache[i];
 			}
 			prob_and_state_cache[i]=NULL;
-#endif
 		}
+#endif
 	}
 	
 	void lmtable::delete_lmtcaches()
@@ -201,8 +205,12 @@ namespace irstlm {
 	
 	void lmtable::delete_caches()
 	{
+#ifdef PS_CACHE_ENABLE
 		delete_prob_and_state_cache();
+#endif		
+#ifdef LMT_CACHE_ENABLE
 		delete_lmtcaches();
+#endif
 	}
 	
 	
@@ -233,9 +241,13 @@ namespace irstlm {
 	}
 	
 	void lmtable::used_caches() const
-	{
+	{		
+#ifdef PS_CACHE_ENABLE
 		used_prob_and_state_cache();
+#endif		
+#ifdef LMT_CACHE_ENABLE
 		used_lmtcaches();
+#endif
 	}
 	
 	
@@ -267,8 +279,12 @@ namespace irstlm {
 	
 	void lmtable::check_caches_levels() const
 	{
+#ifdef PS_CACHE_ENABLE
 		check_prob_and_state_cache_levels();
+#endif
+#ifdef LMT_CACHE_ENABLE
 		check_lmtcaches_levels();
+#endif
 	}
 	
 	void lmtable::reset_prob_and_state_cache() 
@@ -299,9 +315,11 @@ namespace irstlm {
 	
 	void lmtable::reset_caches()
 	{
+#ifdef LMT_CACHE_ENABLE
 		VERBOSE(2,"void lmtable::reset_caches()" << std::endl);
 		reset_prob_and_state_cache();
 		reset_lmtcaches();
+#endif
 	}
 	
 	bool lmtable::are_prob_and_state_cache_active() const
