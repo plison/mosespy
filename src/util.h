@@ -18,35 +18,28 @@
 //#define MY_ASSERT_FLAG 1
 
 #ifdef MY_ASSERT_FLAG
+#if MY_ASSERT_FLAG>0
 #define MY_ASSERT(x) do { assert(x); } while (0)
 #else
-#define MY_ASSERT(x) 0
+#define MY_ASSERT(x) {}
 #endif
+#else
+#define MY_ASSERT(x) {}
+#endif
+
+
+
+
 
 
 /** trace macros **/
 /** verbose macros **/
-/*
-
-#define _DEBUG_LEVEL 0
-
-#ifdef TRACE_ENABLE
-#define TRACE_ERR(str) { std::cerr << str; }
-#define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL >= level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
-#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL >= level)
-
-#else
-#define VERBOSE(level,str) { }
-#define IFVERBOSE(level) { }
-#endif
-*/
 
 #define _DEBUG_LEVEL TRACE_LEVEL
 
 #define TRACE_ERR(str) { std::cerr << str; }
-#define VERBOSE(level,str) { if (_DEBUG_LEVEL){  if (_DEBUG_LEVEL > level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); }  } }
-#define IFVERBOSE(level) if (_DEBUG_LEVEL) if (_DEBUG_LEVEL > level)
-
+#define VERBOSE(level,str) { if (_DEBUG_LEVEL > level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); } }
+#define IFVERBOSE(level) if (_DEBUG_LEVEL > level)
 
 #define LMTMAXLEV  20
 #define MAX_LINE  100000

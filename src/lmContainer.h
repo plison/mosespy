@@ -43,6 +43,8 @@ namespace irstlm {
 class lmContainer
 {
   static const bool debug=true;
+  static bool ps_cache_enabled;
+  static bool lmt_cache_enabled;
 
 protected:
   int          lmtype; //auto reference to its own type
@@ -175,25 +177,21 @@ public:
 
 
   inline static bool is_lmt_cache_enabled(){
-    #ifdef LMT_CACHE_ENABLE
-      return true;
-    #else
-      return false;
-    #endif
+    VERBOSE(3,"inline static bool is_lmt_cache_enabled() " << lmt_cache_enabled << std::endl);
+    return lmt_cache_enabled;
   }
 
   inline static bool is_ps_cache_enabled(){
-    #ifdef PS_CACHE_ENABLE
-		return true;
-		#else
-		  return false;
-    #endif
+    VERBOSE(3,"inline static bool is_ps_cache_enabled() " << ps_cache_enabled << std::endl);
+    return ps_cache_enabled;
   }
 
   inline static bool is_cache_enabled(){
     return is_lmt_cache_enabled() && is_ps_cache_enabled();
   }
+
 };
+
 }//namespace irstlm
 
 #endif

@@ -38,6 +38,19 @@
 using namespace std;
 
 namespace irstlm {
+
+#ifdef MDIADAPTLM_CACHE_ENABLE
+#if MDIADAPTLM_CACHE_ENABLE==0
+#undef MDIADAPTLM_CACHE_ENABLE
+#endif
+#endif
+
+#ifdef MDIADAPTLM_CACHE_ENABLE
+  bool mdiadaptlm::mdiadaptlm_cache_enable=true;
+#else
+  bool mdiadaptlm::mdiadaptlm_cache_enable=false;
+#endif
+
 	//
 	//Minimum discrimination adaptation for interplm
 	//

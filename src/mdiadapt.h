@@ -35,7 +35,9 @@ class mdiadaptlm:public interplm
   interplm* forelm;
   double zeta0;
   double oovscaling;
-	bool m_save_per_level;
+  bool m_save_per_level;
+ 
+  static bool mdiadaptlm_cache_enable;
 
 protected:
   normcache *cache;
@@ -149,11 +151,8 @@ public:
   }
 
   inline static bool is_train_cache_enabled() {
-    #ifdef MDIADAPTLM_CACHE_ENABLE
-      return true;
-    #else
-			return false;
-    #endif
+    VERBOSE(3,"inline static bool is_train_cache_enabled() " << mdiadaptlm_cache_enable << std::endl);
+    return mdiadaptlm_cache_enable;
   }
 
 };

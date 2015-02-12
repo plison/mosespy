@@ -35,9 +35,32 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 
 using namespace std;
 	
-
 namespace irstlm {
 	
+#ifdef PS_CACHE_ENABLE
+#if PS_CACHE_ENABLE==0
+#undef PS_CACHE_ENABLE
+#endif
+#endif
+
+#ifdef LMT_CACHE_ENABLE
+#if LMT_CACHE_ENABLE==0
+#undef LMT_CACHE_ENABLE
+#endif
+#endif
+
+#if PS_CACHE_ENABLE
+bool lmContainer::ps_cache_enabled=true;
+#else
+bool lmContainer::ps_cache_enabled=false;
+#endif
+
+#if LMT_CACHE_ENABLE
+bool lmContainer::lmt_cache_enabled=true;
+#else
+bool lmContainer::lmt_cache_enabled=false;
+#endif
+
 inline void error(const char* message)
 {
   std::cerr << message << "\n";
