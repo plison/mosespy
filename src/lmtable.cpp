@@ -315,9 +315,11 @@ namespace irstlm {
 	
 	void lmtable::reset_caches()
 	{
-#ifdef LMT_CACHE_ENABLE
 		VERBOSE(2,"void lmtable::reset_caches()" << std::endl);
+#ifdef PS_CACHE_ENABLE
 		reset_prob_and_state_cache();
+#endif
+#ifdef LMT_CACHE_ENABLE
 		reset_lmtcaches();
 #endif
 	}
