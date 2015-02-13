@@ -3,43 +3,18 @@
 #ifndef IRSTLM_UTIL_H
 #define IRSTLM_UTIL_H
 
+using namespace std;
+
 #include <string>
+#include <iostream>
 #include <fstream>
 #include <assert.h>
-#include "gzfilebuf.h"
-#include "n_gram.h"
 
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 #define UNUSED(x) { (void) x; }
-
-//#define MY_ASSERT_FLAG 1
-
-#ifdef MY_ASSERT_FLAG
-#if MY_ASSERT_FLAG>0
-#define MY_ASSERT(x) do { assert(x); } while (0)
-#else
-#define MY_ASSERT(x) {}
-#endif
-#else
-#define MY_ASSERT(x) {}
-#endif
-
-
-
-
-
-
-/** trace macros **/
-/** verbose macros **/
-
-#define _DEBUG_LEVEL TRACE_LEVEL
-
-#define TRACE_ERR(str) { std::cerr << str; }
-#define VERBOSE(level,str) { if (_DEBUG_LEVEL > level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); } }
-#define IFVERBOSE(level) if (_DEBUG_LEVEL > level)
 
 #define LMTMAXLEV  20
 #define MAX_LINE  100000
@@ -66,27 +41,13 @@
 
 
 class ngram;
+class mfstream;
 
 std::string gettempfolder();
 std::string createtempName();
 void createtempfile(mfstream  &fileStream, std::string &filePath, std::ios_base::openmode flags);
 
 void removefile(const std::string &filePath);
-
-class inputfilestream : public std::istream
-{
-protected:
-	std::streambuf *m_streambuf;
-	bool _good;
-public:
-	
-	inputfilestream(const std::string &filePath);
-	~inputfilestream();
-	bool good() {
-		return _good;
-	}
-	void close();
-};
 
 void *MMap(int	fd, int	access, off_t	offset, size_t	len, off_t	*gap);
 int Munmap(void	*p,size_t	len,int	sync);
@@ -106,7 +67,25 @@ void exit_error(int err, const std::string &msg="");
 namespace irstlm
 {
 	void* reallocf(void *ptr, size_t size);
+
 }
+
+//extern int tracelevel;
+extern const int tracelevel;
+
+#define TRACE_ERR(str) { std::cerr << str; }
+#define VERBOSE(level,str) { if (tracelevel > level) { TRACE_ERR("DEBUG_LEVEL:" <<tracelevel << " "); TRACE_ERR(str); } }
+#define IFVERBOSE(level) if (tracelevel > level)
+
+/*
+#define _DEBUG_LEVEL TRACE_LEVEL
+
+#define TRACE_ERR(str) { std::cerr << str; }
+#define VERBOSE(level,str) { if (_DEBUG_LEVEL > level) { TRACE_ERR("DEBUG_LEVEL:" <<_DEBUG_LEVEL << " "); TRACE_ERR(str); } }
+#define IFVERBOSE(level) if (_DEBUG_LEVEL > level)
+*/
+
+void MY_ASSERT(bool x);
 
 #endif
 

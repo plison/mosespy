@@ -34,11 +34,10 @@
 #include "gzfilebuf.h"
 #include "timer.h"
 #include "util.h"
+#include "n_gram.h"
+#include "mfstream.h"
 
 using namespace std;
-
-
-
 
 string gettempfolder()
 {
@@ -100,37 +99,6 @@ void removefile(const std::string &filePath)
 	}
 #endif
 }
-
-inputfilestream::inputfilestream(const std::string &filePath)
-: std::istream(0),
-m_streambuf(0)
-{
-	//check if file is readable
-	std::filebuf* fb = new std::filebuf();
-	_good=(fb->open(filePath.c_str(), std::ios::in)!=NULL);
-	
-	if (filePath.size() > 3 &&
-			filePath.substr(filePath.size() - 3, 3) == ".gz") {
-		fb->close();
-		delete fb;
-		m_streambuf = new gzfilebuf(filePath.c_str());
-	} else {
-		m_streambuf = fb;
-	}
-	this->init(m_streambuf);
-}
-
-inputfilestream::~inputfilestream()
-{
-	delete m_streambuf;
-	m_streambuf = 0;
-}
-
-void inputfilestream::close()
-{
-}
-
-
 
 /* MemoryMap Management
  Code kindly provided by Fabio Brugnara, ITC-irst Trento.
@@ -342,8 +310,46 @@ void exit_error(int err, const std::string &msg){
 	exit(err);
 };
 
-namespace irstlm
-{
+/*
+#ifdef MY_ASSERT_FLAG
+#if MY_ASSERT_FLAG>0
+#undef MY_ASSERT(x)
+#define MY_ASSERT(x) do { assert(x); } while (0)
+#else
+#define MY_ASSERT(x) {}
+#endif
+#else
+#define MY_ASSERT(x) {}
+#endif
+*/
+
+/** assert macros e functions**/
+#ifdef MY_ASSERT_FLAG
+#if MY_ASSERT_FLAG==0
+#undef MY_ASSERT_FLAG
+#endif
+#endif
+
+#ifdef MY_ASSERT_FLAG
+void MY_ASSERT(bool x) { assert(x); }
+#else
+void MY_ASSERT(bool x) { }
+#endif
+
+
+/** trace macros and functions**/
+/** verbose macros and functions**/
+
+#ifdef TRACE_LEVEL
+//int tracelevel=TRACE_LEVEL;
+const int tracelevel=TRACE_LEVEL;
+#else
+//int tracelevel=0;
+const int tracelevel=0;
+#endif
+
+
+namespace irstlm {
 	void* reallocf(void *ptr, size_t size){
 		void *p=realloc(ptr,size);
 		
@@ -357,5 +363,6 @@ namespace irstlm
 			return NULL;
 		}
 	}
+	
 }
 
