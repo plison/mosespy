@@ -222,6 +222,35 @@ int ngram::pushc(int* codes, int codes_len)
   return 1;
 }
 
+int ngram::ckhisto(int sz) {
+	
+	for (int i=sz; i>1; i--)
+		if (*wordp(i)==dict->oovcode())
+			return 0;
+	return 1;
+}
+
+
+
+bool ngram::operator==(const ngram &compare) const {
+	if ( size != compare.size || dict != compare.dict)
+		return false;
+	else
+		for (int i=size; i>0; i--)
+			if (word[MAX_NGRAM-i] != compare.word[MAX_NGRAM-i])
+				return false;
+	return true;
+}
+
+bool ngram::operator!=(const ngram &compare) const {
+	if ( size != compare.size || dict != compare.dict)
+		return true;
+	else
+		for (int i=size; i>0; i--)
+			if (word[MAX_NGRAM-i] != compare.word[MAX_NGRAM-i])
+				return true;
+	return false;
+}
 
 istream& operator>> ( istream& fi , ngram& ng)
 {

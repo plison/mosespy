@@ -31,11 +31,10 @@
 #include "util.h"
 #include "dictionary.h"
 
-#ifdef MYMAXNGRAM
-#define MAX_NGRAM MYMAXNGRAM
-#else
-#define MAX_NGRAM 20
+#ifndef MYMAXNGRAM
+#define MYMAXNGRAM 20
 #endif
+#define MAX_NGRAM MYMAXNGRAM
 
 class dictionary;
 
@@ -90,8 +89,12 @@ public:
   friend std::ofstream& operator<< (std::ofstream& fi,ngram& ng);
   friend std::istream& operator>> (std::istream& fi,ngram& ng);
   friend std::ostream& operator<< (std::ostream& fi,ngram& ng);
-
-  inline bool operator==(const ngram &compare) const {
+	
+	bool operator==(const ngram &compare) const;
+	bool operator!=(const ngram &compare) const;
+	
+	/*
+  friend bool operator==(const ngram &compare) const {
     if ( size != compare.size || dict != compare.dict)
       return false;
     else
@@ -110,14 +113,8 @@ public:
           return true;
     return false;
   }
-
-  inline int ckhisto(int sz) {
-
-    for (int i=sz; i>1; i--)
-      if (*wordp(i)==dict->oovcode())
-        return 0;
-    return 1;
-  }
+*/
+  int ckhisto(int sz);
 
   int pushc(int c);
   int pushc(int* codes, int sz);

@@ -202,4 +202,17 @@ public:
   mfstream& reopen();
 };
 
+class inputfilestream : public std::istream
+{
+protected:
+	std::streambuf *m_streambuf;
+	bool _good;
+public:
+	
+	inputfilestream(const std::string &filePath);
+	~inputfilestream();
+	inline bool good() { return _good; }
+	void close();
+};
+
 #endif

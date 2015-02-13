@@ -30,6 +30,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "cmd.h"
 #include "math.h"
 #include "util.h"
+#include "mfstream.h"
+
 
 using namespace std;
 
