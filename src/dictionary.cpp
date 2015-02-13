@@ -20,7 +20,6 @@
  
  ******************************************************************************/
 
-#include "mfstream.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <iomanip>
@@ -29,9 +28,10 @@
 #include <sstream>
 #include "mempool.h"
 #include "htable.h"
-#include "dictionary.h"
 #include "index.h"
 #include "util.h"
+#include "dictionary.h"
+#include "mfstream.h"
 
 using namespace std;
 
