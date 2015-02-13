@@ -1725,23 +1725,17 @@ namespace irstlm {
  //exclude words not occurring in the subdictionary
 			if (sng.containsWord(subdict->OOV(),1) && !ung.containsWord(dict->OOV(),1))	continue;
 */
-			
+		
+                        pr=mdiadaptlm::prob(ung,1);
+                        pr=(pr?log10(pr):-99);
+	
+			//////CHECK
 			if (sng.containsWord(subdict->OOV(),1) || ung.containsWord(dict->OOV(),1)) {
 				_OOV_unigram=true;
 				oovprob+=pr; //accumulate oov probability
 				continue;
 			}
 
-			
-			pr=mdiadaptlm::prob(ung,1);
-			pr=(pr?log10(pr):-99);
-			
-/*			
-			if (w==dict->oovcode())
-				*tout[1] << (float) pr << "\t" << "<unk>";
-			else
-				*tout[1] << (float) pr << "\t" << (char *)dict->decode(w);
-*/			
 			*tout[1] << (float) pr << "\t" << (char *)dict->decode(w);
 			
 			num[1]++;
