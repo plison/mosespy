@@ -68,6 +68,7 @@ int main(int argc, char **argv)
 	bool sent_PP_flag = false;
 	bool invert = false;
 	bool sscore = false;
+	bool ngramscore = false;
 	bool skeepunigrams = false;
 	
 	int debug = 0;
@@ -94,7 +95,9 @@ int main(int argc, char **argv)
 								"r", CMDINTTYPE|CMDMSG, &randcalls, "computes N random calls on the specified text file",
                 "score", CMDBOOLTYPE|CMDMSG, &sscore, "computes log-prob scores of n-grams from standard input",
 								"s", CMDBOOLTYPE|CMDMSG, &sscore, "computes log-prob scores of n-grams from standard input",
-                "debug", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
+                "ngramscore", CMDBOOLTYPE|CMDMSG, &ngramscore, "computes log-prob scores of the last n-gram  before an _END_NGRAM_ symbol from standard input",
+                "ns", CMDBOOLTYPE|CMDMSG, &ngramscore, "computes log-prob scores of the last n-gram  before an _END_NGRAM_ symbol from standard input",
+								"debug", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
 								"d", CMDINTTYPE|CMDMSG, &debug, "verbose output for --eval option; default is 0",
                 "level", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
 								"l", CMDINTTYPE|CMDMSG, &requiredMaxlev, "maximum level to load from the LM; if value is larger than the actual LM order, the latter is taken",
@@ -167,6 +170,7 @@ int main(int argc, char **argv)
 	std::cerr << "outfile: " << outfile << std::endl;
   if (seval!=NULL) std::cerr << "evalfile: " << seval << std::endl;
   if (sscore==true) std::cerr << "interactive: " << sscore << std::endl;
+  if (ngramscore==true) std::cerr << "interactive for ngrams only: " << ngramscore << std::endl;
   if (memmap) std::cerr << "memory mapping: " << memmap << std::endl;
   std::cerr << "loading up to the LM level " << requiredMaxlev << " (if any)" << std::endl;
   std::cerr << "dub: " << dub<< std::endl;
@@ -297,7 +301,7 @@ int main(int argc, char **argv)
 
         // reset ngram at begin of sentence
         if (*ng.wordp(1)==bos) {
-          ng.size=1;
+					ng.size=1;
           continue;
         }
 
@@ -310,19 +314,19 @@ int main(int argc, char **argv)
             std::cout << ng.dict->decode(*ng.wordp(1)) << " [" << ng.size-bol << "]" << " ";
             if (*ng.wordp(1)==eos) std::cout << std::endl;
           }
-          if (debug==2) {
+          else if (debug==2) {
             std::cout << ng << " [" << ng.size-bol << "-gram]" << " " << Pr;
             std::cout << std::endl;
           }
-          if (debug==3) {
+          else if (debug==3) {
             std::cout << ng << " [" << ng.size-bol << "-gram]" << " " << Pr << " bow:" << bow;
             std::cout << std::endl;
           }
-          if (debug==4) {
+          else if (debug==4) {
             std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
             std::cout << std::endl;
           }
-          if (debug>4) {
+          else if (debug>4) {
             std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
             double totp=0.0;
             int oldw=*ng.wordp(1);
@@ -408,7 +412,9 @@ int main(int argc, char **argv)
     unsigned int n=0;
 
     std::cout.setf(ios::scientific);
-    std::cout << "> ";
+		std::cout.setf(ios::fixed);
+		std::cout.precision(2);
+		std::cout << "> ";
 
     lmt->dictionary_incflag(1);
 
@@ -437,6 +443,44 @@ int main(int argc, char **argv)
     }
     std::cout << std::endl;
     if (debug>1) lmt->stat();
+    delete lmt;
+    return 0;
+  }
+	
+	
+  if (ngramscore == true) {
+		
+		const char* _END_NGRAM_="_END_NGRAM_";
+    ngram ng(lmt->getDict());
+		
+		double Pr;
+		double bow;
+		int bol=0;
+		char *msp;
+		unsigned int statesize;
+
+		std::cout.setf(ios::fixed);
+		std::cout.precision(2);
+		
+		ng.dict->incflag(1);
+		int endngram=ng.dict->encode(_END_NGRAM_);
+		ng.dict->incflag(0);
+		
+    while(std::cin >> ng) {
+      // compute score for the last ngram when endngram symbols is found
+      // and reset ngram
+      if (*ng.wordp(1)==endngram) {
+				ng.shift();
+				if (ng.size>=lmt->maxlevel()) {
+					ng.size=lmt->maxlevel();
+				}
+				
+				Pr=lmt->clprob(ng,&bow,&bol,&msp,&statesize);
+				std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
+				std::cout << std::endl;
+        ng.size=1;
+      }
+    }
     delete lmt;
     return 0;
   }
