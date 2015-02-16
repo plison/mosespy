@@ -313,7 +313,6 @@ int main(int argc, char **argv)
 
     //Saving results
     std::cerr << "Saving in " << outfile << "..." << std::endl;
-    //saving result
     std::fstream outtxt(outfile.c_str(),std::ios::out);
     outtxt << "LMINTERPOLATION " << N << "\n";
     for (int i=0; i<N; i++) outtxt << w[i] << " " << lmf[i] << "\n";

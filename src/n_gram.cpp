@@ -62,7 +62,6 @@ ngram::ngram(ngram& ng)
   dict=ng.dict;
   memcpy(word,ng.word,sizeof(int)*MAX_NGRAM);
   memcpy(midx,ng.word,sizeof(int)*MAX_NGRAM);
-	
 }
 
 
@@ -179,12 +178,7 @@ int ngram::pushc(int c)
   size_t src = MAX_NGRAM - len;
 	
   memmove((void *)&word[src - 1],(void *)&word[src], len * sizeof(int));
-	
-  /*
-	 int buff[MAX_NGRAM-1];
-	 memcpy(buff,word+1,(MAX_NGRAM-1)*sizeof(int));
-	 memcpy(word,buff,(MAX_NGRAM-1)*sizeof(int));
-	 */
+
   word[MAX_NGRAM-1]=c; // fill the most recent position
 	
   return 1;
@@ -199,24 +193,11 @@ int ngram::pushc(int* codes, int codes_len)
 	
   size+=codes_len;
 	
-  /*
-	 std::cout << " codes_len:" << codes_len
-	 << " size:" << size
-	 << std::endl;
-	 */
   if (size>MAX_NGRAM) size=MAX_NGRAM;
   size_t len = size - codes_len;
   size_t src = MAX_NGRAM - len;
 	
-  /*
-	 std::cout << " codes_len:" << codes_len
-	 << " size:" << size
-	 << " len:" << len
-	 << " src:" << src
-	 << std::endl;
-	 */
   if (len > 0) memmove((void *)&word[src - codes_len],(void *)&word[src], len * sizeof(int));
-	//  memcpy((void *)&word[MAX_NGRAM - codes_len],(void*)&codes[MAX_NGRAM - codes_len],codes_len*sizeof(int));
   memcpy((void *)&word[MAX_NGRAM - codes_len],(void*)&codes[0],codes_len*sizeof(int));
 	
   return 1;
@@ -308,11 +289,11 @@ ostream& operator<< (ostream& fo,ngram& ng)
  ngram ng(&d);
  
  while (txt >> ng){
- cout << ng << "\n";
+   std::cout << ng << "\n";
  }
  
  ngram ng2=ng;
- cerr << "copia l'ultimo =" << ng << "\n";
+ cerr << "copy last =" << ng << "\n";
  }
  */
 
