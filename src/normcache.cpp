@@ -114,7 +114,7 @@ double normcache::put(ngram ng,int size,double value)
 
 void normcache::stat()
 {
-  cerr << "misses " << miss << ", hits " << hit << "\n";
+  std::cout << "misses " << miss << ", hits " << hit << "\n";
 }
 
 

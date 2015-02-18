@@ -212,7 +212,44 @@ namespace irstlm {
 		delete_lmtcaches();
 #endif
 	}
-	
+
+        void lmtable::stat_prob_and_state_cache()
+        {
+#ifdef PS_CACHE_ENABLE
+                for (int i=1; i<=max_cache_lev; i++)
+                {
+			std::cout << "void lmtable::stat_prob_and_state_cache() level:" << i << std::endl;
+                        if (prob_and_state_cache[i])
+                        {
+                                 prob_and_state_cache[i]->stat();
+                        }
+                }
+#endif
+        }
+        void lmtable::stat_lmtcaches()
+        {
+#ifdef PS_CACHE_ENABLE
+                for (int i=2; i<=max_cache_lev; i++)
+                {
+			std::cout << "void lmtable::stat_lmtcaches() level:" << i << std::endl;
+                        if (lmtcache[i])
+                        {
+                                 lmtcache[i]->stat();
+                        }
+                }
+#endif
+        }
+
+        void lmtable::stat_caches()
+        {
+#ifdef PS_CACHE_ENABLE
+                stat_prob_and_state_cache();
+#endif
+#ifdef LMT_CACHE_ENABLE
+                stat_lmtcaches();
+#endif
+        }
+
 	
 	void lmtable::used_prob_and_state_cache() const
 	{
@@ -1729,7 +1766,7 @@ namespace irstlm {
 			concatenate_single_level(i, fromfilename, tofilename);
 		}
 	}
-	
+
 	//concatenate corresponding single level files of two different tables
 	void lmtable::concatenate_single_level(int level, const char* fromfilename, const char* tofilename){
 		//single level files should have a name derived from "fromfilename" and "tofilename"
@@ -2044,9 +2081,10 @@ namespace irstlm {
 			
 			
 			//insert both found and not found items!!!
+//			if (lmtcache[l] && hit==true) {
+
 			//insert only not found items!!!
-			if (lmtcache[l] && hit==true) {
-				
+			if (lmtcache[l] && hit==false) {
 				const char* found2=found;
 				lmtcache[l]->add(ng.wordp(n),found2);
 			}
@@ -2677,6 +2715,8 @@ namespace irstlm {
 		}
 		
 		if (level >1 ) lmtable::getDict()->stat();
+
+		stat_caches();
 		
 	}
 	

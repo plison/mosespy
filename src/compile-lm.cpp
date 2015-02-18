@@ -164,7 +164,7 @@ int main(int argc, char **argv)
     outfile+=(textoutput?".lm":".blm");
   } else{
     outfile = files[1];
-	}
+  }
 	
   std::cerr << "inpfile: " << infile << std::endl;
 	std::cerr << "outfile: " << outfile << std::endl;
@@ -392,8 +392,7 @@ int main(int argc, char **argv)
       if (debug) std::cout << " logPr=" <<  logPr;
       std::cout << std::endl;
 
-      lmt->used_caches();
-      lmt->stat();
+      if (debug>1) lmt->used_caches();
 
       if (debug>1) lmt->stat();
 
@@ -442,7 +441,10 @@ int main(int argc, char **argv)
       std::cout << "> ";
     }
     std::cout << std::endl;
+    if (debug>1) lmt->used_caches();
+
     if (debug>1) lmt->stat();
+
     delete lmt;
     return 0;
   }
@@ -476,11 +478,18 @@ int main(int argc, char **argv)
 				}
 				
 				Pr=lmt->clprob(ng,&bow,&bol,&msp,&statesize);
+#ifndef OUTPUT_SUPPRESSED
 				std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
 				std::cout << std::endl;
+#endif
         ng.size=1;
       }
     }
+
+    if (debug>1) lmt->used_caches();
+
+    if (debug>1) lmt->stat();
+
     delete lmt;
     return 0;
   }

@@ -199,6 +199,10 @@ public:
 	void delete_lmtcaches();
 	void delete_caches();
 	
+	void stat_prob_and_state_cache();
+	void stat_lmtcaches();
+	void stat_caches();
+
 	void check_prob_and_state_cache_levels() const;
 	void check_probcache_levels() const {
 		check_prob_and_state_cache_levels();
