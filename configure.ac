@@ -6,8 +6,7 @@ AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-#AC_CHECK_TOOL(PDFLATEX,pdflatex,"no")
-#AC_CHECK_TOOL(BIBTEX,bibtex,"no")
+AM_PROG_AR
 
 AC_ARG_ENABLE([doc],
    [AC_HELP_STRING([--enable-doc|--disable-doc], [Enable or Disable (default) creation of documentation])])
