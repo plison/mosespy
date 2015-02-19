@@ -27,6 +27,9 @@ AC_ARG_ENABLE(profiling,
 AC_ARG_ENABLE(caching,
    [AC_HELP_STRING([--enable-caching|--disable-caching], [Enable or Disable (default) internal caches to store probs and other info])])
 
+AC_ARG_ENABLE(output,
+   [AC_HELP_STRING([--enable-output|--disable-output], [Enable (default) or Disable part of the output])])
+
 AC_ARG_ENABLE(interpolatedsearch,
    [AC_HELP_STRING([--enable-interpolatedsearch|--disable-interpolatedsearch], [Enable or Disable (default) interpolated search for n-grams])])
 
@@ -123,6 +126,15 @@ if test "x$enable_caching" = 'xyes'
 then
     AC_MSG_NOTICE([caching enabled])
     CPPFLAGS="$CPPFLAGS -DPS_CACHE_ENABLE -DLMT_CACHE_ENABLE -DMDIADAPTLM_CACHE_ENABLE";
+    LDFLAGS="$LDFLAGS"
+else
+    AC_MSG_NOTICE([caching disabled (default)])
+fi
+
+if test "x$enable_output" = 'xno'
+then
+    AC_MSG_NOTICE([part of the output on stdout is suppressed])
+    CPPFLAGS="$CPPFLAGS -DSUPPRESSED_OUTPUT";
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([caching disabled (default)])
