@@ -151,12 +151,12 @@ void lmmacro::load(const std::string &filename,int memmap)
   // Load the (possibly binary) LM
   lmtable::load(lmfilename,memmap);
 
-
+  getDict()->incflag(1);
+	
   if (mapFlag)
     loadmap(mapfilename);
-
   getDict()->genoovcode();
-  getDict()->incflag(1);
+
 };
 
 void lmmacro::unloadmap()
@@ -190,6 +190,13 @@ void lmmacro::loadmap(const std::string mapfilename)
     collapsatorMap = (bool *)calloc(BUFSIZ, sizeof(bool));
   }
 
+	
+  getDict()->genoovcode();
+	microMacroMap[microMacroMapN] = lmtable::getDict()->oovcode();
+	MY_ASSERT(microMacroMapN == getDict()->oovcode());
+	microMacroMapN++;
+	
+	
   if (lmtable::getDict()->getcode(BOS_)==-1) {
     lmtable::getDict()->incflag(1);
     lmtable::getDict()->encode(BOS_);
@@ -218,9 +225,9 @@ void lmmacro::loadmap(const std::string mapfilename)
       error((char*)"ERROR: wrong format of map file\n");
     microW = words[0];
     macroW = words[1];
-    getDict()->encode(microW);
-
-
+    int microW_c=getDict()->encode(microW);
+    VERBOSE(4, "microW gets the code:" << microW_c << std::endl);
+		
     if (microMacroMapN>0 && !(microMacroMapN % BUFSIZ)) {
       microMacroMap = (int *)reallocf(microMacroMap, sizeof(int)*(BUFSIZ*(1+microMacroMapN/BUFSIZ)));
       if (collapseFlag) {
@@ -231,7 +238,7 @@ void lmmacro::loadmap(const std::string mapfilename)
       }
     }
     microMacroMap[microMacroMapN] = lmtable::getDict()->getcode(macroW);
-
+		
     if (collapseFlag) {
 
       int len = strlen(microW)-1;
@@ -292,7 +299,7 @@ void lmmacro::loadmap(const std::string mapfilename)
 
   IFVERBOSE(2) {
     for (int i=0; i<microMacroMapN; i++) {
-      VERBOSE(2,"micro[" << getDict()->decode(i) << "] -> " << lmtable::getDict()->decode(microMacroMap[i]) << "\n");
+      VERBOSE(2,"micro[" << getDict()->decode(i) << "] {"<< i << "} -> " << lmtable::getDict()->decode(microMacroMap[i]) << " {" << microMacroMap[i]<< "}" << "\n");
     }
   }
   std::cerr << "...done\n";

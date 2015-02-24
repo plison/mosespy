@@ -610,7 +610,7 @@ public:
 		delete_dict=false;
 	};
 	
-	virtual inline dictionary* getDict() const {
+	inline dictionary* getDict() const {
 		return dict;
 	};
 	
@@ -647,7 +647,8 @@ public:
 		return true;
 	}
 	
-	inline virtual bool is_OOV(int code) {
+
+  inline virtual bool is_OOV(int code) {
 		return (code == dict->oovcode());
 	};
 	

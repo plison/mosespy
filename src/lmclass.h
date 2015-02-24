@@ -85,6 +85,11 @@ public:
     return lprob(ong,bow,bol,maxsuffptr,statesize,extendible);
   };
 
+  inline bool is_OOV(int code) {
+    //a word is consisdered OOV if its mapped value is OOV
+    return lmtable::is_OOV(getMap(code));
+  };
+
   inline dictionary* getDict() const {
     return dict;
   }

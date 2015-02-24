@@ -266,6 +266,14 @@ int main(int argc, char **argv)
         debug = (debug>4)?4:debug;
         std::cerr << "Maximum debug value for this LM type: " << debug << std::endl;
       }
+      if (lmt->getLanguageModelType() == _IRSTLM_LMMACRO) {
+        debug = (debug>4)?4:debug;
+        std::cerr << "Maximum debug value for this LM type: " << debug << std::endl;
+      }
+      if (lmt->getLanguageModelType() == _IRSTLM_LMCLASS) {
+        debug = (debug>4)?4:debug;
+        std::cerr << "Maximum debug value for this LM type: " << debug << std::endl;
+      }
       std::cerr << "Start Eval" << std::endl;
       std::cerr << "OOV code: " << lmt->getDict()->oovcode() << std::endl;
       ngram ng(lmt->getDict());
@@ -274,7 +282,7 @@ int main(int argc, char **argv)
 
       //			if (debug>0) std::cout.precision(8);
       std::fstream inptxt(seval,std::ios::in);
-
+			
       int Nbo=0, Nw=0,Noov=0;
       double logPr=0,PP=0,PPwp=0,Pr;
 
@@ -482,7 +490,7 @@ int main(int argc, char **argv)
 				std::cout << ng << " [" << ng.size-bol << "-gram: recombine:" << statesize << " state:" << (void*) msp << "] [" << ng.size+1-((bol==0)?(1):bol) << "-gram: bol:" << bol << "] " << Pr << " bow:" << bow;
 				std::cout << std::endl;
 #endif
-        ng.size=1;
+        ng.size=0;
       }
     }
 

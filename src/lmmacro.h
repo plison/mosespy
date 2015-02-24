@@ -92,7 +92,23 @@ public:
   void cutLex(ngram *in, ngram *out);
 #endif
 
-
+	inline bool is_OOV(int code) {
+		ngram word_ng(getDict());
+		ngram field_ng(getDict());
+		word_ng.pushc(code); 
+		if (selectedField >= 0)
+			field_selection(word_ng, field_ng);
+		else
+			field_ng = word_ng;
+		int field_code=*field_ng.wordp(1);
+		VERBOSE(2,"inline virtual bool lmmacro::is_OOV(int code) word_ng:" << word_ng << " field_ng:" << field_ng << std::endl);
+		//the selected field(s) of a token is considered OOV 
+		//either if unknown by the microMacroMap
+		//or if its mapped macroW is OOV
+		if (field_code >= microMacroMapN) return true;
+		VERBOSE(2,"inline virtual bool lmmacro::is_OOV(int code)*field_code:" << field_code << "  microMacroMap[field_code]:" << microMacroMap[field_code] << " lmtable::dict->oovcode():" << lmtable::dict->oovcode() << std::endl);
+		return (microMacroMap[field_code] == lmtable::dict->oovcode());
+	};
   inline dictionary* getDict() const {
     return dict;
   }
