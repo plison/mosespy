@@ -133,7 +133,7 @@ fi
 if test "x$enable_output" = 'xno'
 then
     AC_MSG_NOTICE([part of the output on stdout is suppressed])
-    CPPFLAGS="$CPPFLAGS -DSUPPRESSED_OUTPUT";
+    CPPFLAGS="$CPPFLAGS -DOUTPUT_SUPPRESSED";
     LDFLAGS="$LDFLAGS"
 else
     AC_MSG_NOTICE([caching disabled (default)])
