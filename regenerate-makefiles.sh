@@ -65,6 +65,10 @@ echo "trying '$LIBTOOLIZE --force; $AUTOMAKE --add-missing ; $AUTORECONF'"
 $LIBTOOLIZE --force
 $AUTOMAKE  --add-missing
 $AUTORECONF
+if [ ! -e config.guess ] ; then 
+$AUTOMAKE  --add-missing
+$AUTORECONF
+fi
 fi
 
 #echo "Calling $LIBTOOLIZE $force"
