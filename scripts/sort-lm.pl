@@ -25,38 +25,31 @@
 
 use strict;
 use Getopt::Long "GetOptions";
-use File::Basename;
 
-my ($help,$ilm,$olm,$inv)=();
-$help=1 unless
+my ($help,$ilm,$olm,$inv,$tmpdir)=();
+$help=0;
 
 $ilm="/dev/stdin";
 $olm="/dev/stdout";
+my $tmpdir="$ENV{TMP}";
 
 &GetOptions('ilm=s' => \$ilm,
 			'olm=s' => \$olm,
+			'tmpdir=s' => \$tmpdir,
             'inv' => \$inv,
-            'h|help' => \$help,);
+            'help' => \$help,);
 
-if ($help || !$ilm || !$olm) {
-	my $cmnd = basename($0);
-  print "\n$cmnd - sorts n-grams according to lexicographic order\n",
-	"\nUSAGE:\n",
-	"       $cmnd [options]\n",
-	"\nDESCRIPTION:\n",
-	"       $cmnd sorts n-grams of an ARPA file according to lexicographic order.\n",
-	"       Inverted sorting option is propedeutic to building a binary\n",
-	"       lmtable with compile-lm with n-grams stored in reverted order.\n",
-	"\nOPTIONS:\n",
-    "       -ilm  <fname>         input ARPA LM filename (default /dev/stdin) \n",
-    "       -olm <fname>          output ARPA LM filename (default /dev/stdout)\n",
-    "       -inv                  inverted n-gram sort for compile-lm \n",
-    "       -h, --help            (optional) print these instructions\n",
-    "\n";
-
+if ($help || !$ilm || !$olm){
+  print "sort-lm.pl [--ilm <fname>]  [--olm <fname>] [--inv]\n",
+  "-ilm  <fname>   input ARPA LM filename (default /dev/stdin)\n",
+  "-olm <fname>    output ARPA LM filename (default /dev/stdout)\n",
+  "-tmpdir         temporary directory for sorting (default is the enivronment variable TMP\n",
+  "-inv            inverted n-gram sort for compile-lm\n",
+  "-help           print these instructions\n";    
   exit(1);
 }
 
+warn "temporary directory for sorting is $tmpdir\n";
 
 my $order=0;
 my $sortcmd="";
@@ -95,7 +88,7 @@ while(!/^\\end\\/){
 		}
 		#sort command
 		#$sortcmd="sort -b"; #does not seem to work properly
-		$sortcmd="sort ";
+		$sortcmd="sort --temporary-directory=$tmpdir";
 		if ($inv){
 			warn "inverted sorting of $order-grams\n";
 			for (my $n=$order;$n>0;$n--){
