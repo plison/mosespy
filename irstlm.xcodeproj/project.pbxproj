@@ -1103,6 +1103,7 @@
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				GENERATE_PROFILING_CODE = YES;
 				OTHER_CPLUSPLUSFLAGS = "";
+				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				RUN_CLANG_STATIC_ANALYZER = NO;
@@ -1133,6 +1134,7 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = NO;
 				GCC_WARN_UNUSED_VARIABLE = NO;
+				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				WARNING_CFLAGS = (
@@ -1424,6 +1426,319 @@
 			};
 			name = Release;
 		};
+		3D5644D11A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CONFIGURATION_TEMP_DIR = $CONFIGURATION_BUILD_DIR;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				GCC_WARN_ABOUT_INVALID_OFFSETOF_MACRO = NO;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_ABOUT_POINTER_SIGNEDNESS = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = NO;
+				GCC_WARN_ALLOW_INCOMPLETE_PROTOCOL = NO;
+				GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS = NO;
+				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = NO;
+				GCC_WARN_PEDANTIC = NO;
+				GCC_WARN_UNINITIALIZED_AUTOS = NO;
+				GCC_WARN_UNUSED_PARAMETER = NO;
+				GCC_WARN_UNUSED_VALUE = NO;
+				GCC_WARN_UNUSED_VARIABLE = NO;
+				GENERATE_PROFILING_CODE = YES;
+				OTHER_CPLUSPLUSFLAGS = (
+					"-DTRACE_LEVEL=10",
+					"-DMY_ASSERT_FLAG",
+				);
+				OTHER_LDFLAGS = "";
+				PREBINDING = NO;
+				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
+				RUN_CLANG_STATIC_ANALYZER = NO;
+				STRIP_INSTALLED_PRODUCT = NO;
+				WARNING_CFLAGS = (
+					"$(inherited)",
+					"-Wall",
+				);
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D21A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = ALL;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D31A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				EXECUTABLE_EXTENSION = dylib;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = /usr/local/lib;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LIBRARY_SEARCH_PATHS_QUOTED_1)",
+				);
+				LIBRARY_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/src\"";
+				MACH_O_TYPE = mh_dylib;
+				PREBINDING = NO;
+				PRODUCT_NAME = irstlm;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D41A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = dict;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D51A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = ngt;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D61A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = tlm;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D71A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "compile-lm";
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D81A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "prune-lm";
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644D91A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "quantize-lm";
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644DA1A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "interpolate-lm";
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644DB1A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = plsa;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644DC1A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = dtsel;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644DD1A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "score-lm";
+				SKIP_INSTALL = YES;
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
+		3D5644DE1A8E2CA400857D7C /* Debug-without-caching */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = NO;
+				GCC_PREFIX_HEADER = "";
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = (
+					"-lz",
+					"-lirstlm",
+					"$(inherited)",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = "verify-caching";
+				ZERO_LINK = YES;
+			};
+			name = "Debug-without-caching";
+		};
 		3D90F189161ACA12005EF654 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1488,10 +1803,13 @@
 				GCC_WARN_UNUSED_VARIABLE = NO;
 				GENERATE_PROFILING_CODE = YES;
 				OTHER_CPLUSPLUSFLAGS = (
-					"-DMDIADAPTLM_CACHE_ENABLE=1",
-					"-DPS_CACHE_ENABLE=1",
-					"-DLMT_CACHE_ENABLE=1",
+					"-DMDIADAPTLM_CACHE_ENABLE",
+					"-DPS_CACHE_ENABLE",
+					"-DLMT_CACHE_ENABLE",
+					"-DTRACE_LEVEL=10",
+					"-DMY_ASSERT_FLAG",
 				);
+				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
 				PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR = YES;
 				RUN_CLANG_STATIC_ANALYZER = NO;
@@ -1987,6 +2305,7 @@
 			buildConfigurations = (
 				1DEB923608733DC60010E9CD /* Debug */,
 				3DA5A3BA19241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D11A8E2CA400857D7C /* Debug-without-caching */,
 				1DEB923708733DC60010E9CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -1997,6 +2316,7 @@
 			buildConfigurations = (
 				3D4F4D6E135C481600E85480 /* Debug */,
 				3DA5A3C019241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D71A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4D6F135C481600E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2007,6 +2327,7 @@
 			buildConfigurations = (
 				3D4F4D89135C48E800E85480 /* Debug */,
 				3DA5A3BE19241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D51A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4D8A135C48E800E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2017,6 +2338,7 @@
 			buildConfigurations = (
 				3D4F4D94135C48EC00E85480 /* Debug */,
 				3DA5A3C219241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D91A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4D95135C48EC00E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2027,6 +2349,7 @@
 			buildConfigurations = (
 				3D4F4D9F135C48F100E85480 /* Debug */,
 				3DA5A3C119241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D81A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4DA0135C48F100E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2037,6 +2360,7 @@
 			buildConfigurations = (
 				3D4F4DC3135C5B8800E85480 /* Debug */,
 				3DA5A3BF19241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D61A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4DC4135C5B8800E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2047,6 +2371,7 @@
 			buildConfigurations = (
 				3D4F4DD9135C5C4C00E85480 /* Debug */,
 				3DA5A3C319241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644DA1A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4DDA135C5C4C00E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2057,6 +2382,7 @@
 			buildConfigurations = (
 				3D4F4DF4135C5D7300E85480 /* Debug */,
 				3DA5A3C419241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644DB1A8E2CA400857D7C /* Debug-without-caching */,
 				3D4F4DF5135C5D7300E85480 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2067,6 +2393,7 @@
 			buildConfigurations = (
 				3D90F189161ACA12005EF654 /* Debug */,
 				3DA5A3C519241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644DC1A8E2CA400857D7C /* Debug-without-caching */,
 				3D90F18A161ACA12005EF654 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2077,6 +2404,7 @@
 			buildConfigurations = (
 				3DC9B836175E344B00089688 /* Debug */,
 				3DA5A3C619241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644DD1A8E2CA400857D7C /* Debug-without-caching */,
 				3DC9B837175E344B00089688 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2087,6 +2415,7 @@
 			buildConfigurations = (
 				3DC9B845175E34BE00089688 /* Debug */,
 				3DA5A3C719241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644DE1A8E2CA400857D7C /* Debug-without-caching */,
 				3DC9B846175E34BE00089688 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2097,6 +2426,7 @@
 			buildConfigurations = (
 				3DE04908161047DD00A26D29 /* Debug */,
 				3DA5A3BB19241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D21A8E2CA400857D7C /* Debug-without-caching */,
 				3DE04909161047DD00A26D29 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2107,6 +2437,7 @@
 			buildConfigurations = (
 				D733D3F60B1F3B2600565249 /* Debug */,
 				3DA5A3BC19241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D31A8E2CA400857D7C /* Debug-without-caching */,
 				D733D3F70B1F3B2600565249 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
@@ -2117,6 +2448,7 @@
 			buildConfigurations = (
 				D77D1C760B30329200D79D16 /* Debug */,
 				3DA5A3BD19241ECB00CB4F49 /* Debug-with-caching */,
+				3D5644D41A8E2CA400857D7C /* Debug-without-caching */,
 				D77D1C770B30329200D79D16 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
