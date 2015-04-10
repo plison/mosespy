@@ -2343,8 +2343,6 @@ namespace irstlm {
 #else
 		return (char *)maxsuffptr(ong,size);
 #endif
-		
-		
 	}
 	
 	
@@ -2610,9 +2608,9 @@ namespace irstlm {
 		
 		if (sz>maxlev) sz=maxlev; //adjust n-gram level to table size
 		
+#ifdef PS_CACHE_ENABLE
 		double logpr;
 		
-#ifdef PS_CACHE_ENABLE
 		//cache hit
 		prob_and_state_t pst_get;
 		

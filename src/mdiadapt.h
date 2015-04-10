@@ -26,7 +26,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #include "ngramcache.h"
 #include "normcache.h"
 #include "interplm.h"
-	
+
+#define DONT_PRINT 1000000
+
 namespace irstlm {
 class mdiadaptlm:public interplm
 {
@@ -82,20 +84,9 @@ public:
 
   int bodiscount(ngram ng,int size,double& fstar,double& lambda,double& bo);
 	
-  int compute_backoff()
-	{
-		cerr << "compute backoff probabilities ...";
-		
-		if (m_save_per_level){
-			cerr << " per level ...";
-			return compute_backoff_per_level();
-		}else{
-			cerr << " per word ...";
-			return compute_backoff_per_word();
-		}	
-	}
-  int compute_backoff_per_level();
-  int compute_backoff_per_word();
+  virtual int compute_backoff();
+  virtual int compute_backoff_per_level();
+  virtual int compute_backoff_per_word();
 
   double backunig(ngram ng);
 

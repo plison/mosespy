@@ -25,13 +25,15 @@ use strict;
 use Getopt::Long "GetOptions";
 use File::Basename;
 
-my ($help,$lm,$size,$sublm)=();
-$help=1 unless
-&GetOptions('size=i' => \$size,
-            'lm=s' => \$lm,
-            'sublm=s' => \$sublm,
-            'h|help' => \$help,);
+my ($help,$lm,$size,$sublm,$backoff)=();
+$help=0;
+$backoff=0;
 
+&GetOptions('size=i' => \$size,
+'lm=s' => \$lm,
+'sublm=s' => \$sublm,
+'backoff' => \$backoff,
+'h|help' => \$help);
 
 if ($help || !$size || !$lm || !$sublm) {
 	my $cmnd = basename($0);
@@ -39,11 +41,12 @@ if ($help || !$size || !$lm || !$sublm) {
 	"\nUSAGE:\n",
 	"       $cmnd [options]\n",
 	"\nOPTIONS:\n",
-    "       --size <int>          maximum n-gram size for the language model\n",
-    "       --sublm <string>      path identifying all input prefix sub LMs\n",
-    "       --lm <string>         name of the output LM file (will be gzipped)\n",
-    "       -h, --help            (optional) print these instructions\n",
-    "\n";
+	"       --size <int>          maximum n-gram size for the language model\n",
+	"       --sublm <string>      path identifying all input prefix sub LMs\n",
+	"       --lm <string>         name of the output LM file (will be gzipped)\n",
+	"       --backoff						  (optional) create a backoff LM, output is directly in ARPA format (default is false, i.e. iARPA format) \n",
+	"       -h, --help            (optional) print these instructions\n",
+	"\n";
 
   exit(1);
 }
@@ -54,7 +57,7 @@ my $gunzip=`which gunzip 2> /dev/null`;
 chomp($gzip);
 chomp($gunzip);
 
-warn "merge-sublm.pl --size $size --sublm $sublm --lm $lm\n";
+warn "merge-sublm.pl --size $size --sublm $sublm --lm $lm --backoff $backoff\n";
 
 warn "Compute total sizes of n-grams\n";
 my @size=();          #number of n-grams for each level
@@ -86,13 +89,11 @@ for (my $n=1;$n<=$size;$n++){
       $tot1gr+=$words[0];
     }
     close(INP);
-		print STDERR "before correction for WB --- tot1gr:$tot1gr size:$size[1]\n";
     if ($unk==0){
       warn "implicitely add <unk> word to counters\n";
       $tot1gr+=$size[$n]; #equivalent to WB smoothing
       $size[$n]++; 
     }
-		print STDERR "after correction for WB --- tot1gr:$tot1gr size:$size[1]\n";
   }else{
     for (my $j=0;$j<scalar(@files);$j++){
       safesystem("$gunzip -c $files[$j] | grep -v '10000.000' | wc -l > wc$$") or die;
@@ -107,15 +108,17 @@ for (my $n=1;$n<=$size;$n++){
   warn "n:$n size:$size[$n] unk:$unk\n";
 }
 
-
-
 warn "Merge all sub LMs\n";
 
 $lm.=".gz" if $lm!~/.gz$/;
 open(LM,"|$gzip -c > $lm") || die "Cannot open $lm\n";
 
 warn "Write LM Header\n";
-printf LM "iARPA\n\n";
+if ($backoff){
+	printf LM "ARPA\n\n";
+} else{
+	printf LM "iARPA\n\n";
+}
 
 printf LM "\\data\\\n";
 for (my $n=1;$n<=$size;$n++){
@@ -154,9 +157,8 @@ for (my $n=1;$n<=$size;$n++){
 	  	
       #apply witten-bell smoothing on 1-grams
       $pr=(log($words[0]+1)-log($tot1gr+$size[1]))/log(10.0);
-			print STDERR "tot1gr:$tot1gr size:$size[1] denominator:",($tot1gr+$size[1]),"\n";
       shift @words;
-      printf LM "%f\t%s\n",$pr,join(" ",@words);
+      printf LM "%f\t%s\t%f\n",$pr,$words[0],$words[1];
     }
     close(INP);
 

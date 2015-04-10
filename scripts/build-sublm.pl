@@ -47,8 +47,8 @@ my $cutoffvalue=39;   #cut-off threshold for Google 1T-ngram cut-offs
 
 #set defaults for optional parameters
 my ($verbose,$size,$ngrams,$sublm)=(0, 0, undef, undef);
-my ($witten_bell,$good_turing,$shift_beta,$improved_shift_beta)=(0, 0, "", "");
-my ($witten_bell_flag,$good_turing_flag,$shift_beta_flag,$improved_shift_beta_flag)=(0, 0, 0, 0);
+my ($witten_bell,$good_turing,$shift_beta,$improved_shift_beta,$stupid_backoff)=(0, 0, "", "", "");
+my ($witten_bell_flag,$good_turing_flag,$shift_beta_flag,$improved_shift_beta_flag,$stupid_backoff_flag)=(0, 0, 0, 0, 0);
 my ($freqshift,$prune_singletons,$prune_thr_str,$cross_sentence)=(0, 0, "", 0);
 
 my $help = 0;
@@ -61,6 +61,7 @@ $help = 1 unless
 'good-turing' => \$good_turing,
 'shift-beta=s' => \$shift_beta,
 'improved-shift-beta=s' => \$improved_shift_beta,
+'stupid-backoff' => \$stupid_backoff,
 'prune-singletons' => \$prune_singletons,
 'pft|PruneFrequencyThreshold=s' => \$prune_thr_str,
 'cross-sentence' => \$cross_sentence,
@@ -82,6 +83,7 @@ if ($help || !$size || !$ngrams || !$sublm) {
 	"       --shift-beta <string> (optional) use Shift-Beta smoothing with statistics in <string>\n",
 	"       --improved-shift-beta <string> (optional) use Improved Shift-Beta smoothing with statistics in <string>, similar to Improved Kneser Ney but without corrected counts\n",
 	"       --good-turing         (optional) use Good-Turing linear smoothing\n",
+	"       --stupid-backoff      (optional) use Stupid-Backoff smoothing\n",
 	"       --prune-singletons    (optional) remove n-grams occurring once, for n=3,4,5,... (disabled by default)\n",
 	"       -pft, --PruneFrequencyThreshold <string>	(optional) pruning frequency threshold for each level; comma-separated list of values; (default is \"0,0,...,0\", for all levels)\n",
 	"       --cross-sentence      (optional) include cross-sentence bounds (disabled by default)\n",
@@ -97,13 +99,14 @@ die "build-sublm: This LM is no more supported\n\n" if ($good_turing_flag==1);
 
 $witten_bell_flag = 1 if ($witten_bell);
 $shift_beta_flag = 1 if ($shift_beta);
+$stupid_backoff_flag = 1 if ($stupid_backoff);
 $improved_shift_beta_flag = 1 if ($improved_shift_beta);
-$witten_bell = $witten_bell_flag = 1 if ($witten_bell_flag + $shift_beta_flag + $improved_shift_beta_flag) == 0;
+$witten_bell = $witten_bell_flag = 1 if ($witten_bell_flag + $shift_beta_flag + $improved_shift_beta_flag + $stupid_backoff_flag) == 0;
 
-print STDERR  "build-sublm: size=$size ngrams=$ngrams sublm=$sublm witten-bell=$witten_bell shift-beta=$shift_beta improved-shift-beta=$improved_shift_beta prune-singletons=$prune_singletons cross-sentence=$cross_sentence PruneFrequencyThreshold=$prune_thr_str\n" if $verbose;
+print STDERR  "build-sublm: size=$size ngrams=$ngrams sublm=$sublm witten-bell=$witten_bell shift-beta=$shift_beta improved-shift-beta=$improved_shift_beta stupid-backoff=$stupid_backoff prune-singletons=$prune_singletons cross-sentence=$cross_sentence PruneFrequencyThreshold=$prune_thr_str\n" if $verbose;
 
 
-die "build-sublm: choose only one smoothing method\n" if ($witten_bell_flag + $shift_beta_flag + $improved_shift_beta_flag) > 1;
+die "build-sublm: choose only one smoothing method\n" if ($witten_bell_flag + $shift_beta_flag + $improved_shift_beta_flag + $stupid_backoff_flag) > 1;
 
 die "build-sublm: value of --size must be larger than 0\n" if $size<1;
 
@@ -204,7 +207,6 @@ if ($shift_beta_flag || $improved_shift_beta_flag) {
   close(IKN);
 }
 
-
 print STDERR  "Computing n-gram probabilities:\n" if $verbose;
 
 foreach ($n=2;$n<=$size;$n++) {
@@ -214,13 +216,18 @@ foreach ($n=2;$n<=$size;$n++) {
   #compute smothing statistics         
   my (@beta,$beta);               
 	
+  if ($stupid_backoff_flag) {
+		$beta=0.4;
+		print STDERR  "Stupid-Backoff smoothing: beta $n: $beta\n" if $verbose;
+	}
+	
   if ($shift_beta_flag) {
     if ($n1[$n]==0 || $n2[$n]==0) {
       print STDERR  "Error in Shift-Beta smoothing statistics: resorting to Witten-Bell\n" if $verbose;  
       $beta=0;  
     } else {
       $beta=$n1[$n]/($n1[$n] + 2 * $n2[$n]); 
-      print STDERR  "beta $n: $beta\n" if $verbose;  
+      print STDERR  "Shift-Beta smoothing: beta $n: $beta\n" if $verbose;  
     }
   }
 	
@@ -239,9 +246,8 @@ foreach ($n=2;$n<=$size;$n++) {
       $beta[2] = 2 - 3 * $Y * $n3[$n] / $n2[$n];
       $beta[3] = 3 - 4 * $Y * $n4[$n] / $n3[$n];
     }
-		print STDERR  "level:$n beta[1]:$beta[1] beta[2]:$beta[2] beta[3]:$beta[3]\n" if $verbose; 
+		print STDERR  "Improved-Shift-Beta  smoothing: level:$n beta[1]:$beta[1] beta[2]:$beta[2] beta[3]:$beta[3]\n" if $verbose; 
   }
-	print STDERR "\n\n\n\ N=$n\n\n\n";
 	
   open(HGR,"$gunzip -c ${sublm}.".($n-1)."gr.gz |") || die "cannot open ${sublm}.".($n-1)."gr.gz\n";
   open(INP,"$ngrams") || open(INP,"$ngrams |")  || die "cannot open $ngrams\n";
@@ -257,73 +263,37 @@ foreach ($n=2;$n<=$size;$n++) {
   $reduced_h=join(" ",@h[0..$n-2]);
 	
   @cnt=(); @dict=();
-  $code=-1; $totcnt=0; $diff=0; $singlediff=0; $diff1=0; $diff2=0; $diff3=0; $oldwrd=""; 
-#XX#  print STDERR "computing statistics for --- h:|$h| --- ng=|$ng| --- ngcnt=$ngcnt --- freqshift=$freqshift --- reduced_h:|$reduced_h| --- reduced_ng=|$reduced_ng|\n";
+  $code=-1; $totcnt=0; $diff=0; $singlediff=0; $diff1=0; $diff2=0; $diff3=0; $oldwrd="";
   do{
 		
     #load all n-grams starting with history h, and collect useful statistics 
 		
-#XX#		print STDERR "before while --- n:$n --- h:|$h| --- ng=|$ng| --- totcnt=$totcnt--- diff=$diff --- singlediff=$singlediff --- reduced_h:|$reduced_h| --- reduced_ng=|$reduced_ng| --- ngcnt=$ngcnt --- freqshift=$freqshift \n";
-    while ($reduced_h eq $reduced_ng){ #must be true the first time!  
-#XX#			print STDERR "start while --- h:|$h| --- ng=|$ng| --- reduced_h:|$reduced_h| --- reduced_ng=|$reduced_ng| --- ngcnt=$ngcnt --- totcnt=$totcnt --- diff=$diff --- singlediff=$singlediff\n";
-      #print join(" ",@h[0..$n-2]),"--",join(" ",@ng[0..$n-1]),"--\n";
+    while ($reduced_h eq $reduced_ng){ #must be true the first time!
 
-			
       if ($oldwrd ne $ng[$n-1]) { #could this be otherwise? [Marcello 22/5/09]
-#XX#				print STDERR "BBB oldwrd:|$oldwrd| -- code:|$code| -- ng[$n-1]:|$ng[$n-1]| -- n:$n\n";
 				$oldwrd=$ng[$n-1];
-#XX#				print STDERR "BBB oldwrd:|$oldwrd| -- code:|$code| -- ng[$n-1]:|$ng[$n-1]| -- n:$n --dict[$code]:$dict[$code]\n";
 				++$code;
-#				$diff++;
-				#				$singlediff++ if $ngcnt==1;
-#XX#				print STDERR "oldwrd:|$oldwrd| -- next code:|$code| -- ng[$n-1]:|$ng[$n-1]| -- n:$n\n";
-      }else{
-#XX#				print STDERR "another ngram with the same succ word\n";
 			}
-#XX#			print STDERR "AAA oldwrd:|$oldwrd| -- code:|$code| -- ng[$n-1]:|$ng[$n-1]| -- n:$n\n";
 			
 			$dict[$code]=$ng[$n-1];
       $cnt[$code]+=$ngcnt;
-			$totcnt+=$ngcnt;  
-#XX#			print STDERR "AAA oldwrd:|$oldwrd| -- code:|$code| -- ng[$n-1]:|$ng[$n-1]| -- n:$n -- dict[$code]:$dict[$code]\n";
-#      if ($diff>1 && $dict[$c] eq $cutoffword) { # in google n-grams
-#				#find estimates for remaining diff and singlediff
-#				#proportional estimate
-#				$diff--;		#remove cutoffword
-#				my $concentration=1.0-($diff-1)/$totcnt;
-#				my $mass=1;		#$totcnt/($totcnt+$ngcnt);
-#				my $index=(1-($concentration * $mass))/(1-1/$cutoffvalue) + (1/$cutoffvalue);
-#				my $cutoffdiff=int($ngcnt * $index);
-#				$cutoffdiff=1 if $cutoffdiff==0;
-#				#print "diff $diff $totcnt cutofffreq $ngcnt -- cutoffdiff: $cutoffdiff\n";
-#				#print "concentration:",$concentration," mass:", $mass,"\n";
-#				$diff+=$cutoffdiff;
-#      }
-#XX#			print STDERR "inside while ngcnt=$ngcnt --- totcnt=$totcnt--- diff=$diff --- singlediff=$singlediff\n";
+			$totcnt+=$ngcnt;
 			
       $ng=<INP>;
-#XX#			print STDERR "read from INP ng:|$ng|";
 
 			if (defined($ng)){
 				chomp($ng);
 				@ng=split(/[ \t]+/,$ng);$ngcnt=(pop @ng) - $freqshift;  
 				$reduced_ng=join(" ",@ng[0..$n-2]);
-#XX#				print STDERR "ng=|$ng| --- reduced_ng:|$reduced_ng|\n";
 			}
 			else{
-#XX#				print STDERR "ngram undefined --> hence last\n";
 				last;
 			}
-			
-#XX#			print STDERR "end of while next ng=|$ng| --- reduced_ng=|$reduced_ng| --- ngcnt=$ngcnt --- freqshift=$freqshift --- reduced_h:|$reduced_h| --- reduced_ng=|$reduced_ng|\n";
     }	
-#XX#		print STDERR "after while --- totcnt=$totcnt\n";	
 		
-		$diff=scalar(@cnt);
-#XX#		print STDERR "after while --- diff=$diff\n";	
+		$diff=scalar(@cnt);	
 		for (my $c=0;$c<scalar(@cnt);++$c){
 			$singlediff++ if $cnt[$c]==1;
-#XX#			print STDERR "dict[$c]:$dict[$c] --- cnt[$c]:$cnt[$c]\n";
 			
       if ($diff>1 && $dict[$c] eq $cutoffword) { # in google n-grams
 				#find estimates for remaining diff and singlediff
@@ -334,13 +304,12 @@ foreach ($n=2;$n<=$size;$n++) {
 				my $index=(1-($concentration * $mass))/(1-1/$cutoffvalue) + (1/$cutoffvalue);
 				my $cutoffdiff=int($ngcnt * $index);
 				$cutoffdiff=1 if $cutoffdiff==0;
-				#print "diff $diff $totcnt cutofffreq $ngcnt -- cutoffdiff: $cutoffdiff\n";
-				#print "concentration:",$concentration," mass:", $mass,"\n";
+				print STDERR "diff $diff $totcnt cutofffreq $ngcnt -- cutoffdiff: $cutoffdiff\n";
+				print STDERR "concentration:",$concentration," mass:", $mass,"\n";
 				$diff+=$cutoffdiff;
       }
 		}
-		
-#XX#		print STDERR "after while --- totcnt=$totcnt --- diff=$diff --- singlediff=$singlediff\n";	
+
 		
     if ($improved_shift_beta) { 
       for (my $c=0;$c<=$code;$c++) {
@@ -351,7 +320,6 @@ foreach ($n=2;$n<=$size;$n++) {
     }
 		
     #print smoothed probabilities
-		
     my $boprob=0;		#accumulate pruned probabilities 
     my $prob=0;
 		my $boprob_correction=0; #prob for the correction due to singleton pruning
@@ -360,16 +328,17 @@ foreach ($n=2;$n<=$size;$n++) {
 			for (my $c=0;$c<=$code;$c++) {
 				
 				$ngram=join(" ",$reduced_h,$dict[$c]);
-				
-#XX#				print STDERR "working on $ngram -- c:$c -- cnt[c]:$cnt[$c] -- ngcnt:$ngcnt -- ps:$prune_singletons -- n:$n\n";
-#XX#				print STDERR "totcnt:$totcnt diff:$diff singlediff:$singlediff\n" if $totcnt+$diff+$singlediff==0;
+
+				print STDERR "totcnt:$totcnt diff:$diff singlediff:$singlediff\n" if $totcnt+$diff+$singlediff==0;
 				
 				if ($shift_beta && $beta>0) {
 					$prob=($cnt[$c]-$beta)/$totcnt;
 				} elsif ($improved_shift_beta) {
 					my $b=($cnt[$c]>= 3? $beta[3]:$beta[$cnt[$c]]);
 					$prob=($cnt[$c] - $b)/$totcnt;
-				} else {
+				} elsif ($stupid_backoff) {
+					$prob=$cnt[$c]/$totcnt;
+				} else { ### other smoothing types, like Witten-Bell
 					$prob=$cnt[$c]/($totcnt+$diff);
 				}
 				
@@ -380,61 +349,29 @@ foreach ($n=2;$n<=$size;$n++) {
 				##			if (&CrossSentence($ngram)){ print STDERR "ngram:|$ngram| is Cross Sentence --> hence skip\n";  next; }
 				
 				
-				print STDERR "working on $ngram -- prob:$prob\n";
-				
 				#rm singleton n-grams for (n>=3), if flag is active
 				#rm n-grams (n>=2) containing cross-sentence boundaries, if flag is not active
 				#rm n-grams containing <unk> or <cutoff> except for 1-grams
 				
-				#warn "considering $size $n |$ngram|\n";
-				
-				##			if (($prune_singletons && $n>=3 && $cnt[$c]==1) ||
-				##				(!$cross_sentence && $n>=2 && &CrossSentence($ngram)) ||
-				##				($dict[$c]=~/<UNK>/i) || ($n>=2 && $h=~/<UNK>/i) ||	
-				##				($dict[$c] eq $cutoffword) 
-				##				)
-				
+				#warn "considering $size $n |$ngram|\n";				
 				if (($prune_singletons && $n>=3 && $cnt[$c]==1) ||
 					(!$cross_sentence && &CrossSentence($ngram)) || 
 					(&containsOOV($dict[$c])) ||
 					($n>=2 && &containsOOV($h)) ||	
 					($dict[$c] eq $cutoffword) 
 					)
-				{	
-
-					
-					if (!$cross_sentence && &CrossSentence($ngram)){ print STDERR "case 2 if\n"; }
-					
-					#				if (!$cross_sentence && $n>=2 && &CrossSentence($ngram)){ print STDERR "case 2 if\n";				
-					#					print STDERR "cross_sentence:$cross_sentence\n";
-					#					print STDERR "n:$n\n";
-					#					print STDERR &CrossSentence($ngram);
-					#				print STDERR " ngram:$ngram\n";
-					#				}
-					
-					if (&containsOOV($dict[$c])){ print STDERR "case 3 if\n"; }
-					
-					if ($n>=2 && &containsOOV($h)){ print STDERR "case 4 if\n"; }
-					
-					if ($dict[$c] eq $cutoffword){ print STDERR "case 5 if\n"; }
-					
+				{						
 					$boprob+=$prob;
-					print STDERR "pruned $ngram --- $reduced_h -- $dict[$c] --- $totcnt diff:$diff |n:$n size:$size | ${sublm}.${n}gr.gz\n";
 					
 					if ($n<$size) {	#output this anyway because it will be an history for n+1 
 						printf GR "%f\t%s %s\n",-10000,$reduced_h,$dict[$c];
-						print STDERR "writing possible next history |-10000|$reduced_h -- $dict[$c] | ${sublm}.${n}gr.gz\n";
 					}
 				} else {
 					if ($cnt[$c] > $pruneFreqThr[$n]){
-						if ($cnt[$c] > $pruneFreqThr[$n] ){ print STDERR "case 6 if\n"; }
 						# print unpruned n-1 gram
 						my $logp=log($prob)/$log10;
-						print STDERR "printed $ngram --- $reduced_h -- $dict[$c] --- $totcnt $diff | ${sublm}.${n}gr.gz\n";
 						printf(GR "%f\t%s %s\n",($logp>0?0:$logp),$reduced_h,$dict[$c]);
 					}else{
-						if ($cnt[$c] > $pruneFreqThr[$n] ){ print STDERR "case 6 else\n"; }
-						print STDERR "pruned $ngram --- $reduced_h -- $dict[$c] --- $totcnt $diff | ${sublm}.${n}gr.gz\n";
 						if ($n<$size) {	#output this anyway because it will be an history for n+1 
 							printf GR "%f\t%s %s\n",-10000,$reduced_h,$dict[$c];
 						}
@@ -446,11 +383,12 @@ foreach ($n=2;$n<=$size;$n++) {
 		}
 		
 		if (($prune_singletons && $n>=3)){
-			print STDERR "case 1 if\n";
 			if ($shift_beta && $beta>0) { # correction due to singleton pruning
 				$boprob_correction += (1.0-$beta) * $singlediff / $totcnt;
 			} elsif ($improved_shift_beta) { # correction due to singleton pruning
 				$boprob_correction += (1-$beta[1]) * $singlediff / $totcnt;
+			} elsif ($stupid_backoff) { # correction due to singleton pruning
+				$boprob_correction += $singlediff/($totcnt);
 			} else { # correction due to singleton pruning
 				$boprob_correction += $singlediff/($totcnt+$diff);
 			} 
@@ -458,41 +396,34 @@ foreach ($n=2;$n<=$size;$n++) {
 		else{
 			$boprob_correction = 0;
 		}
-#XX#		print STDERR "h:|$h| correction due to singleton pruning -- boprob_correction:$boprob_correction\n";
-		
-		
-		
-		if ($prune_singletons && $n>=3 && $singlediff>1){ print STDERR "h:|$h| singlediff=$singlediff ngcnt=$ngcnt n=$n overwriting boprob:$boprob\n"; $boprob=0; }
-		
-#XX#		print STDERR "h:|$h| adjusting boprob --- boprob:$boprob --- boprob_correction:$boprob_correction --- boprob+boprob_correction:",($boprob+$boprob_correction),"\n";
-		
-###		$boprob=$boprob+$boprob_correction;
+
 		$boprob=$boprob_correction;
-		
-###		if (!$cross_sentence && $n>=2 && &CrossSentence("$h ") && $ngcnt==1){ print STDERR "h:|$h| overwriting boprob:$boprob\n"; $boprob=0; }
-		
+			
     #rewrite history including back-off weight
-#XX#    print STDERR "considering rewriting history --- h:|$h| --- hpr=$hpr\n";
 		
     #check if history has to be pruned out
     if ($hpr==-10000) {
       #skip this history
     } elsif ($shift_beta && $beta>0) {
-#XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
+			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
       my $lambda=$beta * $diff/$totcnt; 	
       my $logp=log($boprob+$lambda)/$log10;
       printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
     } elsif ($improved_shift_beta) {
-#XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
+			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
       my $lambda=($beta[1] * $diff1 + $beta[2] * $diff2 + $beta[3] * $diff3)/$totcnt; 	  
       my $logp=log($boprob+$lambda)/$log10;
       printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
+    } elsif ($stupid_backoff) {
+			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt -- denumerator:",($totcnt),"\n" if $totcnt==0;
+      my $lambda=$beta;
+			my $logp=log($lambda)/$log10;
+      printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
     } else {
-#XX#			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt diff:$diff -- denumerator:",($totcnt+$diff),"\n" if $totcnt+$diff==0;
+			print STDERR "wrong division: considering rewriting history --- h:|$h| --- hpr=$hpr --- totcnt:$totcnt diff:$diff -- denumerator:",($totcnt+$diff),"\n" if $totcnt+$diff==0;
       my $lambda=$diff/($totcnt+$diff); 
       my $logp=log($boprob+$lambda)/$log10;
       printf NHGR "%s\t%f\n",$h,($logp>0?0:$logp);
-#XX#			print STDERR "writing into NHGR(${sublm}.".($n-1)."ngr.gz) -- $h -- logp:$logp -- boprob:$boprob -- diff:$diff -- totcnt:$totcnt -- ".$log10."\n";
     }     
 		
     #reset smoothing statistics
@@ -500,14 +431,11 @@ foreach ($n=2;$n<=$size;$n++) {
 		
     #read next history
     $h=<HGR>;
-#XX#		print STDERR "read from HGR h:$h";
 		
     if (defined($h)){
       chomp($h); @h=split(/[ \t]+/,$h); $hpr=shift @h;
       $reduced_h=join(" ",@h[0..$n-2]);
-#XX#			print STDERR "h=|$h| --- reduced_h:|$reduced_h|\n";
     }else{
-#XX#			print STDERR "history undefined --> hence die\n";
       die "ERROR: Something could be wrong: history are terminated before ngrams!" if defined($ng);
     }
   }until (!defined($ng));		#n-grams are over

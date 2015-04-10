@@ -10,8 +10,10 @@ ACLOCAL_AMFLAGS = -I m4
 
 LN_S=@LN_S@
 
-install-data-local:
-	${LN_S} lib ${exec_prefix}/lib64
+install-exec-hook:
+	cd ${exec_prefix}/ && \
+	  rm lib64 && \
+	  ${LN_S} lib lib64
 
 dist-hook:
 	rm -rf `find $(distdir)/doc -type d -name .svn`

@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
 #define SHIFT_BETA   1
 #define SHIFT_ONE    2
 #define SHIFT_ZERO   3
+#define LINEAR_STB   4
 #define LINEAR_WB    5
 #define LINEAR_GT    6
 #define MIXTURE      7

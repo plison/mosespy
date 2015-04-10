@@ -67,6 +67,8 @@ static Enum_T LmTypeEnum [] = {
   {    (char*)"s1",                 SHIFT_ONE },
   {    (char*)"LinearWittenBell",   LINEAR_WB },
   {    (char*)"wb",                 LINEAR_WB },
+  {    (char*)"StupidBackoff",			LINEAR_STB },
+  {    (char*)"stb",                LINEAR_STB },
   {    (char*)"LinearGoodTuring",   LINEAR_GT },
   {    (char*)"Mixture",            MIXTURE },
   {    (char*)"mix",                MIXTURE },
@@ -329,6 +331,10 @@ int main(int argc, char **argv)
 			lm=new shiftone(trainfile,size,prunefreq,(backoff?SIMPLE_B:SIMPLE_I));
 			break;
 			
+		case LINEAR_STB:
+			lm=new linearstb(trainfile,size,prunefreq,IMPROVEDSHIFTBETA_B);
+			break;
+
 		case LINEAR_WB:
 			lm=new linearwb(trainfile,size,prunefreq,(backoff?IMPROVEDSHIFTBETA_B:IMPROVEDSHIFTBETA_I));
 			break;

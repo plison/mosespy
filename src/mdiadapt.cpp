@@ -361,6 +361,7 @@ namespace irstlm {
 	
 	int mdiadaptlm::discount(ngram ng_,int size,double& fstar,double& lambda,int /* unused parameter: cv */)
 	{
+		VERBOSE(3,"mdiadaptlm::discount(ngram ng_,int size,double& fstar,double& lambda,int)) ng_:|" << ng_ << "| size:" << size << std::endl);
 		
 		ngram ng(dict);
 		ng.trans(ng_);
@@ -415,17 +416,29 @@ namespace irstlm {
 		
 		lambda=__lambda;
 		fstar=__fstar;
+		
 		return 1;
 	}
 	
+	int mdiadaptlm::compute_backoff()
+	{
+		VERBOSE(3,"mdiadaptlm::compute_backoff() ");
+		if (m_save_per_level){
+			VERBOSE(3," per level ...\n");
+			return mdiadaptlm::compute_backoff_per_level();
+		}else{
+			VERBOSE(3," per word ...\n");
+			return mdiadaptlm::compute_backoff_per_word();
+		}	
+	}
 	
 	int mdiadaptlm::compute_backoff_per_level()
 	{
-		
+		VERBOSE(3,"mdiadaptlm::compute_backoff_per_level()\n");
 		double fstar,lambda;
 		
 		this->backoff=1;
-		
+
 		for (int size=1; size<lmsize(); size++) {
 			
 			ngram hg(dict,size);
@@ -433,31 +446,26 @@ namespace irstlm {
 			scan(hg,INIT,size);
 			
 			while(scan(hg,CONT,size)) {
-				
 				ngram ng=hg;
 				ng.pushc(0); //ng.size is now hg.size+1
-				
 				double pr=1.0;
 				
 				succscan(hg,ng,INIT,size+1);
 				while(succscan(hg,ng,CONT,size+1)) {
-					
 					mdiadaptlm::discount(ng,ng.size,fstar,lambda);
-					
 					if (fstar>0){
 						ng.size=ng.size-1;
 						pr -= mdiadaptlm::prob(ng,size);
 					}
 				}
 				
-				MY_ASSERT(pr>0 && pr<=1);
+				MY_ASSERT(pr>=LOWER_SINGLE_PRECISION_OF_0 && pr<=UPPER_SINGLE_PRECISION_OF_1);
 				
 				boff(hg.link,pr);
 			}
-			
 		}
 		
-		cerr << "done\n";
+		VERBOSE(3,"mdiadaptlm::compute_backoff_per_level() DONE\n");
 		
 		return 1;
 	}
@@ -474,7 +482,6 @@ namespace irstlm {
 	
 	double mdiadaptlm::prob2(ngram ng,int size,double& fstar)
 	{
-		
 		double lambda;
 		
 		mdiadaptlm::discount(ng,size,fstar,lambda);
@@ -495,6 +502,7 @@ namespace irstlm {
 	
 	double mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& bo)
 	{
+		VERBOSE(3,"mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& bo) ng:|" << ng << "| size:" << size << std::endl);
 		double pr;
 		
 #ifdef MDIADAPTLM_CACHE_ENABLE
@@ -505,7 +513,7 @@ namespace irstlm {
 		
 		//probcache miss
 		mdiadaptlm::bodiscount(ng,size,fstar,lambda,bo);
-		
+		VERBOSE(3,"mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& bo) after bodiscount @@@@@@@@@ ng:|" << ng << "| size:" << size << "| fstar:" << fstar << "| lambda:" << lambda << "| bo:" << bo << std::endl);
 		if (fstar>UPPER_SINGLE_PRECISION_OF_1 || lambda>UPPER_SINGLE_PRECISION_OF_1) {
 			cerr << "wrong probability: " << ng
 			<< " , size " << size
@@ -516,7 +524,6 @@ namespace irstlm {
 			//exit(1);
 		}
 		if (backoff) {
-			
 			if (size>1) {
 				if (fstar>0){
 					pr=fstar;
@@ -532,8 +539,7 @@ namespace irstlm {
 				pr = fstar;
 		}
 		
-		else { //interpolation
-			
+		else { //interpolation			
 			if (size>1)
 				pr = fstar  + lambda * prob(ng,size-1);
 			else
@@ -545,13 +551,14 @@ namespace irstlm {
 		if (size<=max_caching_level && probcache[size] && ng.size>=size)
 			probcache[size]->add(ng.wordp(size),pr);
 #endif
-		
+		VERBOSE(3,"mdiadaptlm::prob(ngram ng,int size,double& fstar,double& lambda, double& bo) returning ng:|" << ng << "| pr:" << pr << std::endl);
 		return pr;
 	}
 	
 	
 	int mdiadaptlm::bodiscount(ngram ng_,int size,double& fstar,double& lambda,double& bo)
 	{
+		VERBOSE(3,"mdiadaptlm::bodiscount(ngram ng_,int size,double& fstar,double& lambda,double& bo) ng_:|" << ng_ << "| size:" << size << std::endl);
 		ngram ng(dict);
 		ng.trans(ng_);
 		
@@ -579,8 +586,6 @@ namespace irstlm {
 				//			}
 			}
 		}
-		
-		VERBOSE(3,"mdiadaptlm::bodiscount --> ng: |" << ng << "| backoff:" << backoff << " fstar:" << fstar << " lambda:" << lambda << " bo: " << bo << "\n");
 		
 		return 1;
 	}
@@ -1241,6 +1246,7 @@ namespace irstlm {
 		
 		//main loop
 		for (int w=0; w<dict->size(); w++) {
+			int i=1;  //set the initial value of level
 			sprintf(tmpfilename,"%s_tmp_%d",filename,w);
 			
 			if (!w % 10000) cerr << ".";
@@ -1267,20 +1273,25 @@ namespace irstlm {
 			pr=mdiadaptlm::prob(ung,1);			
 			pr=(pr?log10(pr):-99);
 			
-			if (maxlev>1) { //compute back-off
+			if (i<maxlev)  { //compute back-off
 				ung.pushc(0); //extend by one
-				mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
+				VERBOSE(3,"mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile ) computing backoff for ung:|" << ung << "| size:" << i+1 << std::endl);
+				mdiadaptlm::bodiscount(ung,i+1,dummy,lambda,bo);
+				VERBOSE(3,"mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile ) getting backoff for ung:|" << ung << "| lambda:" << lambda << " bo:" << bo << std::endl);
 				ung.shift();//shrink by one
 				
-				MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-				
-				if (backoff){
-					ibow=log10(lambda) - log10(bo);
+				if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+					ibow = DONT_PRINT;
 				}else{
-					if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-						ibow = log10(lambda);
-					}else { //force to be 0.0
-						ibow = 0.0;
+					if (backoff){
+						ibow=log10(lambda) - log10(bo);
+					}else{
+						MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+						if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+							ibow = log10(lambda);
+						}else { //force to be 0.0
+							ibow = 0.0;
+						}
 					}
 				}
 			}
@@ -1288,8 +1299,10 @@ namespace irstlm {
 				ibow=0.0; //default value for backoff weight at the lowest level
 			}
 			
-			lmt->addwithoffset(ung,(float)pr,(float)ibow);
-			num[1]++;
+			if (ibow != DONT_PRINT){
+				lmt->addwithoffset(ung,(float)pr,(float)ibow);
+			}
+			num[i]++;
 			
 			//manage n-grams
 			if (get(ung,1,1)) {
@@ -1327,7 +1340,9 @@ namespace irstlm {
 						// skip also n-grams containing eos symbols not at the final
 						if (sng.containsWord(dict->EoS(),l-1)) continue;
 						
+						VERBOSE(3,"mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile ) computing prob for locng:|" << locng << "| size:" << l << std::endl);
 						pr=mdiadaptlm::prob(locng,l,fstar,dummy,dummy2);
+						VERBOSE(3,"mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile ) getting prob locng:|" << locng << "| size:" << l << " fstar:" << fstar << " pr:" << pr << std::endl);
 						
 						//PATCH by Nicola (16-04-2008)
 						
@@ -1342,33 +1357,38 @@ namespace irstlm {
 							
 							locng.pushc(0); //extend by one
 							
+							VERBOSE(3,"mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile ) computing backoff for locng:|" << locng << "| size:" << l+1 << std::endl);
 							mdiadaptlm::bodiscount(locng,l+1,dummy,lambda,bo);
+							VERBOSE(3,"mdiadaptlm::saveBIN_per_word(char *filename,int backoff,char* subdictfile ) getting backoff locng:|" << locng << "| lambda:" << lambda << " bo:" << bo << std::endl);
 							
 							locng.shift();
 							
-							if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
-								ibow=log10(lambda) - log10(bo);
-								if (lmt->addwithoffset(locng,(float)log10(pr),(float)ibow)){
-									num[l]++;
+							if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+								ibow = DONT_PRINT;
+							}else{								
+								if (backoff){
+									ibow = (float) (log10(lambda) - log10(bo));
 								}else{
-									continue;
-								}
+									MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+									if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+										ibow = log10(lambda);
+									}else{ //no output if log10(lambda)==0
+										ibow = 0.0;
+									}
+								}					
 							}
-							else{
-								continue; //skip n-grams with too small fstar
+						} else { //i==maxlev
+							ibow = 0.0;
+						}
+						
+						if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || ibow!=DONT_PRINT ) {
+							if (lmt->addwithoffset(locng,(float)log10(pr),(float)ibow)){
+								num[l]++;
+							}else{
+								continue;
 							}
-						} else {
-							if (fstar>=UPPER_SINGLE_PRECISION_OF_0) {
-								ibow=0.0; //value for backoff weight at the highest level
-								if (lmt->addwithoffset(locng,(float)log10(pr),(float)ibow)){
-									num[l]++;
-								}else{
-									continue;
-								}
-							}
-							else{
-								continue; //skip n-grams with too small fstar
-							}
+						} else{
+							continue; //skip n-grams with too small fstar
 						}
 					}
 					oldng=ng;
@@ -1546,33 +1566,38 @@ namespace irstlm {
 					 else {
 					 //				} //do nothing
 					 */
-					if (maxlev>1) {
+					if (i<maxlev) {
 						ngram ng2=ng;
 						ng2.pushc(0); //extend by one
 						
 						//cerr << ng2 << "\n";
+												
+						VERBOSE(3,"mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile ) computing backoff for ng2:|" << ng2 << "| size:" << i+1 << std::endl);
+						mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
+						VERBOSE(3,"mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile ) getting backoff for ng2:|" << ng2 << "| lambda:" << lambda << " bo:" << bo << std::endl);
 						
-						mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-						VERBOSE(3,"ng2: |" << ng2 << "| fstar:" << fstar << " lambda:" << lambda << " bo:" << bo << "\n");
-						
-						MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1));
-						
-						if (backoff){
-							ibow = log10(lambda) - log10(bo);
+						if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+							ibow = DONT_PRINT;
 						}else{
-							if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-								ibow = log10(lambda);
-							}else { //force to be 0.0
-								ibow = 0.0;
+							if (backoff){
+								ibow = log10(lambda) - log10(bo);
+							}
+							else{
+								MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+								if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+									ibow = log10(lambda);
+								}else { //force to be 0.0
+									ibow = 0.0;
+								}
 							}
 						}
-					}else {
-						ibow=0.0; //default value for backoff weight at the lowest level
+					}else { //i==maxlev
+						ibow=0.0; //default value for backoff weight at the highest level
 					}
-					/*
-					 }
-					 */
-					lmt->add(ng,(float)pr,(float)ibow);
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) writing w:|" << (char *)dict->decode(w) << "| pr:" << pr << " ibow:" << ibow << std::endl);
+					if (ibow != DONT_PRINT ) {
+						lmt->add(ng,(float)log10(pr),(float)ibow);
+					}
 				}
 				//add unigram with OOV and its accumulate oov probability
 				if (_OOV_unigram){
@@ -1613,21 +1638,30 @@ namespace irstlm {
 					if (i<maxlev) {
 						ng2=ng;
 						ng2.pushc(0); //extend by one
-						
+						VERBOSE(3,"mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile ) computing backoff for ng2:|" << ng2 << "| size:" << i+1 << std::endl);
 						mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
+						VERBOSE(3,"mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile ) getting backoff for ng2:|" << ng2 << "| lambda:" << lambda << " bo:" << bo << std::endl);
 						
-						VERBOSE(3,"ng2: |" << ng2 << "| lambda:" << lambda << " bo:" << bo << "\n");
-						
-						if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
-							ibow=log10(lambda) - log10(bo);
-							VERBOSE(3,"ng: |" << ng << "| pr:" << pr << " ibow:" << ibow << "\n");
-							lmt->add(ng,(float)log10(pr),(float)ibow);
+						if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+							ibow=DONT_PRINT;
+						}else{
+							if (backoff){
+								ibow=log10(lambda) - log10(bo);
+							}else{
+								MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+								if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+									ibow=log10(lambda);
+								}else{ //force ibow to log10(lambda)==0.0
+									ibow=0.0;
+								}
+							}
 						}
-					} else {
-						if (fstar >= UPPER_SINGLE_PRECISION_OF_0) {
-							ibow=0.0; //value for backoff weight at the highest level
-							lmt->add(ng,(float)log10(pr),(float)ibow);
-						}
+					} else { //i==maxlev
+						ibow=0.0; //value for backoff weight at the highest level
+					}
+					VERBOSE(3,"mdiadaptlm::saveBIN_per_level(char *filename,int backoff,char* subdictfile ) writing ng:|" << ng << "| pr:" << pr << " ibow:" << ibow << std::endl);
+					if (ibow != DONT_PRINT ) {
+						lmt->add(ng,(float)log10(pr),(float)ibow);
 					}
 				}
 			}
@@ -1699,7 +1733,7 @@ namespace irstlm {
 		
 		ngram sng(subdict,lmsize());
 		
-		double fstar,lambda,bo,dummy,dummy2, pr;
+		double fstar,lambda,bo,dummy,dummy2,pr,outLambda;
 		
 		double oovprob=0.0; //accumulated unigram oov pro
 		bool _OOV_unigram=false; //flag to check whether an OOV word is present or not
@@ -1711,7 +1745,7 @@ namespace irstlm {
 		
 		//main loop
 		for (int w=0; w<dict->size(); w++) {
-			
+			int i=1;  //set the initial value of level
 			if (!w % 10000) cerr << ".";
 			
 			//1-gram
@@ -1721,41 +1755,56 @@ namespace irstlm {
 			
 			// frequency pruning is not applied to unigrams
 			
-/*
- //exclude words not occurring in the subdictionary
-			if (sng.containsWord(subdict->OOV(),1) && !ung.containsWord(dict->OOV(),1))	continue;
-*/
-		
-                        pr=mdiadaptlm::prob(ung,1);
-                        pr=(pr?log10(pr):-99);
-	
+			/*
+			 //exclude words not occurring in the subdictionary
+			 if (sng.containsWord(subdict->OOV(),1) && !ung.containsWord(dict->OOV(),1))	continue;
+			 */
+			
+			pr=mdiadaptlm::prob(ung,1);
+			pr=(pr?log10(pr):-99);
+			
 			//////CHECK
 			if (sng.containsWord(subdict->OOV(),1) || ung.containsWord(dict->OOV(),1)) {
 				_OOV_unigram=true;
 				oovprob+=pr; //accumulate oov probability
 				continue;
 			}
-
-			*tout[1] << (float) pr << "\t" << (char *)dict->decode(w);
 			
-			num[1]++;
-			
-			if (maxlev>1) { //print back-off
+			if (i<maxlev) { //print back-off
 				ung.pushc(0); //extend by one
-				mdiadaptlm::bodiscount(ung,2,fstar,lambda,bo);
+				VERBOSE(3,"mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile ) computing backoff for ung:|" << ung << "| size:" << i+1 << std::endl);
+				mdiadaptlm::bodiscount(ung,i+1,dummy,lambda,bo);
+				VERBOSE(3,"mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile ) getting backoff for ung:|" << ung << "| lambda:" << lambda << " bo:" << bo << std::endl);
+				
 				ung.shift();//shrink by one
-				
-				MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-				
-				if (backoff){
-					*tout[1] << "\t" << (float) (log10(lambda) - log10(bo));
+				if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+					outLambda = DONT_PRINT;
 				}else{
-					if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-						*tout[1] << "\t" << (float) log10(lambda);
-					} //no output if log10(lambda)==0
+					if (backoff){
+						outLambda = (float) (log10(lambda) - log10(bo));
+					}
+					else{
+						MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+						if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+							outLambda = (float) log10(lambda);
+						}
+						else {
+							outLambda = DONT_PRINT;
+						}
+					}
 				}
+			}else { //i==maxlev
+				outLambda = DONT_PRINT;
 			}
-			*tout[1] << "\n";
+			
+			//cerr << ng << " freq " << dict->freq(w) << " -  Pr " << pr << "\n";
+			*tout[i] << (float)  (pr?log10(pr):-99);
+			*tout[i] << "\t" << (char *)dict->decode(w);
+			if (outLambda != DONT_PRINT){
+				*tout[i] << "\t" << outLambda;
+			}
+			*tout[i] << "\n";
+			num[i]++;
 			
 			//manage n-grams
 			if (get(ung,1,1)) {
@@ -1764,7 +1813,7 @@ namespace irstlm {
 				*ng.wordp(maxlev)=w;
 				
 				//create sentinel n-gram
-				for (int i=1; i<=maxlev; i++) *oldng.wordp(i)=-1;
+				for (i=1; i<=maxlev; i++) *oldng.wordp(i)=-1;
 				
 				scan(ung.link,ung.info,1,ng,INIT,maxlev);
 				while(scan(ung.link,ung.info,1,ng,CONT,maxlev)) {
@@ -1779,7 +1828,7 @@ namespace irstlm {
 					for (int l=maxlev; l>maxlev-f;l--){
 						
 						if (l<maxlev) locng.shift(); //ngram has size level
-				
+						
 						// frequency pruning: skip n-grams with low frequency 
 						if (prune_ngram(l,sng.freq)) continue;
 						
@@ -1788,8 +1837,9 @@ namespace irstlm {
 						
 						// skip also n-grams containing eos symbols not at the final
 						if (sng.containsWord(dict->EoS(),l-1)) continue;
-						
+						VERBOSE(3,"mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile ) computing prob for locng:|" << locng << "| size:" << i << std::endl);
 						pr=mdiadaptlm::prob(locng,l,fstar,dummy,dummy2);
+						VERBOSE(3,"mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile ) getting prob locng:|" << locng << "| size:" << i << " fstar:" << fstar << " pr:" << pr << std::endl);
 						
 						//PATCH by Nicola (16-04-2008)
 						
@@ -1803,34 +1853,42 @@ namespace irstlm {
 						if (l<maxlev) {
 							
 							locng.pushc(0); //extend by one
-							
+							VERBOSE(3,"mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile ) computing backoff for locng:|" << locng << "| size:" << l+1 << std::endl);
 							mdiadaptlm::bodiscount(locng,l+1,dummy,lambda,bo);
+							VERBOSE(3,"mdiadaptlm::saveARPA_per_word(char *filename,int backoff,char* subdictfile ) getting backoff locng:|" << locng << "| lambda:" << lambda << " bo:" << bo << std::endl);
 							
 							locng.shift();
-							
-							if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
-								*tout[l] << (float) log10(pr);
-								*tout[l] << "\t" << (char *)dict->decode(*locng.wordp(l));
-								for (int j=l-1; j>0; j--)
-									*tout[l] << " " << (char *)dict->decode(*locng.wordp(j));
-								
-								if (lambda < LOWER_SINGLE_PRECISION_OF_1) //output back-off prob
-									*tout[l] << "\t" << (float) (log10(lambda) -log10(bo));
-								*tout[l] << "\n";
-								
-								num[l]++;
-							} else continue; //skip n-grams with too small fstar
-						} else {
-							if (fstar>=UPPER_SINGLE_PRECISION_OF_0 ) {
-								*tout[l] << (float) log10(pr);
-								*tout[l] << "\t" << (char *)dict->decode(*locng.wordp(l));
-								for (int j=l-1; j>0; j--)
-									*tout[l] << " " << (char *)dict->decode(*locng.wordp(j));
-								*tout[l] << "\n";
-								num[l]++;
-							} else continue; //skip n-grams with too small fstar
+							if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+								outLambda = DONT_PRINT;
+							}else{								
+								if (backoff){
+									outLambda = (float) (log10(lambda) - log10(bo));
+								}else{
+									MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+									if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+										outLambda = (float) log10(lambda);
+									}else{ //no output if log10(lambda)==0
+										outLambda = DONT_PRINT;
+									}
+								}					
+							}
+						} else { //i==maxlev
+							outLambda = DONT_PRINT;
 						}
-						
+							
+						if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || outLambda!=DONT_PRINT ) {
+							*tout[l] << (float) log10(pr);
+							*tout[l] << "\t" << (char *)dict->decode(*ng.wordp(i));
+							for (int j=i-1; j>0; j--)
+								*tout[l] << " " << (char *)dict->decode(*ng.wordp(j));
+							if (outLambda != DONT_PRINT){
+								*tout[l] << "\t" << outLambda;
+							}
+							*tout[l] << "\n";
+							num[l]++;
+						} else{
+							continue; //skip n-grams with too small fstar
+						}						
 					}
 					oldng=ng;
 				}
@@ -1912,7 +1970,7 @@ namespace irstlm {
 			
 			out << "\n\\" << i << "-grams:\n";
 			
-			double fstar,lambda,bo,dummy,dummy2,pr;
+			double fstar,lambda,bo,dummy,dummy2,pr,outLambda;
 			
 			ngram ng(dict,1);
 			ngram ng2(dict);
@@ -1931,8 +1989,9 @@ namespace irstlm {
 					sng.trans(ng);
 					
 					// frequency pruning is not applied to unigrams
-					
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) computing prob for ng:|" << ng << "| size:" << i << std::endl);
 					pr=mdiadaptlm::prob(ng,i);
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) getting prob for ng:|" << ng << "| pr:" << pr << std::endl);
 					
 					if (sng.containsWord(subdict->OOV(),i) || ng.containsWord(dict->OOV(),i)) {
 						_OOV_unigram=true;
@@ -1941,47 +2000,53 @@ namespace irstlm {
 					}
 					
 					/*
-					if (sng.containsWord(subdict->OOV(),i) && !ng.containsWord(dict->OOV(),i)) {
-						oovprob+=pr; //accumulate oov probability
-						continue;
-					}
+					 if (sng.containsWord(subdict->OOV(),i) && !ng.containsWord(dict->OOV(),i)) {
+					 oovprob+=pr; //accumulate oov probability
+					 continue;
+					 }
+					 
+					 if (ng.containsWord(dict->OOV(),i)) pr+=oovprob;
+					 */
 					
-					if (ng.containsWord(dict->OOV(),i)) pr+=oovprob;
-					*/
-					
-					//cerr << ng << " freq " << dict->freq(w) << " -  Pr " << pr << "\n";
-					out << (float)  (pr?log10(pr):-99);
-					
-					num[i]++;
-
-/*					
-					if (w==dict->oovcode())
-						out << "\t" << "<unk>\n";
-					else {
- */
-					out << "\t" << (char *)dict->decode(w);
-					
-					if (maxlev>1) {
+					if (i<maxlev) {
 						ngram ng2=ng;
 						ng2.pushc(0); //extend by one
 						
-						mdiadaptlm::bodiscount(ng2,i+1,fstar,lambda,bo);
-						
-						MY_ASSERT(!backoff || ((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 ));
-						
-						if (backoff){
-							out << "\t" << (float) (log10(lambda) - log10(bo));
+						VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) computing backoff for ng2:|" << ng2 << "| size:" << i+1 << std::endl);
+						mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
+						VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) getting backoff for ng2:|" << ng2 << "| lambda:" << lambda << " bo:" << bo << std::endl);
+						if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+							outLambda = DONT_PRINT;
 						}else{
-							if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-								out << "\t" << (float) log10(lambda);
-							} //no output if log10(lambda)==0
+							if (backoff){
+								outLambda = (float) (log10(lambda) - log10(bo));
+							}
+							else{
+								MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
+								if (lambda<LOWER_SINGLE_PRECISION_OF_1){
+									outLambda = (float) log10(lambda);
+								}
+								else { //force to be 0.0 and hence to not output lambda
+									outLambda = DONT_PRINT;
+								}
+							}
 						}
+					}else { //i==maxlev
+						outLambda = DONT_PRINT;
+					}
+					
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) writing w:|" << (char *)dict->decode(w) << "| pr:" << pr << " outLambda:" << outLambda << std::endl);
+					//cerr << ng << " freq " << dict->freq(w) << " -  Pr " << pr << "\n";
+					out << (float)  (pr?log10(pr):-99);
+					out << "\t" << (char *)dict->decode(w);
+					if (outLambda != DONT_PRINT){
+						out << "\t" << outLambda;
 					}
 					out << "\n";
-					/*
-					 }
-					 */
+					
+					num[i]++;
 				}
+				
 				
 				//add unigram with OOV and its accumulate oov probability
 				if (_OOV_unigram){
@@ -2008,9 +2073,11 @@ namespace irstlm {
 					// skip also n-grams containing eos symbols not at the final
 					if (sng.containsWord(dict->EoS(),i-1)) continue;
 					
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) computing prob for ng:|" << ng << "| size:" << i << std::endl);
 					pr=mdiadaptlm::prob(ng,i,fstar,dummy,dummy2);
-					//PATCH by Nicola (16-04-2008)
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) getting prob ng:|" << ng << "| size:" << i << " fstar:" << fstar << " pr:" << pr << std::endl);
 					
+					//PATCH by Nicola (16-04-2008)					
 					if (!(pr<=1.0 && pr > 1e-10)) {
 						cerr << ng << " " << pr << "\n";
 						MY_ASSERT(pr<=1.0);
@@ -2022,38 +2089,40 @@ namespace irstlm {
 						ng2=ng;
 						ng2.pushc(0); //extend by one
 						
+						VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) computing backoff for ng2:|" << ng2 << "| size:" << i+1 << std::endl);
 						mdiadaptlm::bodiscount(ng2,i+1,dummy,lambda,bo);
+						VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) getting backoff for ng2:|" << ng2 << "| lambda:" << lambda << " bo:" << bo << std::endl);
 						
-						VERBOSE(3,"ng2: |" << ng2 << "| lambda:" << lambda << " bo:" << bo << "\n");
-						
-						if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || lambda <= LOWER_SINGLE_PRECISION_OF_1) {
-							VERBOSE(3,"ng: |" << ng << "| backoff:" << backoff << " log10(pr):" << log10(pr) << " log10(bo):" << log10(bo) << " log10(lambda):" << log10(lambda) << "\n");
-							out << (float) log10(pr);
-							out << "\t" << (char *)dict->decode(*ng.wordp(i));
-							for (int j=i-1; j>0; j--)
-								out << " " << (char *)dict->decode(*ng.wordp(j));
+						if (fstar<UPPER_SINGLE_PRECISION_OF_0 && lambda>LOWER_SINGLE_PRECISION_OF_1){ //ngram must be skipped
+							outLambda = DONT_PRINT;
+						}else{
 							if (backoff){
-								out << "\t" << (float) (log10(lambda) - log10(bo));
+								outLambda = (float) (log10(lambda) - log10(bo));
 							}else{
+								MY_ASSERT((lambda<UPPER_SINGLE_PRECISION_OF_1 && lambda>LOWER_SINGLE_PRECISION_OF_1) || bo<UPPER_SINGLE_PRECISION_OF_1 );
 								if (lambda<LOWER_SINGLE_PRECISION_OF_1){
-									out << "\t" << (float) log10(lambda);
-								} //no output if log10(lambda)==0
+									outLambda = (float) log10(lambda);
+								}else{ //no output of lambda if log10(lambda)==0
+									outLambda = DONT_PRINT;
+								}
 							}
-							out << "\n";
-							num[i]++;
-						}
-					} else {
-						VERBOSE(3,"ng: |" << ng << "| log10(pr):" << log10(pr) << " ibow: not used because of highest level\n");
-						if (fstar>=UPPER_SINGLE_PRECISION_OF_0) {
-							out << (float) log10(pr);
-							out << "\t" << (char *)dict->decode(*ng.wordp(i));
-							for (int j=i-1; j>0; j--)
-								out << " " << (char *)dict->decode(*ng.wordp(j));
-							out << "\n";
-							
-							num[i]++;
-						}
+						}			
+					} else { //i==maxlev
+						outLambda = DONT_PRINT;
 					}
+					
+					VERBOSE(3,"mdiadaptlm::saveARPA_per_level(char *filename,int backoff,char* subdictfile ) writing ng:|" << ng << "| pr:" << pr << " outLambda:" << outLambda << std::endl);
+					if (fstar>=UPPER_SINGLE_PRECISION_OF_0 || outLambda!=DONT_PRINT ) {
+						out << (float) log10(pr);
+						out << "\t" << (char *)dict->decode(*ng.wordp(i));
+						for (int j=i-1; j>0; j--)
+							out << " " << (char *)dict->decode(*ng.wordp(j));
+						if (outLambda != DONT_PRINT){
+							out << "\t" << outLambda;
+						}
+						out << "\n";
+						num[i]++;
+					}	
 				}
 			}
 			

@@ -25,7 +25,9 @@ using namespace std;
 //1.000000000001 = 1+10^(-12)
 //0.999999 = 1-10^(-6)
 //0.999999999999 = 1-10^(-12)
+#define LOWER_SINGLE_PRECISION_OF_0 -0.000001
 #define UPPER_SINGLE_PRECISION_OF_0 0.000001
+#define LOWER_DOUBLE_PRECISION_OF_0 -0.000000000001
 #define UPPER_DOUBLE_PRECISION_OF_0 0.000000000001
 #define UPPER_SINGLE_PRECISION_OF_1 1.000001
 #define LOWER_SINGLE_PRECISION_OF_1 0.999999
@@ -74,7 +76,7 @@ namespace irstlm
 extern const int tracelevel;
 
 #define TRACE_ERR(str) { std::cerr << str; }
-#define VERBOSE(level,str) { if (tracelevel > level) { TRACE_ERR("DEBUG_LEVEL:" <<tracelevel << " "); TRACE_ERR(str); } }
+#define VERBOSE(level,str) { if (tracelevel > level) { TRACE_ERR("DEBUG_LEVEL:" << level << "/" << tracelevel << " "); TRACE_ERR(str); } }
 #define IFVERBOSE(level) if (tracelevel > level)
 
 /*

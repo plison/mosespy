@@ -18,7 +18,7 @@ OPTIONS:
        -k|--Parts              Number of splits (default 5)
        -n|--NgramSize          Order of language model (default 3)
        -d|--Dictionary         Define subdictionary for n-grams (optional, default is without any subdictionary)
-       -s|--LanguageModelType  Smoothing methods: witten-bell (default), shift-beta, improved-shift-beta; kneser-ney and improved-kneser-ney still accepted for back-compatibility, but mapped into shift-beta and improved-shift-beta, respectively
+       -s|--LanguageModelType  Smoothing methods: witten-bell (default), shift-beta, improved-shift-beta, stupid-backoff; kneser-ney and improved-kneser-ney still accepted for back-compatibility, but mapped into shift-beta and improved-shift-beta, respectively
        -p|--PruneSingletons    Prune singleton n-grams (default false)
        -f|--PruneFrequencyThreshold      Pruning frequency threshold for each level; comma-separated list of values; (default is '0,0,...,0', for all levels)
        -t|--TmpDir             Directory for temporary files (default ./stat_PID)
@@ -62,6 +62,7 @@ prune_thr_str="";
 boundaries="";
 dictionary="";
 uniform="-f=y";
+backoff=""
 
 while [ "$1" != "" ]; do
     case $1 in
@@ -127,14 +128,21 @@ smoothing="--shift-beta";
 improved-shift-beta)
 smoothing="--improved-shift-beta";
 ;;
+stupid-backoff)
+smoothing="--stupid-backoff";
+backoff="--backoff"
+;;
 *) 
 echo "wrong smoothing setting; '$smoothing' does not exist";
 exit 4
 esac
+			
+
+echo "LOGFILE:$logfile"
 			 
 
 if [ $verbose ] ; then
-echo inpfile='"'$inpfile'"' outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose prune_thr_str=$prune_thr_str
+echo inpfile='"'$inpfile'"' outfile=$outfile order=$order parts=$parts tmpdir=$tmpdir prune=$prune smoothing=$smoothing dictionary=$dictionary verbose=$verbose prune_thr_str=$prune_thr_str  >> $logfile 2>&1
 fi
 
 if [ ! "$inpfile" -o ! "$outfile" ] ; then
@@ -152,72 +160,90 @@ if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
    exit 7
 fi
 
+echo "BIS LOGFILE:$logfile" >> $logfile 2>&1
+
 #check tmpdir
 tmpdir_created=0;
 if [ ! -d $tmpdir ]; then
-   echo "Temporary directory $tmpdir does not exist";
-   echo "creating $tmpdir";
-   mkdir -p $tmpdir;
-   tmpdir_created=1;
+   echo "Temporary directory $tmpdir does not exist"  >> $logfile 2>&1
+   echo "creating $tmpdir"  >> $logfile 2>&1
+   mkdir -p $tmpdir
+   tmpdir_created=1
 else
-   echo "Cleaning temporary directory $tmpdir";
+   echo "Cleaning temporary directory $tmpdir" >> $logfile 2>&1
     rm $tmpdir/* 2> /dev/null
     if [ $? != 0 ]; then
-        echo "Warning: some temporary files could not be removed"
+        echo "Warning: some temporary files could not be removed" >> $logfile 2>&1
     fi
 fi
 
 
-echo "Extracting dictionary from training corpus"
+echo "Extracting dictionary from training corpus" >> $logfile 2>&1
 $bin/dict -i="$inpfile" -o=$tmpdir/dictionary $uniform -sort=no 2> $logfile
 
-echo "Splitting dictionary into $parts lists"
+echo "Splitting dictionary into $parts lists" >> $logfile 2>&1
 $scr/split-dict.pl --input $tmpdir/dictionary --output $tmpdir/dict. --parts $parts >> $logfile 2>&1
 
-echo "Extracting n-gram statistics for each word list"
-echo "Important: dictionary must be ordered according to order of appearance of words in data"
-echo "used to generate n-gram blocks,  so that sub language model blocks results ordered too"
+echo "Extracting n-gram statistics for each word list" >> $logfile 2>&1
+echo "Important: dictionary must be ordered according to order of appearance of words in data" >> $logfile 2>&1
+echo "used to generate n-gram blocks,  so that sub language model blocks results ordered too" >> $logfile 2>&1
 
 for sdict in $tmpdir/dict.*;do
 sdict=`basename $sdict`
-echo "Extracting n-gram statistics for $sdict"
+echo "Extracting n-gram statistics for $sdict" >> $logfile 2>&1
 if [ $smoothing = "--shift-beta" -o $smoothing = "--improved-shift-beta" ]; then
-$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
+additional_parameters="-iknstat=$tmpdir/ikn.stat.$sdict"
 else
-$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary >> $logfile 2>&1 &
+additional_parameters=""
 fi
+
+$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary $additional_parameters >> $logfile 2>&1 &
+
+#$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary -iknstat="$tmpdir/ikn.stat.$sdict" >> $logfile 2>&1 &
+#else
+#$bin/ngt -i="$inpfile" -n=$order -gooout=y -o="$gzip -c > $tmpdir/ngram.${sdict}.gz" -fd="$tmpdir/$sdict" $dictionary >> $logfile 2>&1 &
+#fi
 done
 
 # Wait for all parallel jobs to finish
 while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
-echo "Estimating language models for each word list"
+echo "Estimating language models for each word list" >> $logfile 2>&1
 for sdict in `ls $tmpdir/dict.*` ; do
 sdict=`basename $sdict`
-echo "Estimating language models for $sdict"
+echo "Estimating language models for $sdict" >> $logfile 2>&1
 
 if [ $smoothing = "--shift-beta" -o $smoothing = "--improved-shift-beta" ]; then
-$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
+additional_smoothing_parameters="cat $tmpdir/ikn.stat.dict.*"
+additional_parameters="$backoff"
 else
-$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing  --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
+additional_smoothing_parameters=""
+additional_parameters=""
 fi
+$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "$additional_smoothing_parameters" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict $additional_parameters >> $logfile 2>&1 &
+
+#if [ $smoothing = "--shift-beta" -o $smoothing = "--improved-shift-beta" ]; then
+#$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing "cat $tmpdir/ikn.stat.dict.*" --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict $backoff >> $logfile 2>&1 &
+#else
+#$scr/build-sublm.pl $verbose $prune $prune_thr_str $smoothing --size $order --ngrams "$gunzip -c $tmpdir/ngram.${sdict}.gz" -sublm $tmpdir/lm.$sdict >> $logfile 2>&1 &
+#fi
 
 done
 
 # Wait for all parallel jobs to finish
 while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
-echo "Merging language models into $outfile"
-$scr/merge-sublm.pl --size $order --sublm $tmpdir/lm.dict -lm $outfile  >> $logfile 2>&1
+echo "Merging language models into $outfile" >> $logfile 2>&1
+$scr/merge-sublm.pl --size $order --sublm $tmpdir/lm.dict -lm $outfile $backoff  >> $logfile 2>&1
 
-echo "Cleaning temporary directory $tmpdir";
+echo "Cleaning temporary directory $tmpdir" >> $logfile 2>&1
 rm $tmpdir/* 2> /dev/null
 
 if [ $tmpdir_created -eq 1 ]; then
-    echo "Removing temporary directory $tmpdir";
+    echo "Removing temporary directory $tmpdir" >> $logfile 2>&1
     rmdir $tmpdir 2> /dev/null
     if [ $? != 0 ]; then
-        echo "Warning: the temporary directory could not be removed."
+        echo "Warning: the temporary directory could not be removed." >> $logfile 2>&1
     fi
 fi
  
