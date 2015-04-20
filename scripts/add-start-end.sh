@@ -34,15 +34,18 @@ OPTIONS:
        -h        Show this message
        -r count  Specify symbol repetitions (default 1)
        -t length Trim words up to _length_ chars (default 80)
+       -s char   Specify symbol (default s)
+
 EOF
 }
 
 #default setting
 repeat=1; 
 maxwordlen=80;
+symbol="s"
 
 # Parse options
-while getopts "hr:t:" OPT; do
+while getopts "hr:t:s:" OPT; do
     case "$OPT" in
         h)
             usage >&2;
@@ -52,15 +55,17 @@ while getopts "hr:t:" OPT; do
             ;; 
         t)  maxwordlen=$OPTARG
             ;; 
+        s)  symbol=$OPTARG
+            ;; 
     esac
 done
 
-#adds sentence start/end symbols to standard input and 
+#adds start/end symbols to standard input and 
 #trims words longer than 80 characters
 eos="";
 bos="";
 
-for i in `seq $repeat`; do bos="$bos<s> "; eos="$eos <\/s>";done
+for i in `seq $repeat`; do bos="$bos<${symbol}> "; eos="$eos <\/${symbol}>";done
 
 (sed "s/^/$bos/" | sed "s/\$/ $eos/";) |\
 sed "s/\([^ ]\{$maxwordlen\}\)\([^ ]\{1,\}\)/\1/g"
