@@ -151,35 +151,45 @@ usage
 exit 1
 fi
 
-if [ -e $model ]; then
-echo "Output file $model already exists! either remove or rename it."
-exit 1
-fi
-
-if [ -e $txtfile -a $txtfile != "/dev/null" ]; then
-echo "Output file $txtfile already exists! either remove or rename it."
-exit 1
-fi
-
-
 if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
 echo "Logfile $logfile already exists! either remove or rename it."
 exit 1
 fi
 
+if [ -e $model ]; then
+echo "Output file $model already exists! either remove or rename it." >> $logfile 2>&1
+exit 1
+fi
+
+if [ -e $txtfile -a $txtfile != "/dev/null" ]; then
+echo "Output file $txtfile already exists! either remove or rename it." >> $logfile 2>&1
+exit 1
+fi
+
+
+if [ -e $logfile -a $logfile != "/dev/null" -a $logfile != "/dev/stdout" ]; then
+echo "Logfile $logfile already exists! either remove or rename it." >> $logfile 2>&1
+exit 1
+fi
+
+if [ ! -e $data ]; then
+echo "Cannot find data $data." >> $logfile 2>&1
+exit 1;
+fi
+
 if [ ! -e $dict ]; then
 echo extract dictionary >> $logfile
 $bin/dict -i="$data" -o=$dict -PruneFreq=$prunefreq -f=y >> $logfile 2>&1
-if [ `head -1 $dict| cut -d " " -f 3` -lt 10 ]; then
+if [ `head -n 1 $dict| cut -d " " -f 3` -lt 10 ]; then
 echo "Dictionary contains errors"
 exit 2;
 fi
 else
-echo "Warning: dictionary file already exists."
+echo "Warning: dictionary file already exists." >> $logfile 2>&1
 if [ $forcedict ]; then
-echo "Warning: authorization to use it."
+echo "Warning: authorization to use it." >> $logfile 2>&1
 else
-echo "No authorization to use it (see option -f)."
+echo "No authorization to use it (see option -f)." >> $logfile 2>&1
 exit 1
 fi
 fi
@@ -189,14 +199,14 @@ fi
 #check tmpdir
 tmpdir_created=0;
 if [ ! -d $tmpdir ]; then
-echo "Creating temporary working directory $tmpdir"
+echo "Creating temporary working directory $tmpdir" >> $logfile 2>&1
 mkdir -p $tmpdir;
 tmpdir_created=1;
 else
-echo "Cleaning temporary directory $tmpdir";
+echo "Cleaning temporary directory $tmpdir" >> $logfile 2>&1
 rm $tmpdir/* 2> /dev/null
 if [ $? != 0 ]; then
-echo "Warning: some temporary files could not be removed"
+echo "Warning: some temporary files could not be removed" >> $logfile 2>&1
 fi
 fi
 
@@ -230,14 +240,14 @@ $bin/plsa -ct=$tmpdir/Tlist -c="$data" -d=$dict -hf=$tmpdir/data.H -m=$model -t=
 done
 date; echo End of training
 
-echo "Cleaning temporary directory $tmpdir";
+echo "Cleaning temporary directory $tmpdir" >> $logfile 2>&1 
 rm $tmpdir/* 2> /dev/null
 
 if [ $tmpdir_created -eq 1 ]; then
-echo "Removing temporary directory $tmpdir";
+echo "Removing temporary directory $tmpdir" >> $logfile 2>&1
 rmdir $tmpdir 2> /dev/null
 if [ $? != 0 ]; then
-echo "Warning: the temporary directory could not be removed."
+echo "Warning: the temporary directory could not be removed." >> $logfile 2>&1
 fi
 fi
 exit 0
@@ -245,13 +255,13 @@ exit 0
 else
 
 if [ ! $model -o ! -e $model ]; then
-echo "Need to specify existing model"
+echo "Need to specify existing model" >> $logfile 2>&1
 exit 1;
 fi
 
 
 if [ ! $dict  -o ! -e $dict  ]; then
-echo "Need to specify dictionary file of the model"
+echo "Need to specify dictionary file of the model" >> $logfile 2>&1
 exit 1;
 fi
 
