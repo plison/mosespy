@@ -37,13 +37,14 @@ TESTING OPTIONS
 
 -c file     Testing documents e.g. test
 -d file     Dictionary file (default dictionary)
--m file     Model file e.g. model
+-m file     Model file
 -n number   Number of topics (default 100)
 -u file     Output document unigram distribution
 -o file     Output document topic distributions
 -i counts   Number of training iterations (default 20)
 -t folder   Temporary working directory (default ./stat_PID)
 -l file     Log file (optional)
+-k count    Number of processes (default 5)
 -v          Verbose
 -h          Show this message
 
