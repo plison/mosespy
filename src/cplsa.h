@@ -18,39 +18,38 @@
  
  ******************************************************************************/
 
-	class plsa
-	{
-		int topics;      //number of topics
-		
-		dictionary* dict;
-		double **T;
-		double **W;
-		double *H;
-		
-		char *tfname;
-		char *wfname;
-		char *hinfname;
-		char *houtfname;
-		char *basefname;
-		char *featfname;
-		
-	public:
-		plsa(dictionary* dictfile,int top, char* baseFile, char* featFile,char* hfile,char* wfile,char* tfile);
-		~plsa();
-		
-		int saveW(char* fname);
-		int saveT(char* fname);
-		int combineT(char* tlist);
-		int saveWtxt(char* fname);
-		int loadW(char* fname);
-		int loadT(char* fname,bool addflag=true);
-        
-		int initW(double noise,int spectopic);
-		int initH(double noise,int maxdoc);
-		
-		int train(char *trainfile,int maxiter,int tit,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
-		
-		int saveFeat(char* fname);
-		
-	};
+class plsa {
+    int topics;      //number of topics
+    
+    dictionary* dict;
+    double **T;
+    double **W;
+    double *H;
+    
+    char *tfname;
+    char *wfname;
+    char *hinfname;
+    char *houtfname;
+    char *basefname;
+    
+public:
+    plsa(dictionary* dictfile,int top, char* baseFile,char* hfile,char* wfile,char* tfile);
+    ~plsa();
+    
+    int saveW(char* fname);
+    int saveT(char* fname);
+    int combineT(char* tlist);
+    int saveWtxt(char* fname);
+    int loadW(char* fname);
+    int loadT(char* fname,bool addflag=true);
+    
+    int initW(double noise,int spectopic);
+    int initH(double noise,int maxdoc);
+    
+    int train(char *trainfile,int maxiter,int tit,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
+    
+    int saveWordFeatures(char* trainfile,char* fname);
+    int saveTopicFeatures(char* trainfile, char* fname);
+    
+};
 
