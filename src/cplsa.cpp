@@ -303,11 +303,10 @@ int plsa::saveTopicFeatures(char* trainfile, char* fname){
     mfstream out(fname,ios::out);
     out.precision(5);
     while(trset.read()) { //read next doc
-        
         //resume H
         hindf.read((char *)H,topics * sizeof(double));
-        out << trset.cd+1;
-        for (int t=0; t<topics; t++) out << " "  << H[t];
+        out << H[0];
+        for (int t=1; t<topics; t++) out << " "  << H[t];
         out << "\n";
     }
     
