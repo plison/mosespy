@@ -224,8 +224,8 @@ if [ $machine == "Darwin" ] ; then
 splitlist=`jot - 1 $splits`
 iterlist=`jot - 1 $iter`
 else
-splitlist=`seq -w 1 1 $splits`
-iterlist=`seq -w 1 1 $iter`
+splitlist=`seq  1 1 $splits`
+iterlist=`seq 1 1 $iter`
 fi
 
 #rm $tmpdir/Tlist
@@ -302,7 +302,7 @@ machine=`uname -s`
 if [ $machine == "Darwin" ] ; then
 splitlist=`jot - 1 $splits`
 else
-splitlist=`seq -w 1 1 $splits`
+splitlist=`seq 1 1 $splits`
 fi
 
 #rm $tmpdir/Tlist
@@ -319,7 +319,10 @@ while [ 1 ]; do fg 2> /dev/null; [ $? == 1 ] && break; done
 
 (date; echo recombination ) >> $logfile 2>&1
 
-cat $tmpdir/topic.* > $outtopic
+echo > $outtopic
+for sp in $splitlist ; do  #makes sure that 1 < 2 < ... < 11 ...
+cat $tmpdir/topic.$sp >> $outtopic
+done
 
 (date; echo End of training) >> $logfile 2>&1
 
