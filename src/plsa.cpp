@@ -253,9 +253,15 @@ int main(int argc, char **argv){
     
     if (adafile) {
         tc.loadW(basefile);
-        tc.train(adafile,it,tit=0,.0);
-        if (topicfeaturefile) tc.saveTopicFeatures(adafile,topicfeaturefile);
-        if (wordfeaturefile)  tc.saveWordFeatures(adafile,wordfeaturefile);
+        if (wordfeaturefile){
+            tc.train(adafile,it,tit=0,.0);
+            tc.saveWordFeatures(adafile,wordfeaturefile);
+        }
+        if (topicfeaturefile){
+            tc.inference(adafile,it,topicfeaturefile);
+            //tc.train(adafile,it,tit=0,.0);
+            //tc.saveTopicFeatures(adafile,topicfeaturefile);
+        }
         
         
     }

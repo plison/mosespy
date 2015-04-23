@@ -450,4 +450,94 @@ int plsa::train(char *trainfile,int maxiter,int tit,double noiseH,int flagW,doub
 
 
 
+int plsa::inference(char *testfile, int maxiter, char* topicfeatfile){
+    
+    int dsize=dict->size(); //includes possible OOV
+    
+    const double deltathreshold=0.001;
+    const double topicthreshold=0.0001;
+    
+    doc trset(dict,testfile);
+    trset.open(); //n is known
+    
+    mfstream out(topicfeatfile,ios::out);
+    
+    //support array
+    double *WH=new double [dsize];
+    bool   *Hflags=new bool[topics];
+
+    cerr << "start inference\n";
+    
+    
+    while(trset.read()) { //perform inference of H over each document
+        
+        
+        int M=trset.m; //vocabulary size of current documents
+        
+        int N=0;       //document length
+        for (int i=0;i<M;i++) N+=trset.N[trset.V[i]];
+        
+        
+        //initialize H
+        for (int t=0; t<topics; t++) {Hflags[t]=true; H[t]=1/(double)topics;}
+        
+        int iter=0;
+        
+        double LL=0;
+        double delta=0;
+        double maxdelta=1;
+        
+        while (iter <= maxiter && maxdelta > deltathreshold){
+            
+            maxdelta=0;
+            iter++;
+            
+            //precompute denominator WH
+            for (int t=0; t<topics; t++)
+                if (Hflags[t] && H[t] < topicthreshold){ Hflags[t]=false; H[t]=0;}
+
+            for (int i=0; i < M ; i++) {
+                WH[trset.V[i]]=0; //initialized
+                for (int t=0; t<topics; t++){
+                    if (Hflags[t])
+                    WH[trset.V[i]]+=W[trset.V[i]][t] * H[t];
+                }
+                LL-=trset.N[trset.V[i]] * log( WH[trset.V[i]] );
+            }
+            
+            //cerr << "LL: " << LL << "\n";
+            
+            //UPDATE H
+            double totH=0;
+            for (int t=0; t<topics; t++) {
+                if (Hflags[t]){
+                    double tmpH=0;
+                    for (int i=0; i< M ; i++)
+                        tmpH+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
+                    delta=abs(H[t]-tmpH/(double)N);
+                    if (delta > maxdelta) maxdelta=delta;
+                    H[t]=tmpH/(double)N;
+                    totH+=H[t]; //to check that sum is 1
+                }
+            }
+            
+            if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
+                cerr << "totH " << totH << "\n";
+                std::stringstream ss_msg;
+                ss_msg << "Total H is wrong; totH=" << totH << "\n";
+                exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
+            }
+            
+        }
+        cerr << "Stopped at iteration " << iter << "\n";
+        
+        out << H[0];
+        for (int t=1; t<topics; t++) out << " "  << H[t];
+        out << "\n";
+        
+    }
+    
+    delete [] WH; delete [] Hflags;
+    return 1;
+}
 

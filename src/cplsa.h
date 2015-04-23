@@ -47,6 +47,7 @@ public:
     int initH(double noise,int maxdoc);
     
     int train(char *trainfile,int maxiter,int tit,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
+    int inference(char *trainfile, int maxiter, char* topicfeatfile);
     
     int saveWordFeatures(char* trainfile,char* fname);
     int saveTopicFeatures(char* trainfile, char* fname);
