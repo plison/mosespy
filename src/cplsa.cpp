@@ -140,12 +140,12 @@ int plsa::saveWtxt(char* fname){
     cerr << "Writing text W table into: " << fname << "\n";
     mfstream out(fname,ios::out);
     out.precision(5);
-    out << topics << "\n";
+//    out << topics << "\n";
     for (int i=0; i<dict->size(); i++) {
-        out << dict->decode(i) << " " << dict->freq(i);
-        double totW=0;
-        for (int t=0; t<topics; t++) totW+=W[i][t];
-        out <<" totPr: " << totW << " :";
+        out << dict->decode(i);// << " " << dict->freq(i);
+        //double totW=0;
+        //for (int t=0; t<topics; t++) totW+=W[i][t];
+        //out <<" totPr: " << totW << " :";
         for (int t=0; t<topics; t++)
             out << " " << W[i][t];
         out << "\n";
@@ -316,6 +316,7 @@ return 1;
 int plsa::train(char *trainfile,int maxiter,int tit,double noiseH,int flagW,double noiseW,int spectopic){
     
     int dsize=dict->size(); //includes possible OOV
+    const double topicthreshold=0.00001;
     
     if (flagW) {
         //intialize W or read it from wfname: be sure that wfile
@@ -365,13 +366,14 @@ int plsa::train(char *trainfile,int maxiter,int tit,double noiseH,int flagW,doub
                 
                 //resume H
                 hindf.read((char *)H,topics * sizeof(double));
-                
+                for (int t=0; t<r; t++) if (H[t]<topicthreshold) H[t]=0;
+
                 //precompute WHij i=0,...,m-1; j=n-1 fixed
                 for (int i=0; i<m; i++) {
                     WH[trset.V[i]]=0;
                     N+=trset.N[trset.V[i]];
                     for (int t=0; t<r; t++)
-                        WH[trset.V[i]]+=W[trset.V[i]][t]*H[t];
+                        if (H[t]>0) WH[trset.V[i]]+=W[trset.V[i]][t]*H[t];
                     LL+=trset.N[trset.V[i]] * log( WH[trset.V[i]] );
                 }
                 
@@ -379,7 +381,7 @@ int plsa::train(char *trainfile,int maxiter,int tit,double noiseH,int flagW,doub
                 if (flagW) {
                     for (int i=0; i<m; i++) {
                         for (int t=0; t<r; t++)
-                            T[trset.V[i]][t]+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
+                            if (H[t]>0) T[trset.V[i]][t]+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
                     }
                 }
                 
@@ -388,7 +390,7 @@ int plsa::train(char *trainfile,int maxiter,int tit,double noiseH,int flagW,doub
                 for (int t=0; t<r; t++) {
                     double tmpHaj=0;
                     for (int i=0; i<m; i++)
-                        tmpHaj+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
+                        if (H[t]>0) tmpHaj+=(trset.N[trset.V[i]] * W[trset.V[i]][t] * H[t]/WH[trset.V[i]]);
                     H[t]=tmpHaj/(double)N;
                     totH+=H[t];
                 }
