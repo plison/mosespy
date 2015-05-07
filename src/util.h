@@ -3,13 +3,13 @@
 #ifndef IRSTLM_UTIL_H
 #define IRSTLM_UTIL_H
 
-using namespace std;
 
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <assert.h>
 
+using namespace std;
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))

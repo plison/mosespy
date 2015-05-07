@@ -207,7 +207,7 @@ public:
 	dictionary(dictionary* d, bool prune=false,int prunethresh=0); //make a copy and eventually filter out unfrequent words
 	
 	~dictionary();
-	void generate(char *filename);
+	void generate(char *filename,bool header=false);
 	void load(char *filename);
 	void save(char *filename, int freqflag=0);
 	void load(std::istream& fd);

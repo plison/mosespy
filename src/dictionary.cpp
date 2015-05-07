@@ -104,7 +104,7 @@ int dictionary::getword(fstream& inp , char* buffer) const
 }
 
 
-void dictionary::generate(char *filename)
+void dictionary::generate(char *filename,bool header)
 {
 	
 	char buffer[MAX_WORD];
@@ -121,6 +121,9 @@ void dictionary::generate(char *filename)
 	cerr << "dict:";
 	
 	ifl=1;
+
+        //skip header
+	if (header) inp.getline(buffer,MAX_WORD);
 	
 	while (getword(inp,buffer)) {
 		

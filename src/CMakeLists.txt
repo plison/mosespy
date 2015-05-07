@@ -6,6 +6,7 @@ ADD_DEFINITIONS("-D_LARGE_FILES")
 ADD_DEFINITIONS("-D_FILE_OFFSET_BITS=64")
 ADD_DEFINITIONS("-DMYCODESIZE=3")
 ADD_DEFINITIONS("-DDEBUG")
+ADD_DEFINITIONS("-DTRACE_LEVEL=1")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem/usr/include -W -Wall -ffor-scope")
 SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
@@ -14,6 +15,7 @@ INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/src")
 
 SET( LIB_IRSTLM_SRC
         cmd.h cmd.c
+        thpool.h thpool.c
         gzfilebuf.h index.h
         dictionary.h dictionary.cpp
         htable.h htable.cpp 
@@ -46,7 +48,7 @@ LINK_DIRECTORIES (${LIBRARY_OUTPUT_PATH})
 FOREACH(CMD dict ngt tlm dtsel plsa compile-lm interpolate-lm prune-lm quantize-lm score-lm)
 
 ADD_EXECUTABLE(${CMD} ${CMD}.cpp)
-TARGET_LINK_LIBRARIES (${CMD} irstlm -lm -lz)
+TARGET_LINK_LIBRARIES (${CMD} irstlm -lm -lz -lpthread)
 
 ENDFOREACH()
 

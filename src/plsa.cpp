@@ -21,6 +21,8 @@
 
 #include <iostream>
 #include "cmd.h"
+#include <pthread.h>
+#include "thpool.h"
 #include "util.h"
 #include "mfstream.h"
 #include "mempool.h"
@@ -34,43 +36,31 @@
 using namespace std;
 
 void print_help(int TypeFlag=0){
-    std::cerr << std::endl << "plsa - performs probabilistic latent semantic analysis LM inference" << std::endl;
+    std::cerr << std::endl << "plsa -  probabilistic latent semantic analysis modeling" << std::endl;
     std::cerr << std::endl << "USAGE:"  << std::endl;
-    std::cerr << "       plsa -c=<text_collection> -d=<dictionary> -m=<model> -t=<topics> -it=<iter> [options]" << std::endl;
-    std::cerr << "       plsa -c=<text_collection> -d=<dictionary> -b=<binary_collection> [options]" << std::endl;
-    std::cerr << "       plsa -d=<dictionary> -m=<model> -t=<topics> -inf=<text> -f=<features> -it=<iterations> [options]" << std::endl;
+    std::cerr << "       plsa -tr|te=<text>  -m=<model> -t=<n> [options]" << std::endl;
     std::cerr << std::endl << "DESCRIPTION:" << std::endl;
-    std::cerr << "       plsa is a tool for probabilistic latent semantic analysis" << std::endl;
-    std::cerr << "       LM inference. It can be used to train a PLSA model, to binarize" << std::endl;
-    std::cerr << "       a textual document collection to speed-up training or to" << std::endl;
-    std::cerr << "       infer a full n-gram distribution from a model and a small text." << std::endl;
+    std::cerr << "       Train a PLSA model from a corpus and test it to infer topic or word " << std::endl;
+    std::cerr << "       distributions from other texts." << std::endl;
+    std::cerr << "       Notice: multithreading is available only for training." << std::endl;
+    
     std::cerr << std::endl << "OPTIONS:" << std::endl;
     
     
     FullPrintParams(TypeFlag, 0, 1, stderr);
     
     std::cerr << std::endl << "EXAMPLES:" << std::endl;
-    std::cerr <<"       (1) plsa -c=<text_collection> -d=<dictionary> -m=<model> -t=<topics> -it=<iter>" << std::endl;
-    std::cerr <<"           Train a PLSA model, <model>, from the text collection" << std::endl;
-    std::cerr <<"           <text_collection> using the dictionary <dictionary>. The" << std::endl;
-    std::cerr <<"           number of EM iterations is specified by <iter> and the" << std::endl;
-    std::cerr <<"           number of topics is specified by <topics>." << std::endl;
-    std::cerr <<"           The <text_collection> content must begin with the number of" << std::endl;
-    std::cerr <<"           documents and documents should be separated with the </d> tag." << std::endl;
-    std::cerr <<"           The begin document tag <d> is not considered." << std::endl;
-    std::cerr <<"           Example of <text_collection> content:" << std::endl;
+    std::cerr <<"       (1) plsa -tr=<text> -t=<n> -m=<model> " << std::endl;
+    std::cerr <<"           Train a PLSA model <model> with <n> topics on text <text> " << std::endl;
+    std::cerr <<"           Example of <text> content:" << std::endl;
     std::cerr <<"           3" << std::endl;
     std::cerr <<"           <d> hello world ! </d>" << std::endl;
     std::cerr <<"           <d> good morning good afternoon </d>" << std::endl;
     std::cerr <<"           <d> welcome aboard </d>" << std::endl;
-    std::cerr <<"       (2) plsa -c=<text_collection> -d=<dictionary> -b=<binary collection>" << std::endl;
-    std::cerr <<"           Binarize a textual document collection to speed-up training (1)" << std::endl;
-    std::cerr <<"       (3) plsa -d=<dictionary> -m=<model> -t=<topics> -inf=<text> -f=<features> -it=<iterations>" << std::endl;
-    std::cerr <<"           Infer a word distribution from a model and a small set of documents." << std::endl;
-    std::cerr <<"           The word distribution is saved in the feature file." << std::endl;
-    std::cerr <<"       (4) plsa -d=<dictionary> -m=<model> -t=<topics> -inf=<text> -tf=<features> -it=<iterations>" << std::endl;
-    std::cerr <<"           Infer topic distribution from a model and a small" << std::endl;
-    std::cerr <<"           text. The 1-gram is saved in the feature file." << std::endl;
+    std::cerr <<"       (2) plsa -m=<model> -te=<text> -tf=<features>" << std::endl;
+    std::cerr <<"           Infer topic distribution with model <model> for each doc in <text>" << std::endl;
+    std::cerr <<"       (3) plsa -m=<model> -te=<text> -wf=<features>" << std::endl;
+    std::cerr <<"           Infer word distribution with model <model> for each doc in <text>" << std::endl;
     std::cerr << std::endl;
 }
 
@@ -87,79 +77,67 @@ void usage(const char *msg = 0)
 int main(int argc, char **argv){
     char *dictfile=NULL;
     char *trainfile=NULL;
-    char *adafile=NULL;
+    char *testfile=NULL;
     char *topicfeaturefile=NULL;
     char *wordfeaturefile=NULL;
-    char *basefile=NULL;
-    char *hfile=NULL;
-    char *tmphfile=NULL;
-    char *tfile=NULL;
-    char *wfile=NULL;
-    char *ctfile=NULL;
+    char *modelfile=NULL;
+    char *tmpdir="/tmp";
     char *txtfile=NULL;
-    char *binfile=NULL;
+    bool forcemodel=false;
     
-    int numbins=1;  //number of document bins for parallel processing
-    int topics=0;   //number of topics
-    int st=0;       //special topic: first st dict words
-    int it=0;       //number of EM iterations to run
-    int tit=0;      //current EM iteration for multi-thread training
+    int topics=0;              //number of topics
+    int specialtopic=0;       //special topic: first st dict words
+    int iterations=10;       //number of EM iterations to run
+    int threads=1;           //current EM iteration for multi-thread training
     bool help=false;
-    
+    bool memorymap=true;
+    int prunethreshold=3;
+
     DeclareParams((char*)
                   
-                  "Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "dictionary file",
-                  "d", CMDSTRINGTYPE|CMDMSG, &dictfile, "dictionary file",
+                  "Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training dictionary (optional)",
+                  "d", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training dictionary (optional)",
                   
-                  "Binary", CMDSTRINGTYPE|CMDMSG, &binfile, "binary file",
-                  "b", CMDSTRINGTYPE|CMDMSG, &binfile, "binary file",
+                  "Train", CMDSTRINGTYPE|CMDMSG, &trainfile, "<fname> : training  text collection ",
+                  "tr", CMDSTRINGTYPE|CMDMSG, &trainfile, "<fname> : training text collection ",
                   
-                  "SplitData", CMDINTTYPE|CMDMSG, &numbins, "number of binary files (default 1)",
-                  "sd", CMDINTTYPE|CMDMSG, &numbins, "number of binary files (default 1)",
+                  "Model", CMDSTRINGTYPE|CMDMSG, &modelfile, "<fname> : model file",
+                  "m", CMDSTRINGTYPE|CMDMSG, &modelfile, "<fname> : model file",
                   
-                  "Collection", CMDSTRINGTYPE|CMDMSG, &trainfile, "text collection file",
-                  "c", CMDSTRINGTYPE|CMDMSG, &trainfile, "text collection file",
+                  "TxtFile", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname>: output model file in readable format",
+                  "txt", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname>: output model file in readable format",
                   
-                  "Model", CMDSTRINGTYPE|CMDMSG, &basefile, "model file",
-                  "m", CMDSTRINGTYPE|CMDMSG, &basefile, "model file",
+                  "Test", CMDSTRINGTYPE|CMDMSG, &testfile, "<fname> : inference text collection file",
+                  "te", CMDSTRINGTYPE|CMDMSG, &testfile, "<fname> : inference text collection file",
                   
-                  "HFile", CMDSTRINGTYPE, &tmphfile,
-                  "hf", CMDSTRINGTYPE, &tmphfile,
+                  "WordFeatures", CMDSTRINGTYPE|CMDMSG, &wordfeaturefile, "<fname> : unigram feature file",
+                  "wf", CMDSTRINGTYPE|CMDMSG, &wordfeaturefile,"<fname> : unigram feature file",
                   
-                  "WFile", CMDSTRINGTYPE, &wfile,
-                  "wf", CMDSTRINGTYPE, &wfile,
+                  "TopicFeatures", CMDSTRINGTYPE|CMDMSG, &topicfeaturefile, "<fname> : topic feature file",
+                  "tf", CMDSTRINGTYPE|CMDMSG, &topicfeaturefile, "<fname> : topic feature file",
                   
-                  "TFile", CMDSTRINGTYPE, &tfile,
-                  "tf", CMDSTRINGTYPE, &tfile,
+                  "Topics", CMDINTTYPE|CMDMSG, &topics, "<count> : number of topics (default 0)",
+                  "t", CMDINTTYPE|CMDMSG, &topics,"<count> : number of topics (default 0)",
                   
-                  "CombineTFile", CMDSTRINGTYPE, &ctfile,
-                  "ct", CMDSTRINGTYPE, &ctfile,
+                  "SpecialTopic", CMDINTTYPE|CMDMSG, &specialtopic, "<count> : put top-<count> frequent words in a special topic (default 0)",
+                  "st", CMDINTTYPE|CMDMSG, &specialtopic, "<count> :  put top-<count> frequent words in a special topic (default 0)",
                   
-                  "TxtFile", CMDSTRINGTYPE, &txtfile,
-                  "txt", CMDSTRINGTYPE, &txtfile,
+                  "Iterations", CMDINTTYPE|CMDMSG, &iterations, "<count> : training/inference iterations (default 10)",
+                  "it", CMDINTTYPE|CMDMSG, &iterations, "<count> : training/inference iterations (default 10)",
                   
-                  "Inference", CMDSTRINGTYPE, &adafile,
-                  "inf", CMDSTRINGTYPE, &adafile,
+                  "Threads", CMDINTTYPE|CMDMSG, &threads, "<count>: number of threads (default 2)",
+                  "th", CMDINTTYPE|CMDMSG, &threads, "<count>: number of threads (default 2)",
                   
-                  "UnigramFeatures", CMDSTRINGTYPE, &wordfeaturefile,
-                  "wof", CMDSTRINGTYPE, &wordfeaturefile,
-                  "f", CMDSTRINGTYPE, &wordfeaturefile, //keep for compatibility
+                  "ForceModel", CMDBOOLTYPE|CMDMSG, &forcemodel, "<bool>: force to use existing model for training",
+                  "fm", CMDBOOLTYPE|CMDMSG, &forcemodel, "<bool>: force to use existing model for training",
                   
-                  "TopicFeatures", CMDSTRINGTYPE, &topicfeaturefile,
-                  "tof", CMDSTRINGTYPE, &topicfeaturefile,
+                  "MemoryMap", CMDBOOLTYPE|CMDMSG, &memorymap, "<bool>: use memory mapping (default true)",
+                  "mm", CMDBOOLTYPE|CMDMSG, &memorymap, "<bool>: use memory mapping (default true)",
                   
-                  "Topics", CMDINTTYPE|CMDMSG, &topics, "number of topics; default is 0",
-                  "t", CMDINTTYPE|CMDMSG, &topics,"number of topics; default is 0",
                   
-                  "SpecialTopic", CMDINTTYPE|CMDMSG, &st, "special topic for top st frequent words; default is 0",
-                  "st", CMDINTTYPE|CMDMSG, &st, "special topic for top st frequent words; default is 0",
-                  
-                  "Iterations", CMDINTTYPE|CMDMSG, &it, "number of EM iterations; default is 0",
-                  "it", CMDINTTYPE|CMDMSG, &it, "number of EM iterations; default is 0",
-                  
-                  "ThreadIteration", CMDINTTYPE|CMDMSG, &tit, "thread iteration number; default is 0",
-                  "tit", CMDINTTYPE|CMDMSG, &tit, "thread iteration number; default is 0",
-                  
+                  "TmpDir", CMDSTRINGTYPE|CMDMSG, &tmpdir, "<folder>: tmp directory for memory map (default /tmp)",
+                  "tmp", CMDSTRINGTYPE|CMDMSG, &tmpdir, "<folder>: tmp directory for memory map (default /tmp )",
+
                   
                   "Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
                   "h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
@@ -179,94 +157,84 @@ int main(int argc, char **argv){
         exit_error(IRSTLM_NO_ERROR);
     }
     
-    if (!dictfile) {
-        usage();
-        exit_error(IRSTLM_ERROR_DATA,"Missing dictionary file");
-    };
     
-    
-    if ((trainfile && !binfile) && (!it || !topics || !basefile)) {
+    if (trainfile && ( !topics || !modelfile )) {
         usage();
         exit_error(IRSTLM_ERROR_DATA,"Missing training parameters");
     }
     
-    if (ctfile && (!it || !topics || !basefile)) {
+    if (testfile && (!modelfile || !(topicfeaturefile || wordfeaturefile))) {
         usage();
-        exit_error(IRSTLM_ERROR_DATA,"Missing parameters in recombination step");
+        exit_error(IRSTLM_ERROR_DATA,"Missing inference parameters");
     }
     
-    if (adafile && !(basefile || ! (wordfeaturefile || topicfeaturefile)  || !it || !topics)) {
-        usage();
-        exit_error(IRSTLM_ERROR_DATA,"Missing parameters for inference case");
-    }
+    dictionary *dict=NULL;
     
-    
-    if (!tmphfile) {
-        //set default value
-        hfile=new char[4+1];
-        strcpy(hfile,"hfff");
-    } else {
-        //set the value of the parameter
-        hfile=new char[strlen(tmphfile)+1];
-        strcpy(hfile,tmphfile);
-    }
-    
-    dictionary dict(dictfile);
-    
-    
-    dict.incflag(1);
-    dict.encode(dict.BoD());
-    dict.encode(dict.EoD());
-    dict.incflag(0);
-    dict.encode(dict.OOV());
-    cout << "oovcode:"<< dict.oovcode() << "\n";
-    
-    cout << dict.size() << "\n";
-    
-    if (binfile) {
-        cout << "opening collection\n";
-        doc col(&dict,trainfile);
-        col.open();
-        if (numbins)
-            col.save(binfile,numbins);
-        else
-            col.save(binfile);
-        exit_error(IRSTLM_NO_ERROR);
-    }
-    
-    system("rm -f hfff");
-    
-    plsa tc(&dict,topics,basefile,hfile,wfile,tfile);
-    
-    if (ctfile) { //combine t
-        tc.combineT(ctfile);
-        if (txtfile) tc.saveWtxt(txtfile);
-        tc.saveW(basefile);
-        
-        exit_error(IRSTLM_NO_ERROR);
-    }
-    
+    //Training phase
+    //test if model is readable
+    bool testmodel=false;
+    FILE* f;if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);testmodel=true;}
+
     if (trainfile){
-        tc.train(trainfile,it,tit,.5,1,0.5,st);
-        if (txtfile) tc.saveWtxt(txtfile);
+        if (testmodel){
+            if (!forcemodel)
+                //training with pretrained model: no need of dictionary
+                exit_error(IRSTLM_ERROR_DATA,"Use -ForceModel=y option to use and update an existing model.");
+        }
+        else{//training with empty model and no dictionary: dictionary must be first extracted
+            if (!dictfile){
+                    exit_error(IRSTLM_ERROR_DATA,"Missing dictionary. Provide a dictionary with option -d.");
+                
+//                cerr << "Extracting dictionary from training data (word with freq>=" << prunethreshold << ")\n";
+//                dict=new dictionary(NULL,10000);
+//                dict->generate(trainfile,true);
+//                
+//                dictionary *sortd=new dictionary(dict,true,prunethreshold);
+//                if (specialtopic) sortd->sort();
+//                delete dict;
+//                dict=sortd;
+                
+            }
+            else
+                dict=new dictionary(dictfile,10000);
+            dict->encode(dict->OOV());
+        }
+        
+        plsa tc(dict,topics,tmpdir,memorymap);
+        tc.train(trainfile,modelfile,iterations,threads,0.5,specialtopic);
+        if (dict!=NULL) delete dict;
     }
     
-    if (adafile) {
-        tc.loadW(basefile);
-        if (wordfeaturefile){
-            tc.train(adafile,it,tit=0,.0);
-            tc.saveWordFeatures(adafile,wordfeaturefile);
-        }
-        if (topicfeaturefile){
-            tc.inference(adafile,it,topicfeaturefile);
-            //tc.train(adafile,it,tit=0,.0);
-            //tc.saveTopicFeatures(adafile,topicfeaturefile);
-        }
-        
-        
+    //Training phase
+    //test if model is readable: notice test could be executed after training
+    
+    testmodel=false;
+    if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);testmodel=true;}
+    
+    if (testfile){
+        if (!testmodel)
+            exit_error(IRSTLM_ERROR_DATA,"Cannot read model file to run test inference.");
+        if (dictfile) cerr << "Will rely on model dictionary.";
+
+        dict=NULL;
+        plsa tc(dict,topics,tmpdir,memorymap);
+        tc.inference(testfile,modelfile,iterations,topicfeaturefile,wordfeaturefile);
+        if (dict!=NULL) delete dict;
     }
-    if (strcmp(hfile,"hfff")==0)  system("rm -f hfff");
-    delete []hfile;
+    
+    
+    //save/convert model in text format
+    
+    if (txtfile){
+        if (!testmodel)
+            exit_error(IRSTLM_ERROR_DATA,"Cannot open model to be printed in readable format.");
+
+        dict=NULL;
+        plsa tc(dict,topics,tmpdir,memorymap);
+        tc.initW(modelfile,1,0);
+        tc.saveWtxt(txtfile);
+        tc.freeW();
+    }
     
     exit_error(IRSTLM_NO_ERROR);
 }

@@ -18,39 +18,50 @@
  
  ******************************************************************************/
 
+
 class plsa {
-    int topics;      //number of topics
+    dictionary* dict; //dictionary
+    int topics;       //number of topics
+    doc* trset;       //training/inference set
+
+    double **T;       //support matrix (keep double precision here!)
     
-    dictionary* dict;
-    double **T;
-    double **W;
-    double *H;
+    float **W;       //word - topic matrix
+    float *H;        //document-topic: matrix (memory mapped)
     
-    char *tfname;
-    char *wfname;
-    char *hinfname;
-    char *houtfname;
-    char *basefname;
+    char Hfname[100]; //temporary and unique filename for H
+    char *tmpdir;
+    bool memorymap;   //use or not memory mapping
+    struct task {
+        void *ctx;
+        void *argv;
+    };
     
 public:
-    plsa(dictionary* dictfile,int top, char* baseFile,char* hfile,char* wfile,char* tfile);
+   
+    
+    plsa(dictionary* dict,int topics,char* workdir,bool mm);
     ~plsa();
     
     int saveW(char* fname);
-    int saveT(char* fname);
-    int combineT(char* tlist);
     int saveWtxt(char* fname);
     int loadW(char* fname);
-    int loadT(char* fname,bool addflag=true);
     
-    int initW(double noise,int spectopic);
-    int initH(double noise,int maxdoc);
+    int initW(char* modelfile, float noise,int spectopic); int freeW();
+    int initH();int freeH();
+    int initT();int freeT();
+
+    void expected_counts(void *argv);
+
+    static void *expected_counts_helper(void *argv){
+        task t=*(task *)argv;
+        ((plsa *)t.ctx)->expected_counts(t.argv);return NULL;};
     
-    int train(char *trainfile,int maxiter,int tit,double noiseH,int flagW=0,double noiseW=0,int spectopic=0);
-    int inference(char *trainfile, int maxiter, char* topicfeatfile);
     
-    int saveWordFeatures(char* trainfile,char* fname);
-    int saveTopicFeatures(char* trainfile, char* fname);
+    int train(char *trainfile,char* modelfile, int maxiter,int threads, float noiseW,int spectopic=0);
+    int inference(char *trainfile, char* modelfile, int maxiter, char* topicfeatfile,char* wordfeatfile);
+    
+    int saveWordFeatures(char* fname);
     
 };
 

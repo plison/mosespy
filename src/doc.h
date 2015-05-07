@@ -20,30 +20,24 @@
 //class managing a collection of documents for PLSA
 
 
+#define MAXDOCLEN 500
+#define MAXDOCNUM 1000000000
+
 class doc
 {
-  bool binary;   //is file in binary format?
-  mfstream* df; //doc file descriptor
-  char* dfname; //doc file name
-  dictionary* dict;
+  int  N;      //number of docs
+  int *M;      //number of words per document
+  int **V;     //words in current doc
 
 public:
-  int cd;      //current doc index
-  int  n;      //number of docs
-  int  m;      //number of words in the current doc
-  int* V;      //words in current doc
-  int* N;      //frequencies in doc
-  int* T;      //temporary frequencies
-
+    
   doc(dictionary* d,char* docfname);
   ~doc();
-  int count();
-  int open();
-  int save(char* fname);
-  int savernd(char* fname,int num);
-  int save(char* fname,int nbins);
-  int reset();
-  int read();
+
+  int numdoc();
+  int doclen(int index);
+  int docword(int docindex, int wordindex);
+    
 };
 
 
