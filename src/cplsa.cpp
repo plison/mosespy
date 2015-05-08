@@ -35,13 +35,13 @@
 #include "doc.h"
 #include "cplsa.h"
 
-
+#define BUCKET 1000
 
 using namespace std;
 
 #define MY_RAND (((float)random()/RAND_MAX)* 2.0 - 1.0)
 	
-plsa::plsa(dictionary* d,int top,char* wd,bool mm){
+plsa::plsa(dictionary* d,int top,char* wd,int th,bool mm){
     
     dict=d;
 
@@ -50,6 +50,8 @@ plsa::plsa(dictionary* d,int top,char* wd,bool mm){
     tmpdir=wd;
     
     memorymap=mm;
+    
+    threads=th;
     
     MY_ASSERT (topics>0);
     
@@ -65,6 +67,7 @@ plsa::plsa(dictionary* d,int top,char* wd,bool mm){
     
     srandom(100); //consistent generation of random noise
     
+    bucket=BUCKET;
 }
 
 plsa::~plsa() {
@@ -307,28 +310,24 @@ int plsa::loadW(char* fname){
     return 1;
 }
 
-int plsa::saveWordFeatures(char* fname){
+int plsa::saveWordFeatures(char* fname,long long d){
     
     //extend this to save features for all adapation documents
     //compute distribution on doc 0
     assert(trset !=NULL);
     
-    cerr << "Saving word features in " << fname << "\n";
-    
-    double *WH=new double [dict->size()];
-    char *outfname=new char[strlen(fname)+10];
-    
-    if (trset->numdoc()>100)
-        cerr << "Will only save first 100 features\n";
-    
-    for (long long d=0; d < trset->numdoc();d++){
+    if (d<100){
         
-        if (d>=100) break;
+        double *WH=new double [dict->size()];
+        char *outfname=new char[strlen(fname)+10];
+        
+        sprintf(outfname,"%s.%03d",fname,(int)d+1);
+        cerr << "Saving word features in " << fname << "\n";
         
         for (int i=0; i<dict->size(); i++) {
             WH[i]=0;
             for (int t=0; t<topics; t++)
-                WH[i]+=W[i][t]*H[d * topics + t];
+                WH[i]+=W[i][t]*H[(d % bucket) * topics + t];
         }
         
         double maxp=WH[0];
@@ -337,31 +336,30 @@ int plsa::saveWordFeatures(char* fname){
         
         cerr << "Get max prob" << maxp << "\n";
         
-        sprintf(outfname,"%s.%03d",fname,(int)d+1);
-        {   //save unigrams in google ngram format
-            mfstream out(outfname,ios::out);
-            for (int i=0; i<dict->size(); i++){
-                int freq=(int)floor((WH[i]/maxp) * 1000000);
-                if (freq)
-                    out << dict->decode(i) <<" \t" << freq<<"\n";
-                
-            }
-            out.close();
+        //save unigrams in google ngram format
+        mfstream out(outfname,ios::out);
+        for (int i=0; i<dict->size(); i++){
+            int freq=(int)floor((WH[i]/maxp) * 1000000);
+            if (freq)
+                out << dict->decode(i) <<" \t" << freq<<"\n";
+            
         }
-  
+        out.close();
+        
+        delete [] outfname;
+        delete [] WH;
+        
     }
-    
-    delete [] outfname;
-    delete [] WH;
     return 1;
 }
-
 
 ///*****
 pthread_mutex_t mut1;
 pthread_mutex_t mut2;
 double LL=0; //Log likelihood
 const float topicthreshold=0.00001;
+const float deltathreshold=0.001;
+
 
 void plsa::expected_counts(void *argv){
     
@@ -435,7 +433,7 @@ void plsa::expected_counts(void *argv){
 
 
 
-int plsa::train(char *trainfile, char *modelfile, int maxiter,int threads,float noiseW,int spectopic){
+int plsa::train(char *trainfile, char *modelfile, int maxiter,float noiseW,int spectopic){
     
 
     //check if to either use the dict of the modelfile
@@ -507,11 +505,81 @@ int plsa::train(char *trainfile, char *modelfile, int maxiter,int threads,float 
 
 
 
+void plsa::single_inference(void *argv){
+    long long d;
+    d=(long long) argv;
+    
+    if (! (d % 10000)) {cerr << ".";cerr.flush();}
+    //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),d,trset->numdoc());
+    
+    float *WH=new float [dict->size()];
+    bool   *Hflags=new bool[topics];
+    
+    int M=trset->doclen(d); //vocabulary size of current documents with repetitions
+    
+    int N=M;  //document length
+    
+    //initialize H: we estimate one H for each document
+    for (int t=0; t<topics; t++) {H[(d % bucket) * topics + t]=1/(float)topics;Hflags[t]=true;}
+    
+    int iter=0;
+    
+    double LL=0;
+    float delta=0;
+    float maxdelta=1;
+    
+    while (iter < 50 && maxdelta > deltathreshold){
+        
+        maxdelta=0;
+        iter++;
+        
+        //precompute denominator WH
+        for (int t=0; t<topics; t++)
+            if (Hflags[t] && H[(d % bucket) * topics + t] < topicthreshold){ Hflags[t]=false; H[(d % bucket) * topics + t]=0;}
+        
+        for (int i=0; i < M ; i++) {
+            WH[trset->docword(d,i)]=0; //initialized
+            for (int t=0; t<topics; t++){
+                if (Hflags[t])
+                    WH[trset->docword(d,i)]+=W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t];
+            }
+            //LL-= log( WH[trset->docword(d,i)] );
+        }
+        
+        //cerr << "LL: " << LL << "\n";
+        
+        //UPDATE H
+        float totH=0;
+        for (int t=0; t<topics; t++) {
+            if (Hflags[t]){
+                float tmpH=0;
+                for (int i=0; i< M ; i++)
+                    tmpH+=(W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t]/WH[trset->docword(d,i)]);
+                delta=abs(H[(d % bucket) * topics + t]-tmpH/N);
+                if (delta > maxdelta) maxdelta=delta;
+                H[(d % bucket) * topics + t]=tmpH/N;
+                totH+=H[(d % bucket) * topics + t]; //to check that sum is 1
+            }
+        }
+        
+        if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
+            cerr << "totH " << totH << "\n";
+            std::stringstream ss_msg;
+            ss_msg << "Total H is wrong; totH=" << totH << "\n";
+            exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
+        }
+        
+    }
+    //cerr << "Stopped at iteration " << iter << "\n";
+    
+    
+    
+    
+}
+
+
+
 int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfeatfile,char* wordfeatfile){
-    
-    
-    const float deltathreshold=0.001;
-    const float topicthreshold=0.0001;
     
     
     //load existing model
@@ -520,87 +588,48 @@ int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfea
     //load existing model
     trset=new doc(dict,testfile);
     
+    bucket=BUCKET; //initialize the bucket size
+    
     //use one vector H for all document
-    H=new float[topics];
+    H=new float[topics*bucket];
     
-    //support arrays
-    int dsize=dict->size(); //includes possible OOV
+    threadpool thpool=thpool_init(threads);
+    task *t=new task[bucket];
     
-    float *WH=new float [dsize];
-    bool   *Hflags=new bool[topics];
-
+    
     cerr << "start inference\n";
     
     for (long long d=0;d<trset->numdoc();d++){
         
-        int M=trset->doclen(d); //vocabulary size of current documents with repetitions
+        t[d % bucket].ctx=this; t[d % bucket].argv=(void *)d;
+        thpool_add_work(thpool, &plsa::single_inference_helper, (void *)&t[d % bucket]);
         
-        int N=M;  //document length
-        
-        //initialize H: we estimate one H for each document
-        for (int t=0; t<topics; t++) {H[t]=1/(float)topics;Hflags[t]=true;}
-        
-        int iter=0;
-        
-        double LL=0;
-        float delta=0;
-        float maxdelta=1;
-        
-        while (iter <= maxiter && maxdelta > deltathreshold){
+        if (((d % bucket) == (bucket-1)) || (d==(trset->numdoc()-1)) ){
+            //join all threads
+            thpool_wait(thpool);
             
-            maxdelta=0;
-            iter++;
+            if ((d % bucket) != (bucket-1))
+                    bucket=trset->numdoc() % bucket; //last bucket at end of file
             
-            //precompute denominator WH
-            for (int t=0; t<topics; t++)
-                if (Hflags[t] && H[t] < topicthreshold){ Hflags[t]=false; H[t]=0;}
-
-            for (int i=0; i < M ; i++) {
-                WH[trset->docword(d,i)]=0; //initialized
-                for (int t=0; t<topics; t++){
-                    if (Hflags[t])
-                    WH[trset->docword(d,i)]+=W[trset->docword(d,i)][t] * H[t];
-                }
-                LL-= log( WH[trset->docword(d,i)] );
-            }
-            
-            //cerr << "LL: " << LL << "\n";
-            
-            //UPDATE H
-            float totH=0;
-            for (int t=0; t<topics; t++) {
-                if (Hflags[t]){
-                    float tmpH=0;
-                    for (int i=0; i< M ; i++)
-                        tmpH+=(W[trset->docword(d,i)][t] * H[t]/WH[trset->docword(d,i)]);
-                    delta=abs(H[t]-tmpH/N);
-                    if (delta > maxdelta) maxdelta=delta;
-                    H[t]=tmpH/N;
-                    totH+=H[t]; //to check that sum is 1
+            if (topicfeatfile){
+                mfstream out(topicfeatfile,ios::out| ios::app);
+                
+                for (int b=0;b<bucket;b++){ //include the case of
+                    out << H[b * topics];
+                    for (int t=1; t<topics; t++) out << " "  << H[b * topics + t];
+                    out << "\n";
                 }
             }
-            
-            if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
-                cerr << "totH " << totH << "\n";
-                std::stringstream ss_msg;
-                ss_msg << "Total H is wrong; totH=" << totH << "\n";
-                exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
+            if (wordfeatfile){
+                for (int b=0;b<bucket;b++) saveWordFeatures(wordfeatfile,d-bucket+b);
             }
             
         }
-        cerr << "Stopped at iteration " << iter << "\n";
+       
         
-        if (topicfeatfile){
-            mfstream out(topicfeatfile,ios::out| ios::app);
-            out << H[0];
-            for (int t=1; t<topics; t++) out << " "  << H[t];
-            out << "\n";
-        }
-        if (wordfeatfile)
-            saveWordFeatures(wordfeatfile);
     }
     
-    delete [] WH; delete [] Hflags; delete []H;
+    delete [] H; delete [] t;
     delete trset;
     return 1;
 }

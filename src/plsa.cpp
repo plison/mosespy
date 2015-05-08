@@ -203,8 +203,8 @@ int main(int argc, char **argv){
             dict->encode(dict->OOV());
         }
         
-        plsa tc(dict,topics,tmpdir,memorymap);
-        tc.train(trainfile,modelfile,iterations,threads,0.5,specialtopic);
+        plsa tc(dict,topics,tmpdir,threads,memorymap);
+        tc.train(trainfile,modelfile,iterations,0.5,specialtopic);
         if (dict!=NULL) delete dict;
     }
     
@@ -220,7 +220,7 @@ int main(int argc, char **argv){
         if (dictfile) cerr << "Will rely on model dictionary.";
 
         dict=NULL;
-        plsa tc(dict,topics,tmpdir,memorymap);
+        plsa tc(dict,topics,tmpdir,threads,memorymap);
         tc.inference(testfile,modelfile,iterations,topicfeaturefile,wordfeaturefile);
         if (dict!=NULL) delete dict;
     }
@@ -233,7 +233,7 @@ int main(int argc, char **argv){
             exit_error(IRSTLM_ERROR_DATA,"Cannot open model to be printed in readable format.");
 
         dict=NULL;
-        plsa tc(dict,topics,tmpdir,memorymap);
+        plsa tc(dict,topics,tmpdir,threads,memorymap);
         tc.initW(modelfile,1,0);
         tc.saveWtxt(txtfile,topwords);
         tc.freeW();

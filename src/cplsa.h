@@ -32,6 +32,8 @@ class plsa {
     char Hfname[100]; //temporary and unique filename for H
     char *tmpdir;
     bool memorymap;   //use or not memory mapping
+    int  threads;
+    int bucket; //parallel inference
     struct task {
         void *ctx;
         void *argv;
@@ -40,7 +42,7 @@ class plsa {
 public:
    
     
-    plsa(dictionary* dict,int topics,char* workdir,bool mm);
+    plsa(dictionary* dict,int topics,char* workdir,int threads,bool mm);
     ~plsa();
     
     int saveW(char* fname);
@@ -55,13 +57,20 @@ public:
 
     static void *expected_counts_helper(void *argv){
         task t=*(task *)argv;
-        ((plsa *)t.ctx)->expected_counts(t.argv);return NULL;};
+        ((plsa *)t.ctx)->expected_counts(t.argv);return NULL;
+    };
     
+    static void *single_inference_helper(void *argv){
+        task t=*(task *)argv;
+        ((plsa *)t.ctx)->single_inference(t.argv);return NULL;
+    };
     
-    int train(char *trainfile,char* modelfile, int maxiter,int threads, float noiseW,int spectopic=0);
+    int train(char *trainfile,char* modelfile, int maxiter, float noiseW,int spectopic=0);
     int inference(char *trainfile, char* modelfile, int maxiter, char* topicfeatfile,char* wordfeatfile);
     
-    int saveWordFeatures(char* fname);
+    void single_inference(void *argv);
+    
+    int saveWordFeatures(char* fname, long long d);
     
 };
 
