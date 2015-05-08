@@ -203,8 +203,8 @@ int plsa::freeT(){
 }
 
 
-
-int plsa::saveWtxt(char* fname){
+/*
+int plsa::saveWtxt2(char* fname){
     cerr << "Writing text W table into: " << fname << "\n";
     mfstream out(fname,ios::out);
     out.precision(5);
@@ -221,7 +221,47 @@ int plsa::saveWtxt(char* fname){
     out.close();
     return 1;
 }
-	
+*/
+
+typedef struct {
+    int word;
+    float score;
+} mypairtype;
+
+int comparepair (const void * a, const void * b){
+    if ( (*(mypairtype *)a).score <  (*(mypairtype *)b).score ) return 1;
+    if ( (*(mypairtype *)a).score == (*(mypairtype *)b).score ) return 0;
+    if ( (*(mypairtype *)a).score >  (*(mypairtype *)b).score ) return -1;
+}
+
+int plsa::saveWtxt(char* fname,int tw){
+    cerr << "Writing model W into: " << fname << "\n";
+    mfstream out(fname,ios::out);
+    out.precision(5);
+    
+    mypairtype *vect=new mypairtype[dict->size()];
+    
+    //  out << topics << "\n";
+    for (int t=0; t<topics; t++){
+        
+        for (int i=0; i<dict->size(); i++){
+            vect[i].word=i;
+            vect[i].score=W[i][t];
+        }
+        vect[dict->oovcode()].score=0;
+        qsort((void *)vect,dict->size(),sizeof(mypairtype),comparepair);
+        
+        out << "T" << t;
+        for (int i=0;i<tw;i++){
+            out << " " << dict->decode(vect[i].word);// << " " << vect[i].score << " ";
+
+        }
+        out << "\n";
+    }
+    delete [] vect;
+    out.close();
+    return 1;
+}
 
 int plsa::saveW(char* fname){
     cerr << "Saving model into: " << fname << " ...";

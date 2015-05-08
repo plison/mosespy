@@ -92,7 +92,7 @@ int main(int argc, char **argv){
     bool help=false;
     bool memorymap=true;
     int prunethreshold=3;
-
+    int topwords=20;
     DeclareParams((char*)
                   
                   "Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training dictionary (optional)",
@@ -104,9 +104,12 @@ int main(int argc, char **argv){
                   "Model", CMDSTRINGTYPE|CMDMSG, &modelfile, "<fname> : model file",
                   "m", CMDSTRINGTYPE|CMDMSG, &modelfile, "<fname> : model file",
                   
-                  "TxtFile", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname>: output model file in readable format",
-                  "txt", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname>: output model file in readable format",
+                  "TopWordsFile", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname> to write top words per topic",
+                  "twf", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname> to write top words per topic",
                   
+                  "TopWordsNum", CMDINTTYPE|CMDMSG, &topwords, "<count>: number of top words per topic ",
+                  "twn", CMDINTTYPE|CMDMSG, &topwords, "<count>: number of top words per topic",
+                
                   "Test", CMDSTRINGTYPE|CMDMSG, &testfile, "<fname> : inference text collection file",
                   "te", CMDSTRINGTYPE|CMDMSG, &testfile, "<fname> : inference text collection file",
                   
@@ -232,7 +235,7 @@ int main(int argc, char **argv){
         dict=NULL;
         plsa tc(dict,topics,tmpdir,memorymap);
         tc.initW(modelfile,1,0);
-        tc.saveWtxt(txtfile);
+        tc.saveWtxt(txtfile,topwords);
         tc.freeW();
     }
     

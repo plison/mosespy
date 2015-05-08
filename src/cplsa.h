@@ -44,7 +44,7 @@ public:
     ~plsa();
     
     int saveW(char* fname);
-    int saveWtxt(char* fname);
+    int saveWtxt(char* fname,int tw=10);
     int loadW(char* fname);
     
     int initW(char* modelfile, float noise,int spectopic); int freeW();
