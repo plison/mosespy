@@ -233,8 +233,8 @@ typedef struct {
 
 int comparepair (const void * a, const void * b){
     if ( (*(mypairtype *)a).score <  (*(mypairtype *)b).score ) return 1;
-    if ( (*(mypairtype *)a).score == (*(mypairtype *)b).score ) return 0;
     if ( (*(mypairtype *)a).score >  (*(mypairtype *)b).score ) return -1;
+    return 0;
 }
 
 int plsa::saveWtxt(char* fname,int tw){
@@ -528,7 +528,7 @@ void plsa::single_inference(void *argv){
     float delta=0;
     float maxdelta=1;
     
-    while (iter < 50 && maxdelta > deltathreshold){
+    while (iter < 20 && maxdelta > deltathreshold){
         
         maxdelta=0;
         iter++;
@@ -572,7 +572,7 @@ void plsa::single_inference(void *argv){
     }
     //cerr << "Stopped at iteration " << iter << "\n";
     
-    
+    delete [] WH; delete [] Hflags;
     
     
 }
@@ -581,7 +581,7 @@ void plsa::single_inference(void *argv){
 
 int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfeatfile,char* wordfeatfile){
     
-    
+    {mfstream out(topicfeatfile,ios::out);} //empty the file
     //load existing model
     initW(modelfile,0,0);
     
@@ -591,7 +591,7 @@ int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfea
     bucket=BUCKET; //initialize the bucket size
     
     //use one vector H for all document
-    H=new float[topics*bucket];
+    H=new float[topics*bucket]; memset(H,0,sizeof(float)*(long long)topics*bucket);
     
     threadpool thpool=thpool_init(threads);
     task *t=new task[bucket];
@@ -612,7 +612,7 @@ int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfea
                     bucket=trset->numdoc() % bucket; //last bucket at end of file
             
             if (topicfeatfile){
-                mfstream out(topicfeatfile,ios::out| ios::app);
+                mfstream out(topicfeatfile,ios::out | ios::app);
                 
                 for (int b=0;b<bucket;b++){ //include the case of
                     out << H[b * topics];
