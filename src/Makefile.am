@@ -6,6 +6,7 @@ libirstlm_ladir = ${includedir}
 
 libirstlm_la_HEADERS = \
   cmd.h \
+  thpool.h \
   dictionary.h \
   gzfilebuf.h \
   htable.h \
@@ -34,6 +35,7 @@ libirstlm_la_HEADERS = \
 
 libirstlm_la_SOURCES = \
   cmd.c \
+  thpool.c \
   dictionary.cpp \
   htable.cpp \
   lmContainer.cpp \

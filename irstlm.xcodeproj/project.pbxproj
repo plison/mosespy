@@ -54,6 +54,8 @@
 		3D86C7A916104E7B00205CAE /* cplsa.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A716104E7B00205CAE /* cplsa.cpp */; };
 		3D86C7AA16104E7B00205CAE /* doc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D86C7A816104E7B00205CAE /* doc.cpp */; };
 		3D90F199161ACAAB005EF654 /* dtsel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7F00B640B38508400A1FF7A /* dtsel.cpp */; };
+		3DBA521A1B024CC600C042FF /* thpool.c in Sources */ = {isa = PBXBuildFile; fileRef = 3DBA52181B024CC600C042FF /* thpool.c */; };
+		3DBA521B1B024CC600C042FF /* thpool.h in Headers */ = {isa = PBXBuildFile; fileRef = 3DBA52191B024CC600C042FF /* thpool.h */; };
 		3DC9A08F1AD4315700E3D03F /* ngramcache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9A03B1AD4262000E3D03F /* ngramcache.cpp */; };
 		3DC9B83A175E346D00089688 /* score-lm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9B7FC175E2F6A00089688 /* score-lm.cpp */; };
 		3DC9B84E175E350F00089688 /* verify-caching.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3DC9B821175E31AC00089688 /* verify-caching.cpp */; };
@@ -276,6 +278,8 @@
 		3D86C7A716104E7B00205CAE /* cplsa.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = cplsa.cpp; path = src/cplsa.cpp; sourceTree = "<group>"; };
 		3D86C7A816104E7B00205CAE /* doc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = doc.cpp; path = src/doc.cpp; sourceTree = "<group>"; };
 		3D90F1A2161ACC07005EF654 /* dtsel */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = dtsel; sourceTree = BUILT_PRODUCTS_DIR; };
+		3DBA52181B024CC600C042FF /* thpool.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = thpool.c; path = src/thpool.c; sourceTree = "<group>"; };
+		3DBA52191B024CC600C042FF /* thpool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thpool.h; path = src/thpool.h; sourceTree = "<group>"; };
 		3DC9A03B1AD4262000E3D03F /* ngramcache.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ngramcache.cpp; path = src/ngramcache.cpp; sourceTree = "<group>"; };
 		3DC9B7FC175E2F6A00089688 /* score-lm.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "score-lm.cpp"; path = "src/score-lm.cpp"; sourceTree = "<group>"; };
 		3DC9B821175E31AC00089688 /* verify-caching.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = "verify-caching.cpp"; path = "src/verify-caching.cpp"; sourceTree = "<group>"; };
@@ -460,6 +464,8 @@
 		D701C78C0B2EB333007D2774 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3DBA52181B024CC600C042FF /* thpool.c */,
+				3DBA52191B024CC600C042FF /* thpool.h */,
 				3D52CB0B1AD6C761002780EF /* ngt.cpp */,
 				3DE2E5FA1AD43E310066A34B /* ngramcache.h */,
 				3DC9A03B1AD4262000E3D03F /* ngramcache.cpp */,
@@ -585,6 +591,7 @@
 				3D86C7A516104E6600205CAE /* cplsa.h in Headers */,
 				3D86C7A616104E6600205CAE /* doc.h in Headers */,
 				3DE2E5FC1AD43E310066A34B /* ngramcache.h in Headers */,
+				3DBA521B1B024CC600C042FF /* thpool.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -946,6 +953,7 @@
 				3DC9B83A175E346D00089688 /* score-lm.cpp in Sources */,
 				3D324C9019AB0F570079850A /* crc.cpp in Sources */,
 				3DC9A08F1AD4315700E3D03F /* ngramcache.cpp in Sources */,
+				3DBA521A1B024CC600C042FF /* thpool.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
