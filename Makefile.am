@@ -12,8 +12,7 @@ LN_S=@LN_S@
 
 install-exec-hook:
 	cd ${exec_prefix}/ && \
-	  rm lib64 && \
-	  ${LN_S} lib lib64
+	  ${LN_S} -f lib lib64
 
 dist-hook:
 	rm -rf `find $(distdir)/doc -type d -name .svn`
