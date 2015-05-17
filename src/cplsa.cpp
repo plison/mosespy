@@ -583,7 +583,7 @@ void plsa::single_inference(void *argv){
 
 int plsa::inference(char *testfile, char* modelfile, int maxit, char* topicfeatfile,char* wordfeatfile){
     
-    {mfstream out(topicfeatfile,ios::out);} //empty the file
+    if (topicfeatfile) {mfstream out(topicfeatfile,ios::out);} //empty the file
     //load existing model
     initW(modelfile,0,0);
     
@@ -624,6 +624,7 @@ int plsa::inference(char *testfile, char* modelfile, int maxit, char* topicfeatf
                 }
             }
             if (wordfeatfile){
+                cout << "from: " << d-bucket << " to: " << d-1 << "\n";
                 for (int b=0;b<bucket;b++) saveWordFeatures(wordfeatfile,d-bucket+b);
             }
             
