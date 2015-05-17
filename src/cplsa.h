@@ -32,8 +32,11 @@ class plsa {
     char Hfname[100]; //temporary and unique filename for H
     char *tmpdir;
     bool memorymap;   //use or not memory mapping
+
+    //private info shared among threads
     int  threads;
     int bucket; //parallel inference
+    int maxiter; //maximum iterations for inference
     struct task {
         void *ctx;
         void *argv;

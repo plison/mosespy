@@ -34,7 +34,9 @@ doc::doc(dictionary* d,char* docfname){
     char header[100];
     df.getline(header,100);
     sscanf(header,"%d",&N);
+
     assert(N>0 && N < MAXDOCNUM);
+
     
     M=new int  [N];
     V=new int* [N];

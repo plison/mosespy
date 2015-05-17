@@ -68,6 +68,8 @@ plsa::plsa(dictionary* d,int top,char* wd,int th,bool mm){
     srandom(100); //consistent generation of random noise
     
     bucket=BUCKET;
+    
+    maxiter=0;
 }
 
 plsa::~plsa() {
@@ -158,7 +160,7 @@ int plsa::initH(){
             }
         }
     }
-    cerr << "Initializing H table " << getpid() << "\n";
+    cerr << "Initializing H table " <<  "\n";
     float value=1/(float)topics;
     for (long long d=0; d< trset->numdoc(); d++)
         for (int t=0; t<topics; t++)
@@ -358,7 +360,7 @@ pthread_mutex_t mut1;
 pthread_mutex_t mut2;
 double LL=0; //Log likelihood
 const float topicthreshold=0.00001;
-const float deltathreshold=0.001;
+const float deltathreshold=0.0001;
 
 
 void plsa::expected_counts(void *argv){
@@ -449,12 +451,12 @@ int plsa::train(char *trainfile, char *modelfile, int maxiter,float noiseW,int s
     trset=new doc(dict,trainfile);
 
     //allocate H table
-    initH();
-    
+    initH();    
     
     int iter=0;
     int r=topics;
     
+    cerr << "Starting training \n";
     threadpool thpool=thpool_init(threads);
     task *t=new task[trset->numdoc()];
     
@@ -528,7 +530,7 @@ void plsa::single_inference(void *argv){
     float delta=0;
     float maxdelta=1;
     
-    while (iter < 20 && maxdelta > deltathreshold){
+    while (iter < maxiter && maxdelta > deltathreshold){
         
         maxdelta=0;
         iter++;
@@ -579,7 +581,7 @@ void plsa::single_inference(void *argv){
 
 
 
-int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfeatfile,char* wordfeatfile){
+int plsa::inference(char *testfile, char* modelfile, int maxit, char* topicfeatfile,char* wordfeatfile){
     
     {mfstream out(topicfeatfile,ios::out);} //empty the file
     //load existing model
@@ -589,13 +591,14 @@ int plsa::inference(char *testfile, char* modelfile, int maxiter, char* topicfea
     trset=new doc(dict,testfile);
     
     bucket=BUCKET; //initialize the bucket size
+    maxiter=maxit; //set maximum number of iterations
     
     //use one vector H for all document
     H=new float[topics*bucket]; memset(H,0,sizeof(float)*(long long)topics*bucket);
     
     threadpool thpool=thpool_init(threads);
     task *t=new task[bucket];
-    
+
     
     cerr << "start inference\n";
     

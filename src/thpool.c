@@ -124,7 +124,7 @@ struct thpool_* thpool_init(int num_threads){
 
 	/* Make new thread pool */
 	thpool_* thpool_p=NULL;
-	thpool_p = (struct thpool_*)malloc(sizeof(struct thpool_));
+	thpool_p = (struct thpool_*)calloc(1,sizeof(struct thpool_));
 	if (thpool_p==NULL){
 		fprintf(stderr, "thpool_init(): Could not allocate memory for thread pool\n");
 		exit(1);
@@ -140,7 +140,7 @@ struct thpool_* thpool_init(int num_threads){
 	}
 
 	/* Make threads in pool */
-	thpool_p->threads = (struct thread**)malloc(num_threads * sizeof(struct thread));
+	thpool_p->threads = (struct thread**)calloc(num_threads,sizeof(struct thread));
 	if (thpool_p->threads==NULL){
 		fprintf(stderr, "thpool_init(): Could not allocate memory for threads\n");
 		exit(1);
@@ -165,7 +165,7 @@ struct thpool_* thpool_init(int num_threads){
 int thpool_add_work(thpool_* thpool_p, void *(*function_p)(void*), void* arg_p){
 	job* newjob=NULL;
 
-	newjob=(struct job*)malloc(sizeof(struct job));
+	newjob=(struct job*)calloc(1,sizeof(struct job));
 	if (newjob==NULL){
 		fprintf(stderr, "thpool_add_work(): Could not allocate memory for new job\n");
 		return -1;
@@ -297,7 +297,7 @@ void thpool_resume(thpool_* thpool_p) {
  */
 static void thread_init (thpool_* thpool_p, struct thread** thread_p, int id){
 	
-	*thread_p = (struct thread*)malloc(sizeof(struct thread));
+	*thread_p = (struct thread*)calloc(1,sizeof(struct thread));
 	if (thread_p == NULL){
 		fprintf(stderr, "thpool_init(): Could not allocate memory for thread\n");
 		exit(1);
@@ -399,13 +399,13 @@ static void thread_destroy (thread* thread_p){
 /* Initialize queue */
 static int jobqueue_init(thpool_* thpool_p){
 	
-	thpool_p->jobqueue_p = (struct jobqueue*)malloc(sizeof(struct jobqueue));
+	thpool_p->jobqueue_p = (struct jobqueue*)calloc(1,sizeof(struct jobqueue));
 	pthread_mutex_init(&(thpool_p->jobqueue_p->rwmutex), NULL);
 	if (thpool_p->jobqueue_p == NULL){
 		return -1;
 	}
 	
-	thpool_p->jobqueue_p->has_jobs = (struct bsem*)malloc(sizeof(struct bsem));
+	thpool_p->jobqueue_p->has_jobs = (struct bsem*)calloc(1,sizeof(struct bsem));
 	if (thpool_p->jobqueue_p->has_jobs == NULL){
 		return -1;
 	}
