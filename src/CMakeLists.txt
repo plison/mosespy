@@ -39,13 +39,14 @@ SET( LIB_IRSTLM_SRC
         normcache.h normcache.cpp 
         shiftlm.h shiftlm.cpp
         cplsa.h cplsa.cpp 
+        cswam.h cswam.cpp 
         doc.h doc.cpp
 )
 
 ADD_LIBRARY(irstlm STATIC ${LIB_IRSTLM_SRC})
 LINK_DIRECTORIES (${LIBRARY_OUTPUT_PATH})
 
-FOREACH(CMD dict ngt tlm dtsel plsa compile-lm interpolate-lm prune-lm quantize-lm score-lm)
+FOREACH(CMD dict ngt tlm dtsel plsa cswa compile-lm interpolate-lm prune-lm quantize-lm score-lm)
 
 ADD_EXECUTABLE(${CMD} ${CMD}.cpp)
 TARGET_LINK_LIBRARIES (${CMD} irstlm -lm -lz -lpthread)
