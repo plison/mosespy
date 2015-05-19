@@ -398,7 +398,7 @@ dictionary::dictionary(dictionary* d,bool prune, int prunethresh)
 	//copy in the entries with frequency > threshold
 	n=0;
 	for (int i=0; i<d->n; i++)
-		if (!prune || d->tb[i].freq>=prunethresh){
+		if (!prune || d->tb[i].freq>prunethresh){
 			tb[n].code=n;
 			tb[n].freq=d->tb[i].freq;
 			tb[n].word=st->push(d->tb[i].word);
