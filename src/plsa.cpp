@@ -104,8 +104,8 @@ int main(int argc, char **argv){
                   "TopWordsFile", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname> to write top words per topic",
                   "twf", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname> to write top words per topic",
                
-                  "PruneFreq", CMDINTTYPE|CMDMSG, &topwords, "<count>: prune words with freq <= count (default 3)",
-                  "pf", CMDINTTYPE|CMDMSG, &topwords, "<count>: <count>: prune words with freq <= count (default 3)",
+                  "PruneFreq", CMDINTTYPE|CMDMSG, &prunethreshold, "<count>: prune words with freq <= count (default 3)",
+                  "pf", CMDINTTYPE|CMDMSG, &prunethreshold, "<count>: <count>: prune words with freq <= count (default 3)",
                   
                   "TopWordsNum", CMDINTTYPE|CMDMSG, &topwords, "<count>: number of top words per topic ",
                   "twn", CMDINTTYPE|CMDMSG, &topwords, "<count>: number of top words per topic",
@@ -138,7 +138,7 @@ int main(int argc, char **argv){
                   "mm", CMDBOOLTYPE|CMDMSG, &memorymap, "<bool>: use memory mapping (default true)",
                   
                   "Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify a training dictionary (optional)",
-                  "d", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training a dictionary (optional)",                  
+                  "d", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training a dictionary (optional)",
                   
                   "TmpDir", CMDSTRINGTYPE|CMDMSG, &tmpdir, "<folder>: tmp directory for memory map (default /tmp)",
                   "tmp", CMDSTRINGTYPE|CMDMSG, &tmpdir, "<folder>: tmp directory for memory map (default /tmp )",
