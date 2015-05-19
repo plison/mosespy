@@ -194,7 +194,7 @@ int main(int argc, char **argv){
                 dict->generate(trainfile,true);
                 
                 dictionary *sortd=new dictionary(dict,true,prunethreshold);
-                if (specialtopic) sortd->sort();
+                sortd->sort();
                 delete dict;
                 dict=sortd;
                 
