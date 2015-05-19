@@ -42,7 +42,7 @@ void print_help(int TypeFlag=0){
     std::cerr << std::endl << "DESCRIPTION:" << std::endl;
     std::cerr << "       Train a PLSA model from a corpus and test it to infer topic or word " << std::endl;
     std::cerr << "       distributions from other texts." << std::endl;
-    std::cerr << "       Notice: multithreading is available only for training." << std::endl;
+    std::cerr << "       Notice: multithreading is available both for training and inference." << std::endl;
     
     std::cerr << std::endl << "OPTIONS:" << std::endl;
     
@@ -95,9 +95,6 @@ int main(int argc, char **argv){
     int topwords=20;
     DeclareParams((char*)
                   
-                  "Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training dictionary (optional)",
-                  "d", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training dictionary (optional)",
-                  
                   "Train", CMDSTRINGTYPE|CMDMSG, &trainfile, "<fname> : training  text collection ",
                   "tr", CMDSTRINGTYPE|CMDMSG, &trainfile, "<fname> : training text collection ",
                   
@@ -106,6 +103,9 @@ int main(int argc, char **argv){
                   
                   "TopWordsFile", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname> to write top words per topic",
                   "twf", CMDSTRINGTYPE|CMDMSG, &txtfile, "<fname> to write top words per topic",
+               
+                  "PruneFreq", CMDINTTYPE|CMDMSG, &topwords, "<count>: prune words with freq <= count (default 3)",
+                  "pf", CMDINTTYPE|CMDMSG, &topwords, "<count>: <count>: prune words with freq <= count (default 3)",
                   
                   "TopWordsNum", CMDINTTYPE|CMDMSG, &topwords, "<count>: number of top words per topic ",
                   "twn", CMDINTTYPE|CMDMSG, &topwords, "<count>: number of top words per topic",
@@ -137,6 +137,8 @@ int main(int argc, char **argv){
                   "MemoryMap", CMDBOOLTYPE|CMDMSG, &memorymap, "<bool>: use memory mapping (default true)",
                   "mm", CMDBOOLTYPE|CMDMSG, &memorymap, "<bool>: use memory mapping (default true)",
                   
+                  "Dictionary", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify a training dictionary (optional)",
+                  "d", CMDSTRINGTYPE|CMDMSG, &dictfile, "<fname> : specify training a dictionary (optional)",                  
                   
                   "TmpDir", CMDSTRINGTYPE|CMDMSG, &tmpdir, "<folder>: tmp directory for memory map (default /tmp)",
                   "tmp", CMDSTRINGTYPE|CMDMSG, &tmpdir, "<folder>: tmp directory for memory map (default /tmp )",
