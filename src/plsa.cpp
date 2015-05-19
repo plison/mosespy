@@ -186,16 +186,17 @@ int main(int argc, char **argv){
         }
         else{//training with empty model and no dictionary: dictionary must be first extracted
             if (!dictfile){
-                    exit_error(IRSTLM_ERROR_DATA,"Missing dictionary. Provide a dictionary with option -d.");
                 
-//                cerr << "Extracting dictionary from training data (word with freq>=" << prunethreshold << ")\n";
-//                dict=new dictionary(NULL,10000);
-//                dict->generate(trainfile,true);
-//                
-//                dictionary *sortd=new dictionary(dict,true,prunethreshold);
-//                if (specialtopic) sortd->sort();
-//                delete dict;
-//                dict=sortd;
+                //    exit_error(IRSTLM_ERROR_DATA,"Missing dictionary. Provide a dictionary with option -d.");
+                
+                cerr << "Extracting dictionary from training data (word with freq>=" << prunethreshold << ")\n";
+                dict=new dictionary(NULL,10000);
+                dict->generate(trainfile,true);
+                
+                dictionary *sortd=new dictionary(dict,true,prunethreshold);
+                if (specialtopic) sortd->sort();
+                delete dict;
+                dict=sortd;
                 
             }
             else
