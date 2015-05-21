@@ -33,411 +33,314 @@
 #include "dictionary.h"
 #include "ngramtable.h"
 #include "doc.h"
-#include "cplsa.h"
+#include "cswam.h"
 
 #define BUCKET 1000
+#define SSEED 5.0
 
 using namespace std;
 
 #define MY_RAND (((float)random()/RAND_MAX)* 2.0 - 1.0)
 	
-plsa::plsa(dictionary* d,int top,char* wd,int th,bool mm){
+cswam::cswam(char* sdfile,char *tdfile, char* w2vfile){
     
-    dict=d;
+    //create dictionaries
+    srcdict=new dictionary(NULL,100000); srcdict->generate(sdfile,true);
+    trgdict=new dictionary(NULL,100000); trgdict->generate(tdfile,true);
+    
+    //make aware of delimiters
+    
+    //load word2vec dictionary
+    W2V=NULL;D=0;
+    loadword2vec(w2vfile);
 
-    topics=top;
-    
-    tmpdir=wd;
-    
-    memorymap=mm;
-    
-    threads=th;
-    
-    MY_ASSERT (topics>0);
+    //check consistency of word2vec with target vocabulary
     
     //actual model structure
-    W=NULL;
+    S=NULL;
+    M=NULL;
+    A=NULL;
     
-    //training support structure
-    T=NULL;
-    
-    //allocate/free at training time// this is the huge table
-    H=NULL;
-    
-    
-    srandom(100); //consistent generation of random noise
-    
+    srandom(100); //ensure repicable generation of random numbers
     bucket=BUCKET;
-    
-    maxiter=0;
+    threads=1;
 }
 
-plsa::~plsa() {
-    freeW();
-    freeH();
-    free(T);
+cswam::~cswam() {
+
+    assert(A==NULL);
+    
+    if (S){
+        cerr << "Releasing memory of S\n";
+        for (int e=0;e<trgdict->size();e++) delete [] S[e];
+        delete S;
+    }
+    if (M){
+        cerr << "Releasing memory of M\n";
+        for (int e=0;e<trgdict->size();e++) delete [] M[e];
+        delete [] M;
+    }
+    if (W2V){
+        cerr << "Releasing memory of W2W\n";
+        for (int e=0;e<srcdict->size();e++) delete [] W2V[e];
+        delete []W2V;
+    }
+    
+   delete srcdict; delete trgdict;
+    
+    
 }
-	
-int plsa::initW(char* modelfile,float noise,int spectopic){
+
+
+
+void cswam::loadword2vec(char* fname){
     
-    //W needs a dictionary, either from an existing model or
-    //from the training data
+    cerr << "Loading word2vec file " << fname << " ...\n";
+    mfstream inp(fname,ios::in);
     
-    assert(W==NULL);
+    long long w2vsize;
+    inp >> w2vsize; cout << w2vsize << "\n";
+    inp >> D ; cout << D  << "\n";
     
-    if (dict==NULL) loadW(modelfile);
-    else{
-        cerr << "Allocating W table\n";
-        W=new float* [dict->size()];
-        for (int i=0; i<dict->size(); i++){
-            W[i]=new float [topics](); //initialized to zero since C++11
-            memset(W[i],0,sizeof(float)*topics);
+    W2V=new float* [srcdict->size()];
+    
+    char word[100]; int code; float dummy;
+    
+    for (long long i=0;i<w2vsize;i++){
+        inp >> word;
+        code=srcdict->encode(word);
+        if (code != srcdict->oovcode()){
+            W2V[code]=new float[D];
+            for (int d=0;d<D;d++) inp >> W2V[code][d];
         }
-        cerr << "Initializing W table\n";
-        if (spectopic) {
-            //special topic 0: first st most frequent
-            //assume dictionary is sorted by frequency!!!
-            float TotW=0;
-            for (int i=0; i<spectopic; i++)
-                TotW+=W[i][0]=dict->freq(i);
-            for (int i=0; i<spectopic; i++)
-                W[i][0]/=TotW;
-        }
+        else //skip this word
+            for (int d=0;d<D;d++) inp >> dummy;
         
-        for (int t=(spectopic?1:0); t<topics; t++) {
-            float TotW=0;
-            for (int i=spectopic; i< dict->size(); i++)
-                TotW+=W[i][t]=1 + noise * MY_RAND;
-            for (int i=spectopic; i< dict->size(); i++)
-                W[i][t]/=TotW;
-        }
+        if (!(i % 10000)) cout << word << "\n";
     }
-    return 1;
-}
-
-int plsa::freeW(){
-    if (W!=NULL){
-        cerr << "Releasing memory of W table\n";
-        for (int i=0; i<dict->size(); i++) delete [] W[i];
-        delete [] W;
-        W=NULL;
-    }
-    return 1;
-}
-
-
-
-int plsa::initH(){
     
-    assert(trset->numdoc()); //need a date set
-    long long len=(unsigned long long)trset->numdoc() * topics;
-   
-    FILE *fd;
-    if (H == NULL){
-        if (memorymap){
-            cerr << "Creating memory mapped H table\n";
-            //generate a name for the memory map file
-            sprintf(Hfname,"/%s/Hfname%d",tmpdir,(int)getpid());
-            if ((fd=fopen(Hfname,"w+"))==0){
-                perror("Could not create file");
-                exit_error(IRSTLM_ERROR_IO, "plsa::initH fopen error");
-            }
-            //H is aligned at integer
-            ftruncate(fileno(fd),len * sizeof(float));
-            H = (float *)mmap( 0, len * sizeof(float) , PROT_READ|PROT_WRITE, MAP_PRIVATE,fileno(fd),0);
-            fclose(fd);
-            if (H == MAP_FAILED){
-                perror("Mmap error");
-                exit_error(IRSTLM_ERROR_IO, "plsa::initH MMAP error");
-            }
+    for (code=0;code<srcdict->size();code++)
+        if (!W2V[code]){
+            cerr << "creating vector for word " << srcdict->decode(code) << "\n";
+            W2V[code]=new float[D];
+            for (int d=0;d<D;d++) W2V[code][d]=0;
         }
-        else{
-            cerr << "Allocating " << len << " entries for H table\n";
-            fprintf(stderr,"%llu\n",len);
-            if ((H=new float[len])==NULL){
-                perror("memory allocation error");
-                exit_error(IRSTLM_ERROR_IO, "plsa::cannot allocate memory for H");
-            }
-        }
-    }
-    cerr << "Initializing H table " <<  "\n";
-    float value=1/(float)topics;
-    for (long long d=0; d< trset->numdoc(); d++)
-        for (int t=0; t<topics; t++)
-            H[d*topics+t]=value;
-    cerr << "done\n";
-    return 1;
-}
-
-int plsa::freeH(){
-    if (H!=NULL){
-        cerr << "Releasing memory for H table\n";
-        if (memorymap){
-            munmap((void *)H,trset->numdoc()*topics*sizeof(float));
-            remove(Hfname);
-        }else
-            delete [] H;
-        
-        H=NULL;
-
-    }
-    return 1;
-}
+    cerr << " ... done\n";
+};
 
 
-int plsa::initT(){ //keep double for counts collected over the whole training data
-    if (T==NULL){
-        T=new double* [dict->size()];
-        for (int i=0; i<dict->size(); i++)
-            T[i]=new double [topics];
-    }
-    for (int i=0; i<dict->size(); i++)
-        memset((void *)T[i],0,topics * sizeof(double));
+
+void cswam::initModel(char* modelfile){
     
-    return 1;
-}
+    //test if model is readable
+    bool testmodel=false;
+    FILE* f;if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);testmodel=true;}
 
-int plsa::freeT(){
-    if (T!=NULL){
-        cerr << "Releasing memory for T table\n";
-        for (int i=0; i<dict->size(); i++) delete [] T[i];
-        delete [] T;
-        T=NULL;
+    if (testmodel) loadModel(modelfile,true); //we are in training mode!
+    else{ //initialize model
+        M=new float* [trgdict->size()];
+        S=new float* [trgdict->size()];
+        for (int e=0; e<trgdict->size(); e++){
+            M[e]=new float [D];
+            S[e]=new float [D];
+            for (int d=0;d<D;d++){
+                M[e][d]=0.0; //pick mean zero
+                S[e][d]=SSEED; //take a wide standard deviation
+            }
+        }
     }
-    return 1;
 }
 
-
-/*
-int plsa::saveWtxt2(char* fname){
-    cerr << "Writing text W table into: " << fname << "\n";
+int cswam::saveModelTxt(char* fname){
+    cerr << "Writing model into: " << fname << "\n";
     mfstream out(fname,ios::out);
-    out.precision(5);
-//  out << topics << "\n";
-    for (int i=0; i<dict->size(); i++) {
-        out << dict->decode(i);// << " " << dict->freq(i);
-        //double totW=0;
-        //for (int t=0; t<topics; t++) totW+=W[i][t];
-        //out <<" totPr: " << totW << " :";
-        for (int t=0; t<topics; t++)
-            out << " " << W[i][t];
-        out << "\n";
+    for (int e=0; e<trgdict->size(); e++){
+        out << trgdict->decode(e) <<"\n";
+        for (int d=0;d<D;d++) out << M[e][d] << " ";out << "\n";
+        for (int d=0;d<D;d++) out << S[e][d] << " ";out << "\n";
     }
-    out.close();
-    return 1;
-}
-*/
-
-typedef struct {
-    int word;
-    float score;
-} mypairtype;
-
-int comparepair (const void * a, const void * b){
-    if ( (*(mypairtype *)a).score <  (*(mypairtype *)b).score ) return 1;
-    if ( (*(mypairtype *)a).score >  (*(mypairtype *)b).score ) return -1;
-    return 0;
-}
-
-int plsa::saveWtxt(char* fname,int tw){
-    cerr << "Writing model W into: " << fname << "\n";
-    mfstream out(fname,ios::out);
-    out.precision(5);
-    
-    mypairtype *vect=new mypairtype[dict->size()];
-    
-    //  out << topics << "\n";
-    for (int t=0; t<topics; t++){
-        
-        for (int i=0; i<dict->size(); i++){
-            vect[i].word=i;
-            vect[i].score=W[i][t];
-        }
-        vect[dict->oovcode()].score=0;
-        qsort((void *)vect,dict->size(),sizeof(mypairtype),comparepair);
-        
-        out << "T" << t;
-        for (int i=0;i<tw;i++){
-            out << " " << dict->decode(vect[i].word);// << " " << vect[i].score << " ";
-
-        }
-        out << "\n";
-    }
-    delete [] vect;
-    out.close();
     return 1;
 }
 
-int plsa::saveW(char* fname){
+int cswam::saveModel(char* fname){
     cerr << "Saving model into: " << fname << " ...";
     mfstream out(fname,ios::out);
-    out << "PLSA " << topics << "\n";
-    dict->save(out);
-    for (int i=0; i<dict->size(); i++)
-        out.write((const char*)W[i],sizeof(float) * topics);
+    out << "CSWAM " << D << "\n";
+    trgdict->save(out);
+    for (int e=0; e<trgdict->size(); e++){
+        out.write((const char*)M[e],sizeof(float) * D);
+        out.write((const char*)S[e],sizeof(float) * D);
+    }
     out.close();
     cerr << "\n";
     return 1;
 }
 
-int plsa::loadW(char* fname){
-    assert(dict==NULL);
-    cerr << "Loading model from: " << fname << "\n";
+int cswam::loadModel(char* fname,bool expand){
+
+    cerr << "Loading model from: " << fname << "...";
     mfstream inp(fname,ios::in);
     char header[100];
     inp.getline(header,100);
     cerr << header ;
     int r;
-    sscanf(header,"PLSA %d\n",&r);
-    if (topics>0 && r != topics)
-        exit_error(IRSTLM_ERROR_DATA, "incompatible number of topics");
+    sscanf(header,"CSWAM %d\n",&r);
+    if (D>0 && r != D)
+        exit_error(IRSTLM_ERROR_DATA, "incompatible dimension in model");
     else
-        topics=r;
+        D=r;
 
-    cerr << "Loading dictionary\n";
-    dict=new dictionary(NULL,1000000);
+    cerr << "\nLoading dictionary ... ";
+    dictionary* dict=new dictionary(NULL,1000000);
     dict->load(inp);
     dict->encode(dict->OOV());
-    cerr << "Allocating W table\n";
-    W=new float* [dict->size()];
-    for (int i=0; i<dict->size(); i++)
-        W[i]=new float [topics];
-
-    cerr << "Reading W table .... ";
-    for (int i=0; i<dict->size(); i++)
-        inp.read((char *)W[i],sizeof(float) * topics);
-
+    int current_size=dict->size();
+    
+    //expand the model for training or keep the model fixed for testing
+    if (expand){
+        cerr << "\nExpanding model to include targer dictionary";
+        dict->incflag(1);
+        for (int code=0;code<trgdict->size();code++)
+            dict->encode(trgdict->decode(code));
+        dict->incflag(2);
+    }
+    //replace the trgdict with the model dictionary
+    delete trgdict;trgdict=dict;
+    
+    M=new float* [trgdict->size()];
+    S=new float* [trgdict->size()];
+    for (int e=0; e<trgdict->size(); e++){
+        M[e]=new float [D];
+        S[e]=new float [D];
+    }
+    
+    cerr << "\nReading parameters .... ";
+    for (int e=0; e<current_size; e++){
+        inp.read((char *)M[e],sizeof(float) * D);
+        inp.read((char *)S[e],sizeof(float) * D);
+    }
     inp.close();
-    cerr << "\n";
+    cerr << "\nInitializing " << trgdict->size()-current_size << " new entries .... ";
+    for (int e=current_size; e<trgdict->size(); e++)
+        for (int d=0;d<D;d++){
+            M[e][d]=0.0;S[e][d]=SSEED;
+        }
+    
+    cerr << "\nDone\n";
     return 1;
 }
 
-int plsa::saveWordFeatures(char* fname,long long d){
+void cswam::initAlpha(){
+
+    //install Alpha[s][i][j] to collect counts
+    //allocate if empty
     
-    //extend this to save features for all adapation documents
-    //compute distribution on doc 0
-    assert(trset !=NULL);
-    
-    if (d<100){
-        
-        double *WH=new double [dict->size()];
-        char *outfname=new char[strlen(fname)+10];
-        
-        sprintf(outfname,"%s.%03d",fname,(int)d+1);
-        cerr << "Saving word features in " << fname << "\n";
-        
-        for (int i=0; i<dict->size(); i++) {
-            WH[i]=0;
-            for (int t=0; t<topics; t++)
-                WH[i]+=W[i][t]*H[(d % bucket) * topics + t];
+    if (A==NULL){
+        assert(trgdata->numdoc()==srcdata->numdoc());
+        A=new float**[trgdata->numdoc()];
+        for (int s=0;s<trgdata->numdoc();s++){
+            A[s]=new float *[trgdata->doclen(s)];
+             for (int i=0;i<trgdata->doclen(s);i++)
+                A[s][i]=new float [srcdata->doclen(s)];
         }
-        
-        double maxp=WH[0];
-        for (int i=1; i<dict->size(); i++)
-            if (WH[i]>maxp) maxp=WH[i];
-        
-        cerr << "Get max prob" << maxp << "\n";
-        
-        //save unigrams in google ngram format
-        mfstream out(outfname,ios::out);
-        for (int i=0; i<dict->size(); i++){
-            int freq=(int)floor((WH[i]/maxp) * 1000000);
-            if (freq)
-                out << dict->decode(i) <<" \t" << freq<<"\n";
-            
-        }
-        out.close();
-        
-        delete [] outfname;
-        delete [] WH;
-        
     }
-    return 1;
+    //initialize
+    for (int s=0;s<trgdata->numdoc();s++){
+        for (int i=0;i<trgdata->doclen(s);i++)
+            memset(A[s][i],0,sizeof(float) * srcdata->doclen(s));
+    }
+}
+
+void cswam::freeAlpha(){
+
+    if (A!=NULL){
+        for (int s=0;s<trgdata->numdoc();s++){
+            for (int i=0;i<trgdata->doclen(s);i++)
+                delete [] A[s][i];
+            delete [] A[s];
+        }
+        delete [] A;
+        A=NULL;
+    }
 }
 
 ///*****
 pthread_mutex_t mut1;
 pthread_mutex_t mut2;
 double LL=0; //Log likelihood
-const float topicthreshold=0.00001;
-const float deltathreshold=0.0001;
+const float threshold1=0.00001;
+const float threshold2=0.0001;
 
 
-void plsa::expected_counts(void *argv){
-    
-    long long d;
-    d=(long long) argv;
-    
-    if (! (d % 10000)) {cerr << ".";cerr.flush();}
-    //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),d,trset->numdoc());
-    
-    int r=topics;
-    
-    
-    int m=trset->doclen(d); //actual length of document
-    int N=m ; // doc length is the same of
-    double totH=0;
-    
-    for (int t=0; t<r; t++) if (H[d * r + t] < topicthreshold) H[d * r + t]=0;
-    
-    
-    //precompute WHij i=0,...,m-1; j fixed
-    float *WH=new float [m]; //initialized to zero
-    memset(WH,0,sizeof(float)*m);
-    for (int t=0; t< r ; t++)
-        if (H[d * r + t]>0)
-            for (int i=0; i<m; i++) //count each word indipendently!!!!
-                WH[i]+=(W[trset->docword(d,i)][t] * H[d * r + t]);
-    
-    
-    //UPDATE LOCAL Tia (for each word and topic)
-    //seems more efficient perform local computation on complex structures
-    //and perform exclusive computations on simpler structures.
-    float *lT=new float[m * r];
-    memset(lT,0,sizeof(float)*m*r);
-    for (int t=0; t<r; t++)
-        if (H[d * r + t]>0)
-            for (int i=0; i<m; i++)
-                lT[i * r + t]=(W[trset->docword(d,i)][t] * H[d * r + t]/WH[i]);
+//compute gaussian with diagonal covariance matrix
 
-    //UPDATE GLOBAL T and LL
-    pthread_mutex_lock(&mut1);
-    for (int i=0; i<m; i++){
-        for (int t=0; t<r; t++)
-                T[trset->docword(d,i)][t]+=(double)lT[i * r + t];
-        LL+= log( WH[i] );
+void GaussArg(const int dim,const float* x,const float *m, const float *s,double &dist,double &norm){
+    double twopi=6.28;
+    dist=0;norm=1;
+    for (int i=0;i<dim;i++){
+        dist+=(x[i]-m[i])*(x[i]-m[i])/(s[i]);
+        norm*=s[i];
     }
-    pthread_mutex_unlock(&mut1);
+    //assert(dist>=0 && norm>0);
+    dist*=0.5;
+    norm=sqrt(twopi * norm);
+}
 
-
-    //UPDATE Haj (topic a and document j)
-    totH=0;
-    for (int t=0; t<r; t++){
-        float tmpHaj=0;
-        if (H[d * r + t]>0){
-            for (int i=0; i < m; i++)
-                tmpHaj+=(W[trset->docword(d,i)][t] * H[d * r + t]/WH[i]);
-            H[d * r + t]=tmpHaj/N;
-            totH+=H[d * r + t];
+            
+void cswam::expected_counts(void *argv){
+    
+    long long s=(long long) argv;
+    
+    if (! (s % 10000)) {cerr << ".";cerr.flush();}
+    //fprintf(stderr,"Thread: %lu  sentence: %d  (out of %d)\n",(long)pthread_self(),s,srcdata->numdoc());
+    
+    
+    int trglen=trgdata->doclen(s); // length of target sentence
+    int srclen=srcdata->doclen(s); //length of source sentence
+    
+    float den[srclen];
+    float p[srclen][trglen];
+    double dist[trglen]; double norm[trglen];double maxnorm; double mindist=D*10;
+    //compute denominator for each source-target pair
+    for (int j=0;j<srclen;j++){
+        //cout << "j: " << srcdict->decode(srcdata->docword(s,j)) << "\n";
+        maxnorm=0;mindist=D*10;
+        for (int i=0;i<trglen;i++){
+            GaussArg(D,
+                     W2V[srcdata->docword(s,j)],
+                     M[trgdata->docword(s,i)],
+                     S[trgdata->docword(s,i)],dist[i],norm[i]);
+            if (norm[i]>maxnorm) maxnorm=norm[i];
+            if (dist[i]<mindist) mindist=dist[i];
+        }
+        //compute scaled likelihood and scaled denominator
+        //cout << "maxnorm: " << maxnorm << "\n";
+        den[j]=0;
+        for (int i=0;i<trglen;i++){
+            //cout << "i: " << trgdict->decode(trgdata->docword(s,i)) << " dist: " << -dist[i] << " norm: " << maxnorm/norm[i] << "\n";
+            p[j][i]=(float)(exp(-dist[i]+mindist) * maxnorm/norm[i]);
+            if (p[j][i] < 0.00001) p[j][i]=0;
+            den[j]+=p[j][i];
         }
     }
+    //
     
-    if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1){
-        std::stringstream ss_msg;
-        ss_msg << "Total H is wrong; totH=" << totH << " ( doc= " << d << ")\n";
-        exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
-    }
+    for (int j=0;j<srclen;j++)
+        for (int i=0;i<trglen;i++)
+                    A[s][i][j]=p[j][i]/den[j];
     
-    delete [] WH;
-    delete [] lT;
     
-};
+                //cout << "Pr(" << trgdict->decode(trgdata->docword(s,i))
+                //    << " | "  << srcdict->decode(srcdata->docword(s,j))
+                //    << ") = " << A[s][i][j] << "\n";
+    
+    
+}
 
 
 
-int plsa::train(char *trainfile, char *modelfile, int maxiter,float noiseW,int spectopic){
+int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxiter,int threads){
     
-
     //check if to either use the dict of the modelfile
     //or create a new one from the data
     //load training data!
@@ -445,196 +348,252 @@ int plsa::train(char *trainfile, char *modelfile, int maxiter,float noiseW,int s
     
     //Initialize W matrix and load training data
     //notice: if dict is empy, then upload from model
-    initW(modelfile,noiseW,spectopic);
+    initModel(modelfile);
 
     //Load training data
-    trset=new doc(dict,trainfile);
-
-    //allocate H table
-    initH();    
+    srcdata=new doc(srcdict,srctrainfile);
+    trgdata=new doc(trgdict,trgtrainfile);
     
     int iter=0;
-    int r=topics;
     
     cerr << "Starting training \n";
     threadpool thpool=thpool_init(threads);
-    task *t=new task[trset->numdoc()];
+    task *t=new task[srcdata->numdoc()];
     
-    pthread_mutex_init(&mut1, NULL);
+    //pthread_mutex_init(&mut1, NULL);
     //pthread_mutex_init(&mut2, NULL);
+
+    //support variable to compute model denominator
+    float Den[trgdict->size()];
     
     while (iter < maxiter){
         LL=0;
         
-        //initialize T table
-        initT();
+        cerr << "Iteration: " << ++iter << " LL: " << LL << "\n";
         
-        for (long long d=0;d<trset->numdoc();d++){
+        //initialize Alpha table (allocate first time)
+        initAlpha();
+        
+        //for (int e=0;e<trgdict->size();e++)
+        //    for (int d=0;d<D;d++)
+        //        cout << trgdict->decode(e) << " S: " << S[e][d] << " M: " << M[e][d]<< "\n";
+        
+        
+        //compute expected counts in each single sentence
+        for (long long  s=0;s<srcdata->numdoc();s++){
             //prepare and assign tasks to threads
-            t[d].ctx=this; t[d].argv=(void *)d;
-            thpool_add_work(thpool, &plsa::expected_counts_helper, (void *)&t[d]);
+            t[s].ctx=this; t[s].argv=(void *)s;
+            thpool_add_work(thpool, &cswam::expected_counts_helper, (void *)&t[s]);
             
         }
         //join all threads
         thpool_wait(thpool);
         
-        //Recombination and normalization of expected counts
-        for (int t=0; t<r; t++) {
-            double Tsum=0;
-            for (int i=0; i<dict->size(); i++) Tsum+=T[i][t];
-            for (int i=0; i<dict->size(); i++) W[i][t]=(float)(T[i][t]/Tsum);
+        //Maximization STEP
+        
+        
+        //clear model
+        for (int e=0;e <trgdict->size();e++){
+            memset(M[e],0,D * sizeof (float));
+            memset(S[e],0,D * sizeof (float));
         }
         
+        memset(Den,0,trgdict->size() * sizeof(float));
         
-        cerr << "Iteration: " << ++iter << " LL: " << LL << "\n";
-        if (trset->numdoc()> 10) system("date");
+        cerr << "Maximization step: Mean ";
+        for (int s=0;s<srcdata->numdoc();s++){
+            if (! (s % 10000)) cerr <<".";
+            for (int i=0;i<trgdata->doclen(s);i++)
+                for (int j=0;j<srcdata->doclen(s);j++){
+                    Den[trgdata->docword(s,i)]+=A[s][i][j];
+                    if (A[s][i][j]>0)
+                        for (int d=0;d<D;d++)
+                            M[trgdata->docword(s,i)][d]+=A[s][i][j] * W2V[srcdata->docword(s,j)][d];
+                    
+                }
+        }
         
-        saveW(modelfile);
+        //second pass
+        for (int e=0;e<trgdict->size();e++)
+            if (Den[e]>0)
+                for (int d=0;d<D;d++) M[e][d]/=Den[e];
         
+        cerr << "\nMaximization step: Variance ";
+        for (int s=0;s<srcdata->numdoc();s++){
+            if (! (s % 10000)) cerr << ".";
+            for (int i=0;i<trgdata->doclen(s);i++)
+                for (int j=0;j<srcdata->doclen(s);j++)
+                    if (A[s][i][j]>0)
+                        for (int d=0;d<D;d++)
+                            S[trgdata->docword(s,i)][d]+=
+                            (A[s][i][j] *
+                             (W2V[srcdata->docword(s,j)][d]-M[trgdata->docword(s,i)][d]) *
+                             (W2V[srcdata->docword(s,j)][d]-M[trgdata->docword(s,i)][d]));
+        }
+        
+        //second pass
+        for (int e=0;e<trgdict->size();e++)
+            if (Den[e]>0)
+                for (int d=0;d<D;d++){
+                    S[e][d]/=Den[e];
+                    //S[e][d]=SSEED;
+                    if (S[e][d] < 0.01) S[e][d]=0.01;
+                }
+            else
+                cout << "Skip " << trgdict->decode(e) << "\n";
+        
+        
+        
+        if (srcdata->numdoc()> 10) system("date");
+        
+        saveModel(modelfile);
+        saveModelTxt("modelfile.txt");
     }
     
+   // for (int e=0;e<trgdict->size();e++)
+   //     for (int d=0;d<D;d++)
+   //         cout << trgdict->decode(e) << " S: " << S[e][d] << " M: " << M[e][d]<< "\n";
+
     //destroy thread pool
     thpool_destroy(thpool);
   
-    
-    freeH(); freeT(); freeW();
-    
-    delete trset;
+    freeAlpha();
+    delete srcdata; delete trgdata;
     delete [] t;
     
     return 1;
 }
-
-
-
-void plsa::single_inference(void *argv){
-    long long d;
-    d=(long long) argv;
-    
-    if (! (d % 10000)) {cerr << ".";cerr.flush();}
-    //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),d,trset->numdoc());
-    
-    float *WH=new float [dict->size()];
-    bool   *Hflags=new bool[topics];
-    
-    int M=trset->doclen(d); //vocabulary size of current documents with repetitions
-    
-    int N=M;  //document length
-    
-    //initialize H: we estimate one H for each document
-    for (int t=0; t<topics; t++) {H[(d % bucket) * topics + t]=1/(float)topics;Hflags[t]=true;}
-    
-    int iter=0;
-    
-    double LL=0;
-    float delta=0;
-    float maxdelta=1;
-    
-    while (iter < maxiter && maxdelta > deltathreshold){
-        
-        maxdelta=0;
-        iter++;
-        
-        //precompute denominator WH
-        for (int t=0; t<topics; t++)
-            if (Hflags[t] && H[(d % bucket) * topics + t] < topicthreshold){ Hflags[t]=false; H[(d % bucket) * topics + t]=0;}
-        
-        for (int i=0; i < M ; i++) {
-            WH[trset->docword(d,i)]=0; //initialized
-            for (int t=0; t<topics; t++){
-                if (Hflags[t])
-                    WH[trset->docword(d,i)]+=W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t];
-            }
-            //LL-= log( WH[trset->docword(d,i)] );
-        }
-        
-        //cerr << "LL: " << LL << "\n";
-        
-        //UPDATE H
-        float totH=0;
-        for (int t=0; t<topics; t++) {
-            if (Hflags[t]){
-                float tmpH=0;
-                for (int i=0; i< M ; i++)
-                    tmpH+=(W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t]/WH[trset->docword(d,i)]);
-                delta=abs(H[(d % bucket) * topics + t]-tmpH/N);
-                if (delta > maxdelta) maxdelta=delta;
-                H[(d % bucket) * topics + t]=tmpH/N;
-                totH+=H[(d % bucket) * topics + t]; //to check that sum is 1
-            }
-        }
-        
-        if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
-            cerr << "totH " << totH << "\n";
-            std::stringstream ss_msg;
-            ss_msg << "Total H is wrong; totH=" << totH << "\n";
-            exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
-        }
-        
-    }
-    //cerr << "Stopped at iteration " << iter << "\n";
-    
-    delete [] WH; delete [] Hflags;
-    
-    
-}
-
-
-
-int plsa::inference(char *testfile, char* modelfile, int maxit, char* topicfeatfile,char* wordfeatfile){
-    
-    if (topicfeatfile) {mfstream out(topicfeatfile,ios::out);} //empty the file
-    //load existing model
-    initW(modelfile,0,0);
-    
-    //load existing model
-    trset=new doc(dict,testfile);
-    
-    bucket=BUCKET; //initialize the bucket size
-    maxiter=maxit; //set maximum number of iterations
-    
-    //use one vector H for all document
-    H=new float[topics*bucket]; memset(H,0,sizeof(float)*(long long)topics*bucket);
-    
-    threadpool thpool=thpool_init(threads);
-    task *t=new task[bucket];
-
-    
-    cerr << "start inference\n";
-    
-    for (long long d=0;d<trset->numdoc();d++){
-        
-        t[d % bucket].ctx=this; t[d % bucket].argv=(void *)d;
-        thpool_add_work(thpool, &plsa::single_inference_helper, (void *)&t[d % bucket]);
-        
-        if (((d % bucket) == (bucket-1)) || (d==(trset->numdoc()-1)) ){
-            //join all threads
-            thpool_wait(thpool);
-            
-            if ((d % bucket) != (bucket-1))
-                    bucket=trset->numdoc() % bucket; //last bucket at end of file
-            
-            if (topicfeatfile){
-                mfstream out(topicfeatfile,ios::out | ios::app);
-                
-                for (int b=0;b<bucket;b++){ //include the case of
-                    out << H[b * topics];
-                    for (int t=1; t<topics; t++) out << " "  << H[b * topics + t];
-                    out << "\n";
-                }
-            }
-            if (wordfeatfile){
-                cout << "from: " << d-bucket << " to: " << d-1 << "\n";
-                for (int b=0;b<bucket;b++) saveWordFeatures(wordfeatfile,d-bucket+b);
-            }
-            
-        }
-       
-        
-    }
-    
-    delete [] H; delete [] t;
-    delete trset;
-    return 1;
-}
+//
+//
+//
+//void cswam::aligner(void *argv){
+//    long long d;
+//    d=(long long) argv;
+//    
+//    if (! (d % 10000)) {cerr << ".";cerr.flush();}
+//    //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),d,trset->numdoc());
+//    
+//    float *WH=new float [dict->size()];
+//    bool   *Hflags=new bool[topics];
+//    
+//    int M=trset->doclen(d); //vocabulary size of current documents with repetitions
+//    
+//    int N=M;  //document length
+//    
+//    //initialize H: we estimate one H for each document
+//    for (int t=0; t<topics; t++) {H[(d % bucket) * topics + t]=1/(float)topics;Hflags[t]=true;}
+//    
+//    int iter=0;
+//    
+//    double LL=0;
+//    float delta=0;
+//    float maxdelta=1;
+//    
+//    while (iter < maxiter && maxdelta > deltathreshold){
+//        
+//        maxdelta=0;
+//        iter++;
+//        
+//        //precompute denominator WH
+//        for (int t=0; t<topics; t++)
+//            if (Hflags[t] && H[(d % bucket) * topics + t] < topicthreshold){ Hflags[t]=false; H[(d % bucket) * topics + t]=0;}
+//        
+//        for (int i=0; i < M ; i++) {
+//            WH[trset->docword(d,i)]=0; //initialized
+//            for (int t=0; t<topics; t++){
+//                if (Hflags[t])
+//                    WH[trset->docword(d,i)]+=W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t];
+//            }
+//            //LL-= log( WH[trset->docword(d,i)] );
+//        }
+//        
+//        //cerr << "LL: " << LL << "\n";
+//        
+//        //UPDATE H
+//        float totH=0;
+//        for (int t=0; t<topics; t++) {
+//            if (Hflags[t]){
+//                float tmpH=0;
+//                for (int i=0; i< M ; i++)
+//                    tmpH+=(W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t]/WH[trset->docword(d,i)]);
+//                delta=abs(H[(d % bucket) * topics + t]-tmpH/N);
+//                if (delta > maxdelta) maxdelta=delta;
+//                H[(d % bucket) * topics + t]=tmpH/N;
+//                totH+=H[(d % bucket) * topics + t]; //to check that sum is 1
+//            }
+//        }
+//        
+//        if(totH>UPPER_SINGLE_PRECISION_OF_1 || totH<LOWER_SINGLE_PRECISION_OF_1) {
+//            cerr << "totH " << totH << "\n";
+//            std::stringstream ss_msg;
+//            ss_msg << "Total H is wrong; totH=" << totH << "\n";
+//            exit_error(IRSTLM_ERROR_MODEL, ss_msg.str());
+//        }
+//        
+//    }
+//    //cerr << "Stopped at iteration " << iter << "\n";
+//    
+//    delete [] WH; delete [] Hflags;
+//    
+//    
+//}
+//
+//
+//
+//int cswam::test(char *srctestfile, char *trgtestfile, char* modelfile, int maxit, char* alignfile){
+//    
+//    if (topicfeatfile) {mfstream out(topicfeatfile,ios::out);} //empty the file
+//    //load existing model
+//    initW(modelfile,0,0);
+//    
+//    //load existing model
+//    trset=new doc(dict,testfile);
+//    
+//    bucket=BUCKET; //initialize the bucket size
+//    maxiter=maxit; //set maximum number of iterations
+//    
+//    //use one vector H for all document
+//    H=new float[topics*bucket]; memset(H,0,sizeof(float)*(long long)topics*bucket);
+//    
+//    threadpool thpool=thpool_init(threads);
+//    task *t=new task[bucket];
+//
+//    
+//    cerr << "start inference\n";
+//    
+//    for (long long d=0;d<trset->numdoc();d++){
+//        
+//        t[d % bucket].ctx=this; t[d % bucket].argv=(void *)d;
+//        thpool_add_work(thpool, &plsa::single_inference_helper, (void *)&t[d % bucket]);
+//        
+//        if (((d % bucket) == (bucket-1)) || (d==(trset->numdoc()-1)) ){
+//            //join all threads
+//            thpool_wait(thpool);
+//            
+//            if ((d % bucket) != (bucket-1))
+//                    bucket=trset->numdoc() % bucket; //last bucket at end of file
+//            
+//            if (topicfeatfile){
+//                mfstream out(topicfeatfile,ios::out | ios::app);
+//                
+//                for (int b=0;b<bucket;b++){ //include the case of
+//                    out << H[b * topics];
+//                    for (int t=1; t<topics; t++) out << " "  << H[b * topics + t];
+//                    out << "\n";
+//                }
+//            }
+//            if (wordfeatfile){
+//                cout << "from: " << d-bucket << " to: " << d-1 << "\n";
+//                for (int b=0;b<bucket;b++) saveWordFeatures(wordfeatfile,d-bucket+b);
+//            }
+//            
+//        }
+//       
+//        
+//    }
+//    
+//    delete [] H; delete [] t;
+//    delete trset;
+//    return 1;
+//}
 
