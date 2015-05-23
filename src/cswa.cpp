@@ -67,7 +67,10 @@ int main(int argc, char **argv){
     int threads=1;          //current EM iteration for multi-thread training
     bool help=false;
     int prunethreshold=3;
-
+    bool trainvar=true;
+    bool normvectors=false;
+    bool scalevectors=false;
+    
     
     DeclareParams((char*)
                   
@@ -95,6 +98,15 @@ int main(int argc, char **argv){
                   
                   "ForceModel", CMDBOOLTYPE|CMDMSG, &forcemodel, "<bool>: force to use existing model for training",
                   "fm", CMDBOOLTYPE|CMDMSG, &forcemodel, "<bool>: force to use existing model for training",
+                  
+                  "TrainVariances", CMDBOOLTYPE|CMDMSG, &trainvar, "<bool>: train variances (default true)",
+                  "tv", CMDBOOLTYPE|CMDMSG, &trainvar, "<bool>: train variances (default true)",
+                
+                  "NormalizeVectors", CMDBOOLTYPE|CMDMSG, &normvectors, "<bool>: normalize vectors  (default false)",
+                  "nv", CMDBOOLTYPE|CMDMSG, &normvectors, "<bool>: normalize vectors  (default false)",
+                  
+                  "ScaleVectors", CMDBOOLTYPE|CMDMSG, &scalevectors, "<bool>: scale vectors  (default false)",
+                  "sv", CMDBOOLTYPE|CMDMSG, &scalevectors, "<bool>: scale vectors  (default false)",
                   
                   "Help", CMDBOOLTYPE|CMDMSG, &help, "print this help",
                   "h", CMDBOOLTYPE|CMDMSG, &help, "print this help",
@@ -127,76 +139,15 @@ int main(int argc, char **argv){
     if (iterations && testmodel && !forcemodel)
           exit_error(IRSTLM_ERROR_DATA,"Use -ForceModel=y option to update an existing model.");
     
-    cswam *model=new cswam(srcdatafile,trgdatafile,w2vfile);
-    
+    cswam *model=new cswam(srcdatafile,trgdatafile,w2vfile,normvectors,scalevectors,trainvar);
     
     if (iterations)
         model->train(srcdatafile,trgdatafile,modelfile,iterations,threads);
     
+    if (alignfile)
+        model->test(srcdatafile,trgdatafile,modelfile,alignfile,threads);
+    
     delete model;
-//
-//    if (alignfile)
-//        test(srcdatafile,trgdatafile,modelfile,alignfile,threads);
-//    
-//    
-//        
-//    //preliminary check
-//    
-//    
-//        else{
-//            //training
-//            
-//            
-//                cerr << "Extracting dictionary from training data (word with freq>=" << prunethreshold << ")\n";
-//                dict=new dictionary(NULL,10000);
-//                dict->generate(trainfile,true);
-//
-//               dictionary *sortd=new dictionary(dict,true,prunethreshold);
-//                if (specialtopic) sortd->sort();
-//                delete dict;
-//                dict=sortd;
-//                
-//            }
-//            else
-//                dict=new dictionary(dictfile,10000);
-//            dict->encode(dict->OOV());
-//        }
-//        
-//        plsa tc(dict,topics,tmpdir,threads,memorymap);
-//        tc.train(trainfile,modelfile,iterations,0.5,specialtopic);
-//        if (dict!=NULL) delete dict;
-//    }
-//    
-//    //Training phase
-//    //test if model is readable: notice test could be executed after training
-//    
-//    testmodel=false;
-//    if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);testmodel=true;}
-//    
-//    if (testfile){
-//        if (!testmodel)
-//            exit_error(IRSTLM_ERROR_DATA,"Cannot read model file to run test inference.");
-//        if (dictfile) cerr << "Will rely on model dictionary.";
-//
-//        dict=NULL;
-//        plsa tc(dict,topics,tmpdir,threads,memorymap);
-//        tc.inference(testfile,modelfile,iterations,topicfeaturefile,wordfeaturefile);
-//        if (dict!=NULL) delete dict;
-//    }
-//    
-//    
-//    //save/convert model in text format
-//    
-//    if (txtfile){
-//        if (!testmodel)
-//            exit_error(IRSTLM_ERROR_DATA,"Cannot open model to be printed in readable format.");
-//
-//        dict=NULL;
-//        plsa tc(dict,topics,tmpdir,threads,memorymap);
-//        tc.initW(modelfile,1,0);
-//        tc.saveWtxt(txtfile,topwords);
-//        tc.freeW();
-//    }
     
     exit_error(IRSTLM_NO_ERROR);
 }

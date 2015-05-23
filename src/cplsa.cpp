@@ -35,7 +35,7 @@
 #include "doc.h"
 #include "cplsa.h"
 
-#define BUCKET 1000
+#define BUCKET 10000
 
 using namespace std;
 
@@ -367,8 +367,9 @@ void plsa::expected_counts(void *argv){
     
     long long d;
     d=(long long) argv;
+    int frac=(d * 1000)/trset->numdoc();
     
-    if (! (d % 10000)) {cerr << ".";cerr.flush();}
+    if (!(frac % 10)) fprintf(stderr,"%2d\b\b",frac/10);
     //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),d,trset->numdoc());
     
     int r=topics;
@@ -466,6 +467,8 @@ int plsa::train(char *trainfile, char *modelfile, int maxiter,float noiseW,int s
     while (iter < maxiter){
         LL=0;
         
+        cerr << "Iteration: " << ++iter << " ";
+        
         //initialize T table
         initT();
         
@@ -486,7 +489,7 @@ int plsa::train(char *trainfile, char *modelfile, int maxiter,float noiseW,int s
         }
         
         
-        cerr << "Iteration: " << ++iter << " LL: " << LL << "\n";
+        cerr << " LL: " << LL << "\n";
         if (trset->numdoc()> 10) system("date");
         
         saveW(modelfile);
@@ -511,7 +514,9 @@ void plsa::single_inference(void *argv){
     long long d;
     d=(long long) argv;
     
-    if (! (d % 10000)) {cerr << ".";cerr.flush();}
+    int frac=(d * 1000)/trset->numdoc();
+    if (!(frac % 10)) fprintf(stderr,"%2d\b\b",frac/10);
+    
     //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),d,trset->numdoc());
     
     float *WH=new float [dict->size()];
@@ -545,10 +550,10 @@ void plsa::single_inference(void *argv){
                 if (Hflags[t])
                     WH[trset->docword(d,i)]+=W[trset->docword(d,i)][t] * H[(d % bucket) * topics + t];
             }
-            //LL-= log( WH[trset->docword(d,i)] );
+           
         }
         
-        //cerr << "LL: " << LL << "\n";
+        
         
         //UPDATE H
         float totH=0;
@@ -600,7 +605,7 @@ int plsa::inference(char *testfile, char* modelfile, int maxit, char* topicfeatf
     task *t=new task[bucket];
 
     
-    cerr << "start inference\n";
+    cerr << "Start inference: ";
     
     for (long long d=0;d<trset->numdoc();d++){
         
@@ -624,7 +629,7 @@ int plsa::inference(char *testfile, char* modelfile, int maxit, char* topicfeatf
                 }
             }
             if (wordfeatfile){
-                cout << "from: " << d-bucket << " to: " << d-1 << "\n";
+                //cout << "from: " << d-bucket << " to: " << d-1 << "\n";
                 for (int b=0;b<bucket;b++) saveWordFeatures(wordfeatfile,d-bucket+b);
             }
             

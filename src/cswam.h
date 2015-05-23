@@ -34,17 +34,20 @@ class cswam {
     int       D;       //dimension of vector space
     
     //model
-    dictionary *moddict; //model dictionary
     float **S;          //variance vector for target words
     float **M;          //mean vector for target words
     float ***A;         //expected count structure (threadsafe)
     
-    
-    //temporary file
-    char Hfname[100]; //temporary and unique filename for H
-    char *tmpdir;
 
+    //settings
+    bool normalize_vectors;
+    bool scale_vectors;
+    bool train_variances;
+    
     //private info shared among threads
+
+    float *Den;
+    int **alignments;
     int threads;
     int bucket;
     struct task {
@@ -55,7 +58,7 @@ class cswam {
     
 public:
     
-    cswam(char* srcdatafile,char* trgdatafile, char* word2vecfile);
+    cswam(char* srcdatafile,char* trgdatafile, char* word2vecfile,bool normv2w,bool scalew2v,bool trainvar);
     ~cswam();
     
     void loadword2vec(char* fname);
@@ -66,22 +69,31 @@ public:
     
     void initAlpha();
     void freeAlpha();
-
+    
+    float LogGauss(const int dim,const float* x,const float *m, const float *s);
+        
     void expected_counts(void *argv);
     static void *expected_counts_helper(void *argv){
         task t=*(task *)argv;
         ((cswam *)t.ctx)->expected_counts(t.argv);return NULL;
     };
 
+    void maximization(void *argv);
+    static void *maximization_helper(void *argv){
+        task t=*(task *)argv;
+        ((cswam *)t.ctx)->maximization(t.argv);return NULL;
+    };
+
+    int train(char *srctrainfile,char *trgtrainfile,char* modelfile, int maxiter,int threads=1);
+    
     void aligner(void *argv);
     static void *aligner_helper(void *argv){
         task t=*(task *)argv;
         ((cswam *)t.ctx)->aligner(t.argv);return NULL;
     };
     
-    int train(char *srctrainfile,char *trgtrainfile,char* modelfile, int maxiter,int threads=1);
-//    int test(char *srctestfile, char* trgtestfile, char* modelfile,char* alignmentfile, int threads=1);
-    
+
+    int test(char *srctestfile, char* trgtestfile, char* modelfile,char* alignmentfile, int threads=1);
     
 };
 
