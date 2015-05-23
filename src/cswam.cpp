@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include <stdio.h>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <pthread.h>
@@ -108,6 +109,7 @@ void cswam::loadword2vec(char* fname){
     inp >> D ; cout << D  << "\n";
     
     W2V=new float* [srcdict->size()];
+    for (int f=0;f<srcdict->size();f++) W2V[f]=NULL;
     
     char word[100]; int code; float dummy;
     
@@ -123,6 +125,16 @@ void cswam::loadword2vec(char* fname){
         
         if (!(i % 100000)) cerr<< word << " ";
     }
+    
+    for (int f=0;f<srcdict->size();f++){
+        if (W2V[f]==NULL){
+            cerr << "Missing src word in w2v: " << srcdict->decode(f) << "\n";
+            W2V[f]=new float[D];
+            for (int d=0;d<D;d++) W2V[f][d]=0;
+        }
+    }
+    
+    
     cerr << "\n";
     
     //normalized vector components
@@ -173,7 +185,7 @@ void cswam::initModel(char* modelfile){
     //test if model is readable
     bool testmodel=false;
     FILE* f;if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);testmodel=true;}
-
+    
     if (testmodel) loadModel(modelfile,true); //we are in training mode!
     else{ //initialize model
         M=new float* [trgdict->size()];
@@ -181,10 +193,17 @@ void cswam::initModel(char* modelfile){
         for (int e=0; e<trgdict->size(); e++){
             M[e]=new float [D];
             S[e]=new float [D];
-            for (int d=0;d<D;d++){
-                M[e][d]=0.0; //pick mean zero
-                S[e][d]=SSEED; //take a wide standard deviation
-            }
+            //initialize with w2v value if the same word is also in src
+            int f=srcdict->encode(trgdict->decode(e));
+            if (f!=srcdict->oovcode()){
+                memcpy(M[e],W2V[f],sizeof(float) * D);
+                for (int d=0;d<D;d++) S[e][d]=SSEED/4;
+                cout << "initialize: " << srcdict->decode(f) << "\n";
+            }else
+                for (int d=0;d<D;d++){
+                    M[e][d]=0.0; //pick mean zero
+                    S[e][d]=SSEED; //take a wide standard deviation
+                }
         }
     }
 }
@@ -306,34 +325,11 @@ void cswam::freeAlpha(){
 pthread_mutex_t mut1;
 pthread_mutex_t mut2;
 double LL=0; //Log likelihood
-const float threshold1=0.00001;
-const float threshold2=0.0001;
 
-
-//compute gaussian with diagonal covariance matrix
-
-//double cswam::GaussArg(const int dim,const float* x,const float *m, const float *s,double &dist,double &norm){
-//    
-//    double twopi=6.28;
-//    dist=0;  norm=1;
-//    if (train_variances)
-//        for (int i=0;i<dim;i++){
-//            dist+=(x[i]-m[i])*(x[i]-m[i])/(s[i]);
-//            norm*=sqrt(twopi * s[i]);
-//        }
-//    else{ //force variance=1
-//        for (int i=0;i<dim;i++)
-//            dist+=(x[i]-m[i])*(x[i]-m[i]);
-//        norm=sqrt(twopi);
-//    }
-//    dist= 0.5 * dist;
-//    
-//    return exp(dist)/norm;
-//}
 
 float logsum(float a,float b){
     if (b<a) return a + log(1 + exp(b-a));
-    if (a<=b) return b + log(1+ exp(a-b));
+    else return b + log(1+ exp(a-b));
 }
 
 
@@ -434,13 +430,7 @@ void cswam::maximization(void *argv){
 
 int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxiter,int threads){
     
-    //check if to either use the dict of the modelfile
-    //or create a new one from the data
-    //load training data!
-    
-    
-    //Initialize W matrix and load training data
-    //notice: if dict is empy, then upload from model
+   
     initModel(modelfile);
 
     //Load training data
@@ -461,17 +451,10 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
     Den=new float[trgdict->size()];
     
     while (iter < maxiter){
-        LL=0;
         
-        cerr << "\nIteration: " << ++iter << " LL: " << LL << "\n";
+        cerr << "\nIteration: " << ++iter <<  "\n";
         
-        //initialize Alpha table (allocate first time)
         initAlpha();
-        
-        //for (int e=0;e<trgdict->size();e++)
-        //    for (int d=0;d<D;d++)
-        //        cout << trgdict->decode(e) << " S: " << S[e][d] << " M: " << M[e][d]<< "\n";
-        
         
         cerr << "E-step: ";
         //compute expected counts in each single sentence
@@ -538,6 +521,8 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
 
 void cswam::aligner(void *argv){
     long long s=(long long) argv;
+    static float maxfloat=std::numeric_limits<float>::max();
+
     
     if (! (s % 10000)) {cerr << ".";cerr.flush();}
     //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),s,srcdata->numdoc());
@@ -547,11 +532,10 @@ void cswam::aligner(void *argv){
     
     assert(trglen<MAX_LINE);
     
-    double dist;double norm;
     //Viterbi alignment: find the most probable alignment for source
     float score; float best_score;int best_j;
     for (int i=0;i<trglen;i++){
-        best_score=0;best_j=0;
+        best_score=-maxfloat;best_j=0;
         //cout << trgdict->decode(trgdata->docword(s,i)) << "\n";
         for (int j=0;j<srclen;j++){
             score=LogGauss(D,

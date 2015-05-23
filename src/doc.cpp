@@ -28,21 +28,22 @@
 
 using namespace std;
 
-doc::doc(dictionary* d,char* docfname){
+doc::doc(dictionary* d,char* docfname,bool use_null_word){
     mfstream df(docfname,ios::in);
     
     char header[100];
     df.getline(header,100);
     sscanf(header,"%d",&N);
-
+    
     assert(N>0 && N < MAXDOCNUM);
-
+    
     
     M=new int  [N];
     V=new int* [N];
     
     int eod=d->encode(d->EoD());
     int bod=d->encode(d->BoD());
+    
     
     ngram ng(d);
     int n=0;  //track documents
@@ -55,8 +56,12 @@ doc::doc(dictionary* d,char* docfname){
         if (ng.size>0){
             w=*ng.wordp(1);
             if (w==bod){
-                ng.size=0;
-                continue;
+                if (use_null_word){
+                    ng.size=1; //use <d> as NULL word
+                }else{
+                    ng.size=0; //skip <d>
+                    continue;
+                }
             }
             if (w==eod && m>0){
                 M[n]=m;  //length of n-th document
@@ -73,7 +78,7 @@ doc::doc(dictionary* d,char* docfname){
     
     cerr << "uploaded " << n << " documents\n";
     
-  
+    
 };
 
 doc::~doc(){

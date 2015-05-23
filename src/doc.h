@@ -31,7 +31,7 @@ class doc
 
 public:
     
-  doc(dictionary* d,char* docfname);
+  doc(dictionary* d,char* docfname,bool use_null_word=false);
   ~doc();
 
   int numdoc();
