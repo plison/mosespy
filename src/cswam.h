@@ -19,7 +19,14 @@
  ******************************************************************************/
 
 
+typedef struct{
 
+    int size;  //size of mixture
+    float  *W; //weights
+    float** M; //mean
+    float** S; //variance
+
+} TranslationModel;
 
 class cswam {
     
@@ -43,10 +50,11 @@ class cswam {
     bool normalize_vectors;
     bool scale_vectors;
     bool train_variances;
-    
+    bool use_null_word;
     //private info shared among threads
 
     float *Den;
+    float *localLL;
     int **alignments;
     int threads;
     int bucket;
@@ -58,7 +66,7 @@ class cswam {
     
 public:
     
-    cswam(char* srcdatafile,char* trgdatafile, char* word2vecfile,bool normv2w,bool scalew2v,bool trainvar);
+    cswam(char* srcdatafile,char* trgdatafile, char* word2vecfile,bool usenull,bool normv2w,bool scalew2v,bool trainvar);
     ~cswam();
     
     void loadword2vec(char* fname);

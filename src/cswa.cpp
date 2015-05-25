@@ -70,7 +70,7 @@ int main(int argc, char **argv){
     bool trainvar=true;
     bool normvectors=false;
     bool scalevectors=false;
-    
+    bool usenullword=true;
     
     DeclareParams((char*)
                   
@@ -92,6 +92,9 @@ int main(int argc, char **argv){
                   
                   "Alignments", CMDSTRINGTYPE|CMDMSG, &alignfile, "<fname> : output alignment file",
                   "al", CMDSTRINGTYPE|CMDMSG, &alignfile, "<fname> : output alignment file",
+                  
+                  "UseNullWord", CMDBOOLTYPE|CMDMSG, &usenullword, "<bool>: use null word (default true)",
+                  "unw", CMDBOOLTYPE|CMDMSG, &usenullword, "<bool>: use null word (default true)",
                   
                   "Threads", CMDINTTYPE|CMDMSG, &threads, "<count>: number of threads (default 2)",
                   "th", CMDINTTYPE|CMDMSG, &threads, "<count>: number of threads (default 2)",
@@ -139,7 +142,7 @@ int main(int argc, char **argv){
     if (iterations && testmodel && !forcemodel)
           exit_error(IRSTLM_ERROR_DATA,"Use -ForceModel=y option to update an existing model.");
     
-    cswam *model=new cswam(srcdatafile,trgdatafile,w2vfile,normvectors,scalevectors,trainvar);
+    cswam *model=new cswam(srcdatafile,trgdatafile,w2vfile,usenullword,normvectors,scalevectors,trainvar);
     
     if (iterations)
         model->train(srcdatafile,trgdatafile,modelfile,iterations,threads);

@@ -16,7 +16,7 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA
  
- **********************************************dou********************************/
+ *******************************************************************************/
 
 #include <sys/mman.h>
 #include <stdio.h>
@@ -43,13 +43,15 @@ using namespace std;
 
 #define MY_RAND (((float)random()/RAND_MAX)* 2.0 - 1.0)
 	
-cswam::cswam(char* sdfile,char *tdfile, char* w2vfile,bool normvect,bool scalevect,bool trainvar){
+cswam::cswam(char* sdfile,char *tdfile, char* w2vfile,bool usenull, bool normvect,bool scalevect,bool trainvar){
     
     //create dictionaries
     srcdict=new dictionary(NULL,100000); srcdict->generate(sdfile,true);
     trgdict=new dictionary(NULL,100000); trgdict->generate(tdfile,true);
     
-    //make aware of delimiters
+    //make aware of oov word
+    srcdict->encode(srcdict->OOV());
+    trgdict->encode(trgdict->OOV());
     
     //load word2vec dictionary
     W2V=NULL;D=0;
@@ -66,6 +68,7 @@ cswam::cswam(char* sdfile,char *tdfile, char* w2vfile,bool normvect,bool scaleve
     normalize_vectors=normvect;
     scale_vectors=scalevect;
     train_variances=trainvar;
+    use_null_word=usenull;
     
     srandom(100); //ensure repicable generation of random numbers
     bucket=BUCKET;
@@ -73,7 +76,7 @@ cswam::cswam(char* sdfile,char *tdfile, char* w2vfile,bool normvect,bool scaleve
 }
 
 cswam::~cswam() {
-
+    
     assert(A==NULL);
     
     if (S){
@@ -88,11 +91,15 @@ cswam::~cswam() {
     }
     if (W2V){
         cerr << "Releasing memory of W2W\n";
-        for (int e=0;e<srcdict->size();e++) delete [] W2V[e];
-        delete []W2V;
+        for (int f=0;f<srcdict->size();f++)
+            if (W2V[f]!=NULL) delete [] W2V[f];
+        delete [] W2V;
     }
     
-   delete srcdict; delete trgdict;
+    cerr << "Releasing memory of srcdict\n";
+    delete srcdict;
+    cerr << "Releasing memory of srcdict\n";
+    delete trgdict;
     
     
 }
@@ -112,6 +119,8 @@ void cswam::loadword2vec(char* fname){
     for (int f=0;f<srcdict->size();f++) W2V[f]=NULL;
     
     char word[100]; int code; float dummy;
+    int BoD=srcdict->encode(srcdict->BoD());
+    int EoD=srcdict->encode(srcdict->BoD());
     
     for (long long i=0;i<w2vsize;i++){
         inp >> word;
@@ -127,7 +136,7 @@ void cswam::loadword2vec(char* fname){
     }
     
     for (int f=0;f<srcdict->size();f++){
-        if (W2V[f]==NULL){
+        if (W2V[f]==NULL && f!=BoD && f!=EoD) {
             cerr << "Missing src word in w2v: " << srcdict->decode(f) << "\n";
             W2V[f]=new float[D];
             for (int d=0;d<D;d++) W2V[f][d]=0;
@@ -358,7 +367,10 @@ void cswam::expected_counts(void *argv){
     int srclen=srcdata->doclen(s); //length of source sentence
     
     float den;
-   
+
+    //reset likelihood
+    localLL[s]=0;
+    
     //compute denominator for each source-target pair
     for (int j=0;j<srclen;j++){
         //cout << "j: " << srcdict->decode(srcdata->docword(s,j)) << "\n";
@@ -371,6 +383,9 @@ void cswam::expected_counts(void *argv){
               if (i==0) den=A[s][i][j];
               else den=logsum(den,A[s][i][j]);
           }
+        
+        //update local likelihood
+        localLL[s]+=den;
         
         for (int i=0;i<trglen;i++){
             assert(A[s][i][j]<= den);
@@ -436,7 +451,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
     //Load training data
 
     srcdata=new doc(srcdict,srctrainfile);
-    trgdata=new doc(trgdict,trgtrainfile);
+    trgdata=new doc(trgdict,trgtrainfile,use_null_word); //use null word
 
    
     int iter=0;
@@ -449,6 +464,9 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
    
     //support variable to compute model denominator
     Den=new float[trgdict->size()];
+    //support variable to compute likelihood
+    localLL=new float[srcdata->numdoc()];
+    float LL;
     
     while (iter < maxiter){
         
@@ -477,13 +495,15 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
         
         memset(Den,0,trgdict->size() * sizeof(float));
         
-        
+        LL=0; //compute LL of current model
         //compute normalization term for each target word
-        for (int s=0;s<srcdata->numdoc();s++)
+        for (int s=0;s<srcdata->numdoc();s++){
+            LL+=localLL[s];
             for (int i=0;i<trgdata->doclen(s);i++)
                 for (int j=0;j<srcdata->doclen(s);j++)
                     Den[trgdata->docword(s,i)]+=A[s][i][j];
-        
+        }
+        cerr << "LL = " << LL;
         cerr << "\nM-step: ";
         for (long long d=0;d<D;d++){
             t[d].ctx=this; t[d].argv=(void *)d;
@@ -512,7 +532,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
 
     delete []Den;
     delete srcdata; delete trgdata;
-    delete [] t;
+    delete [] t; delete [] localLL;
     
     return 1;
 }
