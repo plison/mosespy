@@ -53,16 +53,26 @@ cswam::cswam(char* sdfile,char *tdfile, char* w2vfile,bool usenull, bool normvec
     srcdict->encode(srcdict->OOV());
     trgdict->encode(trgdict->OOV());
     
+    trgBoD = trgdict->encode(trgdict->BoD());  //codes for begin/end sentence markers
+    trgEoD = trgdict->encode(trgdict->EoD());
+    
+    srcBoD = srcdict->encode(srcdict->BoD());  //codes for begin/end sentence markers
+    srcEoD = srcdict->encode(srcdict->EoD());
+
+    
     //load word2vec dictionary
-    W2V=NULL;D=0;
+    W2V=NULL; D=0;
     loadword2vec(w2vfile);
 
     //check consistency of word2vec with target vocabulary
     
     //actual model structure
-    S=NULL;
-    M=NULL;
-    A=NULL;
+    
+    TM=NULL;
+    
+    //S=NULL;
+    //M=NULL;
+    //A=NULL;
     
     
     normalize_vectors=normvect;
@@ -79,15 +89,15 @@ cswam::~cswam() {
     
     assert(A==NULL);
     
-    if (S){
-        cerr << "Releasing memory of S\n";
-        for (int e=0;e<trgdict->size();e++) delete [] S[e];
-        delete S;
-    }
-    if (M){
-        cerr << "Releasing memory of M\n";
-        for (int e=0;e<trgdict->size();e++) delete [] M[e];
-        delete [] M;
+    if (TM){
+        cerr << "Releasing memory of Translation Model\n";
+        for (int e=0;e<trgdict->size();e++){
+            for (int n=0;n<TM[e].n;n++){
+                delete TM[e].G[n].M;delete TM[e].G[n].S;
+            }
+            delete [] TM[e].G; delete [] TM[e].W;
+        }
+        delete [] TM;
     }
     if (W2V){
         cerr << "Releasing memory of W2W\n";
@@ -115,19 +125,19 @@ void cswam::loadword2vec(char* fname){
     inp >> w2vsize; cout << w2vsize << "\n";
     inp >> D ; cout << D  << "\n";
     
+    int srcoov=srcdict->oovcode();
+    
     W2V=new float* [srcdict->size()];
     for (int f=0;f<srcdict->size();f++) W2V[f]=NULL;
     
-    char word[100]; int code; float dummy;
-    int BoD=srcdict->encode(srcdict->BoD());
-    int EoD=srcdict->encode(srcdict->BoD());
+    char word[100]; float dummy; int f;
     
     for (long long i=0;i<w2vsize;i++){
         inp >> word;
-        code=srcdict->encode(word);
-        if (code != srcdict->oovcode()){
-            W2V[code]=new float[D];
-            for (int d=0;d<D;d++) inp >> W2V[code][d];
+        f=srcdict->encode(word);
+        if (f != srcoov){
+            W2V[f]=new float[D];
+            for (int d=0;d<D;d++) inp >> W2V[f][d];
         }
         else //skip this word
             for (int d=0;d<D;d++) inp >> dummy;
@@ -135,56 +145,53 @@ void cswam::loadword2vec(char* fname){
         if (!(i % 100000)) cerr<< word << " ";
     }
     
-    for (int f=0;f<srcdict->size();f++){
-        if (W2V[f]==NULL && f!=BoD && f!=EoD) {
+    //looking for missing source words in w2v
+    for ( f=0;f<srcdict->size();f++){
+        if (W2V[f]==NULL && f!=srcBoD && f!=srcEoD) {
             cerr << "Missing src word in w2v: " << srcdict->decode(f) << "\n";
             W2V[f]=new float[D];
-            for (int d=0;d<D;d++) W2V[f][d]=0;
+            for (int d=0;d<D;d++) W2V[f][d]=0;  //something better needed here
         }
     }
     
     
     cerr << "\n";
     
-    //normalized vector components
-    float mean[D]; memset(mean,0,D*sizeof(float));
-    float var[D]; memset(var,0,D*sizeof(float));
-    
-    for (code=0;code<srcdict->size();code++){
-        
-        if (!W2V[code]){
-            cerr << "creating vector for word " << srcdict->decode(code) << "\n";
-            W2V[code]=new float[D];
-            for (int d=0;d<D;d++) W2V[code][d]=0; //to be worked out!
-        }
-        
-        if (normalize_vectors || scale_vectors)
-            for (int d=0;d<D;d++){
-                mean[d]+=W2V[code][d];
-                var[d]+=(W2V[code][d] * W2V[code][d]);
-            }
-    }
     
     if (normalize_vectors || scale_vectors){
         
+        //normalized vector components
+        float mean[D]; memset(mean,0,D*sizeof(float));
+        float var[D]; memset(var,0,D*sizeof(float));
+        
+        //collect mean and variance statistics
+        for ( f=0;f<srcdict->size();f++){
+            for (int d=0;d<D;d++){
+                mean[d]+=W2V[f][d];
+                var[d]+=(W2V[f][d] * W2V[f][d]);
+            }
+        }
+        //compute means and variances for each dimension
         for (int d=0;d<D;d++){
             mean[d]/=srcdict->size();
             var[d]=var[d]/srcdict->size() - (mean[d]*mean[d]);
             cerr << d << " mean: " << mean[d] << "  sd: " << sqrt(var[d]) << "\n";
         }
         
+        
         if (normalize_vectors){
             cerr << "Shifting vectors\n";
-            for (code=0;code<srcdict->size();code++)
-                for (int d=0;d<D;d++) W2V[code][d]=(W2V[code][d] - mean[d]);
+            for (int f=0;f<srcdict->size();f++)
+                for (int d=0;d<D;d++) W2V[f][d]=(W2V[f][d] - mean[d]);
         }
         if (normalize_vectors || scale_vectors){
             cerr << "Scaling vectors\n";
-            for (code=0;code<srcdict->size();code++)
-                for (int d=0;d<D;d++) W2V[code][d]=W2V[code][d]/sqrt(var[d]);
+            for ( f=0;f<srcdict->size();f++)
+                for (int d=0;d<D;d++) W2V[f][d]=W2V[f][d]/sqrt(var[d]);
             
         }
     }
+    
     cerr << " ... done\n";
 };
 
@@ -192,26 +199,33 @@ void cswam::loadword2vec(char* fname){
 void cswam::initModel(char* modelfile){
     
     //test if model is readable
-    bool testmodel=false;
-    FILE* f;if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);testmodel=true;}
+    bool model_available=false;
+    FILE* f;if ((f=fopen(modelfile,"r"))!=NULL){fclose(f);model_available=true;}
     
-    if (testmodel) loadModel(modelfile,true); //we are in training mode!
+    if (model_available) loadModel(modelfile,true); //we are in training mode!
     else{ //initialize model
-        M=new float* [trgdict->size()];
-        S=new float* [trgdict->size()];
+        TM=new TransModel[trgdict->size()];
+    
         for (int e=0; e<trgdict->size(); e++){
-            M[e]=new float [D];
-            S[e]=new float [D];
+            TM[e].n=1;TM[e].G=new Gaussian [1];TM[e].W=new float[1];
+            TM[e].G[0].M=new float [D];
+            TM[e].G[0].S=new float [D];
+            
+            TM[e].G[0].eC=0;
+            TM[e].G[0].mS=0;
+            
+            TM[e].W[0]=1;
+            
             //initialize with w2v value if the same word is also in src
             int f=srcdict->encode(trgdict->decode(e));
-            if (f!=srcdict->oovcode()){
-                memcpy(M[e],W2V[f],sizeof(float) * D);
-                for (int d=0;d<D;d++) S[e][d]=SSEED/4;
+            if (f!=srcdict->oovcode() && f!=srcBoD && f!=srcEoD){
+                memcpy(TM[e].G[0].M,W2V[f],sizeof(float) * D);
+                for (int d=0;d<D;d++) TM[e].G[0].S[d]=SSEED/4;
                 cout << "initialize: " << srcdict->decode(f) << "\n";
             }else
                 for (int d=0;d<D;d++){
-                    M[e][d]=0.0; //pick mean zero
-                    S[e][d]=SSEED; //take a wide standard deviation
+                    TM[e].G[0].M[d]=0.0; //pick mean zero
+                    TM[e].G[0].S[d]=SSEED; //take a wide standard deviation
                 }
         }
     }
@@ -221,9 +235,12 @@ int cswam::saveModelTxt(char* fname){
     cerr << "Writing model into: " << fname << "\n";
     mfstream out(fname,ios::out);
     for (int e=0; e<trgdict->size(); e++){
-        out << trgdict->decode(e) <<"\n";
-        for (int d=0;d<D;d++) out << M[e][d] << " ";out << "\n";
-        for (int d=0;d<D;d++) out << S[e][d] << " ";out << "\n";
+        out << trgdict->decode(e) << " " << TM[e].n <<"\n";
+        for (int n=0;n<TM[e].n;n++){
+            out << TM[e].W[n] << "\n";
+            for (int d=0;d<D;d++) out << TM[e].G[n].M[d] << " ";out << "\n";
+            for (int d=0;d<D;d++) out << TM[e].G[n].S[d] << " ";out << "\n";
+        }
     }
     return 1;
 }
@@ -234,8 +251,12 @@ int cswam::saveModel(char* fname){
     out << "CSWAM " << D << "\n";
     trgdict->save(out);
     for (int e=0; e<trgdict->size(); e++){
-        out.write((const char*)M[e],sizeof(float) * D);
-        out.write((const char*)S[e],sizeof(float) * D);
+        out.write((const char*)&TM[e].n,sizeof(int));
+        out.write((const char*)TM[e].W,TM[e].n * sizeof(float));
+        for (int n=0;n<TM[e].n;n++){
+            out.write((const char*)TM[e].G[n].M,sizeof(float) * D);
+            out.write((const char*)TM[e].G[n].S,sizeof(float) * D);
+        }
     }
     out.close();
     cerr << "\n";
@@ -273,56 +294,73 @@ int cswam::loadModel(char* fname,bool expand){
     //replace the trgdict with the model dictionary
     delete trgdict;trgdict=dict;
     
-    M=new float* [trgdict->size()];
-    S=new float* [trgdict->size()];
-    for (int e=0; e<trgdict->size(); e++){
-        M[e]=new float [D];
-        S[e]=new float [D];
-    }
+    TM=new TransModel [trgdict->size()];
     
     cerr << "\nReading parameters .... ";
     for (int e=0; e<current_size; e++){
-        inp.read((char *)M[e],sizeof(float) * D);
-        inp.read((char *)S[e],sizeof(float) * D);
+        inp.read((char *)&TM[e].n,sizeof(int));
+        TM[e].W=new float[TM[e].n];
+        inp.read((char *)TM[e].W,sizeof(float) * TM[e].n);
+        TM[e].G=new Gaussian[TM[e].n];
+        for (int n=0;n<TM[e].n;n++){
+            TM[e].G[n].M=new float [D];
+            TM[e].G[n].S=new float [D];
+            inp.read((char *)TM[e].G[n].M,sizeof(float) * D);
+            inp.read((char *)TM[e].G[n].S,sizeof(float) * D);
+            TM[e].G[n].eC=0;TM[e].G[n].mS=0;
+        }
     }
     inp.close();
+    
     cerr << "\nInitializing " << trgdict->size()-current_size << " new entries .... ";
-    for (int e=current_size; e<trgdict->size(); e++)
-        for (int d=0;d<D;d++){
-            M[e][d]=0.0;S[e][d]=SSEED;
-        }
+    for (int e=current_size; e<trgdict->size(); e++){
+        TM[e].n=1;
+        TM[e].W=new float[1];TM[e].W[0]=1.0;
+        TM[e].G=new Gaussian[1];
+        TM[e].G[0].M=new float [D];
+        TM[e].G[0].S=new float [D];
+        TM[e].G[0].eC=0;TM[e].G[0].mS=0;
+        for (int d=0;d<D;d++){TM[e].G[0].M[d]=0.0;TM[e].G[0].S[d]=SSEED;}
+    }
     
     cerr << "\nDone\n";
     return 1;
 }
 
 void cswam::initAlpha(){
-
+    
     //install Alpha[s][i][j] to collect counts
     //allocate if empty
     
     if (A==NULL){
         assert(trgdata->numdoc()==srcdata->numdoc());
-        A=new float**[trgdata->numdoc()];
+        A=new float ***[trgdata->numdoc()];
         for (int s=0;s<trgdata->numdoc();s++){
-            A[s]=new float *[trgdata->doclen(s)];
-             for (int i=0;i<trgdata->doclen(s);i++)
-                A[s][i]=new float [srcdata->doclen(s)];
+            A[s]=new float **[trgdata->doclen(s)];
+            for (int i=0;i<trgdata->doclen(s);i++){
+                A[s][i]=new float *[TM[trgdata->docword(s,i)].n];
+                for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+                    A[s][i][n]=new float [srcdata->doclen(s)];
+            }
         }
     }
     //initialize
-    for (int s=0;s<trgdata->numdoc();s++){
+    for (int s=0;s<trgdata->numdoc();s++)
         for (int i=0;i<trgdata->doclen(s);i++)
-            memset(A[s][i],0,sizeof(float) * srcdata->doclen(s));
-    }
+            for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+                memset(A[s][i][n],0,sizeof(float) * srcdata->doclen(s));
+    
 }
 
 void cswam::freeAlpha(){
-
+    
     if (A!=NULL){
         for (int s=0;s<trgdata->numdoc();s++){
-            for (int i=0;i<trgdata->doclen(s);i++)
+            for (int i=0;i<trgdata->doclen(s);i++){
+                for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+                    delete [] A[s][i][n];
                 delete [] A[s][i];
+            }
             delete [] A[s];
         }
         delete [] A;
@@ -375,23 +413,26 @@ void cswam::expected_counts(void *argv){
     for (int j=0;j<srclen;j++){
         //cout << "j: " << srcdict->decode(srcdata->docword(s,j)) << "\n";
 
-          for (int i=0;i<trglen;i++){
-            A[s][i][j]=LogGauss(D, W2V[srcdata->docword(s,j)],
-                                M[trgdata->docword(s,i)],
-                                S[trgdata->docword(s,i)]);
-            
-              if (i==0) den=A[s][i][j];
-              else den=logsum(den,A[s][i][j]);
-          }
+          for (int i=0;i<trglen;i++)
+              for (int n=0;n<TM[trgdata->docword(s,i)].n;n++){
+                  
+                  A[s][i][n][j]=LogGauss(D, W2V[srcdata->docword(s,j)],
+                                      TM[trgdata->docword(s,i)].G[n].M,
+                                      TM[trgdata->docword(s,i)].G[n].S) + log(TM[trgdata->docword(s,i)].W[n]);
+                  
+                  if (i==0 && n==0) den=A[s][i][n][j];
+                  else den=logsum(den,A[s][i][n][j]);
+              }
         
         //update local likelihood
         localLL[s]+=den;
         
-        for (int i=0;i<trglen;i++){
-            assert(A[s][i][j]<= den);
-            A[s][i][j]=expf(A[s][i][j]-den); // A is now a regular expected count
+        for (int i=0;i<trglen;i++)
+            for (int n=0;n<TM[trgdata->docword(s,i)].n;n++){
+            assert(A[s][i][n][j]<= den);
+            A[s][i][n][j]=expf(A[s][i][n][j]-den); // A is now a regular expected count
             
-            if (A[s][i][j]<0.000000001) A[s][i][j]=0; //take mall risk of wrong normalization
+            if (A[s][i][n][j]<0.000000001) A[s][i][n][j]=0; //take mall risk of wrong normalization
             
             //            if (trgdata->docword(s,i)==trgdict->encode("documentos"))
             
@@ -410,31 +451,37 @@ void cswam::maximization(void *argv){
     //Maximization step: Mean;
     for (int s=0;s<srcdata->numdoc();s++)
         for (int i=0;i<trgdata->doclen(s);i++)
-            for (int j=0;j<srcdata->doclen(s);j++)
-                if (A[s][i][j]>0)
-                    M[trgdata->docword(s,i)][d]+=A[s][i][j] * W2V[srcdata->docword(s,j)][d];
+            for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+                for (int j=0;j<srcdata->doclen(s);j++)
+                    if (A[s][i][n][j]>0)
+                        TM[trgdata->docword(s,i)].G[n].M[d]+=A[s][i][n][j] * W2V[srcdata->docword(s,j)][d];
     
     //second pass
-    for (int e=0;e<trgdict->size();e++) if (Den[e]>0) M[e][d]/=Den[e];
-    
+    for (int e=0;e<trgdict->size();e++)
+        for (int n=0;n<TM[e].n;n++)
+            if (Den[e][n]>0)
+                TM[e].G[n].M[d]/=Den[e][n]; //update the mean estimated
+   
     if (train_variances){
         //Maximization step: Variance;
         
         for (int s=0;s<srcdata->numdoc();s++)
             for (int i=0;i<trgdata->doclen(s);i++)
-                for (int j=0;j<srcdata->doclen(s);j++)
-                    if (A[s][i][j]>0)
-                        S[trgdata->docword(s,i)][d]+=
-                        (A[s][i][j] *
-                         (W2V[srcdata->docword(s,j)][d]-M[trgdata->docword(s,i)][d]) *
-                         (W2V[srcdata->docword(s,j)][d]-M[trgdata->docword(s,i)][d])
+                for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+                    for (int j=0;j<srcdata->doclen(s);j++)
+                        if (A[s][i][n][j]>0)
+                        TM[trgdata->docword(s,i)].G[n].S[d]+=
+                        (A[s][i][n][j] *
+                         (W2V[srcdata->docword(s,j)][d]-TM[trgdata->docword(s,i)].G[n].M[d]) *
+                         (W2V[srcdata->docword(s,j)][d]-TM[trgdata->docword(s,i)].G[n].M[d])
                          );
         
         //second pass
-        for (int e=0;e<trgdict->size();e++){
-            if (Den[e]>0){
-                S[e][d]/=Den[e];
-                if (S[e][d] < 0.01) S[e][d]=0.01;
+        for (int e=0;e<trgdict->size();e++)
+        for (int n=0;n<TM[e].n;n++){
+            if (Den[e][n]>0){
+                TM[e].G[n].S[d]/=Den[e][n];
+                if (TM[e].G[n].S[d] < 0.01) TM[e].G[n].S[d]=0.01;
             }
             else
                 if (d==0) cout << "-\b";
@@ -442,6 +489,58 @@ void cswam::maximization(void *argv){
     }
 }
 
+
+void cswam::expansion(void *argv){
+    
+    long long e=(long long) argv;
+    for (int n=0;n<TM[e].n;n++){
+        //get mean of variances
+        float S=0; for (int d=0;d<D;d++) S+=TM[e].G[n].S[d]; S/=D;
+        
+        //show expected counts or variances that do not reduce
+        if ((Den[e][n] >= TM[e].G[n].eC && Den[e][n]>=2.0 ) && (S >= TM[e].G[n].mS && S > 1.0)){
+            cerr << "\n" << trgdict->decode(e) << " n= " << n << " Counts: " << Den[e][n] << " mS: " << S << "\n";
+            cerr << "M: "; for (int d=0;d<D;d++) cerr << TM[e].G[n].M[d] << " "; cerr << "\n";
+            cerr << "S: "; for (int d=0;d<D;d++) cerr << TM[e].G[n].S[d] << " "; cerr << "\n";
+            //expand: create new Gaussian after Gaussian n
+            Gaussian *nG=new Gaussian[TM[e].n+1];
+            float    *nW=new float[TM[e].n+1];
+            memcpy((void *)nG,(const void *)TM[e].G, (n+1) * sizeof(Gaussian));
+            memcpy((void *)nW,(const void *)TM[e].W, (n+1) * sizeof(float));
+            if (n+1 < TM[e].n){
+                memcpy((void *)&nG[n+2],(const void*)&TM[e].G[n+1],(TM[e].n-n-1) * sizeof(Gaussian));
+                memcpy((void *)&nW[n+2],(const void*)&TM[e].W[n+1],(TM[e].n-n-1) * sizeof(float));
+            }
+            //initialize mean and variance vectors
+            nG[n+1].M=new float[D];nG[n+1].S=new float[D];
+            for (int d=0;d<D;d++){ //assign new means, keep old variances
+                nG[n+1].S[d]=nG[n].S[d];
+                nG[n+1].M[d]=nG[n].M[d]+sqrt(nG[n].S[d])/2;
+                nG[n].M[d]=nG[n].M[d]-sqrt(nG[n].S[d])/2;
+            }
+            nG[n+1].eC=nG[n].eC=Den[e][n];
+            nG[n+1].mS=nG[n].mS=S;
+            
+            //initialize weight vectors uniformly over n and n+1
+            nW[n+1]=nW[n]/2;nW[n]=nW[n]/2;
+            
+            //update TM[e] structure
+            TM[e].n++;
+            delete [] TM[e].G;TM[e].G=nG;
+            delete [] TM[e].W; TM[e].W=nW;
+
+            if (TM[e].n==2){ cerr << "Check point 1\n";}
+            
+            //we increment loop variable by 1
+            n++;
+        }else{
+            TM[e].G[n].eC=Den[e][n];
+            TM[e].G[n].mS=S;
+        }
+        
+    }
+    
+}
 
 int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxiter,int threads){
     
@@ -458,12 +557,16 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
     
     cerr << "Starting training";
     threadpool thpool=thpool_init(threads);
-    task *t=new task[srcdata->numdoc()];
-    assert(srcdata->numdoc()>D); //multi-threading also distributed over D
+    int numtasks=trgdict->size()>trgdata->numdoc()?trgdict->size():trgdata->numdoc();
+    task *t=new task[numtasks];
+    assert(numtasks>D); //multi-threading also distributed over D
     
-   
+    threadpool thpool1=thpool_init(1);
+    
     //support variable to compute model denominator
-    Den=new float[trgdict->size()];
+    Den=new float*[trgdict->size()];
+    for (int e=0;e<trgdict->size();e++) Den[e]=new float[TM[e].n];
+    
     //support variable to compute likelihood
     localLL=new float[srcdata->numdoc()];
     float LL;
@@ -487,21 +590,24 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
         
         
         //Prepare for model for update
-        for (int e=0;e <trgdict->size();e++){
-            memset(M[e],0,D * sizeof (float));
-            if (train_variances)
-                memset(S[e],0,D * sizeof (float)); //keep variance constant
-        }
+        for (int e=0;e <trgdict->size();e++)
+            for (int n=0;n<TM[e].n;n++){
+                memset(TM[e].G[n].M,0,D * sizeof (float));
+                if (train_variances)
+                    memset(TM[e].G[n].S,0,D * sizeof (float));
+            }
         
-        memset(Den,0,trgdict->size() * sizeof(float));
+        for (int e=0;e<trgdict->size();e++)
+            memset(Den[e],0,TM[e].n * sizeof(float));
         
         LL=0; //compute LL of current model
         //compute normalization term for each target word
         for (int s=0;s<srcdata->numdoc();s++){
             LL+=localLL[s];
             for (int i=0;i<trgdata->doclen(s);i++)
-                for (int j=0;j<srcdata->doclen(s);j++)
-                    Den[trgdata->docword(s,i)]+=A[s][i][j];
+                for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+                    for (int j=0;j<srcdata->doclen(s);j++)
+                        Den[trgdata->docword(s,i)][n]+=A[s][i][n][j];
         }
         cerr << "LL = " << LL;
         cerr << "\nM-step: ";
@@ -512,8 +618,29 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
         
         //join all threads
         thpool_wait(thpool);
+
+        //update the weight estimates: ne need of multithreading
+        float totW;
+        for (int e=0;e<trgdict->size();e++){
+            totW=0;
+            for (int n=0;n<TM[e].n;n++) totW+=Den[e][n];
+            if (totW>0)
+                for (int n=0;n<TM[e].n;n++) TM[e].W[n]=Den[e][n]/totW;
+        }
         
+        if (iter > 5){
+        cerr << "Expansion step: ";
+        freeAlpha(); //needs to be reallocated as models might change
+        for (long long e=0;e<trgdict->size();e++){
+            //check if to increase number of gaussians per target word
+                t[e].ctx=this; t[e].argv=(void *)e;
+                thpool_add_work(thpool1, &cswam::expansion_helper, (void *)&t[e]);
+            }
+        //join all threads
+        thpool_wait(thpool1);
+        cerr << "Checkpoint 2\n";
         
+        }
         
         if (srcdata->numdoc()> 10) system("date");
         
@@ -530,7 +657,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
   
     freeAlpha();
 
-    delete []Den;
+    for (int e=0;e<trgdict->size();e++) delete [] Den[e]; delete [] Den;
     delete srcdata; delete trgdata;
     delete [] t; delete [] localLL;
     
@@ -542,7 +669,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
 void cswam::aligner(void *argv){
     long long s=(long long) argv;
     static float maxfloat=std::numeric_limits<float>::max();
-
+    
     
     if (! (s % 10000)) {cerr << ".";cerr.flush();}
     //fprintf(stderr,"Thread: %lu  Document: %d  (out of %d)\n",(long)pthread_self(),s,srcdata->numdoc());
@@ -554,21 +681,23 @@ void cswam::aligner(void *argv){
     
     //Viterbi alignment: find the most probable alignment for source
     float score; float best_score;int best_j;
-    for (int i=0;i<trglen;i++){
+    for (int i=0;i<trglen;i++)
+    {
         best_score=-maxfloat;best_j=0;
         //cout << trgdict->decode(trgdata->docword(s,i)) << "\n";
-        for (int j=0;j<srclen;j++){
-            score=LogGauss(D,
-                     W2V[srcdata->docword(s,j)],
-                     M[trgdata->docword(s,i)],
-                     S[trgdata->docword(s,i)]);
-          //  cout << "\t " << srcdict->decode(srcdata->docword(s,j)) << "  " << dist << "\n";
-            //if (dist > -50) score=(float)exp(-dist)/norm;
-            if (score > best_score){
-                best_score=score;
-                best_j=j;
+        for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
+            for (int j=0;j<srclen;j++){
+                score=LogGauss(D,
+                               W2V[srcdata->docword(s,j)],
+                               TM[trgdata->docword(s,i)].G[n].M,
+                               TM[trgdata->docword(s,i)].G[n].S)+log(TM[trgdata->docword(s,i)].W[n]);
+                //  cout << "\t " << srcdict->decode(srcdata->docword(s,j)) << "  " << dist << "\n";
+                //if (dist > -50) score=(float)exp(-dist)/norm;
+                if (score > best_score){
+                    best_score=score;
+                    best_j=j;
+                }
             }
-        }
         alignments[s % bucket][i]=best_j;
     }
 }

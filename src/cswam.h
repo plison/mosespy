@@ -18,15 +18,21 @@
  
  ******************************************************************************/
 
+typedef struct{
+    
+    float*  M; //mean vectors
+    float*  S; //variance vectors
+    //training support items
+    float   eC; //expected counts
+    float   mS; //mean variance
+    
+} Gaussian;
 
 typedef struct{
-
-    int size;  //size of mixture
-    float  *W; //weights
-    float** M; //mean
-    float** S; //variance
-
-} TranslationModel;
+    int      n;  //number of Gaussians
+    float    *W; //weight vector
+    Gaussian *G; //Gaussians
+} TransModel;
 
 class cswam {
     
@@ -41,24 +47,29 @@ class cswam {
     int       D;       //dimension of vector space
     
     //model
-    float **S;          //variance vector for target words
-    float **M;          //mean vector for target words
-    float ***A;         //expected count structure (threadsafe)
+    TransModel *TM;
     
-
+    
     //settings
     bool normalize_vectors;
     bool scale_vectors;
     bool train_variances;
     bool use_null_word;
-    //private info shared among threads
 
-    float *Den;
-    float *localLL;
-    int **alignments;
-    int threads;
-    int bucket;
-    struct task {
+    //private info shared among threads
+    int trgBoD;        //code of segment begin in target dict
+    int trgEoD;        //code of segment end in target dict
+    int srcBoD;        //code of segment begin in src dict
+    int srcEoD;        //code of segment end in src dict
+
+    float ****A;       //expected counts
+    float **Den;       //alignment probs
+    float *localLL;    //local log-likelihood
+    int **alignments;  //word alignment info
+    int threads;       //number of threads
+    int bucket;        //size of bucket
+
+    struct task {      //basic task info to run task
         void *ctx;
         void *argv;
     };
@@ -92,6 +103,12 @@ public:
         ((cswam *)t.ctx)->maximization(t.argv);return NULL;
     };
 
+    void expansion(void *argv);
+    static void *expansion_helper(void *argv){
+        task t=*(task *)argv;
+        ((cswam *)t.ctx)->expansion(t.argv);return NULL;
+    };
+    
     int train(char *srctrainfile,char *trgtrainfile,char* modelfile, int maxiter,int threads=1);
     
     void aligner(void *argv);
