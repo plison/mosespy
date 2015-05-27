@@ -375,8 +375,8 @@ double LL=0; //Log likelihood
 
 
 float logsum(float a,float b){
-    if (b<a) return a + log(1 + exp(b-a));
-    else return b + log(1+ exp(a-b));
+    if (b<a) return a + logf(1 + expf(b-a));
+    else return b + logf(1+ expf(a-b));
 }
 
 
@@ -413,38 +413,46 @@ void cswam::expected_counts(void *argv){
     //compute denominator for each source-target pair
     for (int j=0;j<srclen;j++){
         //cout << "j: " << srcdict->decode(srcdata->docword(s,j)) << "\n";
-        bool den_empty=true;
+        den=0;
         for (int i=0;i<trglen;i++)
-            for (int n=0;n<TM[trgdata->docword(s,i)].n;n++)
-                if (TM[trgdata->docword(s,i)].W[n]>0){ //weights could degenerate to zero!
-                    A[s][i][n][j]=LogGauss(D, W2V[srcdata->docword(s,j)],
-                                           TM[trgdata->docword(s,i)].G[n].M,
-                                           TM[trgdata->docword(s,i)].G[n].S) + log(TM[trgdata->docword(s,i)].W[n]);
-                    if (den_empty){ //den must be initialized with a non-zero value!
-                        den=A[s][i][n][j];den_empty=false;
-                    }else
-                        den=logsum(den,A[s][i][n][j]);
-//                    cerr << trgdict->decode(trgdata->docword(s,i)) << " n:" << n << "\n";
-//                    cerr << "DEN : " << den << "\n";
-                }
+            for (int n=0;n<TM[trgdata->docword(s,i)].n;n++){
+                assert(TM[trgdata->docword(s,i)].W[n]>0); //weight zero must be prevented!!!
+                A[s][i][n][j]=LogGauss(D, W2V[srcdata->docword(s,j)],
+                                       TM[trgdata->docword(s,i)].G[n].M,
+                                       TM[trgdata->docword(s,i)].G[n].S) + log(TM[trgdata->docword(s,i)].W[n]);
+//                cerr <<  "rtarget: " << trgdict->decode(trgdata->docword(s,i))
+//                <<   " n: " << n << " W=" << TM[trgdata->docword(s,i)].W[n]
+//                << " A:" << A[s][i][n][j] << " den: " << den << "\n";
+                if (i==0 && n==0) //den must be initialized
+                    den=A[s][i][n][j];
+                else
+                    den=logsum(den,A[s][i][n][j]);
+                //                    cerr << trgdict->decode(trgdata->docword(s,i)) << " n:" << n << "\n";
+                //                    cerr << "DEN : " << den << "\n";
+            }
         
         //update local likelihood
         localLL[s]+=den;
         
         for (int i=0;i<trglen;i++)
             for (int n=0;n<TM[trgdata->docword(s,i)].n;n++){
-                  assert(A[s][i][n][j]<= den);
+                
+                assert(A[s][i][n][j]<= den);
 //                if (!(A[s][i][n][j] <= den)){
+//                    cerr << "\nsource: " << srcdict->decode(srcdata->docword(s,j)) << " trg: "<< trgdict->decode(trgdata->docword(s,i)) << " n: " <<  n << " A: " << A[s][i][n][j] <<  "\n";
 //                    float locden=0;
 //                    for (int li=0;li<trglen;li++){
-//                        cerr << trgdict->decode(trgdata->docword(s,li)) << "\n";
+//                        cerr << "target: " << trgdict->decode(trgdata->docword(s,li))
+//                        << " size: " << TM[trgdata->docword(s,li)].n << "\n";
 //                        for (int ln=0;ln<TM[trgdata->docword(s,li)].n;ln++){
-//                            cerr <<  "  n:" << ln << " W=" << TM[trgdata->docword(s,li)].W[ln]
-//                            << " A:" << A[s][li][ln][j] << " den: " << den << "\n";
-//                            cerr << "n: " << ln << " A="
-//                            << LogGauss(D, W2V[srcdata->docword(s,j)],
-//                                        TM[trgdata->docword(s,li)].G[ln].M,
-//                                        TM[trgdata->docword(s,li)].G[ln].S) << "\n";
+//                            cerr <<  "n:" << ln << " W=" << TM[trgdata->docword(s,li)].W[ln]
+//                            << " A:" << A[s][li][ln][j] << " den: " << den;
+//                            if (TM[trgdata->docword(s,li)].W[ln]>0)
+//                                cerr << " logA= "
+//                                << LogGauss(D, W2V[srcdata->docword(s,j)],
+//                                            TM[trgdata->docword(s,li)].G[ln].M,
+//                                            TM[trgdata->docword(s,li)].G[ln].S) + log(TM[trgdata->docword(s,li)].W[ln]);
+//                            cerr << "\n";
 //                        }
 //                    }
 //                    exit(1);
@@ -453,11 +461,8 @@ void cswam::expected_counts(void *argv){
                 
                 if (A[s][i][n][j]<0.000000001) A[s][i][n][j]=0; //take mall risk of wrong normalization
                 
-                //            if (trgdata->docword(s,i)==trgdict->encode("documentos"))
+                if (A[s][i][n][j]>0) TM[trgdata->docword(s,i)].G[n].eC++; //increase support set size
                 
-                //            cout << "Pr(" << trgdict->decode(trgdata->docword(s,i))
-                //            << " | "  << srcdict->decode(srcdata->docword(s,j))
-                //            << ") = " << A[s][i][j] << "\n";
             }
     }
 }
@@ -513,8 +518,9 @@ void cswam::expansion(void *argv){
         //get mean of variances
         float S=0; for (int d=0;d<D;d++) S+=TM[e].G[n].S[d]; S/=D;
         
-        //show expected counts or variances that do not reduce
-        if ((Den[e][n] >= TM[e].G[n].eC && Den[e][n]>=2.0 ) && (S >= TM[e].G[n].mS && S > 1.0)){
+        
+        //show large support set and variances that do not reduce
+        if (TM[e].G[n].eC >=4.0  && (S >= TM[e].G[n].mS && S > 1.0)){
             cerr << "\n" << trgdict->decode(e) << " n= " << n << " Counts: " << Den[e][n] << " mS: " << S << "\n";
             //cerr << "M: "; for (int d=0;d<D;d++) cerr << TM[e].G[n].M[d] << " "; cerr << "\n";
             //cerr << "S: "; for (int d=0;d<D;d++) cerr << TM[e].G[n].S[d] << " "; cerr << "\n";
@@ -534,7 +540,7 @@ void cswam::expansion(void *argv){
                 nG[n+1].M[d]=nG[n].M[d]+sqrt(nG[n].S[d])/2;
                 nG[n].M[d]=nG[n].M[d]-sqrt(nG[n].S[d])/2;
             }
-            nG[n+1].eC=nG[n].eC=Den[e][n];
+            nG[n+1].eC=nG[n].eC;
             nG[n+1].mS=nG[n].mS=S;
             
             //initialize weight vectors uniformly over n and n+1
@@ -548,7 +554,6 @@ void cswam::expansion(void *argv){
             //we increment loop variable by 1
             n++;
         }else{
-            TM[e].G[n].eC=Den[e][n];
             TM[e].G[n].mS=S;
         }
         
@@ -559,8 +564,8 @@ void cswam::expansion(void *argv){
 void cswam::contraction(void *argv){
     
     long long e=(long long) argv;
+
     for (int n=0;n<TM[e].n;n++){
-        
         //show expected counts or variances that do not reduce
         if (TM[e].W[n] < 0.0001){ //eliminate this component
             assert(TM[e].n>1);
@@ -568,8 +573,10 @@ void cswam::contraction(void *argv){
             //expand: create new Gaussian after Gaussian n
             Gaussian *nG=new Gaussian[TM[e].n-1];
             float    *nW=new float[TM[e].n-1];
-            memcpy((void *)nG,(const void *)TM[e].G, n * sizeof(Gaussian));
-            memcpy((void *)nW,(const void *)TM[e].W, n * sizeof(float));
+            if (n>0){
+                memcpy((void *)nG,(const void *)TM[e].G, n * sizeof(Gaussian));
+                memcpy((void *)nW,(const void *)TM[e].W, n * sizeof(float));
+            }
             if (n+1 < TM[e].n){
                 memcpy((void *)&nG[n],(const void*)&TM[e].G[n+1],(TM[e].n-n-1) * sizeof(Gaussian));
                 memcpy((void *)&nW[n],(const void*)&TM[e].W[n+1],(TM[e].n-n-1) * sizeof(float));
@@ -578,11 +585,15 @@ void cswam::contraction(void *argv){
             //don't need to normalized weights!
             
             //update TM[e] structure
-            TM[e].n--;
+            TM[e].n--;n--;
             delete [] TM[e].G;TM[e].G=nG;
             delete [] TM[e].W; TM[e].W=nW;
         }
     }
+
+    for (int n=0;n<TM[e].n;n++) assert(TM[e].W[n] > 0.0001);
+        
+
 }
 
 int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxiter,int threads){
@@ -620,6 +631,11 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
         
         initAlpha();
         
+        //reset support set size
+        for (int e=0;e<trgdict->size();e++)
+            for (int n=0;n<TM[e].n;n++)  TM[e].G[n].eC=0;
+        
+        
         cerr << "E-step: ";
         //compute expected counts in each single sentence
         for (long long  s=0;s<srcdata->numdoc();s++){
@@ -632,7 +648,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
         thpool_wait(thpool);
         
         
-        //Prepare for model for update
+        //Reset model before update
         for (int e=0;e <trgdict->size();e++)
             for (int n=0;n<TM[e].n;n++){
                 memset(TM[e].G[n].M,0,D * sizeof (float));
@@ -652,8 +668,10 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
                     for (int j=0;j<srcdata->doclen(s);j++)
                         Den[trgdata->docword(s,i)][n]+=A[s][i][n][j];
         }
-        cerr << "LL = " << LL;
-        cerr << "\nM-step: ";
+        cerr << "LL = " << LL << "\n";
+        
+        
+        cerr << "M-step: ";
         for (long long d=0;d<D;d++){
             t[d].ctx=this; t[d].argv=(void *)d;
             thpool_add_work(thpool, &cswam::maximization_helper, (void *)&t[d]);
@@ -662,11 +680,19 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
         //join all threads
         thpool_wait(thpool);
 
-        for (int e=0;e<trgdict->size();e++)
+        //some checks of the models here
+        for (int e=0;e<trgdict->size();e++){
             for (int n=0;n<TM[e].n;n++)
                 if (!Den[e][n])
                     cerr << "Risk of degenerate model. Word: " << trgdict->decode(e) << " n: " << n << "\n";
-                
+            
+//            if (trgdict->encode("bege")==e){
+//                cerr << "bege " << " mS: " << TM[e].G[0].mS << " n: " << TM[e].n << " eC " << TM[e].G[0].eC << "\n";
+//                cerr << "M:"; for (int d=0;d<10;d++) cerr << " " << TM[e].G[0].M[d]; cerr << "\n";
+//                cerr << "S:"; for (int d=0;d<10;d++) cerr << " " << TM[e].G[0].S[d]; cerr << "\n";
+//            }
+        }
+        
         //update the weight estimates: ne need of multithreading
         float totW;
         for (int e=0;e<trgdict->size();e++){
@@ -676,7 +702,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
                 for (int n=0;n<TM[e].n;n++) TM[e].W[n]=Den[e][n]/totW;
         }
         
-        if (iter > 5){
+        if (iter > 3){
             
             cerr << "\nExpansion step: ";
             freeAlpha(); //needs to be reallocated as models might change
@@ -701,6 +727,7 @@ int cswam::train(char *srctrainfile, char*trgtrainfile,char *modelfile, int maxi
             
         }
         
+       
         if (srcdata->numdoc()> 10) system("date");
         
         saveModel(modelfile);

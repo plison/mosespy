@@ -20,10 +20,10 @@
 
 typedef struct{
     
-    float*  M; //mean vectors
-    float*  S; //variance vectors
+    float*  M;  //mean vectors
+    float*  S;  //variance vectors
     //training support items
-    float   eC; //expected counts
+    float   eC; //support set size
     float   mS; //mean variance
     
 } Gaussian;
