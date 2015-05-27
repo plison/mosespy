@@ -109,6 +109,12 @@ public:
         ((cswam *)t.ctx)->expansion(t.argv);return NULL;
     };
     
+    void contraction(void *argv);
+    static void *contraction_helper(void *argv){
+        task t=*(task *)argv;
+        ((cswam *)t.ctx)->contraction(t.argv);return NULL;
+    };
+    
     int train(char *srctrainfile,char *trgtrainfile,char* modelfile, int maxiter,int threads=1);
     
     void aligner(void *argv);
