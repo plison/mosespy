@@ -6,7 +6,7 @@
 	Main developer:	Pierre Lison 
 					(plison@ifi.uio.no)
 					
-	URL: http://mosespy.googlecode.com
+	URL:  github.com/plison/mosespy
 	
 	Released under an MIT license
 ==============================================
@@ -61,7 +61,7 @@ MORE INFO:
 ==========
 
 You will soon find more documentation on the MosesPy website:
-	http://mosespy.googlecode.com
+	 github.com/plison/mosespy
 	
 Stay tuned! 
  
