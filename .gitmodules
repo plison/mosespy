@@ -4,3 +4,6 @@
 [submodule "mgiza"]
 	path = mgiza
 	url = https://github.com/moses-smt/mgiza
+[submodule "irstlm"]
+	path = irstlm
+	url = https://github.com/plison/irstlm
