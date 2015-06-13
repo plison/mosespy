@@ -72,7 +72,7 @@ def generateHTML(refCorpus, corpusProcessor):
     doc += """<body>\n<form action="">"""
     doc += """<h2>Evaluation results (<span id="nblines">%i</span> translations):</h2>\n"""%len(tokenisedAligns)
     doc += """<table id="outputsinfo">\n"""
-    pathTag = lambda p : """<i><a href="%s">%s</a></i>"""%(p,p)
+    pathTag = lambda p : """<i style="font-size:0.8em;"><a href="%s">%s</a></i>"""%(p,p)
     doc += """<tr><td><b>Source file: </b></td><td>%s</td></tr>\n"""%(pathTag(refCorpus.sourceCorpus))
     doc += """<tr><td><b>Reference file(s): </b></td><td>%s</td></tr>\n"""%("<br>".join([pathTag(r) for r in refCorpus.refCorpora]))
     doc += """<tr><td><b>Translation file: </b></td><td>%s</td></tr>\n"""%(pathTag(refCorpus.translation))
@@ -134,8 +134,9 @@ def _generateXML(tokenisedAligns, untokenisedAligns):
       
         tokAlign.translation = _clean(tokAlign.translation)
         translation_words = wordTokens(tokAlign.translation)
-         
-        closest = None; closest_punct = None
+        
+        bestGrid = None
+        bestGrid_punct = None
         for j in range(0, len(tokAlign.target)):
             reference = _clean(tokAlign.target[j])
             refEl = ET.SubElement(pairEl, "reference")
@@ -143,30 +144,27 @@ def _generateXML(tokenisedAligns, untokenisedAligns):
             refEl.set("nbtokens", countTokens(reference))
             refEl.set("nbwords", countWords(reference))
             refEl.set("contiguous", contiguousTokens(reference, untokAlign.target[j]))
+
             grid = EditGrid(" ".join(wordTokens(reference)), " ".join(translation_words))
             refEl.set("wer", "%.2d"%grid.wer)
-            if not closest or closest.edit.wer > grid.wer:
-                editsRef = _completeEdits(grid.refTokens, reference)
-                editsTrans = _completeEdits(grid.actualTokens, tokAlign.translation)
-                closest = {"el":refEl, "edits_ref":editsRef, "edits_trans":editsTrans}
-            grid = EditGrid(reference, tokAlign.translation)
-            refEl.set("wer_punct", "%.2d"%grid.wer)
-            if not closest_punct or closest_punct.edit.wer > grid.wer:
-                editsRef = [t.edit for t in grid.refTokens]
-                editsTrans = [t.edit for t in grid.actualTokens]
-                closest_punct = {"el":refEl, "edits_ref":editsRef, "edits_trans":editsTrans}
-        
-        closest["el"].set("edits", "".join(closest["edits_ref"]))
-        closest_punct["el"].set("edits_punct", "".join(closest_punct["edits_ref"]))
+            refEl.set("edits", _completeEdits(grid.refTokens, reference))
+            if not bestGrid or bestGrid.wer > grid.wer:
+                bestGrid = grid
 
+            grid_punct = EditGrid(reference, tokAlign.translation)
+            refEl.set("wer_punct", "%.2d"%grid_punct.wer)
+            refEl.set("edits_punct", "".join([t.edit for t in grid_punct.refTokens]))
+            if not bestGrid_punct or bestGrid_punct.wer > grid_punct.wer:
+                bestGrid_punct = grid_punct
+             
         transEl = ET.SubElement(pairEl, "translation")
         transEl.text = tokAlign.translation.decode("UTF-8")
         transEl.set("nbtokens", countTokens(tokAlign.translation))
         transEl.set("nbwords", countWords(tokAlign.translation))
         transEl.set("contiguous", contiguousTokens(tokAlign.translation, untokAlign.translation))
-        transEl.set("edits", "".join(closest["edits_trans"]))
-        transEl.set("edits_punct", "".join(closest_punct["edits_trans"]))
         
+        transEl.set("edits",_completeEdits(bestGrid.actualTokens, tokAlign.translation))
+        transEl.set("edits_punct", "".join([t.edit for t in bestGrid_punct.actualTokens])) 
                     
     return ET.tostring(root)
  

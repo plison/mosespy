@@ -151,10 +151,19 @@ function generateTable(conditions) {
             tooltip_source = "(None)";
         }
 
+        indexClosestRef = -1; lowestWer = 10000;
+        $(this).find("reference").each(function(m) {
+          wer = (punctuation) ? +$(this).attr('wer_punct') : +$(this).attr('wer');
+          if (wer < lowestWer) {
+          	 lowestWer = wer;
+          	 indexClosestRef = m;
+          }
+        });
+        
         tooltip_reference = "";
         $(this).find("reference").each(function(m) {
             referenceText = getContent($(this), tokenised, punctuation);
-            if (typeof $(this).attr('edits') != typeof undefined) {
+            if (m == indexClosestRef) {
                 fullRef = getColourContent($(this), tokenised, punctuation);
                 closestRef = referenceText;
             } else {
