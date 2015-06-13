@@ -39,7 +39,6 @@ you will have to compile these tools manually.
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date:: 2014-08-26 08:44:16 #$"
 
 
 import mosespy.system as system
@@ -48,7 +47,7 @@ from mosespy.system import Path
 rootPath = Path(__file__).getAbsolute().getUp().getUp()
 expDir = rootPath + "/experiments/"
 moses_root = Path(rootPath + "/mosesdecoder")
-mgizapp_root = Path(rootPath + "/mgiza")
+mgizapp_root = Path(rootPath + "/mgiza/mgizapp")
 irstlm_root = Path(rootPath + "/irstlm")
 
 decoder = moses_root+"/bin/moses"

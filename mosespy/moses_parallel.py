@@ -32,7 +32,6 @@ parallel decoding of input sentences on multiple nodes.
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date::                      $"
 
 import sys, uuid, select, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))

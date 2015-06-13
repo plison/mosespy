@@ -34,7 +34,6 @@ and splitting such corpora.
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date::                      $"
 
 import re
 import mosespy.system as system
@@ -125,13 +124,21 @@ class AlignedPair():
         """
         self.source = source
         self.target = target
-        self.previous = None
+        self.info = {}
         
     def addPrevious(self, previous):
         """Adds a history of previous sentence to the pair.
         
         """
-        self.previous = previous
+        self.info['Previous (source)'] = previous.source
+        self.info['Previous (target)'] = previous.target[0]
+        if previous.translation and previous.target != previous.translation:
+            self.info['Previous (translation)'] = previous.translation
+            
+        
+    
+    def __str__(self):
+        return self.source + " -> " + self.target
 
         
 
@@ -191,7 +198,7 @@ class AlignedCorpus(object):
         self.targetCorpus.remove()
         
     
-    def getAlignments(self, addHistory=False): 
+    def getAlignments(self): 
         """Returns a list of alignment objects (of length corresponding
         to the number of lines in the corpus), where each alignment
         entry encodes the source sentence, the target sentence, and
@@ -205,8 +212,6 @@ class AlignedCorpus(object):
         alignments = []
         for i in range(0, len(sourceLines)):
             pair = AlignedPair(sourceLines[i].strip(),targetLines[i].strip())
-            if addHistory and i > 0:
-                pair.addPrevious(alignments[-1])
             alignments.append(pair)
                  
         return alignments
@@ -220,10 +225,17 @@ class AlignedReference(AlignedPair):
             targets = (targets,)
         AlignedPair.__init__(self, source, targets)
         self.translation = None
-    
+   
     
     def addTranslation(self, translation):
         self.translation = translation
+        
+    
+    def __str__(self):
+        s = self.source + " -> " + str(self.target)
+        if self.translation:
+            s += " (translation:" + self.translation + ")"
+        return s
 
 
 
@@ -302,12 +314,16 @@ class ReferenceCorpus(object):
             refCorpus.remove()
         
     
-    def getAlignments(self, addHistory=False): 
+    def getAlignments(self): 
         """Returns a list of alignment objects (of length corresponding
         to the number of lines in the corpus), where each alignment
         entry encodes the source sentence, the reference sentences,
         the actual translations (if provided), and  (if addHistory is 
-        set to true), the history of the target sentence.
+        set to true), the history of the target sentence, and the edit
+        grids between the translation and the reference(s).
+        
+        Args:
+        - generateEdits whether to generate the edit grids for the alignments
         
         """
         sourceLines = self.getSourceCorpus().readlines()
@@ -316,22 +332,17 @@ class ReferenceCorpus(object):
         for refCorpus in self.refCorpora:
             targetLines.append(refCorpus.readlines())    
             
+        translationLines = self.translation.readlines() if self.translation else None
         alignments = []
         for i in range(0, len(sourceLines)):
             targets = [targetLine[i].strip() for targetLine in targetLines]
             pair = AlignedReference(sourceLines[i].strip(), targets)
-            if addHistory and i > 0:
-                pair.addPrevious(alignments[-1])
+            if translationLines:
+                actual = translationLines[i].strip()
+                pair.addTranslation(actual)                         
             alignments.append(pair)
-                     
-        if self.translation:       
-            translationLines = self.translation.readlines()
-            for i in range(0, len(alignments)):
-                pair = alignments[i]
-                pair.addTranslation(translationLines[i].strip())
-                 
-        return alignments     
-
+                                     
+        return alignments             
 
 
  
@@ -353,8 +364,8 @@ class CorpusProcessor():
         """
         self.workPath = Path(workPath)
         self.executor = executor if executor else system.ShellExecutor()
-        self.tokeniser = Tokeniser(executor, nbThreads)
-        self.truecaser = TrueCaser(executor, workPath+"/truecasingmodel")
+        self.tokeniser = Tokeniser(self.executor, nbThreads)
+        self.truecaser = TrueCaser(self.executor, workPath+"/truecasingmodel")
         
         
     def processAlignedCorpus(self, corpus, maxLength=80):
@@ -481,7 +492,7 @@ class CorpusProcessor():
         """
         detokText = self.tokeniser.detokenise(text, lang).strip("\n") + "\n" 
         finalText = self.tokeniser.deescape(detokText).strip("\n")
-        return finalText
+        return finalText        
     
     
 
@@ -611,6 +622,7 @@ class CorpusProcessor():
         
         else:
             return self.splitData(BasicCorpus(corpus), nbSplits, outputDir)
+                      
 
          
 class Tokeniser():

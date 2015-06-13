@@ -57,12 +57,12 @@ same number of lines.  The aligned corpus is then referred to by its stem
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date::                      $"
-
+ 
 import json,  re, copy
 import mosespy.system as system
 import mosespy.install as install
 from mosespy.system import Path
+import mosespy.analyser as analyser
 from mosespy.corpus import BasicCorpus, AlignedCorpus, ReferenceCorpus, CorpusProcessor
 
 
@@ -370,7 +370,6 @@ class Experiment(object):
         are returned, and the instance variable self.results records the translation 
         results (useful for later analysis).
                 
-        TODO: allow for more than one reference translation
         TODO: allow for other metrics than BLEU
         
         """
@@ -394,30 +393,22 @@ class Experiment(object):
         print bleu_output
         return testCorpus, bleu
     
-    
-    def analyseResults(self, initCondition=None):
-        """Analyse the translation results (encoded as a ReferenceCorpus)
-        using the analysis user interface.  The results must first be
-        generated using the method evaluateBLEU(...) prior to calling this
-        method. The translation results are detokenised and special characters
-        are deescaped for easier reading. 
+ 
+    def generateResults(self):
+        """Generate an HTML page that allows one to easily inspect the translation outputs
+        against their reference translations.
         
-        Args:
-            initCondition (Condition): optional condition to initialise the 
-                user interface.
+        The method returns the path to the generated HTML file.
         
-    
         """
-        from mosespy.analyser import AnalysisUI,Condition
+        
         if not self.results:
             raise RuntimeError("Results must first be generated with evaluateBLEU(...)")
         elif not isinstance(self.results, ReferenceCorpus):
             raise RuntimeError("results must be of type ReferenceCorpus")
-        if not initCondition:
-            initCondition=Condition()
-        readResults = self.processor.revertReferenceCorpus(self.results)
-        AnalysisUI(initCondition, readResults)
-        readResults.remove()
+                
+        return analyser.generateHTML(self.results, self.processor)
+
   
 
 

@@ -37,7 +37,6 @@ order to run processes through SLURM instead of on the shell.
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date::                      $"
 
 import re, uuid, copy
 import mosespy.system as system
@@ -223,7 +222,7 @@ class SlurmExecutor(ShellExecutor):
         currentEnv = copy.deepcopy(system.getEnv())
         for k in system.getEnv():
             if "SLURM" in k:
-                system.delEnv(k)
+                system.setEnv(k, "", True)
         result = ShellExecutor.run_parallel(self, scripts, stdins, stdouts)
         for k in currentEnv:
             system.setEnv(k, currentEnv[k])

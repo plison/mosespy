@@ -35,10 +35,9 @@ NB: many functions in this modules are directly tailored (i.e. hacked)
 __author__ = 'Pierre Lison (plison@ifi.uio.no)'
 __copyright__ = 'Copyright (c) 2014-2017 Pierre Lison'
 __license__ = 'MIT License'
-__version__ = "$Date:: 2014-08-25 08:30:46 #$"
 
 import random
-from mosespy.corpus import AlignedCorpus
+from mosespy.corpus import AlignedCorpus, BasicCorpus
     
 
 def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000, 
@@ -144,7 +143,46 @@ def divideData(alignedStem, sourceLang, targetLang, nbTuning=1000, nbDev=3000,
 
     return trainCorpus, tuneCorpus, devCorpus, testCorpus
     
-   
+ 
+  
+def filterOutLines(fullCorpusFile, *toRemoveFiles):
+    """Filters out sentences from the corpus represented by toRemoveFiles
+    from the corpus in fullCorpusFile.  This method is used to prune 
+    language model data from development and test sentences.
+    
+    """
+    fullCorpus = BasicCorpus(fullCorpusFile)
+    
+    occurrences = {}
+    histories = {}
+    for toRemoveFile in toRemoveFiles:
+        toRemoveCorpus= BasicCorpus(toRemoveFile)
+        occurrences[toRemoveFile] = toRemoveCorpus.getOccurrences()
+        histories[toRemoveFile] = toRemoveCorpus.getHistories()
+
+
+    outputFile = fullCorpus.addFlag("filtered") 
+    with open(outputFile, 'w', 1000000) as newLmFileD:                 
+        inputLines = fullCorpus.readlines()
+        skippedLines = []
+        for i in range(2, len(inputLines)):
+            l = inputLines[i].strip()
+            toSkip = False
+            for f in occurrences:
+                if l in occurrences[f]:
+                    for index in occurrences[f][l]:
+                        if histories[f][index] == [iline.strip("\n") for 
+                                                   iline in inputLines[i-2:i]]:
+                            skippedLines.append(l)
+                            toSkip = True
+            if not toSkip:
+                newLmFileD.write(l+"\n")                                
+
+    print "Number of skipped lines: " + str(len(skippedLines))
+    return outputFile
+
+
+  
 
 
 def _drawRandom(nbToDraw, maxValue, exclusion=None):
