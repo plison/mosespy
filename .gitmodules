@@ -4,3 +4,6 @@
 [submodule "irstlm"]
 	path = irstlm
 	url = https://github.com/plison/irstlm
+[submodule "mosesdecoder"]
+	path = mosesdecoder
+	url = https://github.com/moses-smt/mosesdecoder.git
